@@ -15,7 +15,7 @@ TilingModel::TilingModel(TilingBackend& backend)
   : QObject{nullptr}
   , eagine::main_ctx_object{EAGINE_ID(TilngModel), backend}
   , _backend{backend}
-  , _bus{EAGINE_ID(TrckrEndpt), *this}
+  , _bus{EAGINE_ID(TilngEndpt), *this}
   , _tiling{_bus} {
     bus().setup_connectors(_tiling);
 

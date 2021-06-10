@@ -8,6 +8,7 @@
 #include "TilingViewModel.hpp"
 #include <eagine/main_ctx.hpp>
 #include <eagine/main_fwd.hpp>
+#include <eagine/message_bus.hpp>
 #include <QApplication>
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
@@ -19,6 +20,7 @@ int argc_copy = 0;
 const char** argv_copy = nullptr;
 //------------------------------------------------------------------------------
 auto main(main_ctx& ctx) -> int {
+    enable_message_bus(ctx);
     ctx.log().info("message bus tiling starting");
 
     QApplication::setAttribute(Qt::AA_EnableHighDpiScaling);

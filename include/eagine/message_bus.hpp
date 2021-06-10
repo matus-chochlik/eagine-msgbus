@@ -45,9 +45,11 @@ private:
 };
 
 static inline void enable_message_bus(main_ctx& ctx) {
-    if(auto setters{ctx.setters()}) {
-        extract(setters).inject(std::make_shared<message_bus>(ctx));
-    }
+    auto setters{ctx.setters()};
+    EAGINE_ASSERT(setters);
+    auto msg_bus{std::make_shared<message_bus>(ctx)};
+    extract(msg_bus).configure(ctx.config());
+    extract(setters).inject(std::move(msg_bus));
 }
 
 } // namespace eagine
