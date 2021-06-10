@@ -18,7 +18,7 @@ add_library(
 eagine_add_lib_analysis(eagine-msgbus)
 
 target_compile_definitions(
-	eagine-msgbus PUBLIC EAGINE_CORE_LIBRARY=1
+	eagine-msgbus PUBLIC EAGINE_MSGBUS_LIBRARY=1
 )
 
 target_include_directories(
