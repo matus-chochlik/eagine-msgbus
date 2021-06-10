@@ -45,7 +45,7 @@ conn_args=("--msg-bus-asio-local-stream")
 termpids=()
 pids=()
 #
-"$(dirname ${0})/eagine-message_bus-router" \
+"$(dirname ${0})/eagine-msgbus-router" \
 	"${log_args[@]}" \
 	"${conn_args[@]}" \
 	--msg-bus-router-shutdown-verify false \
@@ -53,7 +53,7 @@ pids=()
 	--msg-bus-router-shutdown-delay 10s \
 	& termpids+=($!)
 sleep 1
-"$(dirname ${0})/eagine-message_bus-sudoku_helper" \
+"$(dirname ${0})/eagine-msgbus-sudoku_helper" \
 	"${log_args[@]}" \
 	"${conn_args[@]}" \
 	--msg-bus-router-id-count 250 \
@@ -62,7 +62,7 @@ sleep 1
 div=$((rank * (rank - 2)))
 if [[ ${gui} -ne 0 ]]
 then
-	"$(dirname ${0})/eagine-message_bus-tiling" \
+	"$(dirname ${0})/eagine-msgbus-tiling" \
 		"${log_args[@]}" \
 		"${conn_args[@]}" \
 		--msg-bus-sudoku-solver-rank ${rank} \
@@ -71,7 +71,7 @@ then
 		--msg-bus-sudoku-solver-gui-tile-size $((tile_size)) \
 		& pids+=($!)
 else
-	"$(dirname ${0})/eagine-message_bus-sudoku_tiling" \
+	"$(dirname ${0})/eagine-msgbus-sudoku_tiling" \
 		"${log_args[@]}" \
 		"${conn_args[@]}" \
 		--msg-bus-sudoku-solver-block-cells false \
@@ -85,7 +85,7 @@ fi
 sleep 1
 for ssh_host in "${ssh_hosts[@]}"
 do
-	"$(dirname ${0})/eagine-message_bus-bridge" \
+	"$(dirname ${0})/eagine-msgbus-bridge" \
 		"${log_args[@]}" \
 		"${conn_args[@]}" \
 		--msg-bus-bridge-shutdown-delay 15s \

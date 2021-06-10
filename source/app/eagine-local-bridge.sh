@@ -21,10 +21,10 @@ do
 done
 
 coproc \
-$(dirname ${0})/eagine-message_bus-bridge \
+$(dirname ${0})/eagine-msgbus-bridge \
 	"${common_args[@]}" "${router_0_args[@]}"
 
-$(dirname ${0})/eagine-message_bus-bridge \
+$(dirname ${0})/eagine-msgbus-bridge \
 	"${common_args[@]}" "${router_1_args[@]}" \
 	<&${COPROC[0]} >&${COPROC[1]}
 
