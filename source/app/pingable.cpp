@@ -89,6 +89,7 @@ private:
 } // namespace msgbus
 
 auto main(main_ctx& ctx) -> int {
+    enable_message_bus(ctx);
     ctx.preinitialize();
 
     msgbus::pingable_node the_pingable{

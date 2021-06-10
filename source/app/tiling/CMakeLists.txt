@@ -25,21 +25,21 @@ set(MONITOR_HEADERS
 	include/TilingViewModel.hpp
 )
 add_executable(
-	eagine-message_bus-tiling
+	eagine-msgbus-tiling
 	${MONITOR_RESOURCES}
 	${MONITOR_SOURCES}
 	${MONITOR_HEADERS}
 )
 
-eagine_add_exe_analysis(eagine-message_bus-tiling)
+eagine_add_exe_analysis(eagine-msgbus-tiling)
 
 target_include_directories(
-	eagine-message_bus-tiling
+	eagine-msgbus-tiling
 	PRIVATE
 		${CMAKE_CURRENT_SOURCE_DIR}/include
 )
 target_link_libraries(
-	eagine-message_bus-tiling
+	eagine-msgbus-tiling
 	PUBLIC
 		EAGine::MsgBus
 		Qt5::Core

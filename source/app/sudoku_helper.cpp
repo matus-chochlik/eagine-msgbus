@@ -7,6 +7,7 @@
 
 #include <eagine/main_ctx.hpp>
 #include <eagine/main_fwd.hpp>
+#include <eagine/message_bus.hpp>
 #include <eagine/message_bus/endpoint.hpp>
 #include <eagine/message_bus/registry.hpp>
 #include <eagine/message_bus/service.hpp>
@@ -68,6 +69,7 @@ private:
 
 auto main(main_ctx& ctx) -> int {
     signal_switch interrupted;
+    enable_message_bus(ctx);
     ctx.preinitialize();
 
     msgbus::registry the_reg{ctx};

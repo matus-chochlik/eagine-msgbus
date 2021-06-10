@@ -111,6 +111,7 @@ private:
 //------------------------------------------------------------------------------
 auto main(main_ctx& ctx) -> int {
     signal_switch interrupted;
+    enable_message_bus(ctx);
 
     auto& log = ctx.log();
 

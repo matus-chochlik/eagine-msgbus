@@ -39,21 +39,21 @@ set(MONITOR_HEADERS
 	include/NodeParameterViewModel.hpp
 )
 add_executable(
-	eagine-message_bus-monitor
+	eagine-msgbus-monitor
 	${MONITOR_RESOURCES}
 	${MONITOR_SOURCES}
 	${MONITOR_HEADERS}
 )
 
-eagine_add_exe_analysis(eagine-message_bus-monitor)
+eagine_add_exe_analysis(eagine-msgbus-monitor)
 
 target_include_directories(
-	eagine-message_bus-monitor
+	eagine-msgbus-monitor
 	PRIVATE
 		${CMAKE_CURRENT_SOURCE_DIR}/include
 )
 target_link_libraries(
-	eagine-message_bus-monitor
+	eagine-msgbus-monitor
 	PUBLIC
 		EAGine::MsgBus
 		Qt5::Core

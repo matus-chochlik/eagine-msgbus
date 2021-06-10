@@ -117,6 +117,7 @@ private:
 //------------------------------------------------------------------------------
 auto main(main_ctx& ctx) -> int {
     signal_switch interrupted;
+    enable_message_bus(ctx);
 
     auto& log = ctx.log();
     log.info("message bus router starting up");
@@ -141,7 +142,7 @@ auto main(main_ctx& ctx) -> int {
     msgbus::endpoint node_endpoint{EAGINE_ID(RutrNodeEp), ctx};
     // TODO
     // node_endpoint.add_certificate_pem(msgbus_router_certificate_pem(ctx));
-    // node_endpoint.add_connection(std::move(node_connection));
+    node_endpoint.add_connection(std::move(node_connection));
     {
         msgbus::router_node node{node_endpoint};
 

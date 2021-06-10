@@ -321,6 +321,7 @@ private:
 
 auto main(main_ctx& ctx) -> int {
     signal_switch interrupted;
+    enable_message_bus(ctx);
     ctx.preinitialize();
 
     valid_if_positive<std::intmax_t> ping_count{};

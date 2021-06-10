@@ -44,6 +44,12 @@ private:
     msgbus::connection_setup _setup;
 };
 
+static inline void enable_message_bus(main_ctx& ctx) {
+    if(auto setters{ctx.setters()}) {
+        extract(setters).inject(std::make_shared<message_bus>(ctx));
+    }
+}
+
 } // namespace eagine
 
 #endif // EAGINE_MESSAGE_BUS_HPP

@@ -7,6 +7,7 @@
 
 #include <eagine/main_ctx.hpp>
 #include <eagine/main_fwd.hpp>
+#include <eagine/message_bus.hpp>
 #include <eagine/message_bus/conn_setup.hpp>
 #include <eagine/message_bus/router_address.hpp>
 #include <eagine/message_bus/service.hpp>
@@ -71,6 +72,7 @@ private:
 
 auto main(main_ctx& ctx) -> int {
     signal_switch interrupted;
+    enable_message_bus(ctx);
     ctx.preinitialize();
 
     msgbus::router_address address{ctx};
