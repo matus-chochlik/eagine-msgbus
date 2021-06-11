@@ -5,6 +5,7 @@ import "qrc:///views"
 ChartView {
     id: helperContributionView
     property var model: null
+	property real axisYMax: model ? model.maxSolvedCount : 1
 
     theme: backend.theme.light
         ? ChartView.ChartThemeLight
@@ -21,9 +22,7 @@ ChartView {
 
         axisY: ValueAxis {
             min: 0
-            max: helperContributionView.model
-                ? helperContributionView.model.maxSolvedCount
-                : 1
+            max: axisYMax
         }
 
         BarSet {
@@ -33,4 +32,12 @@ ChartView {
                 : []
         }
     }
+
+	Behavior on axisYMax {
+		NumberAnimation {
+			duration: 1000
+			easing.type: Easing.InOutBack
+			easing.overshoot: 0
+		}
+	}
 }

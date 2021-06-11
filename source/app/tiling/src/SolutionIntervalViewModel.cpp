@@ -22,7 +22,10 @@ void SolutionIntervalViewModel::helperContributed(eagine::identifier_t) {
     const auto now = std::chrono::steady_clock::now();
     _intervals.assign(now - _previousSolutionTime);
     _previousSolutionTime = now;
-    _maxInterval = std::max(_maxInterval, _intervals.value());
+    _maxInterval = std::chrono::duration<float>{1.F};
+    for(const auto& interval : _intervals) {
+        _maxInterval = std::max(_maxInterval, interval);
+    }
     emit dataChanged();
 }
 //------------------------------------------------------------------------------

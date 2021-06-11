@@ -5,6 +5,7 @@ import "qrc:///views"
 ChartView {
     id: solutionIntervalView
     property var model: null
+	property real axisYMax: model ? model.maxInterval : 1
 
     theme: backend.theme.light
         ? ChartView.ChartThemeLight
@@ -21,9 +22,7 @@ ChartView {
         axisY: ValueAxis {
 			titleText: qsTr("duration (seconds)")
             min: 0
-            max: solutionIntervalView.model
-                ? solutionIntervalView.model.maxInterval
-                : 1
+            max: axisYMax
         }
 
         BarSet {
@@ -33,4 +32,12 @@ ChartView {
                 : []
         }
     }
+
+	Behavior on axisYMax {
+		NumberAnimation {
+			duration: 2000
+			easing.type: Easing.InOutBack
+			easing.overshoot: 0
+		}
+	}
 }
