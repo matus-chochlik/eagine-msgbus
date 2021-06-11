@@ -18,6 +18,7 @@
 #include <eagine/message_bus/service/shutdown.hpp>
 #include <eagine/message_bus/service/system_info.hpp>
 #include <eagine/signal_switch.hpp>
+#include <eagine/ssl_resources.hpp>
 #include <eagine/watchdog.hpp>
 #include <cstdint>
 
@@ -128,8 +129,8 @@ auto main(main_ctx& ctx) -> int {
     auto node_connection{local_acceptor->make_connection()};
 
     msgbus::router router(ctx);
-    // TODO
-    // router.add_ca_certificate_pem(ca_certificate_pem(ctx));
+    router.add_ca_certificate_pem(ca_certificate_pem(ctx));
+    // TODO(cert)
     // router.add_certificate_pem(msgbus_router_certificate_pem(ctx));
     ctx.bus().setup_acceptors(router);
     router.add_acceptor(std::move(local_acceptor));
@@ -140,7 +141,7 @@ auto main(main_ctx& ctx) -> int {
     int max_idle_streak{0};
 
     msgbus::endpoint node_endpoint{EAGINE_ID(RutrNodeEp), ctx};
-    // TODO
+    // TODO(cert)
     // node_endpoint.add_certificate_pem(msgbus_router_certificate_pem(ctx));
     node_endpoint.add_connection(std::move(node_connection));
     {

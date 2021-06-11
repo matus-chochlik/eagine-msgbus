@@ -98,11 +98,9 @@ system_include_dirs = scan_for_system_include_dirs()
 project_include_dirs = [
     os.path.join(binaryDir(), "include"),
     'include',
-    'submodules/include',
     'submodules/asio/asio/include',
-    'submodules/rapidjson/include',
-    'submodules/rapidyaml/include',
-    'source/utils'
+    'submodules/eagine-core/include',
+    'submodules/eagine-ssl/include'
 ]
 #------------------------------------------------------------------------------#
 def FlagsForFile(filename, ** kwargs):

@@ -12,6 +12,7 @@
 #include <eagine/message_bus/service/topology.hpp>
 #include <eagine/message_bus/service_requirements.hpp>
 #include <eagine/signal_switch.hpp>
+#include <eagine/ssl_resources.hpp>
 #include <iostream>
 #include <set>
 #include <thread>
@@ -131,8 +132,8 @@ auto main(main_ctx& ctx) -> int {
     signal_switch interrupted;
 
     msgbus::endpoint bus{EAGINE_ID(TopologyEx), ctx};
-    // TODO
-    // bus.add_ca_certificate_pem(ca_certificate_pem(ctx));
+    bus.add_ca_certificate_pem(ca_certificate_pem(ctx));
+    // TODO(cert)
     // bus.add_certificate_pem(msgbus_endpoint_certificate_pem(ctx));
 
     msgbus::topology_printer topo_prn{bus};

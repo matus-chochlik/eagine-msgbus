@@ -11,6 +11,7 @@
 #include <eagine/message_bus/service/discovery.hpp>
 #include <eagine/message_bus/service/shutdown.hpp>
 #include <eagine/message_bus/service_requirements.hpp>
+#include <eagine/ssl_resources.hpp>
 #include <eagine/timeout.hpp>
 #include <set>
 #include <thread>
@@ -75,8 +76,8 @@ private:
 auto main(main_ctx& ctx) -> int {
 
     msgbus::endpoint bus{EAGINE_ID(ShutdownEx), ctx};
-    // TODO
-    // bus.add_ca_certificate_pem(ca_certificate_pem(ctx));
+    bus.add_ca_certificate_pem(ca_certificate_pem(ctx));
+    // TODO(cert)
     // bus.add_certificate_pem(msgbus_endpoint_certificate_pem(ctx));
 
     msgbus::shutdown_trigger trgr{bus};

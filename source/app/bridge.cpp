@@ -17,6 +17,7 @@
 #include <eagine/message_bus/service/ping_pong.hpp>
 #include <eagine/message_bus/service/shutdown.hpp>
 #include <eagine/signal_switch.hpp>
+#include <eagine/ssl_resources.hpp>
 #include <eagine/watchdog.hpp>
 
 namespace eagine {
@@ -120,8 +121,8 @@ auto main(main_ctx& ctx) -> int {
     ctx.system().preinitialize();
 
     msgbus::bridge bridge(ctx);
-    // TODO
-    // bridge.add_ca_certificate_pem(ca_certificate_pem(ctx));
+    bridge.add_ca_certificate_pem(ca_certificate_pem(ctx));
+    // TODO(cert)
     // bridge.add_certificate_pem(msgbus_bridge_certificate_pem(ctx));
     ctx.bus().setup_connectors(bridge);
 
@@ -131,8 +132,7 @@ auto main(main_ctx& ctx) -> int {
     int max_idle_streak{0};
 
     msgbus::endpoint node_endpoint{EAGINE_ID(BrdgNodeEp), ctx};
-    // TODO
-    // node_endpoint.add_ca_certificate_pem(ca_certificate_pem(ctx));
+    node_endpoint.add_ca_certificate_pem(ca_certificate_pem(ctx));
     ctx.bus().setup_connectors(node_endpoint);
     {
         msgbus::bridge_node node{node_endpoint};
