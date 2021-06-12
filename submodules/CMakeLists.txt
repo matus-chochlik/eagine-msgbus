@@ -11,20 +11,26 @@ if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/asio/asio")
 endif()
 
 if(NOT TARGET EAGine::Core)
-	if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/eagine-core/CMakeLists.txt")
-		execute_process(
-			COMMAND git submodule update --init
-			WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/eagine-core"
-		)
+	if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/eagine-core/CMakeLists.txt")
+		set(SUBMODULE_INIT_ARG --init)
+	else()
+		unset(SUBMODULE_INIT_ARG)
 	endif()
+	execute_process(
+		COMMAND git submodule update ${SUBMODULE_INIT_ARG}
+		WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/eagine-core"
+	)
 	add_subdirectory(eagine-core EXCLUDE_FROM_ALL)
 endif()
 if(NOT TARGET EAGine::SSL)
-	if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/eagine-ssl/CMakeLists.txt")
-		execute_process(
-			COMMAND git submodule update --init
-			WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/eagine-ssl"
-		)
+	if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/eagine-ssl/CMakeLists.txt")
+		set(SUBMODULE_INIT_ARG --init)
+	else()
+		unset(SUBMODULE_INIT_ARG)
 	endif()
+	execute_process(
+		COMMAND git submodule update ${SUBMODULE_INIT_ARG}
+		WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/eagine-ssl"
+	)
 	add_subdirectory(eagine-ssl EXCLUDE_FROM_ALL)
 endif()

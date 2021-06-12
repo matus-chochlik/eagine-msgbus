@@ -3,8 +3,7 @@
 # See accompanying file LICENSE_1_0.txt or copy at
 #  http://www.boost.org/LICENSE_1_0.txt
 #
-file(GLOB_RECURSE HEADERS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.hpp)
-file(GLOB_RECURSE LIB_INLS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.inl)
+include(./Sources.cmake)
 # - regular headers ------------------------------------------------------------
 add_library(eagine-msgbus-headers INTERFACE)
 
