@@ -16,8 +16,9 @@
 #include <eagine/main_ctx_object.hpp>
 #include <eagine/memory/buffer.hpp>
 #include <eagine/message_id.hpp>
-#include <eagine/ssl.hpp>
-#include <eagine/ssl_api.hpp>
+#include <eagine/ssl/openssl.hpp>
+//
+#include <eagine/ssl/api.hpp>
 #include <array>
 #include <map>
 #include <random>

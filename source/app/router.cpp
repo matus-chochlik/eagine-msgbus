@@ -12,13 +12,14 @@
 #include <eagine/message_bus.hpp>
 #include <eagine/message_bus/direct.hpp>
 #include <eagine/message_bus/endpoint.hpp>
+#include <eagine/message_bus/resources.hpp>
 #include <eagine/message_bus/router.hpp>
 #include <eagine/message_bus/service/common_info.hpp>
 #include <eagine/message_bus/service/ping_pong.hpp>
 #include <eagine/message_bus/service/shutdown.hpp>
 #include <eagine/message_bus/service/system_info.hpp>
 #include <eagine/signal_switch.hpp>
-#include <eagine/ssl_resources.hpp>
+#include <eagine/ssl/resources.hpp>
 #include <eagine/watchdog.hpp>
 #include <cstdint>
 
@@ -130,8 +131,7 @@ auto main(main_ctx& ctx) -> int {
 
     msgbus::router router(ctx);
     router.add_ca_certificate_pem(ca_certificate_pem(ctx));
-    // TODO(cert)
-    // router.add_certificate_pem(msgbus_router_certificate_pem(ctx));
+    router.add_certificate_pem(msgbus::router_certificate_pem(ctx));
     ctx.bus().setup_acceptors(router);
     router.add_acceptor(std::move(local_acceptor));
 
@@ -141,8 +141,7 @@ auto main(main_ctx& ctx) -> int {
     int max_idle_streak{0};
 
     msgbus::endpoint node_endpoint{EAGINE_ID(RutrNodeEp), ctx};
-    // TODO(cert)
-    // node_endpoint.add_certificate_pem(msgbus_router_certificate_pem(ctx));
+    node_endpoint.add_certificate_pem(msgbus::endpoint_certificate_pem(ctx));
     node_endpoint.add_connection(std::move(node_connection));
     {
         msgbus::router_node node{node_endpoint};

@@ -11,6 +11,7 @@ target_link_libraries(EAGine::MsgBus INTERFACE eagine-msgbus)
 
 set(
 	EAGINE_MSGBUS_EXPORT_TARGETS
+	eagine-msgbus-generated-headers
 	eagine-msgbus-private-headers
 	eagine-msgbus-headers
 	eagine-msgbus

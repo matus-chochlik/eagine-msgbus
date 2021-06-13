@@ -26,6 +26,8 @@ router_certificate_pem(memory::const_block embedded_blk, main_ctx& ctx)
       embedded_blk, ctx.scratch_space(), ctx.config(), ctx.log());
 }
 //------------------------------------------------------------------------------
+auto router_certificate_pem(main_ctx& ctx) -> memory::const_block;
+//------------------------------------------------------------------------------
 auto bridge_certificate_pem(
   memory::const_block embedded_blk,
   memory::buffer&,
@@ -39,6 +41,8 @@ bridge_certificate_pem(memory::const_block embedded_blk, main_ctx& ctx)
       embedded_blk, ctx.scratch_space(), ctx.config(), ctx.log());
 }
 //------------------------------------------------------------------------------
+auto bridge_certificate_pem(main_ctx& ctx) -> memory::const_block;
+//------------------------------------------------------------------------------
 auto endpoint_certificate_pem(
   memory::const_block embedded_blk,
   memory::buffer&,
@@ -51,6 +55,8 @@ endpoint_certificate_pem(memory::const_block embedded_blk, main_ctx& ctx)
     return endpoint_certificate_pem(
       embedded_blk, ctx.scratch_space(), ctx.config(), ctx.log());
 }
+//------------------------------------------------------------------------------
+auto endpoint_certificate_pem(main_ctx& ctx) -> memory::const_block;
 //------------------------------------------------------------------------------
 } // namespace eagine::msgbus
 

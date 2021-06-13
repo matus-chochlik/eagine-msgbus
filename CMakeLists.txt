@@ -15,6 +15,7 @@ list(APPEND CMAKE_MODULE_PATH ${EAGINE_CORE_ROOT}/config)
 add_subdirectory(submodules)
 
 include(EAGineCoreCommon)
+include(EAGineMsgBusResources)
 
 add_subdirectory(include)
 add_subdirectory(source)

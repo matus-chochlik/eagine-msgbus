@@ -13,11 +13,12 @@
 #include <eagine/maybe_unused.hpp>
 #include <eagine/message_bus.hpp>
 #include <eagine/message_bus/bridge.hpp>
+#include <eagine/message_bus/resources.hpp>
 #include <eagine/message_bus/service/common_info.hpp>
 #include <eagine/message_bus/service/ping_pong.hpp>
 #include <eagine/message_bus/service/shutdown.hpp>
 #include <eagine/signal_switch.hpp>
-#include <eagine/ssl_resources.hpp>
+#include <eagine/ssl/resources.hpp>
 #include <eagine/watchdog.hpp>
 
 namespace eagine {
@@ -122,8 +123,7 @@ auto main(main_ctx& ctx) -> int {
 
     msgbus::bridge bridge(ctx);
     bridge.add_ca_certificate_pem(ca_certificate_pem(ctx));
-    // TODO(cert)
-    // bridge.add_certificate_pem(msgbus_bridge_certificate_pem(ctx));
+    bridge.add_certificate_pem(msgbus::bridge_certificate_pem(ctx));
     ctx.bus().setup_connectors(bridge);
 
     std::uintmax_t cycles_work{0};

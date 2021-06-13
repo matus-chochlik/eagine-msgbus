@@ -54,4 +54,5 @@ auto endpoint_certificate_pem(
 }
 //------------------------------------------------------------------------------
 } // namespace eagine::msgbus
+#include <eagine/message_bus/resources.gen.inl>
 

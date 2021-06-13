@@ -5,15 +5,16 @@
 
 add_library(
 	eagine-msgbus
-	message_bus_context.cpp
-	message_bus_message.cpp
-	message_bus_setup.cpp
-	message_bus_blobs.cpp
-	message_bus_endpoint.cpp
-	message_bus_remote_node.cpp
-	message_bus_registry.cpp
-	message_bus_router.cpp
-	message_bus_bridge.cpp
+	resources.cpp
+	context.cpp
+	message.cpp
+	setup.cpp
+	blobs.cpp
+	endpoint.cpp
+	remote_node.cpp
+	registry.cpp
+	router.cpp
+	bridge.cpp
 )
 eagine_add_lib_analysis(eagine-msgbus)
 
@@ -34,5 +35,6 @@ target_link_libraries(
 		EAGine::Core
 		EAGine::SSL
 	PRIVATE
+		eagine-msgbus-generated-headers
 		eagine-msgbus-private-headers
 )
