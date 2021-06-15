@@ -9,7 +9,7 @@
 #ifndef EAGINE_MSGBUS_ROUTER_ADDRESS_HPP
 #define EAGINE_MSGBUS_ROUTER_ADDRESS_HPP
 
-#include <eagine/application_config.hpp>
+#include <eagine/app_config.hpp>
 #include <eagine/main_ctx_object.hpp>
 #include <vector>
 

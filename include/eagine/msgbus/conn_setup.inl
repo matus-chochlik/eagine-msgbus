@@ -7,7 +7,7 @@
 ///
 #include <eagine/config/platform.hpp>
 
-#include <eagine/application_config.hpp>
+#include <eagine/app_config.hpp>
 #include <eagine/msgbus/asio.hpp>
 #include <eagine/msgbus/direct.hpp>
 #if EAGINE_POSIX

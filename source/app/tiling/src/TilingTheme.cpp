@@ -5,7 +5,7 @@
 ///
 
 #include "TilingTheme.hpp"
-#include <eagine/application_config.hpp>
+#include <eagine/app_config.hpp>
 //------------------------------------------------------------------------------
 TilingTheme::TilingTheme(eagine::main_ctx_parent parent)
   : QObject{nullptr}

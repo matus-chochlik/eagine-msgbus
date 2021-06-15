@@ -14,7 +14,7 @@
 #include "context_fwd.hpp"
 #include "serialize.hpp"
 #include "signal.hpp"
-#include <eagine/application_config.hpp>
+#include <eagine/app_config.hpp>
 #include <eagine/flat_map.hpp>
 #include <eagine/main_ctx_object.hpp>
 #include <eagine/timeout.hpp>

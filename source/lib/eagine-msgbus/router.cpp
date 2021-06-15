@@ -8,7 +8,7 @@
 
 // clang-format off
 #include "prologue.inl"
-#include <eagine/application_config.hpp>
+#include <eagine/app_config.hpp>
 #include <eagine/main_ctx.hpp>
 #include <eagine/system_info.hpp>
 #include <eagine/msgbus/serialize.hpp>
