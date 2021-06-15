@@ -8,12 +8,12 @@
 #include <eagine/main_ctx.hpp>
 #include <eagine/main_fwd.hpp>
 #include <eagine/message_bus.hpp>
-#include <eagine/message_bus/conn_setup.hpp>
-#include <eagine/message_bus/router_address.hpp>
-#include <eagine/message_bus/service.hpp>
-#include <eagine/message_bus/service/common_info.hpp>
-#include <eagine/message_bus/service/resource_transfer.hpp>
-#include <eagine/message_bus/service/shutdown.hpp>
+#include <eagine/msgbus/conn_setup.hpp>
+#include <eagine/msgbus/router_address.hpp>
+#include <eagine/msgbus/service.hpp>
+#include <eagine/msgbus/service/common_info.hpp>
+#include <eagine/msgbus/service/resource_transfer.hpp>
+#include <eagine/msgbus/service/shutdown.hpp>
 #include <eagine/signal_switch.hpp>
 #include <eagine/timeout.hpp>
 #include <eagine/watchdog.hpp>
@@ -84,7 +84,7 @@ auto main(main_ctx& ctx) -> int {
     conn_setup.setup_connectors(the_file_server, address);
 
     if(const auto fs_root_path{
-         ctx.config().get<std::string>("msg_bus.file_server.root_path")}) {
+         ctx.config().get<std::string>("msgbus.file_server.root_path")}) {
         the_file_server.set_file_root(extract(fs_root_path));
     }
     auto& wd = ctx.watchdog();

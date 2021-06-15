@@ -1,4 +1,4 @@
-/// @example eagine/message_bus/005_byte_histogram.cpp
+/// @example eagine/msgbus/005_byte_histogram.cpp
 ///
 /// Copyright Matus Chochlik.
 /// Distributed under the Boost Software License, Version 1.0.
@@ -11,7 +11,7 @@
 #include <eagine/math/functions.hpp>
 #include <eagine/memory/span_algo.hpp>
 #include <eagine/message_bus.hpp>
-#include <eagine/message_bus/endpoint.hpp>
+#include <eagine/msgbus/endpoint.hpp>
 #include <eagine/timeout.hpp>
 #include <array>
 #include <thread>

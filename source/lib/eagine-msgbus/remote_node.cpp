@@ -10,8 +10,8 @@
 #include "prologue.inl"
 #include <eagine/build_info.hpp>
 #include <eagine/compiler_info.hpp>
-#include <eagine/message_bus/serialize.hpp>
+#include <eagine/msgbus/serialize.hpp>
 #include "implement.inl"
-#include <eagine/message_bus/remote_node.hpp>
+#include <eagine/msgbus/remote_node.hpp>
 #include "epilogue.inl"
 // clang-format on

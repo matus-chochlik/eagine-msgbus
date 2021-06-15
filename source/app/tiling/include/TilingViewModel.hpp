@@ -4,8 +4,8 @@
 /// See http://www.gnu.org/licenses/gpl-3.0.txt
 ///
 
-#ifndef EAGINE_MESSAGE_BUS_TILING_TILING_VIEW_MODEL
-#define EAGINE_MESSAGE_BUS_TILING_TILING_VIEW_MODEL
+#ifndef EAGINE_MSGBUS_TILING_TILING_VIEW_MODEL
+#define EAGINE_MSGBUS_TILING_TILING_VIEW_MODEL
 
 #include <eagine/main_ctx_object.hpp>
 #include <QAbstractTableModel>

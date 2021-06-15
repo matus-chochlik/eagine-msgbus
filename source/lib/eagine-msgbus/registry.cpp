@@ -10,14 +10,14 @@
 #include "prologue.inl"
 #include <eagine/application_config.hpp>
 #include <eagine/main_ctx.hpp>
-#include <eagine/message_bus/blobs.hpp>
-#include <eagine/message_bus/serialize.hpp>
-#include <eagine/message_bus/context.hpp>
-#include <eagine/message_bus/endpoint.hpp>
-#include <eagine/message_bus/conn_setup.hpp>
-#include <eagine/message_bus/router.hpp>
+#include <eagine/msgbus/blobs.hpp>
+#include <eagine/msgbus/serialize.hpp>
+#include <eagine/msgbus/context.hpp>
+#include <eagine/msgbus/endpoint.hpp>
+#include <eagine/msgbus/conn_setup.hpp>
+#include <eagine/msgbus/router.hpp>
 #include <eagine/logging/entry.hpp>
 #include "implement.inl"
-#include <eagine/message_bus/registry.hpp>
+#include <eagine/msgbus/registry.hpp>
 #include "epilogue.inl"
 // clang-format on

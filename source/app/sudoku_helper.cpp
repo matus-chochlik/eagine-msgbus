@@ -8,13 +8,13 @@
 #include <eagine/main_ctx.hpp>
 #include <eagine/main_fwd.hpp>
 #include <eagine/message_bus.hpp>
-#include <eagine/message_bus/endpoint.hpp>
-#include <eagine/message_bus/registry.hpp>
-#include <eagine/message_bus/service.hpp>
-#include <eagine/message_bus/service/common_info.hpp>
-#include <eagine/message_bus/service/ping_pong.hpp>
-#include <eagine/message_bus/service/shutdown.hpp>
-#include <eagine/message_bus/service/sudoku.hpp>
+#include <eagine/msgbus/endpoint.hpp>
+#include <eagine/msgbus/registry.hpp>
+#include <eagine/msgbus/service.hpp>
+#include <eagine/msgbus/service/common_info.hpp>
+#include <eagine/msgbus/service/ping_pong.hpp>
+#include <eagine/msgbus/service/shutdown.hpp>
+#include <eagine/msgbus/service/sudoku.hpp>
 #include <eagine/signal_switch.hpp>
 #include <eagine/watchdog.hpp>
 #include <condition_variable>
@@ -76,13 +76,13 @@ auto main(main_ctx& ctx) -> int {
 
     auto shutdown_when_idle = false;
     ctx.config().fetch(
-      "msg_bus.sudoku.helper.shutdown_when_idle", shutdown_when_idle);
+      "msgbus.sudoku.helper.shutdown_when_idle", shutdown_when_idle);
 
     auto max_idle_time = std::chrono::seconds(30);
-    ctx.config().fetch("msg_bus.sudoku.helper.max_idle_time", max_idle_time);
+    ctx.config().fetch("msgbus.sudoku.helper.max_idle_time", max_idle_time);
 
     auto helper_count = extract_or(
-      ctx.config().get<span_size_t>("msg_bus.sudoku.helper.count"),
+      ctx.config().get<span_size_t>("msgbus.sudoku.helper.count"),
       extract_or(ctx.system().cpu_concurrent_threads(), 4));
 
     std::mutex helper_mutex;

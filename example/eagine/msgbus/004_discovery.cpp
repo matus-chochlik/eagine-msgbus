@@ -1,4 +1,4 @@
-/// @example eagine/message_bus/004_discovery.cpp
+/// @example eagine/msgbus/004_discovery.cpp
 ///
 /// Copyright Matus Chochlik.
 /// Distributed under the Boost Software License, Version 1.0.
@@ -7,11 +7,11 @@
 ///
 #include <eagine/main.hpp>
 #include <eagine/message_bus.hpp>
-#include <eagine/message_bus/resources.hpp>
-#include <eagine/message_bus/service.hpp>
-#include <eagine/message_bus/service/discovery.hpp>
-#include <eagine/message_bus/service/shutdown.hpp>
-#include <eagine/message_bus/service_requirements.hpp>
+#include <eagine/msgbus/resources.hpp>
+#include <eagine/msgbus/service.hpp>
+#include <eagine/msgbus/service/discovery.hpp>
+#include <eagine/msgbus/service/shutdown.hpp>
+#include <eagine/msgbus/service_requirements.hpp>
 #include <eagine/signal_switch.hpp>
 #include <eagine/ssl/resources.hpp>
 #include <thread>

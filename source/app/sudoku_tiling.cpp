@@ -8,11 +8,11 @@
 #include <eagine/main_ctx.hpp>
 #include <eagine/main_fwd.hpp>
 #include <eagine/message_bus.hpp>
-#include <eagine/message_bus/endpoint.hpp>
-#include <eagine/message_bus/service.hpp>
-#include <eagine/message_bus/service/common_info.hpp>
-#include <eagine/message_bus/service/ping_pong.hpp>
-#include <eagine/message_bus/service/sudoku.hpp>
+#include <eagine/msgbus/endpoint.hpp>
+#include <eagine/msgbus/service.hpp>
+#include <eagine/msgbus/service/common_info.hpp>
+#include <eagine/msgbus/service/ping_pong.hpp>
+#include <eagine/msgbus/service/sudoku.hpp>
 #include <eagine/signal_switch.hpp>
 #include <iostream>
 #include <thread>
@@ -60,11 +60,11 @@ private:
         }
     }
 
-    bool _block_cells{cfg_init("msg_bus.sudoku.solver.block_cells", false)};
+    bool _block_cells{cfg_init("msgbus.sudoku.solver.block_cells", false)};
     bool _print_progress{
-      cfg_init("msg_bus.sudoku.solver.print_progress", false)};
+      cfg_init("msgbus.sudoku.solver.print_progress", false)};
     bool _print_incomplete{
-      cfg_init("msg_bus.sudoku.solver.print_incomplete", false)};
+      cfg_init("msgbus.sudoku.solver.print_incomplete", false)};
 };
 //------------------------------------------------------------------------------
 } // namespace msgbus
@@ -77,12 +77,12 @@ auto main(main_ctx& ctx) -> int {
     msgbus::sudoku_tiling_node tiling_generator(ctx);
 
     const auto width =
-      extract_or(ctx.config().get<int>("msg_bus.sudoku.solver.width"), 32);
+      extract_or(ctx.config().get<int>("msgbus.sudoku.solver.width"), 32);
     const auto height =
-      extract_or(ctx.config().get<int>("msg_bus.sudoku.solver.height"), 32);
+      extract_or(ctx.config().get<int>("msgbus.sudoku.solver.height"), 32);
 
     const auto rank =
-      extract_or(ctx.config().get<int>("msg_bus.sudoku.solver.rank"), 4);
+      extract_or(ctx.config().get<int>("msgbus.sudoku.solver.rank"), 4);
 
     auto enqueue = [&](auto traits) {
         tiling_generator.reinitialize(

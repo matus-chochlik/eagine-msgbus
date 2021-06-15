@@ -4,15 +4,15 @@
 /// See http://www.gnu.org/licenses/gpl-3.0.txt
 //
 
-#ifndef EAGINE_MESSAGE_BUS_MONITOR_TRACKER_MODEL
-#define EAGINE_MESSAGE_BUS_MONITOR_TRACKER_MODEL
+#ifndef EAGINE_MSGBUS_MONITOR_TRACKER_MODEL
+#define EAGINE_MSGBUS_MONITOR_TRACKER_MODEL
 
 #include "HostParameterModel.hpp"
 #include "NodeParameterModel.hpp"
 #include <eagine/main_ctx_object.hpp>
-#include <eagine/message_bus/service.hpp>
-#include <eagine/message_bus/service/shutdown.hpp>
-#include <eagine/message_bus/service/tracker.hpp>
+#include <eagine/msgbus/service.hpp>
+#include <eagine/msgbus/service/shutdown.hpp>
+#include <eagine/msgbus/service/tracker.hpp>
 #include <QObject>
 #include <map>
 

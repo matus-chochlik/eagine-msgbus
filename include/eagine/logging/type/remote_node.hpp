@@ -9,7 +9,7 @@
 #ifndef EAGINE_LOGGING_TYPE_REMOTE_NODE_HPP
 #define EAGINE_LOGGING_TYPE_REMOTE_NODE_HPP
 
-#include "../../message_bus/remote_node.hpp"
+#include "../../msgbus/remote_node.hpp"
 #include <eagine/logging/type/build_info.hpp>
 #include <eagine/logging/type/yes_no_maybe.hpp>
 

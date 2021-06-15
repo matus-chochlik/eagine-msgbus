@@ -1,4 +1,4 @@
-/// @example eagine/message_bus/006_ping.cpp
+/// @example eagine/msgbus/006_ping.cpp
 ///
 /// Copyright Matus Chochlik.
 /// Distributed under the Boost Software License, Version 1.0.
@@ -7,9 +7,9 @@
 ///
 #include <eagine/interop/valgrind.hpp>
 #include <eagine/main.hpp>
-#include <eagine/message_bus/actor.hpp>
-#include <eagine/message_bus/conn_setup.hpp>
-#include <eagine/message_bus/router_address.hpp>
+#include <eagine/msgbus/actor.hpp>
+#include <eagine/msgbus/conn_setup.hpp>
+#include <eagine/msgbus/router_address.hpp>
 #include <eagine/timeout.hpp>
 #include <eagine/valid_if/positive.hpp>
 #include <thread>

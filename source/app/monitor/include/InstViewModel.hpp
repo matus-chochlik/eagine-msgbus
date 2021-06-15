@@ -5,11 +5,11 @@
 /// See http://www.gnu.org/licenses/gpl-3.0.txt
 ///
 
-#ifndef EAGINE_MESSAGE_BUS_MONITOR_INST_VIEW_MODEL
-#define EAGINE_MESSAGE_BUS_MONITOR_INST_VIEW_MODEL
+#ifndef EAGINE_MSGBUS_MONITOR_INST_VIEW_MODEL
+#define EAGINE_MSGBUS_MONITOR_INST_VIEW_MODEL
 
 #include <eagine/main_ctx_object.hpp>
-#include <eagine/message_bus/remote_node.hpp>
+#include <eagine/msgbus/remote_node.hpp>
 #include <QObject>
 #include <QVariant>
 

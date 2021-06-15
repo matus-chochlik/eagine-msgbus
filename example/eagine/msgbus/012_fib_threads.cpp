@@ -1,4 +1,4 @@
-/// @example eagine/message_bus/012_fib_threads.cpp
+/// @example eagine/msgbus/012_fib_threads.cpp
 ///
 /// Copyright Matus Chochlik.
 /// Distributed under the Boost Software License, Version 1.0.
@@ -8,11 +8,11 @@
 #include <eagine/interop/valgrind.hpp>
 #include <eagine/main.hpp>
 #include <eagine/memory/span_algo.hpp>
-#include <eagine/message_bus/acceptor.hpp>
-#include <eagine/message_bus/actor.hpp>
-#include <eagine/message_bus/direct.hpp>
-#include <eagine/message_bus/endpoint.hpp>
-#include <eagine/message_bus/router.hpp>
+#include <eagine/msgbus/acceptor.hpp>
+#include <eagine/msgbus/actor.hpp>
+#include <eagine/msgbus/direct.hpp>
+#include <eagine/msgbus/endpoint.hpp>
+#include <eagine/msgbus/router.hpp>
 #include <eagine/serialize/block_sink.hpp>
 #include <eagine/serialize/block_source.hpp>
 #include <eagine/serialize/fast_backend.hpp>

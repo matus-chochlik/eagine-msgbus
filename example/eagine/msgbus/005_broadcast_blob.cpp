@@ -1,4 +1,4 @@
-/// @example eagine/message_bus/005_broadcast_blob.cpp
+/// @example eagine/msgbus/005_broadcast_blob.cpp
 ///
 /// Copyright Matus Chochlik.
 /// Distributed under the Boost Software License, Version 1.0.
@@ -8,7 +8,7 @@
 #include <eagine/file_contents.hpp>
 #include <eagine/main.hpp>
 #include <eagine/message_bus.hpp>
-#include <eagine/message_bus/endpoint.hpp>
+#include <eagine/msgbus/endpoint.hpp>
 #include <eagine/timeout.hpp>
 #include <chrono>
 #include <thread>

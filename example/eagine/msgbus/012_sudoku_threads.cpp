@@ -1,4 +1,4 @@
-/// @example eagine/message_bus/012_sudoku_threads.cpp
+/// @example eagine/msgbus/012_sudoku_threads.cpp
 ///
 /// Copyright Matus Chochlik.
 /// Distributed under the Boost Software License, Version 1.0.
@@ -6,12 +6,12 @@
 ///  http://www.boost.org/LICENSE_1_0.txt
 ///
 #include <eagine/main.hpp>
-#include <eagine/message_bus/acceptor.hpp>
-#include <eagine/message_bus/direct.hpp>
-#include <eagine/message_bus/endpoint.hpp>
-#include <eagine/message_bus/router.hpp>
-#include <eagine/message_bus/service.hpp>
-#include <eagine/message_bus/service/sudoku.hpp>
+#include <eagine/msgbus/acceptor.hpp>
+#include <eagine/msgbus/direct.hpp>
+#include <eagine/msgbus/endpoint.hpp>
+#include <eagine/msgbus/router.hpp>
+#include <eagine/msgbus/service.hpp>
+#include <eagine/msgbus/service/sudoku.hpp>
 #include <eagine/system_info.hpp>
 #include <atomic>
 #include <iostream>

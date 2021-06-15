@@ -1,4 +1,4 @@
-/// @example eagine/message_bus/001_loopback.cpp
+/// @example eagine/msgbus/001_loopback.cpp
 ///
 /// Copyright Matus Chochlik.
 /// Distributed under the Boost Software License, Version 1.0.
@@ -7,9 +7,9 @@
 ///
 #include <eagine/main.hpp>
 #include <eagine/memory/span_algo.hpp>
-#include <eagine/message_bus/endpoint.hpp>
-#include <eagine/message_bus/loopback.hpp>
-#include <eagine/message_bus/subscriber.hpp>
+#include <eagine/msgbus/endpoint.hpp>
+#include <eagine/msgbus/loopback.hpp>
+#include <eagine/msgbus/subscriber.hpp>
 #include <iostream>
 
 namespace eagine {

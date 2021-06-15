@@ -9,9 +9,9 @@
 // clang-format off
 #include "prologue.inl"
 #include <eagine/compression.hpp>
-#include <eagine/message_bus/context.hpp>
+#include <eagine/msgbus/context.hpp>
 #include <eagine/logging/entry.hpp>
 #include "implement.inl"
-#include <eagine/message_bus/message.hpp>
+#include <eagine/msgbus/message.hpp>
 #include "epilogue.inl"
 // clang-format on

@@ -4,8 +4,8 @@
 /// See http://www.gnu.org/licenses/gpl-3.0.txt
 ///
 
-#ifndef EAGINE_MESSAGE_BUS_TILING_BACKEND
-#define EAGINE_MESSAGE_BUS_TILING_BACKEND
+#ifndef EAGINE_MSGBUS_TILING_BACKEND
+#define EAGINE_MSGBUS_TILING_BACKEND
 
 #include "HelperContributionViewModel.hpp"
 #include "SolutionIntervalViewModel.hpp"

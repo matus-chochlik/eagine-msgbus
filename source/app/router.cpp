@@ -10,14 +10,14 @@
 #include <eagine/main_fwd.hpp>
 #include <eagine/math/functions.hpp>
 #include <eagine/message_bus.hpp>
-#include <eagine/message_bus/direct.hpp>
-#include <eagine/message_bus/endpoint.hpp>
-#include <eagine/message_bus/resources.hpp>
-#include <eagine/message_bus/router.hpp>
-#include <eagine/message_bus/service/common_info.hpp>
-#include <eagine/message_bus/service/ping_pong.hpp>
-#include <eagine/message_bus/service/shutdown.hpp>
-#include <eagine/message_bus/service/system_info.hpp>
+#include <eagine/msgbus/direct.hpp>
+#include <eagine/msgbus/endpoint.hpp>
+#include <eagine/msgbus/resources.hpp>
+#include <eagine/msgbus/router.hpp>
+#include <eagine/msgbus/service/common_info.hpp>
+#include <eagine/msgbus/service/ping_pong.hpp>
+#include <eagine/msgbus/service/shutdown.hpp>
+#include <eagine/msgbus/service/system_info.hpp>
 #include <eagine/signal_switch.hpp>
 #include <eagine/ssl/resources.hpp>
 #include <eagine/watchdog.hpp>
@@ -72,13 +72,13 @@ public:
 
 private:
     timeout _shutdown_timeout{
-      cfg_init("msg_bus.router.shutdown.delay", std::chrono::seconds(60))};
+      cfg_init("msgbus.router.shutdown.delay", std::chrono::seconds(60))};
     const std::chrono::milliseconds _shutdown_max_age{cfg_init(
-      "msg_bus.router.shutdown.max_age",
+      "msgbus.router.shutdown.max_age",
       std::chrono::milliseconds(2500))};
-    const bool _shutdown_ignore{cfg_init("msg_bus.router.keep_running", false)};
+    const bool _shutdown_ignore{cfg_init("msgbus.router.keep_running", false)};
     const bool _shutdown_verify{
-      cfg_init("msg_bus.router.shutdown.verify", true)};
+      cfg_init("msgbus.router.shutdown.verify", true)};
     bool _do_shutdown{false};
 
     auto _shutdown_verified(verification_bits v) const noexcept -> bool {

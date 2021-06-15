@@ -4,8 +4,8 @@
 /// See http://www.gnu.org/licenses/gpl-3.0.txt
 ///
 
-#ifndef EAGINE_MESSAGE_BUS_TILING_THEME
-#define EAGINE_MESSAGE_BUS_TILING_THEME
+#ifndef EAGINE_MSGBUS_TILING_THEME
+#define EAGINE_MSGBUS_TILING_THEME
 
 #include <eagine/main_ctx_object.hpp>
 #include <QObject>

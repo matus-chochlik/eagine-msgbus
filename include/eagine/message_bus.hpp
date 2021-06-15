@@ -9,8 +9,8 @@
 #ifndef EAGINE_MESSAGE_BUS_HPP
 #define EAGINE_MESSAGE_BUS_HPP
 
-#include "message_bus/conn_setup.hpp"
-#include "message_bus/router_address.hpp"
+#include "msgbus/conn_setup.hpp"
+#include "msgbus/router_address.hpp"
 #include <eagine/main_ctx_object.hpp>
 
 namespace eagine {

@@ -13,6 +13,6 @@
 #include <eagine/type_name.hpp>
 #include <eagine/from_string.hpp>
 #include "implement.inl"
-#include <eagine/message_bus/context.hpp>
+#include <eagine/msgbus/context.hpp>
 #include "epilogue.inl"
 // clang-format on

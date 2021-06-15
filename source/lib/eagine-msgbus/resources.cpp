@@ -17,6 +17,6 @@
 #include <eagine/user_info.hpp>
 #include "implement.inl"
 
-#include <eagine/message_bus/resources.hpp>
+#include <eagine/msgbus/resources.hpp>
 
 #include "epilogue.inl"

@@ -1,4 +1,4 @@
-/// @example eagine/message_bus/001_signal.cpp
+/// @example eagine/msgbus/001_signal.cpp
 ///
 /// Copyright Matus Chochlik.
 /// Distributed under the Boost Software License, Version 1.0.
@@ -6,7 +6,7 @@
 ///  http://www.boost.org/LICENSE_1_0.txt
 ///
 
-#include <eagine/message_bus/signal.hpp>
+#include <eagine/msgbus/signal.hpp>
 #include <iostream>
 
 auto main() -> int {

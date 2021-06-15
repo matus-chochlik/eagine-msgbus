@@ -5,12 +5,12 @@
 ///  http://www.boost.org/LICENSE_1_0.txt
 ///
 
-#ifndef EAGINE_MESSAGE_BUS_MONITOR_NODE_VIEW_MODEL
-#define EAGINE_MESSAGE_BUS_MONITOR_NODE_VIEW_MODEL
+#ifndef EAGINE_MSGBUS_MONITOR_NODE_VIEW_MODEL
+#define EAGINE_MSGBUS_MONITOR_NODE_VIEW_MODEL
 
 #include "NodeParameterViewModel.hpp"
 #include <eagine/main_ctx_object.hpp>
-#include <eagine/message_bus/remote_node.hpp>
+#include <eagine/msgbus/remote_node.hpp>
 #include <QObject>
 #include <QVariant>
 

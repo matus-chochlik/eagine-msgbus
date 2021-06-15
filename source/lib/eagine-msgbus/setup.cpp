@@ -10,10 +10,10 @@
 #include "prologue.inl"
 #include <eagine/application_config.hpp>
 #include <eagine/random_identifier.hpp>
-#include <eagine/message_bus/message.hpp>
-#include <eagine/message_bus/serialize.hpp>
+#include <eagine/msgbus/message.hpp>
+#include <eagine/msgbus/serialize.hpp>
 #include <eagine/logging/entry.hpp>
 #include "implement.inl"
-#include <eagine/message_bus/conn_setup.hpp>
+#include <eagine/msgbus/conn_setup.hpp>
 #include "epilogue.inl"
 // clang-format on

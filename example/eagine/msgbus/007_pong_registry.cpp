@@ -1,4 +1,4 @@
-/// @example eagine/message_bus/008_pong_registry.cpp
+/// @example eagine/msgbus/008_pong_registry.cpp
 ///
 /// Copyright Matus Chochlik.
 /// Distributed under the Boost Software License, Version 1.0.
@@ -7,14 +7,14 @@
 ///
 #include <eagine/main_ctx.hpp>
 #include <eagine/main_fwd.hpp>
-#include <eagine/message_bus/registry.hpp>
-#include <eagine/message_bus/service.hpp>
-#include <eagine/message_bus/service/build_info.hpp>
-#include <eagine/message_bus/service/host_info.hpp>
-#include <eagine/message_bus/service/ping_pong.hpp>
-#include <eagine/message_bus/service/shutdown.hpp>
-#include <eagine/message_bus/service/system_info.hpp>
-#include <eagine/message_bus/service_requirements.hpp>
+#include <eagine/msgbus/registry.hpp>
+#include <eagine/msgbus/service.hpp>
+#include <eagine/msgbus/service/build_info.hpp>
+#include <eagine/msgbus/service/host_info.hpp>
+#include <eagine/msgbus/service/ping_pong.hpp>
+#include <eagine/msgbus/service/shutdown.hpp>
+#include <eagine/msgbus/service/system_info.hpp>
+#include <eagine/msgbus/service_requirements.hpp>
 #include <eagine/timeout.hpp>
 #include <algorithm>
 #include <chrono>

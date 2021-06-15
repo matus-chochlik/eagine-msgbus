@@ -4,12 +4,12 @@
 #  http://www.boost.org/LICENSE_1_0.txt
 #
 configure_file(
-	eagine/message_bus/resources.gen.in
-	eagine/message_bus/resources.gen.inl
+	eagine/msgbus/resources.gen.in
+	eagine/msgbus/resources.gen.inl
 	@ONLY
 )
 include(./Sources.cmake)
-set(GEN_INLS eagine/message_bus/resources.gen.inl)
+set(GEN_INLS eagine/msgbus/resources.gen.inl)
 # - regular headers ------------------------------------------------------------
 add_library(eagine-msgbus-headers INTERFACE)
 

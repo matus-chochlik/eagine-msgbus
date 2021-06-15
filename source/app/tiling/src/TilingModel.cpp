@@ -28,8 +28,8 @@ TilingModel::TilingModel(TilingBackend& backend)
       EAGINE_THIS_MEM_FUNC_REF(onFragmentAdded));
 
     reinitialize(
-      extract_or(app_config().get<int>("msg_bus.sudoku.solver.width"), 64),
-      extract_or(app_config().get<int>("msg_bus.sudoku.solver.height"), 64));
+      extract_or(app_config().get<int>("msgbus.sudoku.solver.width"), 64),
+      extract_or(app_config().get<int>("msgbus.sudoku.solver.height"), 64));
 }
 //------------------------------------------------------------------------------
 void TilingModel::update() {

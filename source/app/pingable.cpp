@@ -8,10 +8,10 @@
 #include <eagine/main_ctx.hpp>
 #include <eagine/main_fwd.hpp>
 #include <eagine/message_bus.hpp>
-#include <eagine/message_bus/service.hpp>
-#include <eagine/message_bus/service/common_info.hpp>
-#include <eagine/message_bus/service/ping_pong.hpp>
-#include <eagine/message_bus/service/shutdown.hpp>
+#include <eagine/msgbus/service.hpp>
+#include <eagine/msgbus/service/common_info.hpp>
+#include <eagine/msgbus/service/ping_pong.hpp>
+#include <eagine/msgbus/service/shutdown.hpp>
 #include <eagine/timeout.hpp>
 #include <algorithm>
 #include <chrono>

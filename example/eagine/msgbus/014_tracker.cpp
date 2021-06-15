@@ -1,4 +1,4 @@
-/// @example eagine/message_bus/014_tracker.cpp
+/// @example eagine/msgbus/014_tracker.cpp
 ///
 /// Copyright Matus Chochlik.
 /// Distributed under the Boost Software License, Version 1.0.
@@ -10,12 +10,12 @@
 #include <eagine/main_ctx.hpp>
 #include <eagine/main_fwd.hpp>
 #include <eagine/math/functions.hpp>
-#include <eagine/message_bus/conn_setup.hpp>
-#include <eagine/message_bus/router_address.hpp>
-#include <eagine/message_bus/service.hpp>
-#include <eagine/message_bus/service/shutdown.hpp>
-#include <eagine/message_bus/service/tracker.hpp>
-#include <eagine/message_bus/service_requirements.hpp>
+#include <eagine/msgbus/conn_setup.hpp>
+#include <eagine/msgbus/router_address.hpp>
+#include <eagine/msgbus/service.hpp>
+#include <eagine/msgbus/service/shutdown.hpp>
+#include <eagine/msgbus/service/tracker.hpp>
+#include <eagine/msgbus/service_requirements.hpp>
 #include <eagine/timeout.hpp>
 
 namespace eagine {

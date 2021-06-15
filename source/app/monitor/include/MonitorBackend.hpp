@@ -4,8 +4,8 @@
 /// See http://www.gnu.org/licenses/gpl-3.0.txt
 ///
 
-#ifndef EAGINE_MESSAGE_BUS_MONITOR_BACKEND
-#define EAGINE_MESSAGE_BUS_MONITOR_BACKEND
+#ifndef EAGINE_MSGBUS_MONITOR_BACKEND
+#define EAGINE_MSGBUS_MONITOR_BACKEND
 
 #include "MonitorTheme.hpp"
 #include "MonitorViewModel.hpp"

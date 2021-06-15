@@ -1,4 +1,4 @@
-/// @example eagine/message_bus/006_file_histogram.cpp
+/// @example eagine/msgbus/006_file_histogram.cpp
 ///
 /// Copyright Matus Chochlik.
 /// Distributed under the Boost Software License, Version 1.0.
@@ -10,8 +10,8 @@
 #include <eagine/main_fwd.hpp>
 #include <eagine/memory/span_algo.hpp>
 #include <eagine/message_bus.hpp>
-#include <eagine/message_bus/service.hpp>
-#include <eagine/message_bus/service/resource_transfer.hpp>
+#include <eagine/msgbus/service.hpp>
+#include <eagine/msgbus/service/resource_transfer.hpp>
 #include <eagine/timeout.hpp>
 #include <chrono>
 #include <thread>

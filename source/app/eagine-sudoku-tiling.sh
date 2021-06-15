@@ -40,7 +40,7 @@ do
 done
 #
 log_args=("--min-log-severity" "stat")
-conn_args=("--msg-bus-asio-local-stream")
+conn_args=("--msgbus-asio-local-stream")
 #
 termpids=()
 pids=()
@@ -48,15 +48,15 @@ pids=()
 "$(dirname ${0})/eagine-msgbus-router" \
 	"${log_args[@]}" \
 	"${conn_args[@]}" \
-	--msg-bus-router-shutdown-verify false \
-	--msg-bus-router-shutdown-when-idle true \
-	--msg-bus-router-shutdown-delay 10s \
+	--msgbus-router-shutdown-verify false \
+	--msgbus-router-shutdown-when-idle true \
+	--msgbus-router-shutdown-delay 10s \
 	& termpids+=($!)
 sleep 1
 "$(dirname ${0})/eagine-msgbus-sudoku_helper" \
 	"${log_args[@]}" \
 	"${conn_args[@]}" \
-	--msg-bus-router-id-count 250 \
+	--msgbus-router-id-count 250 \
 	& termpids+=($!)
 sleep 1
 div=$((rank * (rank - 2)))
@@ -65,21 +65,21 @@ then
 	"$(dirname ${0})/eagine-msgbus-tiling" \
 		"${log_args[@]}" \
 		"${conn_args[@]}" \
-		--msg-bus-sudoku-solver-rank ${rank} \
-		--msg-bus-sudoku-solver-width  $(((width / div) * div)) \
-		--msg-bus-sudoku-solver-height $(((height/ div) * div)) \
-		--msg-bus-sudoku-solver-gui-tile-size $((tile_size)) \
+		--msgbus-sudoku-solver-rank ${rank} \
+		--msgbus-sudoku-solver-width  $(((width / div) * div)) \
+		--msgbus-sudoku-solver-height $(((height/ div) * div)) \
+		--msgbus-sudoku-solver-gui-tile-size $((tile_size)) \
 		& pids+=($!)
 else
 	"$(dirname ${0})/eagine-msgbus-sudoku_tiling" \
 		"${log_args[@]}" \
 		"${conn_args[@]}" \
-		--msg-bus-sudoku-solver-block-cells false \
-		--msg-bus-sudoku-solver-print-incomplete false \
-		--msg-bus-sudoku-solver-print-progress true \
-		--msg-bus-sudoku-solver-rank ${rank} \
-		--msg-bus-sudoku-solver-width  $(((width / div) * div)) \
-		--msg-bus-sudoku-solver-height $(((height/ div) * div)) \
+		--msgbus-sudoku-solver-block-cells false \
+		--msgbus-sudoku-solver-print-incomplete false \
+		--msgbus-sudoku-solver-print-progress true \
+		--msgbus-sudoku-solver-rank ${rank} \
+		--msgbus-sudoku-solver-width  $(((width / div) * div)) \
+		--msgbus-sudoku-solver-height $(((height/ div) * div)) \
 		& pids+=($!)
 fi
 sleep 1
@@ -88,7 +88,7 @@ do
 	"$(dirname ${0})/eagine-msgbus-bridge" \
 		"${log_args[@]}" \
 		"${conn_args[@]}" \
-		--msg-bus-bridge-shutdown-delay 15s \
+		--msgbus-bridge-shutdown-delay 15s \
 		--ssh "${ssh_host}" \
 	&  termpids+=($!)
 done

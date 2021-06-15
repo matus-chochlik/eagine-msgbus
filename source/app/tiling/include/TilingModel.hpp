@@ -4,14 +4,14 @@
 /// See http://www.gnu.org/licenses/gpl-3.0.txt
 ///
 
-#ifndef EAGINE_MESSAGE_BUS_TILING_MODEL
-#define EAGINE_MESSAGE_BUS_TILING_MODEL
+#ifndef EAGINE_MSGBUS_TILING_MODEL
+#define EAGINE_MSGBUS_TILING_MODEL
 
 #include <eagine/main_ctx_object.hpp>
-#include <eagine/message_bus/service.hpp>
-#include <eagine/message_bus/service/common_info.hpp>
-#include <eagine/message_bus/service/ping_pong.hpp>
-#include <eagine/message_bus/service/sudoku.hpp>
+#include <eagine/msgbus/service.hpp>
+#include <eagine/msgbus/service/common_info.hpp>
+#include <eagine/msgbus/service/ping_pong.hpp>
+#include <eagine/msgbus/service/sudoku.hpp>
 #include <QObject>
 
 class TilingBackend;
