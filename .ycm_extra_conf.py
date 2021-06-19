@@ -98,9 +98,8 @@ system_include_dirs = scan_for_system_include_dirs()
 project_include_dirs = [
     os.path.join(binaryDir(), "include"),
     'include',
-    'submodules/asio/asio/include',
-    'submodules/eagine-core/include',
-    'submodules/eagine-ssl/include'
+    'submodules/eagine-ssl/include',
+    'submodules/eagine-core/include'
 ]
 #------------------------------------------------------------------------------#
 def FlagsForFile(filename, ** kwargs):
@@ -117,11 +116,6 @@ def FlagsForFile(filename, ** kwargs):
             final_opts += ['-I', apath]
 
     path, ext = os.path.splitext(filename)
-
-    if ext in [".hpp", ".inl", ".cpp", ".h"]:
-        final_opts += ['-include', 'include/oglplus/gl.hpp']
-        final_opts += ['-include', 'include/oalplus/al.hpp']
-        final_opts += ['-include', 'include/eglplus/egl.hpp']
 
     return {
         'flags': makeOptionPathsAbsolute(final_opts),

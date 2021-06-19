@@ -8,7 +8,22 @@ Cloning the repo
 ================
 ::
 
- git clone --recursive https://github.com/matus-chochlik/eagine-ssl.git
+ git clone https://github.com/matus-chochlik/eagine-ssl.git
+
+Building the code
+=================
+
+The project uses `cmake`-based build system so you can use the following
+to build and install the code:
+
+::
+
+  mkdir -p /path/to/build/dir
+  cd /path/to/build/dir
+  cmake -DCMAKE_BUILD_TYPE=Release \
+        -DCMAKE_INSTALL_PREFIX=/path/to/install/dir \
+        /path/to/eagine-msgbus/
+  cmake --build . --target install --parallel 16
 
 License
 =======
