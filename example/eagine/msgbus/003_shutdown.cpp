@@ -12,7 +12,7 @@
 #include <eagine/msgbus/service/discovery.hpp>
 #include <eagine/msgbus/service/shutdown.hpp>
 #include <eagine/msgbus/service_requirements.hpp>
-#include <eagine/ssl/resources.hpp>
+#include <eagine/sslplus/resources.hpp>
 #include <eagine/timeout.hpp>
 #include <set>
 #include <thread>

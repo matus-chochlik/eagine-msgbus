@@ -16,9 +16,9 @@
 #include <eagine/main_ctx_object.hpp>
 #include <eagine/memory/buffer.hpp>
 #include <eagine/message_id.hpp>
-#include <eagine/ssl/openssl.hpp>
+#include <eagine/sslplus/openssl.hpp>
 //
-#include <eagine/ssl/api.hpp>
+#include <eagine/sslplus/api.hpp>
 #include <array>
 #include <map>
 #include <random>
@@ -28,8 +28,8 @@ namespace eagine::msgbus {
 struct context_remote_node {
     std::array<byte, 256> nonce{};
     memory::buffer cert_pem;
-    sslp::owned_x509 cert{};
-    sslp::owned_pkey pubkey{};
+    sslplus::owned_x509 cert{};
+    sslplus::owned_pkey pubkey{};
     bool verified_key{false};
 };
 //------------------------------------------------------------------------------
@@ -54,7 +54,7 @@ public:
     ~context() noexcept;
 
     /// @brief Returns a reference to the SSL API wrapper.
-    auto ssl() noexcept -> sslp::ssl_api& {
+    auto ssl() noexcept -> sslplus::ssl_api& {
         return _ssl;
     }
 
@@ -62,7 +62,7 @@ public:
     auto next_sequence_no(message_id) noexcept -> message_sequence_t;
 
     /// @brief Verifies the specified x509 certificate.
-    auto verify_certificate(sslp::x509 cert) -> bool;
+    auto verify_certificate(sslplus::x509 cert) -> bool;
 
     /// @brief Sets this bus node certificate encoded in PEM format.
     /// @see get_own_certificate_pem
@@ -140,13 +140,13 @@ public:
       -> decltype(ssl().message_digest_sha256());
 
     auto message_digest_sign_init(
-      sslp::message_digest mdc,
-      sslp::message_digest_type mdt) noexcept
+      sslplus::message_digest mdc,
+      sslplus::message_digest_type mdt) noexcept
       -> decltype(ssl().message_digest_sign_init.fake());
 
     auto message_digest_verify_init(
-      sslp::message_digest mdc,
-      sslp::message_digest_type mdt,
+      sslplus::message_digest mdc,
+      sslplus::message_digest_type mdt,
       identifier_t node_id) noexcept
       -> decltype(ssl().message_digest_verify_init.fake());
 
@@ -171,12 +171,12 @@ private:
     memory::buffer _own_cert_pem{};
     memory::buffer _ca_cert_pem{};
     //
-    sslp::ssl_api _ssl{};
-    sslp::owned_engine _ssl_engine{};
-    sslp::owned_x509_store _ssl_store{};
-    sslp::owned_x509 _own_cert{};
-    sslp::owned_x509 _ca_cert{};
-    sslp::owned_pkey _own_pkey{};
+    sslplus::ssl_api _ssl{};
+    sslplus::owned_engine _ssl_engine{};
+    sslplus::owned_x509_store _ssl_store{};
+    sslplus::owned_x509 _own_cert{};
+    sslplus::owned_x509 _ca_cert{};
+    sslplus::owned_pkey _own_pkey{};
     //
     std::map<identifier_t, context_remote_node> _remotes{};
 };

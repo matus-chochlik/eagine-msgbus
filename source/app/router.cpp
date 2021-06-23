@@ -19,7 +19,7 @@
 #include <eagine/msgbus/service/shutdown.hpp>
 #include <eagine/msgbus/service/system_info.hpp>
 #include <eagine/signal_switch.hpp>
-#include <eagine/ssl/resources.hpp>
+#include <eagine/sslplus/resources.hpp>
 #include <eagine/watchdog.hpp>
 #include <cstdint>
 

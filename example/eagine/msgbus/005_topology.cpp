@@ -13,7 +13,7 @@
 #include <eagine/msgbus/service/topology.hpp>
 #include <eagine/msgbus/service_requirements.hpp>
 #include <eagine/signal_switch.hpp>
-#include <eagine/ssl/resources.hpp>
+#include <eagine/sslplus/resources.hpp>
 #include <iostream>
 #include <set>
 #include <thread>

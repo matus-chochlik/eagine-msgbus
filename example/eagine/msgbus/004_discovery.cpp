@@ -13,7 +13,7 @@
 #include <eagine/msgbus/service/shutdown.hpp>
 #include <eagine/msgbus/service_requirements.hpp>
 #include <eagine/signal_switch.hpp>
-#include <eagine/ssl/resources.hpp>
+#include <eagine/sslplus/resources.hpp>
 #include <thread>
 
 namespace eagine {
