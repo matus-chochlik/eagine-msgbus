@@ -87,6 +87,7 @@ using manipulator_node = service_node<resource_manipulator<>>;
 } // namespace msgbus
 
 auto main(main_ctx& ctx) -> int {
+    enable_message_bus(ctx);
 
     timeout idle_too_long{std::chrono::seconds{30}};
     std::vector<std::shared_ptr<msgbus::example_blob_io>> blobs;

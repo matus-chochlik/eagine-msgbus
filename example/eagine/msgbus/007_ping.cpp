@@ -291,6 +291,7 @@ private:
 } // namespace msgbus
 
 auto main(main_ctx& ctx) -> int {
+    enable_message_bus(ctx);
     ctx.preinitialize();
 
     msgbus::endpoint bus{EAGINE_ID(PingEndpt), ctx};

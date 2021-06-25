@@ -91,7 +91,7 @@ private:
 } // namespace msgbus
 
 auto main(main_ctx& ctx) -> int {
-
+    enable_message_bus(ctx);
     ctx.preinitialize();
 
     msgbus::endpoint bus{main_ctx_object{EAGINE_ID(PongEndpt), ctx}};
