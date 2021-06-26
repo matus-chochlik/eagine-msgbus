@@ -10,6 +10,7 @@
 #define EAGINE_MSGBUS_CONTEXT_HPP
 
 #include "context_fwd.hpp"
+#include "node_kind.hpp"
 #include "types.hpp"
 #include "verification.hpp"
 #include <eagine/flat_map.hpp>
@@ -61,8 +62,12 @@ public:
     /// @brief Returns the next sequence number value for the specified message type.
     auto next_sequence_no(message_id) noexcept -> message_sequence_t;
 
-    /// @brief Verifies the specified x509 certificate.
+    /// @brief Verifies the specified x509 certificate against CA certificate.
     auto verify_certificate(sslplus::x509 cert) -> bool;
+
+    /// @brief Checks if x509 certificate has the specified node kind DN entry.
+    auto verify_certificate_node_kind(sslplus::x509 cert, node_kind kind)
+      -> bool;
 
     /// @brief Sets this bus node certificate encoded in PEM format.
     /// @see get_own_certificate_pem

@@ -133,6 +133,16 @@ auto context::verify_certificate(sslplus::x509 cert) -> bool {
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
+auto context::verify_certificate_node_kind(sslplus::x509 cert, node_kind kind)
+  -> bool {
+    return _ssl.certificate_subject_name_has_entry_value(
+      cert,
+      "eagiMsgBusNodeKind",
+      "1.3.6.1.4.1.55765.3.2",
+      enumerator_name(kind));
+}
+//------------------------------------------------------------------------------
+EAGINE_LIB_FUNC
 auto context::add_own_certificate_pem(memory::const_block blk) -> bool {
     if(blk) {
         if(ok cert{_ssl.parse_x509(blk, {})}) {
