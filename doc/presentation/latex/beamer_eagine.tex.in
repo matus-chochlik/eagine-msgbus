@@ -23,8 +23,8 @@
 \usepackage{ragged2e}
 
 \graphicspath{
-    {$<TARGET_PROPERTY:latex-doc,SOURCE_DIR>/../}
-    {$<TARGET_PROPERTY:latex-doc,SOURCE_DIR>/}
+    {$<TARGET_PROPERTY:eagine-msgbus-latex-doc,SOURCE_DIR>/../}
+    {$<TARGET_PROPERTY:eagine-msgbus-latex-doc,SOURCE_DIR>/}
 }
 
 \newcommand{\fitfig}[1]{
