@@ -57,9 +57,184 @@ auto endpoint::_do_send(message_id msg_id, message_view message) -> bool {
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
+auto endpoint::_handle_assign_id(const message_view& message) noexcept
+  -> message_handling_result {
+    if(!has_id()) {
+        _endpoint_id = message.target_id;
+        id_assigned(_endpoint_id);
+        log_debug("assigned endpoint id ${id} by router")
+          .arg(EAGINE_ID(id), get_id());
+    }
+    return was_handled;
+}
+//------------------------------------------------------------------------------
+EAGINE_LIB_FUNC
+auto endpoint::_handle_confirm_id(const message_view& message) noexcept
+  -> message_handling_result {
+    if(!has_id()) {
+        _endpoint_id = message.target_id;
+        if(EAGINE_LIKELY(get_id() == get_preconfigured_id())) {
+            id_assigned(_endpoint_id);
+            log_debug("confirmed endpoint id ${id} by router")
+              .arg(EAGINE_ID(id), get_id());
+            // send request for router certificate
+            post(EAGINE_MSGBUS_ID(rtrCertQry), {});
+        } else {
+            log_error("mismatching preconfigured and confirmed ids")
+              .arg(EAGINE_ID(confirmed), get_id())
+              .arg(EAGINE_ID(preconfed), get_preconfigured_id());
+        }
+    }
+    return was_handled;
+}
+//------------------------------------------------------------------------------
+EAGINE_LIB_FUNC
+auto endpoint::_handle_blob_fragment(const message_view& message) noexcept
+  -> message_handling_result {
+    if(_blobs.process_incoming(message)) {
+        _blobs.fetch_all(_store_handler);
+    }
+    return was_handled;
+}
+//------------------------------------------------------------------------------
+EAGINE_LIB_FUNC
+auto endpoint::_handle_blob_resend(const message_view& message) noexcept
+  -> message_handling_result {
+    _blobs.process_resend(message);
+    return was_handled;
+}
+//------------------------------------------------------------------------------
+EAGINE_LIB_FUNC
+auto endpoint::_handle_flow_info(const message_view& message) noexcept
+  -> message_handling_result {
+    default_deserialize(_flow_info, message.content());
+    log_debug("changes in message flow information")
+      .arg(EAGINE_ID(avgMsgAge), flow_average_message_age());
+    return was_handled;
+}
+//------------------------------------------------------------------------------
+EAGINE_LIB_FUNC
+auto endpoint::_handle_certificate_query(const message_view& message) noexcept
+  -> message_handling_result {
+    post_certificate(message.source_id, message.sequence_no);
+    return was_handled;
+}
+//------------------------------------------------------------------------------
+EAGINE_LIB_FUNC
+auto endpoint::_handle_endpoint_certificate(const message_view& message) noexcept
+  -> message_handling_result {
+    log_trace("received remote endpoint certificate")
+      .arg(EAGINE_ID(source), message.source_id)
+      .arg(EAGINE_ID(pem), message.content());
+
+    if(_context->add_remote_certificate_pem(
+         message.source_id, message.content())) {
+        log_debug("verified and stored remote endpoint certificate")
+          .arg(EAGINE_ID(endpoint), _endpoint_id)
+          .arg(EAGINE_ID(source), message.source_id);
+
+        if(auto nonce{_context->get_remote_nonce(message.source_id)}) {
+            post_blob(
+              EAGINE_MSGBUS_ID(eptSigNnce),
+              message.source_id,
+              message.sequence_no,
+              nonce,
+              std::chrono::seconds(30),
+              message_priority::normal);
+            log_debug("sending nonce sign request")
+              .arg(EAGINE_ID(endpoint), _endpoint_id)
+              .arg(EAGINE_ID(target), message.source_id);
+        }
+    }
+    return was_handled;
+}
+//------------------------------------------------------------------------------
+EAGINE_LIB_FUNC
+auto endpoint::_handle_router_certificate(const message_view& message) noexcept
+  -> message_handling_result {
+    log_trace("received router certificate")
+      .arg(EAGINE_ID(pem), message.content());
+
+    if(_context->add_router_certificate_pem(message.content())) {
+        log_debug("verified and stored router certificate");
+    }
+    return was_handled;
+}
+//------------------------------------------------------------------------------
+EAGINE_LIB_FUNC
+auto endpoint::_handle_sign_nonce_request(const message_view& message) noexcept
+  -> message_handling_result {
+    if(auto signature{_context->get_own_signature(message.content())}) {
+        post_blob(
+          EAGINE_MSGBUS_ID(eptNnceSig),
+          message.source_id,
+          message.sequence_no,
+          signature,
+          std::chrono::seconds(30),
+          message_priority::normal);
+        log_debug("sending nonce signature")
+          .arg(EAGINE_ID(endpoint), _endpoint_id)
+          .arg(EAGINE_ID(target), message.source_id);
+    }
+    return was_handled;
+}
+//------------------------------------------------------------------------------
+EAGINE_LIB_FUNC
+auto endpoint::_handle_signed_nonce(const message_view& message) noexcept
+  -> message_handling_result {
+    if(_context->verify_remote_signature(
+         message.content(), message.source_id)) {
+        log_debug("verified nonce signature")
+          .arg(EAGINE_ID(endpoint), _endpoint_id)
+          .arg(EAGINE_ID(source), message.source_id);
+    }
+    return was_handled;
+}
+//------------------------------------------------------------------------------
+EAGINE_LIB_FUNC
+auto endpoint::_handle_topology_query(const message_view& message) noexcept
+  -> message_handling_result {
+    endpoint_topology_info info{};
+    info.endpoint_id = _endpoint_id;
+    info.instance_id = _instance_id;
+    auto temp{default_serialize_buffer_for(info)};
+    if(auto serialized{default_serialize(info, cover(temp))}) {
+        message_view response{extract(serialized)};
+        response.setup_response(message);
+        if(post(EAGINE_MSGBUS_ID(topoEndpt), response)) {
+            return was_handled;
+        }
+    }
+    log_warning("failed to respond to topology query from ${source}")
+      .arg(EAGINE_ID(bufSize), temp.size())
+      .arg(EAGINE_ID(source), message.source_id);
+    return was_not_handled;
+}
+//------------------------------------------------------------------------------
+EAGINE_LIB_FUNC
+auto endpoint::_handle_stats_query(const message_view& message) noexcept
+  -> message_handling_result {
+    _stats.sent_messages = _stats.sent_messages;
+    _stats.uptime_seconds = _uptime_seconds();
+
+    auto temp{default_serialize_buffer_for(_stats)};
+    if(auto serialized{default_serialize(_stats, cover(temp))}) {
+        message_view response{extract(serialized)};
+        response.setup_response(message);
+        if(post(EAGINE_MSGBUS_ID(statsEndpt), response)) {
+            return was_handled;
+        }
+    }
+    log_warning("failed to respond to statistics query from ${source}")
+      .arg(EAGINE_ID(bufSize), temp.size())
+      .arg(EAGINE_ID(source), message.source_id);
+    return was_not_handled;
+}
+//------------------------------------------------------------------------------
+EAGINE_LIB_FUNC
 auto endpoint::_handle_special(
   message_id msg_id,
-  const message_view& message) noexcept -> bool {
+  const message_view& message) noexcept -> message_handling_result {
 
     EAGINE_ASSERT(_context);
     if(EAGINE_UNLIKELY(is_special_message(msg_id))) {
@@ -73,39 +248,15 @@ auto endpoint::_handle_special(
             ++_stats.dropped_messages;
             log_warning("received own special message ${message}")
               .arg(EAGINE_ID(message), msg_id);
-            return true;
+            return was_handled;
         } else if(msg_id.has_method(EAGINE_ID(blobFrgmnt))) {
-            if(_blobs.process_incoming(message)) {
-                _blobs.fetch_all(_store_handler);
-            }
-            return true;
+            return _handle_blob_fragment(message);
         } else if(msg_id.has_method(EAGINE_ID(blobResend))) {
-            _blobs.process_resend(message);
-            return true;
+            return _handle_blob_resend(message);
         } else if(msg_id.has_method(EAGINE_ID(assignId))) {
-            if(!has_id()) {
-                _endpoint_id = message.target_id;
-                id_assigned(_endpoint_id);
-                log_debug("assigned endpoint id ${id} by router")
-                  .arg(EAGINE_ID(id), get_id());
-            }
-            return true;
+            return _handle_assign_id(message);
         } else if(msg_id.has_method(EAGINE_ID(confirmId))) {
-            if(!has_id()) {
-                _endpoint_id = message.target_id;
-                if(EAGINE_LIKELY(get_id() == get_preconfigured_id())) {
-                    id_assigned(_endpoint_id);
-                    log_debug("confirmed endpoint id ${id} by router")
-                      .arg(EAGINE_ID(id), get_id());
-                    // send request for router certificate
-                    post(EAGINE_MSGBUS_ID(rtrCertQry), {});
-                } else {
-                    log_error("mismatching preconfigured and confirmed ids")
-                      .arg(EAGINE_ID(confirmed), get_id())
-                      .arg(EAGINE_ID(preconfed), get_preconfigured_id());
-                }
-            }
-            return true;
+            return _handle_confirm_id(message);
         } else if(
           msg_id.has_method(EAGINE_ID(ping)) ||
           msg_id.has_method(EAGINE_ID(pong)) ||
@@ -114,70 +265,19 @@ auto endpoint::_handle_special(
           msg_id.has_method(EAGINE_ID(notSubTo)) ||
           msg_id.has_method(EAGINE_ID(qrySubscrp)) ||
           msg_id.has_method(EAGINE_ID(qrySubscrb))) {
-            return false;
+            return should_be_stored;
         } else if(msg_id.has_method(EAGINE_ID(msgFlowInf))) {
-            default_deserialize(_flow_info, message.content());
-            log_debug("changes in message flow information")
-              .arg(EAGINE_ID(avgMsgAge), flow_average_message_age());
-            return true;
+            return _handle_flow_info(message);
         } else if(msg_id.has_method(EAGINE_ID(eptCertQry))) {
-            post_certificate(message.source_id, message.sequence_no);
-            return true;
+            return _handle_certificate_query(message);
         } else if(msg_id.has_method(EAGINE_ID(eptCertPem))) {
-            log_trace("received remote endpoint certificate")
-              .arg(EAGINE_ID(source), message.source_id)
-              .arg(EAGINE_ID(pem), message.content());
-
-            if(_context->add_remote_certificate_pem(
-                 message.source_id, message.content())) {
-                log_debug("verified and stored remote endpoint certificate")
-                  .arg(EAGINE_ID(endpoint), _endpoint_id)
-                  .arg(EAGINE_ID(source), message.source_id);
-
-                if(auto nonce{_context->get_remote_nonce(message.source_id)}) {
-                    post_blob(
-                      EAGINE_MSGBUS_ID(eptSigNnce),
-                      message.source_id,
-                      message.sequence_no,
-                      nonce,
-                      std::chrono::seconds(30),
-                      message_priority::normal);
-                    log_debug("sending nonce sign request")
-                      .arg(EAGINE_ID(endpoint), _endpoint_id)
-                      .arg(EAGINE_ID(target), message.source_id);
-                }
-            }
-            return true;
+            return _handle_endpoint_certificate(message);
         } else if(msg_id.has_method(EAGINE_ID(eptSigNnce))) {
-            if(auto signature{_context->get_own_signature(message.content())}) {
-                post_blob(
-                  EAGINE_MSGBUS_ID(eptNnceSig),
-                  message.source_id,
-                  message.sequence_no,
-                  signature,
-                  std::chrono::seconds(30),
-                  message_priority::normal);
-                log_debug("sending nonce signature")
-                  .arg(EAGINE_ID(endpoint), _endpoint_id)
-                  .arg(EAGINE_ID(target), message.source_id);
-            }
-            return true;
+            return _handle_sign_nonce_request(message);
         } else if(msg_id.has_method(EAGINE_ID(eptNnceSig))) {
-            if(_context->verify_remote_signature(
-                 message.content(), message.source_id)) {
-                log_debug("verified nonce signature")
-                  .arg(EAGINE_ID(endpoint), _endpoint_id)
-                  .arg(EAGINE_ID(source), message.source_id);
-            }
-            return true;
+            return _handle_signed_nonce(message);
         } else if(msg_id.has_method(EAGINE_ID(rtrCertPem))) {
-            log_trace("received router certificate")
-              .arg(EAGINE_ID(pem), message.content());
-
-            if(_context->add_router_certificate_pem(message.content())) {
-                log_debug("verified and stored router certificate");
-            }
-            return true;
+            return _handle_router_certificate(message);
         } else if(
           msg_id.has_method(EAGINE_ID(byeByeEndp)) ||
           msg_id.has_method(EAGINE_ID(byeByeRutr)) ||
@@ -186,44 +286,18 @@ auto endpoint::_handle_special(
           msg_id.has_method(EAGINE_ID(topoRutrCn)) ||
           msg_id.has_method(EAGINE_ID(topoBrdgCn)) ||
           msg_id.has_method(EAGINE_ID(topoEndpt))) {
-            return false;
+            return should_be_stored;
         } else if(msg_id.has_method(EAGINE_ID(topoQuery))) {
-            endpoint_topology_info info{};
-            info.endpoint_id = _endpoint_id;
-            info.instance_id = _instance_id;
-            auto temp{default_serialize_buffer_for(info)};
-            if(auto serialized{default_serialize(info, cover(temp))}) {
-                message_view response{extract(serialized)};
-                response.setup_response(message);
-                if(post(EAGINE_MSGBUS_ID(topoEndpt), response)) {
-                    return true;
-                }
-            }
-            log_warning("failed to respond to topology query from ${source}")
-              .arg(EAGINE_ID(bufSize), temp.size())
-              .arg(EAGINE_ID(source), message.source_id);
+            return _handle_topology_query(message);
         } else if(msg_id.has_method(EAGINE_ID(statsQuery))) {
-            _stats.sent_messages = _stats.sent_messages;
-            _stats.uptime_seconds = _uptime_seconds();
-
-            auto temp{default_serialize_buffer_for(_stats)};
-            if(auto serialized{default_serialize(_stats, cover(temp))}) {
-                message_view response{extract(serialized)};
-                response.setup_response(message);
-                if(post(EAGINE_MSGBUS_ID(statsEndpt), response)) {
-                    return true;
-                }
-            }
-            log_warning("failed to respond to statistics query from ${source}")
-              .arg(EAGINE_ID(bufSize), temp.size())
-              .arg(EAGINE_ID(source), message.source_id);
+            return _handle_stats_query(message);
         }
         log_warning("unhandled special message ${message} from ${source}")
           .arg(EAGINE_ID(message), msg_id)
           .arg(EAGINE_ID(source), message.source_id)
           .arg(EAGINE_ID(data), message.data());
     }
-    return false;
+    return should_be_stored;
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
@@ -232,7 +306,7 @@ auto endpoint::_store_message(
   message_age msg_age,
   const message_view& message) -> bool {
     ++_stats.received_messages;
-    if(!_handle_special(msg_id, message)) {
+    if(_handle_special(msg_id, message) == should_be_stored) {
         if((message.target_id == _endpoint_id) || !is_valid_id(message.target_id)) {
             if(auto found{_find_incoming(msg_id)}) {
                 log_trace("stored message ${message}")
@@ -260,7 +334,7 @@ auto endpoint::_store_message(
 EAGINE_LIB_FUNC
 auto endpoint::_accept_message(message_id msg_id, const message_view& message)
   -> bool {
-    if(_handle_special(msg_id, message)) {
+    if(_handle_special(msg_id, message) == was_handled) {
         return true;
     }
     if(auto found{_find_incoming(msg_id)}) {

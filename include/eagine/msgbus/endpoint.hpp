@@ -500,8 +500,38 @@ private:
         return _do_send(msg_id, message);
     }
 
+    enum message_handling_result {
+        should_be_stored,
+        was_handled,
+        was_not_handled
+    };
+
+    auto _handle_assign_id(const message_view&) noexcept
+      -> message_handling_result;
+    auto _handle_confirm_id(const message_view&) noexcept
+      -> message_handling_result;
+    auto _handle_blob_fragment(const message_view&) noexcept
+      -> message_handling_result;
+    auto _handle_blob_resend(const message_view&) noexcept
+      -> message_handling_result;
+    auto _handle_flow_info(const message_view&) noexcept
+      -> message_handling_result;
+    auto _handle_certificate_query(const message_view&) noexcept
+      -> message_handling_result;
+    auto _handle_endpoint_certificate(const message_view&) noexcept
+      -> message_handling_result;
+    auto _handle_router_certificate(const message_view&) noexcept
+      -> message_handling_result;
+    auto _handle_sign_nonce_request(const message_view&) noexcept
+      -> message_handling_result;
+    auto _handle_signed_nonce(const message_view&) noexcept
+      -> message_handling_result;
+    auto _handle_topology_query(const message_view&) noexcept
+      -> message_handling_result;
+    auto _handle_stats_query(const message_view&) noexcept
+      -> message_handling_result;
     auto _handle_special(message_id msg_id, const message_view&) noexcept
-      -> bool;
+      -> message_handling_result;
 
     auto _store_message(message_id msg_id, message_age, const message_view&)
       -> bool;
