@@ -16,6 +16,7 @@
 namespace eagine {
 
 auto main(main_ctx& ctx) -> int {
+    enable_message_bus(ctx);
 
     msgbus::endpoint bus{EAGINE_ID(Temporary), ctx};
     ctx.bus().setup_connectors(bus);

@@ -13,7 +13,7 @@
 #include <eagine/msgbus/service/shutdown.hpp>
 #include <eagine/msgbus/service_requirements.hpp>
 #include <eagine/signal_switch.hpp>
-#include <eagine/ssl/resources.hpp>
+#include <eagine/sslplus/resources.hpp>
 #include <thread>
 
 namespace eagine {
@@ -81,8 +81,8 @@ private:
 } // namespace msgbus
 
 auto main(main_ctx& ctx) -> int {
-
     signal_switch interrupted;
+    enable_message_bus(ctx);
 
     msgbus::endpoint bus{EAGINE_ID(DiscoverEx), ctx};
     bus.add_ca_certificate_pem(ca_certificate_pem(ctx));

@@ -1,6 +1,6 @@
-==========
-EAGine SSL
-==========
+=============
+EAGine MsgBus
+=============
 
 :Author: Matúš Chochlík <chochlik@gmail.com>
 
@@ -8,7 +8,7 @@ Cloning the repo
 ================
 ::
 
- git clone https://github.com/matus-chochlik/eagine-ssl.git
+ git clone https://github.com/matus-chochlik/eagine-msgbus.git
 
 Building the code
 =================

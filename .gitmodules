@@ -5,7 +5,7 @@
 	path = submodules/eagine-core
 	url = https://github.com/matus-chochlik/eagine-core.git
 	branch = develop
-[submodule "submodules/eagine-ssl"]
-	path = submodules/eagine-ssl
-	url = https://github.com/matus-chochlik/eagine-ssl.git
+[submodule "submodules/eagine-sslplus"]
+	path = submodules/eagine-sslplus
+	url = https://github.com/matus-chochlik/eagine-sslplus.git
 	branch = develop

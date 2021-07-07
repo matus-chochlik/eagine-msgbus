@@ -19,6 +19,7 @@
 namespace eagine {
 
 auto main(main_ctx& ctx) -> int {
+    enable_message_bus(ctx);
 
     std::array<span_size_t, 256> byte_counts{};
 

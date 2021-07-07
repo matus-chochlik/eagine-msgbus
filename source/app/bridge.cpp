@@ -18,7 +18,7 @@
 #include <eagine/msgbus/service/ping_pong.hpp>
 #include <eagine/msgbus/service/shutdown.hpp>
 #include <eagine/signal_switch.hpp>
-#include <eagine/ssl/resources.hpp>
+#include <eagine/sslplus/resources.hpp>
 #include <eagine/watchdog.hpp>
 
 namespace eagine {

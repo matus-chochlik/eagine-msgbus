@@ -111,7 +111,7 @@ auto context::next_sequence_no(message_id msg_id) noexcept
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-auto context::verify_certificate(sslp::x509 cert) -> bool {
+auto context::verify_certificate(sslplus::x509 cert) -> bool {
     if(ok vrfy_ctx{_ssl.new_x509_store_ctx()}) {
         auto del_vrfy{_ssl.delete_x509_store_ctx.raii(vrfy_ctx)};
 
@@ -130,6 +130,16 @@ auto context::verify_certificate(sslp::x509 cert) -> bool {
           .arg(EAGINE_ID(reason), (!vrfy_ctx).message());
     }
     return false;
+}
+//------------------------------------------------------------------------------
+EAGINE_LIB_FUNC
+auto context::verify_certificate_node_kind(sslplus::x509 cert, node_kind kind)
+  -> bool {
+    return _ssl.certificate_subject_name_has_entry_value(
+      cert,
+      "eagiMsgBusNodeKind",
+      "1.3.6.1.4.1.55765.3.2",
+      enumerator_name(kind));
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
@@ -258,8 +268,8 @@ auto context::default_message_digest() noexcept
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
 auto context::message_digest_sign_init(
-  sslp::message_digest mdc,
-  sslp::message_digest_type mdt) noexcept
+  sslplus::message_digest mdc,
+  sslplus::message_digest_type mdt) noexcept
   -> decltype(_ssl.message_digest_sign_init.fake()) {
     if(_own_pkey) {
         return _ssl.message_digest_sign_init(mdc, mdt, _own_pkey);
@@ -269,8 +279,8 @@ auto context::message_digest_sign_init(
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
 auto context::message_digest_verify_init(
-  sslp::message_digest mdc,
-  sslp::message_digest_type mdt,
+  sslplus::message_digest mdc,
+  sslplus::message_digest_type mdt,
   identifier_t node_id) noexcept
   -> decltype(_ssl.message_digest_verify_init.fake()) {
     auto pos = _remotes.find(node_id);

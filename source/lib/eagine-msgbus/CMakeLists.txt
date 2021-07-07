@@ -16,6 +16,10 @@ add_library(
 	router.cpp
 	bridge.cpp
 )
+eagine_embed_target_resources(
+	TARGET eagine-msgbus
+	SCAN_TARGETS eagine-msgbus-generated-headers
+)
 eagine_add_lib_analysis(eagine-msgbus)
 
 target_compile_definitions(
@@ -33,7 +37,7 @@ target_link_libraries(
 	PUBLIC
 		eagine-msgbus-headers
 		EAGine::Core
-		EAGine::SSL
+		EAGine::SSLplus
 	PRIVATE
 		eagine-msgbus-generated-headers
 		eagine-msgbus-private-headers

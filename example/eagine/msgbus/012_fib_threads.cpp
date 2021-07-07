@@ -8,6 +8,7 @@
 #include <eagine/interop/valgrind.hpp>
 #include <eagine/main.hpp>
 #include <eagine/memory/span_algo.hpp>
+#include <eagine/message_bus.hpp>
 #include <eagine/msgbus/acceptor.hpp>
 #include <eagine/msgbus/actor.hpp>
 #include <eagine/msgbus/direct.hpp>
@@ -159,6 +160,7 @@ private:
 } // namespace msgbus
 
 auto main(main_ctx& ctx) -> int {
+    enable_message_bus(ctx);
 
     const auto thread_count =
       extract_or(ctx.system().cpu_concurrent_threads(), 4);

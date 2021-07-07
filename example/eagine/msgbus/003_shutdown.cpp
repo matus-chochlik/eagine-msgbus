@@ -12,7 +12,7 @@
 #include <eagine/msgbus/service/discovery.hpp>
 #include <eagine/msgbus/service/shutdown.hpp>
 #include <eagine/msgbus/service_requirements.hpp>
-#include <eagine/ssl/resources.hpp>
+#include <eagine/sslplus/resources.hpp>
 #include <eagine/timeout.hpp>
 #include <set>
 #include <thread>
@@ -75,6 +75,7 @@ private:
 } // namespace msgbus
 
 auto main(main_ctx& ctx) -> int {
+    enable_message_bus(ctx);
 
     msgbus::endpoint bus{EAGINE_ID(ShutdownEx), ctx};
     bus.add_ca_certificate_pem(ca_certificate_pem(ctx));

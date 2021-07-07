@@ -251,7 +251,7 @@ auto blob_manipulator::update(blob_manipulator::send_handler do_send)
                 }
                 something_done();
                 should_erase = true;
-            } else if(std::chrono::seconds{2} > now - pending.latest_update) {
+            } else if(now - pending.latest_update > std::chrono::seconds{2}) {
                 auto& done = pending.done_parts();
                 if(!done.empty()) {
                     const auto bgn = std::get<1>(done[0]);

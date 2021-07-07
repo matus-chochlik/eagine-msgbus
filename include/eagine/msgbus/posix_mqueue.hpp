@@ -17,7 +17,6 @@
 #include <eagine/random_identifier.hpp>
 #include <eagine/serialize/block_sink.hpp>
 #include <eagine/serialize/block_source.hpp>
-#include <eagine/serialize/string_backend.hpp>
 #include <cerrno>
 #include <cstring>
 #include <fcntl.h>
@@ -30,15 +29,17 @@ namespace eagine::msgbus {
 //------------------------------------------------------------------------------
 /// @brief Class wrapping a POSIX message queue
 /// @ingroup msgbus
-class posix_mqueue {
+class posix_mqueue : public main_ctx_object {
 public:
-    /// @brief Default constructor.
-    constexpr posix_mqueue() noexcept = default;
+    posix_mqueue(main_ctx_parent parent) noexcept
+      : main_ctx_object{EAGINE_ID(PosixMQue), parent} {}
 
     /// @brief Move constructible.
-    posix_mqueue(posix_mqueue&& temp) noexcept {
+    posix_mqueue(posix_mqueue&& temp) noexcept
+      : main_ctx_object{static_cast<main_ctx_object&&>(temp)} {
         using std::swap;
-        swap(_name, temp._name);
+        swap(_s2cname, temp._s2cname);
+        swap(_c2sname, temp._c2sname);
         swap(_ihandle, temp._ihandle);
         swap(_ohandle, temp._ohandle);
     }
@@ -62,18 +63,28 @@ public:
     /// @brief Returns the unique name of this queue.
     /// @see set_name
     auto get_name() const noexcept -> string_view {
-        return {_name};
+        return _s2cname.empty()
+                 ? string_view{}
+                 : string_view{
+                     _s2cname.data(), span_size(_s2cname.size() - 1U)};
     }
 
     /// @brief Sets the unique name of the queue.
     /// @see get_name
     auto set_name(std::string name) -> auto& {
-        _name = std::move(name);
-        if(!_name.empty()) {
-            if(_name.front() != '/') {
-                _name.insert(_name.begin(), '/');
+        _s2cname = std::move(name);
+        if(_s2cname.empty()) {
+            _s2cname = "/eagine-msgbus";
+        } else {
+            if(_s2cname.front() != '/') {
+                _s2cname.insert(_s2cname.begin(), '/');
             }
         }
+        log_info("assigned message queue name ${name}")
+          .arg(EAGINE_ID(name), _s2cname);
+        _c2sname = _s2cname;
+        _s2cname.push_back('s');
+        _c2sname.push_back('c');
         return *this;
     }
 
@@ -92,19 +103,25 @@ public:
 
     /// @brief Constructs the queue and sets the specified name.
     /// @see set_name
-    posix_mqueue(std::string name) {
+    posix_mqueue(main_ctx_parent parent, std::string name)
+      : main_ctx_object{EAGINE_ID(PosixMQue), parent} {
         set_name(std::move(name));
+    }
+
+    auto error_message(int error_number) const -> std::string {
+        if(error_number) {
+            char buf[128] = {};
+            ::strerror_r(error_number, static_cast<char*>(buf), sizeof(buf));
+            buf[sizeof(buf) - 1U] = '\0';
+            return {static_cast<const char*>(buf)};
+        }
+        return {};
     }
 
     /// @brief Returns the error message of the last failed operation.
     /// @see had_error
     auto error_message() const -> std::string {
-        if(_last_errno) {
-            char buf[128] = {'\0'};
-            ::strerror_r(_last_errno, static_cast<char*>(buf), sizeof(buf));
-            return {static_cast<const char*>(buf)};
-        }
-        return {};
+        return error_message(_last_errno);
     }
 
     /// @brief Indicates if there a previous operation finished with an error.
@@ -138,10 +155,15 @@ public:
     /// @see open
     /// @see close
     auto unlink() -> auto& {
-        errno = 0;
-        ::mq_unlink((_name + "0").c_str());
-        ::mq_unlink((_name + "1").c_str());
-        _last_errno = errno;
+        if(get_name()) {
+            log_debug("unlinking message queue ${name}")
+              .arg(EAGINE_ID(name), get_name());
+
+            errno = 0;
+            ::mq_unlink(_s2cname.c_str());
+            ::mq_unlink(_c2sname.c_str());
+            _last_errno = errno;
+        }
         return *this;
     }
 
@@ -150,26 +172,35 @@ public:
     /// @see open
     /// @see close
     auto create() -> auto& {
+        log_debug("creating new message queue ${name}")
+          .arg(EAGINE_ID(name), get_name());
+
         errno = 0;
         // NOLINTNEXTLINE(hicpp-vararg)
         _ihandle = ::mq_open(
-          (_name + "1").c_str(),
+          _c2sname.c_str(),
           // NOLINTNEXTLINE(hicpp-signed-bitwise)
           O_RDONLY | O_CREAT | O_EXCL | O_NONBLOCK,
           // NOLINTNEXTLINE(hicpp-signed-bitwise)
           S_IRUSR | S_IWUSR,
           nullptr);
         _last_errno = errno;
-        if(errno == 0) {
+        if(_last_errno == 0) {
             // NOLINTNEXTLINE(hicpp-vararg)
             _ohandle = ::mq_open(
-              (_name + "0").c_str(),
+              _s2cname.c_str(),
               // NOLINTNEXTLINE(hicpp-signed-bitwise)
               O_WRONLY | O_CREAT | O_EXCL | O_NONBLOCK,
               // NOLINTNEXTLINE(hicpp-signed-bitwise)
               S_IRUSR | S_IWUSR,
               nullptr);
             _last_errno = errno;
+        }
+        if(_last_errno) {
+            log_error("failed to create message queue ${name}")
+              .arg(EAGINE_ID(name), get_name())
+              .arg(EAGINE_ID(errno), _last_errno)
+              .arg(EAGINE_ID(message), error_message(_last_errno));
         }
         return *this;
     }
@@ -179,26 +210,35 @@ public:
     /// @see unlink
     /// @see close
     auto open() -> auto& {
+        log_debug("opening existing message queue ${name}")
+          .arg(EAGINE_ID(name), get_name());
+
         errno = 0;
         // NOLINTNEXTLINE(hicpp-vararg)
         _ihandle = ::mq_open(
-          (_name + "0").c_str(),
+          _s2cname.c_str(),
           // NOLINTNEXTLINE(hicpp-signed-bitwise)
           O_RDONLY | O_NONBLOCK,
           // NOLINTNEXTLINE(hicpp-signed-bitwise)
           S_IRUSR | S_IWUSR,
           nullptr);
         _last_errno = errno;
-        if(errno == 0) {
+        if(_last_errno == 0) {
             // NOLINTNEXTLINE(hicpp-vararg)
             _ohandle = ::mq_open(
-              (_name + "1").c_str(),
+              _c2sname.c_str(),
               // NOLINTNEXTLINE(hicpp-signed-bitwise)
               O_WRONLY | O_NONBLOCK,
               // NOLINTNEXTLINE(hicpp-signed-bitwise)
               S_IRUSR | S_IWUSR,
               nullptr);
             _last_errno = errno;
+        }
+        if(_last_errno) {
+            log_error("failed to open message queue ${name}")
+              .arg(EAGINE_ID(name), get_name())
+              .arg(EAGINE_ID(errno), _last_errno)
+              .arg(EAGINE_ID(message), error_message(_last_errno));
         }
         return *this;
     }
@@ -209,6 +249,9 @@ public:
     /// @see unlink
     auto close() -> posix_mqueue& {
         if(is_open()) {
+            log_debug("closing message queue ${name}")
+              .arg(EAGINE_ID(name), get_name());
+
             ::mq_close(_ihandle);
             ::mq_close(_ohandle);
             _ihandle = _invalid_handle();
@@ -240,12 +283,18 @@ public:
         return extract_or(max_data_size(), default_data_size());
     }
 
-    /// @brief Sents a block of data with the specified priority.
+    /// @brief Sends a block of data with the specified priority.
     auto send(unsigned priority, span<const char> blk) -> auto& {
         if(is_open()) {
             errno = 0;
             ::mq_send(_ohandle, blk.data(), std_size(blk.size()), priority);
             _last_errno = errno;
+            if(EAGINE_UNLIKELY((_last_errno != 0) && (_last_errno != EAGAIN))) {
+                log_error("failed to send message")
+                  .arg(EAGINE_ID(name), get_name())
+                  .arg(EAGINE_ID(errno), _last_errno)
+                  .arg(EAGINE_ID(data), as_bytes(blk));
+            }
         }
         return *this;
     }
@@ -264,13 +313,20 @@ public:
             _last_errno = errno;
             if(received > 0) {
                 handler(priority, head(blk, received));
+            } else if(EAGINE_UNLIKELY(
+                        (_last_errno != 0) && (_last_errno != EAGAIN) &&
+                        (_last_errno != ETIMEDOUT))) {
+                log_error("failed to receive message")
+                  .arg(EAGINE_ID(name), get_name())
+                  .arg(EAGINE_ID(errno), _last_errno);
             }
         }
         return *this;
     }
 
 private:
-    std::string _name{};
+    std::string _s2cname{};
+    std::string _c2sname{};
 
     static constexpr auto _invalid_handle() noexcept -> ::mqd_t {
         return ::mqd_t(-1);
@@ -279,6 +335,14 @@ private:
     ::mqd_t _ihandle{_invalid_handle()};
     ::mqd_t _ohandle{_invalid_handle()};
     int _last_errno{0};
+};
+//------------------------------------------------------------------------------
+struct posix_mqueue_shared_state {
+    std::default_random_engine _rand_eng{std::random_device{}()};
+
+    auto make_id() noexcept {
+        return random_identifier(any_random_engine(_rand_eng));
+    }
 };
 //------------------------------------------------------------------------------
 /// @brief Implementation of the connection_info interface for POSIX queue connection.
@@ -316,8 +380,11 @@ public:
     using fetch_handler = connection::fetch_handler;
 
     /// @brief Construction from parent main context object.
-    posix_mqueue_connection(main_ctx_parent parent)
-      : main_ctx_object{EAGINE_ID(MQueConn), parent} {
+    posix_mqueue_connection(
+      main_ctx_parent parent,
+      std::shared_ptr<posix_mqueue_shared_state> shared_state) noexcept
+      : main_ctx_object{EAGINE_ID(MQueConn), parent}
+      , _shared_state{std::move(shared_state)} {
         _buffer.resize(_data_queue.data_size());
     }
 
@@ -345,11 +412,13 @@ public:
     auto send(message_id msg_id, const message_view& message) -> bool final {
         std::unique_lock lock{_mutex};
         block_data_sink sink(cover(_buffer));
-        string_serializer_backend backend(sink);
+        default_serializer_backend backend(sink);
         auto errors = serialize_message(msg_id, message, backend);
         if(!errors) {
             _outgoing.push(sink.done());
             return true;
+        } else {
+            log_error("failed to serialize message");
         }
         return false;
     }
@@ -368,27 +437,41 @@ protected:
         some_true something_done{};
         if(connect_queue.is_usable()) {
             if(!_data_queue.is_usable()) {
-                _data_queue.close();
-                _data_queue.unlink();
-                if(!_data_queue
-                      .set_name(random_identifier(any_random_engine(_rand_eng)))
-                      .create()
-                      .had_error()) {
+                if(_reconnect_timeout) {
+                    _data_queue.close();
+                    _data_queue.unlink();
+                    EAGINE_ASSERT(_shared_state);
 
-                    _buffer.resize(connect_queue.data_size());
+                    log_debug("connecting to ${name}")
+                      .arg(EAGINE_ID(name), connect_queue.get_name());
 
-                    block_data_sink sink(cover(_buffer));
-                    string_serializer_backend backend(sink);
-                    auto errors = serialize_message(
-                      EAGINE_MSGBUS_ID(pmqConnect),
-                      message_view(_data_queue.get_name()),
-                      backend);
-                    if(!errors) {
-                        connect_queue.send(1, as_chars(sink.done()));
-                        _buffer.resize(_data_queue.data_size());
+                    if(!_data_queue.set_name(_shared_state->make_id())
+                          .create()
+                          .had_error()) {
+
+                        _buffer.resize(connect_queue.data_size());
+
+                        block_data_sink sink(cover(_buffer));
+                        default_serializer_backend backend(sink);
+                        auto errors = serialize_message(
+                          EAGINE_MSGBUS_ID(pmqConnect),
+                          message_view(_data_queue.get_name()),
+                          backend);
+                        if(EAGINE_LIKELY(!errors)) {
+                            connect_queue.send(1, as_chars(sink.done()));
+                            _buffer.resize(_data_queue.data_size());
+                        } else {
+                            log_error("failed to serialize connection name")
+                              .arg(EAGINE_ID(client), _data_queue.get_name())
+                              .arg(EAGINE_ID(server), connect_queue.get_name());
+                        }
+                    } else {
+                        log_warning("failed to connect to ${server}")
+                          .arg(EAGINE_ID(server), connect_queue.get_name());
                     }
+                    _reconnect_timeout.reset();
+                    something_done();
                 }
-                something_done();
             }
         }
         return something_done;
@@ -426,7 +509,7 @@ protected:
           [data](
             message_id& msg_id, message_timestamp&, stored_message& message) {
               block_data_source source(as_bytes(data));
-              string_deserializer_backend backend(source);
+              default_deserializer_backend backend(source);
               const auto errors = deserialize_message(msg_id, message, backend);
               return !errors;
           });
@@ -436,8 +519,9 @@ protected:
     memory::buffer _buffer;
     message_storage _incoming;
     serialized_message_storage _outgoing;
-    posix_mqueue _data_queue{};
-    std::default_random_engine _rand_eng{std::random_device{}()};
+    posix_mqueue _data_queue{*this};
+    timeout _reconnect_timeout{std::chrono::seconds{2}, nothing};
+    std::shared_ptr<posix_mqueue_shared_state> _shared_state;
 };
 //------------------------------------------------------------------------------
 /// @brief Implementation of connection on top of POSIX message queues.
@@ -452,14 +536,20 @@ public:
     using fetch_handler = connection::fetch_handler;
 
     /// @brief Construction from parent main context object and queue name.
-    posix_mqueue_connector(main_ctx_parent parent, std::string name) noexcept
-      : base{parent}
-      , _connect_queue{std::move(name)} {}
+    posix_mqueue_connector(
+      main_ctx_parent parent,
+      std::string name,
+      std::shared_ptr<posix_mqueue_shared_state> shared_state) noexcept
+      : base{parent, std::move(shared_state)}
+      , _connect_queue{*this, std::move(name)} {}
 
     /// @brief Construction from parent main context object and queue identifier.
-    posix_mqueue_connector(main_ctx_parent parent, identifier id)
-      : base{parent}
-      , _connect_queue{posix_mqueue::name_from(id)} {}
+    posix_mqueue_connector(
+      main_ctx_parent parent,
+      identifier id,
+      std::shared_ptr<posix_mqueue_shared_state> shared_state) noexcept
+      : base{parent, std::move(shared_state)}
+      , _connect_queue{*this, posix_mqueue::name_from(id)} {}
 
     posix_mqueue_connector(posix_mqueue_connector&&) = delete;
     posix_mqueue_connector(const posix_mqueue_connector&) = delete;
@@ -491,7 +581,7 @@ private:
         return something_done;
     }
 
-    posix_mqueue _connect_queue{};
+    posix_mqueue _connect_queue{*this};
 };
 //------------------------------------------------------------------------------
 /// @brief Implementation of acceptor on top of POSIX message queues.
@@ -507,15 +597,25 @@ public:
     using accept_handler = acceptor::accept_handler;
 
     /// @brief Construction from parent main context object and queue name.
-    posix_mqueue_acceptor(main_ctx_parent parent, std::string name) noexcept
+    posix_mqueue_acceptor(
+      main_ctx_parent parent,
+      std::string name,
+      std::shared_ptr<posix_mqueue_shared_state> shared_state) noexcept
       : main_ctx_object{EAGINE_ID(MQueConnAc), parent}
-      , _accept_queue{std::move(name)} {
+      , _accept_queue{*this, std::move(name)}
+      , _shared_state{std::move(shared_state)} {
         _buffer.resize(_accept_queue.data_size());
     }
 
     /// @brief Construction from parent main context object and queue identifier.
-    posix_mqueue_acceptor(main_ctx_parent parent, identifier id)
-      : posix_mqueue_acceptor{parent, posix_mqueue::name_from(id)} {}
+    posix_mqueue_acceptor(
+      main_ctx_parent parent,
+      identifier id,
+      std::shared_ptr<posix_mqueue_shared_state> shared_state)
+      : posix_mqueue_acceptor{
+          parent,
+          posix_mqueue::name_from(id),
+          std::move(shared_state)} {}
 
     posix_mqueue_acceptor(posix_mqueue_acceptor&&) noexcept = default;
     posix_mqueue_acceptor(const posix_mqueue_acceptor&) = delete;
@@ -534,19 +634,40 @@ public:
     }
 
     auto process_accepted(const accept_handler& handler) -> work_done final {
-        return _process(handler);
+        auto fetch_handler = [this, &handler](
+                               message_id msg_id,
+                               message_age,
+                               const message_view& message) -> bool {
+            EAGINE_ASSERT((msg_id == EAGINE_MSGBUS_ID(pmqConnect)));
+            EAGINE_MAYBE_UNUSED(msg_id);
+
+            log_debug("accepting connection from ${name}")
+              .arg(EAGINE_ID(name), message.text_content());
+
+            if(auto conn{std::make_unique<posix_mqueue_connection>(
+                 *this, _shared_state)}) {
+                if(conn->open(to_string(message.text_content()))) {
+                    handler(std::move(conn));
+                }
+            }
+            return true;
+        };
+        return _requests.fetch_all({construct_from, fetch_handler});
     }
 
 private:
     auto _checkup() -> work_done {
         some_true something_done{};
         if(!_accept_queue.is_usable()) {
-            _accept_queue.close();
-            _accept_queue.unlink();
-            if(!_accept_queue.create().had_error()) {
-                _buffer.resize(_accept_queue.data_size());
+            if(_reconnect_timeout) {
+                _accept_queue.close();
+                _accept_queue.unlink();
+                if(!_accept_queue.create().had_error()) {
+                    _buffer.resize(_accept_queue.data_size());
+                }
+                _reconnect_timeout.reset();
+                something_done();
             }
-            something_done();
         }
         return something_done;
     }
@@ -570,7 +691,7 @@ private:
           [data](
             message_id& msg_id, message_timestamp&, stored_message& message) {
               block_data_source source(as_bytes(data));
-              string_deserializer_backend backend(source);
+              default_deserializer_backend backend(source);
               const auto errors = deserialize_message(msg_id, message, backend);
               if(EAGINE_LIKELY(is_special_message(msg_id))) {
                   if(EAGINE_LIKELY(msg_id.has_method(EAGINE_ID(pmqConnect)))) {
@@ -581,27 +702,11 @@ private:
           });
     }
 
-    auto _process(const accept_handler& handler) -> work_done {
-        auto fetch_handler = [this, &handler](
-                               message_id msg_id,
-                               message_age,
-                               const message_view& message) -> bool {
-            EAGINE_ASSERT((msg_id == EAGINE_MSGBUS_ID(pmqConnect)));
-            EAGINE_MAYBE_UNUSED(msg_id);
-
-            if(auto conn = std::make_unique<posix_mqueue_connection>(*this)) {
-                if(conn->open(to_string(as_chars(message.data())))) {
-                    handler(std::move(conn));
-                }
-            }
-            return true;
-        };
-        return _requests.fetch_all({construct_from, fetch_handler});
-    }
-
-    memory::buffer _buffer{};
-    message_storage _requests{};
-    posix_mqueue _accept_queue{};
+    memory::buffer _buffer;
+    message_storage _requests;
+    posix_mqueue _accept_queue;
+    timeout _reconnect_timeout{std::chrono::seconds{2}, nothing};
+    std::shared_ptr<posix_mqueue_shared_state> _shared_state;
 };
 //------------------------------------------------------------------------------
 /// @brief Implementation of connection_factory for POSIX message queue connections.
@@ -622,15 +727,19 @@ public:
     /// @brief Makes an connection acceptor listening at queue with the specified name.
     auto make_acceptor(string_view address) -> std::unique_ptr<acceptor> final {
         return std::make_unique<posix_mqueue_acceptor>(
-          *this, to_string(address));
+          *this, to_string(address), _shared_state);
     }
 
     /// @brief Makes a connector connecting to queue with the specified name.
     auto make_connector(string_view address)
       -> std::unique_ptr<connection> final {
         return std::make_unique<posix_mqueue_connector>(
-          *this, to_string(address));
+          *this, to_string(address), _shared_state);
     }
+
+private:
+    std::shared_ptr<posix_mqueue_shared_state> _shared_state{
+      std::make_shared<posix_mqueue_shared_state>()};
 };
 //------------------------------------------------------------------------------
 } // namespace eagine::msgbus

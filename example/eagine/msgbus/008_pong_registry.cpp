@@ -7,6 +7,7 @@
 ///
 #include <eagine/main_ctx.hpp>
 #include <eagine/main_fwd.hpp>
+#include <eagine/message_bus.hpp>
 #include <eagine/msgbus/registry.hpp>
 #include <eagine/msgbus/service.hpp>
 #include <eagine/msgbus/service/build_info.hpp>
@@ -91,7 +92,7 @@ private:
 } // namespace msgbus
 
 auto main(main_ctx& ctx) -> int {
-
+    enable_message_bus(ctx);
     msgbus::registry the_reg{ctx};
 
     valid_if_positive<int> opt_ponger_count{};
