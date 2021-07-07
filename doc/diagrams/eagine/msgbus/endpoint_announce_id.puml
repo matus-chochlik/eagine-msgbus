@@ -1,0 +1,4 @@
+@startuml
+Endpoint -> Router: eagiMsgBus\nannEndptId
+Router -> Endpoint: eagiMsgBus\nconfirmId
+@enduml
