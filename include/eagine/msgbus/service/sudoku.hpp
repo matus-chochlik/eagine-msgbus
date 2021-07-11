@@ -327,7 +327,7 @@ private:
                     ++counter;
                     const bool is_solved = candidate.is_solved();
 
-                    auto temp{default_serialize_buffer_for(candidate)};
+                    auto temp{default_serialize_vector_for(candidate)};
                     const auto serialized{
                       (S >= 4) ? default_serialize_packed(
                                    candidate, cover(temp), compressor)
@@ -708,7 +708,7 @@ private:
 
                 auto pos = std::next(boards.begin(), dist(randeng));
                 auto& board = *pos;
-                auto temp{default_serialize_buffer_for(board)};
+                auto temp{default_serialize_vector_for(board)};
                 const auto serialized{
                   (S >= 4)
                     ? default_serialize_packed(board, cover(temp), compressor)

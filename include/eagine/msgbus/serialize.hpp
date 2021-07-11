@@ -40,6 +40,14 @@ using default_serializer_backend = portable_serializer_backend;
 /// @see default_serializer_backend
 using default_deserializer_backend = portable_deserializer_backend;
 
+/// @brief Returns a vector for the serialization of the specified object.
+/// @ingroup msgbus
+template <typename T>
+inline auto default_serialize_vector_for(const T& inst) {
+    return get_serialize_vector_for<default_serializer_backend::id_value>(
+      inst, default_selector_t{});
+}
+
 /// @brief Returns a suitable buffer for the serialization of the specified object.
 /// @ingroup msgbus
 template <typename T>
