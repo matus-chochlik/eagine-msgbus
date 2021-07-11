@@ -241,7 +241,7 @@ void maybe_start_coprocess(int& argc, const char**& argv) {
                       "-o",
                       "BatchMode=yes",
                       c_str(ssh_host.get()).c_str(),
-                      ".oglplus/ssh-bridge",
+                      ".config/eagine/ssh-bridge",
                       "service_bridge",
                       nullptr);
                 }
