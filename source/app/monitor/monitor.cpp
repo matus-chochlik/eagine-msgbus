@@ -25,7 +25,7 @@ auto main(main_ctx& ctx) -> int {
 
     QApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
     QApplication app{argc_copy, const_cast<char**>(argv_copy)};
-    app.setOrganizationName("OGLplus");
+    app.setOrganizationName("EAGine");
     app.setOrganizationDomain("oglplus.org");
     app.setApplicationName("Message bus monitor");
 

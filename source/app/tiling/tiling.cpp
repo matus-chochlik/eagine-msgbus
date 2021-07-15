@@ -25,11 +25,11 @@ auto main(main_ctx& ctx) -> int {
 
     QApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
     QApplication app{argc_copy, const_cast<char**>(argv_copy)};
-    app.setOrganizationName("OGLplus");
+    app.setOrganizationName("EAGine");
     app.setOrganizationDomain("oglplus.org");
     app.setApplicationName("Tiling");
 
-    const auto registerId = "com.github.matus-chochlik.oglplu2";
+    const auto registerId = "com.github.matus-chochlik.eagine.msgbus.tiling";
 
     qmlRegisterUncreatableType<TilingTheme>(
       registerId, 1, 0, "TilingTheme", {});
