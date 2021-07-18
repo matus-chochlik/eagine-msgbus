@@ -124,8 +124,8 @@ auto main(main_ctx& ctx) -> int {
             if(helper_node.update_and_process_all()) {
                 idle_streak = 0;
             } else {
-                std::this_thread::sleep_for(
-                  std::chrono::milliseconds(math::minimum(++idle_streak, 100)));
+                std::this_thread::sleep_for(std::chrono::microseconds(
+                  math::minimum(++idle_streak, 100000)));
             }
         }
     };
