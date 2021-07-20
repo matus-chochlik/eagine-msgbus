@@ -15,7 +15,7 @@ TilingBackend::TilingBackend(eagine::main_ctx_parent parent)
   , _tilingViewModel{*this}
   , _helperContributionViewModel{*this}
   , _solutionIntervalViewModel{*this} {
-    _timerId = startTimer(10);
+    _timerId = startTimer(1);
     emit tilingModelChanged();
 }
 //------------------------------------------------------------------------------

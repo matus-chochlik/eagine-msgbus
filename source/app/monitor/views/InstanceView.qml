@@ -51,10 +51,10 @@ Pane {
 					: "-"
 			}
 			Label {
-				text: qsTr("OGLplus version")
+				text: qsTr("EAGine version")
 			}
 			Label {
-				text: getOGLplusVersion()
+				text: getEAGineVersion()
 			}
 		}
 		ParentHostView {
@@ -81,7 +81,7 @@ Pane {
 		return result
 	}
 
-	function getOGLplusVersion() {
+	function getEAGineVersion() {
 		var result = "-"
 		var m = instanceView.model.inst
 		if(m && m.versionMajor != null) {

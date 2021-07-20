@@ -17,6 +17,7 @@
 #include <eagine/main_ctx_object.hpp>
 #include <eagine/memory/buffer_pool.hpp>
 #include <eagine/memory/split_block.hpp>
+#include <eagine/overwrite_guard.hpp>
 #include <eagine/timeout.hpp>
 #include <eagine/valid_if/positive.hpp>
 #include <cstdint>
@@ -70,7 +71,7 @@ struct blob_io : interface<blob_io> {
 class buffer_blob_io;
 //------------------------------------------------------------------------------
 using blob_id_t = std::uint32_t;
-struct pending_blob {
+struct pending_blob : overwrite_guard<> {
     message_id msg_id{};
     identifier_t source_id{0U};
     identifier_t target_id{0U};

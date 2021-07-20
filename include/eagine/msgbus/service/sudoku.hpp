@@ -275,6 +275,7 @@ private:
     template <unsigned S>
     struct rank_info {
         default_sudoku_board_traits<S> traits;
+        memory::buffer serialize_buffer;
 
         std::size_t counter{0U};
         std::vector<
@@ -327,11 +328,14 @@ private:
                     ++counter;
                     const bool is_solved = candidate.is_solved();
 
-                    auto temp{default_serialize_buffer_for(candidate)};
+                    serialize_buffer.ensure(
+                      default_serialize_buffer_size_for(candidate));
                     const auto serialized{
-                      (S >= 4) ? default_serialize_packed(
-                                   candidate, cover(temp), compressor)
-                               : default_serialize(candidate, cover(temp))};
+                      (S >= 4)
+                        ? default_serialize_packed(
+                            candidate, cover(serialize_buffer), compressor)
+                        : default_serialize(
+                            candidate, cover(serialize_buffer))};
                     EAGINE_ASSERT(serialized);
 
                     message_view response{extract(serialized)};
@@ -555,6 +559,8 @@ private:
     struct rank_info {
         message_sequence_t query_sequence{0};
         default_sudoku_board_traits<S> traits;
+        memory::buffer serialize_buffer;
+
         timeout search_timeout{std::chrono::seconds(3), nothing};
         timeout solution_timeout{
           adjusted_duration(std::chrono::seconds{S * S * S * S})};
@@ -708,11 +714,12 @@ private:
 
                 auto pos = std::next(boards.begin(), dist(randeng));
                 auto& board = *pos;
-                auto temp{default_serialize_buffer_for(board)};
+                serialize_buffer.ensure(
+                  default_serialize_buffer_size_for(board));
                 const auto serialized{
-                  (S >= 4)
-                    ? default_serialize_packed(board, cover(temp), compressor)
-                    : default_serialize(board, cover(temp))};
+                  (S >= 4) ? default_serialize_packed(
+                               board, cover(serialize_buffer), compressor)
+                           : default_serialize(board, cover(serialize_buffer))};
                 EAGINE_ASSERT(serialized);
 
                 const auto sequence_no = query_sequence++;

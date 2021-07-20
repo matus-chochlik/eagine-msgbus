@@ -410,7 +410,7 @@ auto blob_manipulator::push_incoming_fragment(
               .arg(EAGINE_ID(pending), EAGINE_ID(ByteSize), pending.total_size)
               .arg(EAGINE_ID(message), EAGINE_ID(ByteSize), total_size);
         }
-    } else {
+    } else if(source_id != broadcast_endpoint_id()) {
         if(auto io{get_io(msg_id, span_size(total_size), *this)}) {
             _incoming.emplace_back();
             auto& pending = _incoming.back();

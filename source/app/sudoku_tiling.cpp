@@ -130,7 +130,7 @@ auto main(main_ctx& ctx) -> int {
             idle_streak = 0;
         } else {
             std::this_thread::sleep_for(
-              std::chrono::milliseconds(math::minimum(++idle_streak, 50)));
+              std::chrono::microseconds(math::minimum(++idle_streak, 50000)));
         }
     }
 

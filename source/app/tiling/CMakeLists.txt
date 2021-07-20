@@ -3,11 +3,11 @@
 # See accompanying file LICENSE_1_0.txt or copy at
 #  http://www.boost.org/LICENSE_1_0.txt
 
-# monitor
-set(MONITOR_RESOURCES
+# tiling
+set(TILING_RESOURCES
 	tiling.qrc
 )
-set(MONITOR_SOURCES
+set(TILING_SOURCES
 	tiling.cpp
 	src/HelperContributionViewModel.cpp
 	src/SolutionIntervalViewModel.cpp
@@ -16,7 +16,7 @@ set(MONITOR_SOURCES
 	src/TilingModel.cpp
 	src/TilingViewModel.cpp
 )
-set(MONITOR_HEADERS
+set(TILING_HEADERS
 	include/HelperContributionViewModel.hpp
 	include/SolutionIntervalViewModel.hpp
 	include/TilingTheme.hpp
@@ -26,9 +26,9 @@ set(MONITOR_HEADERS
 )
 add_executable(
 	eagine-msgbus-tiling
-	${MONITOR_RESOURCES}
-	${MONITOR_SOURCES}
-	${MONITOR_HEADERS}
+	${TILING_RESOURCES}
+	${TILING_SOURCES}
+	${TILING_HEADERS}
 )
 
 eagine_add_exe_analysis(eagine-msgbus-tiling)

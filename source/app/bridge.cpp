@@ -153,7 +153,7 @@ auto main(main_ctx& ctx) -> int {
                 ++cycles_idle;
                 max_idle_streak = math::maximum(max_idle_streak, ++idle_streak);
                 std::this_thread::sleep_for(
-                  std::chrono::milliseconds(math::minimum(idle_streak / 8, 8)));
+                  std::chrono::microseconds(math::minimum(idle_streak, 8000)));
             }
             wd.notify_alive();
         }
@@ -241,7 +241,7 @@ void maybe_start_coprocess(int& argc, const char**& argv) {
                       "-o",
                       "BatchMode=yes",
                       c_str(ssh_host.get()).c_str(),
-                      ".oglplus/ssh-bridge",
+                      ".config/eagine/ssh-bridge",
                       "service_bridge",
                       nullptr);
                 }

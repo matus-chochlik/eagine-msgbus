@@ -1,0 +1,4 @@
+@startuml
+Endpoint -> Router: eagiMsgBus\nrequestId
+Router -> Endpoint: eagiMsgBus\nassignId
+@enduml
