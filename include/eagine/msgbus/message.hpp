@@ -43,6 +43,20 @@ static constexpr auto broadcast_endpoint_id() noexcept -> identifier_t {
     return 0U;
 }
 //------------------------------------------------------------------------------
+/// @brief Returns the special invalid message bus endpoint id.
+/// @ingroup msgbus
+/// @see is_valid_id
+static constexpr auto invalid_endpoint_id() noexcept -> identifier_t {
+    return 0U;
+}
+//------------------------------------------------------------------------------
+/// @brief Indicates if the specified endpoint id is valid.
+/// @ingroup msgbus
+/// @see invalid_endpoint_id
+static constexpr auto is_valid_endpoint_id(identifier_t id) noexcept -> bool {
+    return id != 0U;
+}
+//------------------------------------------------------------------------------
 /// @brief Alias for message timestamp type.
 /// @ingroup msgbus
 /// @see message_age

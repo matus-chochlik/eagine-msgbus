@@ -33,12 +33,12 @@ class endpoint
   , public main_ctx_object {
 public:
     static constexpr auto invalid_id() noexcept -> identifier_t {
-        return 0U;
+        return invalid_endpoint_id();
     }
 
     /// @brief Tests if the specified id is a valid endpoint id.
     static constexpr auto is_valid_id(identifier_t id) noexcept -> bool {
-        return id != invalid_id();
+        return is_valid_endpoint_id(id);
     }
 
     /// @brief Alias for message fetch handler callable reference.
