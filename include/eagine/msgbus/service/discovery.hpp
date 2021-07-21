@@ -21,6 +21,11 @@ struct subscriber_info {
     identifier_t endpoint_id{0U};
     /// @brief The endpoint's instance (process) id.
     process_instance_id_t instance_id{0U};
+
+    /// @brief The type storing distance in number of hops to the endpoint.
+    using hop_count_t = std::int8_t;
+    /// @brief The distance in number of bus node hops to the endpoint.
+    hop_count_t hop_count{0};
 };
 //------------------------------------------------------------------------------
 /// @brief Service discovering information about endpoint status and subscriptions.
@@ -68,6 +73,7 @@ private:
         subscriber_info info{};
         info.endpoint_id = message.source_id;
         info.instance_id = message.sequence_no;
+        info.hop_count = message.hop_count;
         reported_alive(info);
         return true;
     }
@@ -79,6 +85,7 @@ private:
             subscriber_info info{};
             info.endpoint_id = message.source_id;
             info.instance_id = message.sequence_no;
+            info.hop_count = message.hop_count;
             subscribed(info, sub_msg_id);
         }
         return true;
@@ -91,6 +98,7 @@ private:
             subscriber_info info{};
             info.endpoint_id = message.source_id;
             info.instance_id = message.sequence_no;
+            info.hop_count = message.hop_count;
             unsubscribed(info, sub_msg_id);
         }
         return true;
@@ -103,6 +111,7 @@ private:
             subscriber_info info{};
             info.endpoint_id = message.source_id;
             info.instance_id = message.sequence_no;
+            info.hop_count = message.hop_count;
             not_subscribed(info, sub_msg_id);
         }
         return true;
