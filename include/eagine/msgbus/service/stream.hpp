@@ -17,6 +17,7 @@
 #include "ping_pong.hpp"
 #include <eagine/reflect/map_data_members.hpp>
 #include <eagine/timeout.hpp>
+#include <map>
 
 namespace eagine::msgbus {
 //------------------------------------------------------------------------------
@@ -24,21 +25,32 @@ namespace eagine::msgbus {
 /// @ingroup msgbus
 struct stream_info {
     /// @brief The stream identifier unique in the scope of the provider.
-    identifier_t id{0};
+    identifier_t id{invalid_endpoint_id()};
 
     /// @brief The stream kind identifier.
     identifier kind{};
 
     /// @brief The stream encoding identifier.
     identifier encoding{};
+
+    /// @brief Human-readable description of the stream,
+    std::string description{};
 };
 
 template <typename Selector>
 constexpr auto
 data_member_mapping(type_identity<stream_info>, Selector) noexcept {
     using S = stream_info;
-    return make_data_member_mapping<S, identifier_t, identifier, identifier>(
-      {"id", &S::id}, {"kind", &S::kind}, {"encoding", &S::encoding});
+    return make_data_member_mapping<
+      S,
+      identifier_t,
+      identifier,
+      identifier,
+      std::string>(
+      {"id", &S::id},
+      {"kind", &S::kind},
+      {"encoding", &S::encoding},
+      {"description", &S::description});
 }
 //------------------------------------------------------------------------------
 /// @brief Service providing encoded stream data.
@@ -57,6 +69,35 @@ public:
         return is_valid_endpoint_id(_relay_id);
     }
 
+    /// @brief Adds the information about a new stream.
+    auto add_stream(stream_info info) -> identifier_t {
+        if(info.id == 0) {
+            if(_stream_id_seq == 0) {
+                ++_stream_id_seq;
+            }
+            while(_streams.find(_stream_id_seq) != _streams.end()) {
+                if(_stream_id_seq == 0) {
+                    return 0;
+                }
+                ++_stream_id_seq;
+            }
+            info.id = _stream_id_seq;
+        }
+        const auto& mapped = _streams[info.id] = std::move(info);
+        if(has_relay()) {
+            auto buffer = default_serialize_buffer_for(mapped);
+
+            if(auto serialized{default_serialize(mapped, cover(buffer))}) {
+                const auto msg_id{EAGINE_MSG_ID(eagiStream, anceStream)};
+                message_view message{extract(serialized)};
+                message.set_target_id(_relay_id);
+                this->bus_node().set_next_sequence_id(msg_id, message);
+                this->bus_node().post(msg_id, message);
+            }
+        }
+        return mapped.id;
+    }
+
 protected:
     using base::base;
 
@@ -73,6 +114,12 @@ protected:
 
     void add_methods() {
         base::add_methods();
+    }
+
+    auto update() -> work_done {
+        some_true something_done{};
+        something_done(base::update());
+        return something_done;
     }
 
 private:
@@ -102,9 +149,12 @@ private:
         }
     }
 
+    identifier_t _stream_id_seq{0};
     identifier_t _relay_id{invalid_endpoint_id()};
     timeout _relay_timeout{std::chrono::seconds{5}};
     subscriber_info::hop_count_t _hop_count{subscriber_info::max_hops()};
+
+    std::map<identifier_t, stream_info> _streams;
 };
 //------------------------------------------------------------------------------
 /// @brief Service consuming encoded stream data.
@@ -157,7 +207,13 @@ protected:
           this, EAGINE_MSG_MAP(eagiStream, appeared, This, _handle_appeared));
         base::add_method(
           this,
-          EAGINE_MSG_MAP(eagiStream, appeared, This, _handle_disappeared));
+          EAGINE_MSG_MAP(eagiStream, disapeared, This, _handle_disappeared));
+    }
+
+    auto update() -> work_done {
+        some_true something_done{};
+        something_done(base::update());
+        return something_done;
     }
 
 private:
@@ -230,6 +286,12 @@ protected:
         base::add_methods();
         base::add_method(
           this, EAGINE_MSG_MAP(eagiStream, serchRelay, This, _handle_search));
+    }
+
+    auto update() -> work_done {
+        some_true something_done{};
+        something_done(base::update());
+        return something_done;
     }
 
 private:
