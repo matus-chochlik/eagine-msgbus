@@ -53,22 +53,131 @@ data_member_mapping(type_identity<stream_info>, Selector) noexcept {
       {"description", &S::description});
 }
 //------------------------------------------------------------------------------
+/// @brief Base class for stream provider and consumer services.
+/// @ingroup msgbus
+/// @see service_composition
+/// @see stream_provider
+/// @see stream_consumer
+template <typename Base = subscriber>
+class stream_endpoint : public require_services<Base, subscriber_discovery> {
+    using base = require_services<Base, subscriber_discovery>;
+
+public:
+    /// @brief Indicates if this stream client has associated a relay node.
+    auto has_stream_relay() const noexcept -> bool {
+        return is_valid_endpoint_id(_stream_relay_id);
+    }
+
+    /// @brief Returns the id of the assigned stream relay node.
+    auto stream_relay() const noexcept -> identifier_t {
+        return _stream_relay_id;
+    }
+
+    ///@brief Resets the assigned relay node.
+    void reset_stream_relay() noexcept {
+        _stream_relay_id = invalid_endpoint_id();
+        _stream_relay_hops = subscriber_info::max_hops();
+        stream_relay_reset();
+    }
+
+    ///@brief Explicitly sets the id of the relay node.
+    void set_stream_relay(
+      identifier_t endpoint_id,
+      subscriber_info::hop_count_t hop_count =
+        subscriber_info::max_hops()) noexcept {
+        if(EAGINE_LIKELY(is_valid_endpoint_id(endpoint_id))) {
+            _stream_relay_id = endpoint_id;
+            _stream_relay_timeout.reset();
+            _stream_relay_hops = hop_count;
+            stream_relay_assigned(_stream_relay_id);
+        } else {
+            reset_stream_relay();
+        }
+    }
+
+    /// @brief Triggered when a new relay has been assigned.
+    signal<void(identifier_t relay_id)> stream_relay_assigned;
+
+    /// @brief Triggered when the current relay has been reset.
+    signal<void()> stream_relay_reset;
+
+protected:
+    using base::base;
+
+    void init() {
+        base::init();
+
+        this->reported_alive.connect(
+          EAGINE_THIS_MEM_FUNC_REF(_handle_stream_relay_alive));
+        this->subscribed.connect(
+          EAGINE_THIS_MEM_FUNC_REF(_handle_stream_relay_subscribed));
+        this->unsubscribed.connect(
+          EAGINE_THIS_MEM_FUNC_REF(_handle_stream_relay_unsubscribed));
+        this->not_subscribed.connect(
+          EAGINE_THIS_MEM_FUNC_REF(_handle_stream_relay_unsubscribed));
+    }
+
+    auto update() -> work_done {
+        some_true something_done{base::update()};
+
+        if(_stream_relay_timeout) {
+            if(has_stream_relay()) {
+                reset_stream_relay();
+            } else {
+                this->bus_node().query_subscribers_of(
+                  EAGINE_MSG_ID(eagiStream, reqestData));
+                _stream_relay_timeout.reset();
+            }
+            something_done();
+        }
+
+        return something_done;
+    }
+
+private:
+    void _handle_stream_relay_alive(const subscriber_info& sub_info) {
+        if(sub_info.endpoint_id == _stream_relay_id) {
+            _stream_relay_timeout.reset();
+        }
+    }
+
+    void _handle_stream_relay_subscribed(
+      const subscriber_info& sub_info,
+      message_id msg_id) {
+        if(msg_id == EAGINE_MSG_ID(eagiStream, reqestData)) {
+            if(!has_stream_relay() || (_stream_relay_hops > sub_info.hop_count)) {
+                set_stream_relay(sub_info.endpoint_id, sub_info.hop_count);
+            }
+        }
+    }
+
+    void _handle_stream_relay_unsubscribed(
+      const subscriber_info& sub_info,
+      message_id msg_id) {
+        if(msg_id == EAGINE_MSG_ID(eagiStream, reqestData)) {
+            if(_stream_relay_id == sub_info.endpoint_id) {
+                reset_stream_relay();
+            }
+        }
+    }
+
+    identifier_t _stream_relay_id{invalid_endpoint_id()};
+    timeout _stream_relay_timeout{std::chrono::seconds{5}};
+    subscriber_info::hop_count_t _stream_relay_hops{
+      subscriber_info::max_hops()};
+};
+//------------------------------------------------------------------------------
 /// @brief Service providing encoded stream data.
 /// @ingroup msgbus
 /// @see service_composition
 /// @see stream_consumer
 /// @see stream_relay
 template <typename Base = subscriber>
-class stream_provider : public require_services<Base, subscriber_discovery> {
+class stream_provider : public require_services<Base, stream_endpoint> {
     using This = stream_provider;
-    using base = require_services<Base, subscriber_discovery>;
+    using base = require_services<Base, stream_endpoint>;
 
 public:
-    /// @brief Indicates if this provider has associated a relay node.
-    auto has_relay() const noexcept -> bool {
-        return is_valid_endpoint_id(_relay_id);
-    }
-
     /// @brief Adds the information about a new stream.
     auto add_stream(stream_info info) -> identifier_t {
         if(info.id == 0) {
@@ -84,13 +193,13 @@ public:
             info.id = _stream_id_seq;
         }
         const auto& mapped = _streams[info.id] = std::move(info);
-        if(has_relay()) {
+        if(this->has_stream_relay()) {
             auto buffer = default_serialize_buffer_for(mapped);
 
             if(auto serialized{default_serialize(mapped, cover(buffer))}) {
-                const auto msg_id{EAGINE_MSG_ID(eagiStream, anceStream)};
+                const auto msg_id{EAGINE_MSG_ID(eagiStream, announce)};
                 message_view message{extract(serialized)};
-                message.set_target_id(_relay_id);
+                message.set_target_id(this->stream_relay());
                 this->bus_node().set_next_sequence_id(msg_id, message);
                 this->bus_node().post(msg_id, message);
             }
@@ -101,59 +210,12 @@ public:
 protected:
     using base::base;
 
-    void init() {
-        base::init();
-
-        this->reported_alive.connect(EAGINE_THIS_MEM_FUNC_REF(_handle_alive));
-        this->subscribed.connect(EAGINE_THIS_MEM_FUNC_REF(_handle_subscribed));
-        this->unsubscribed.connect(
-          EAGINE_THIS_MEM_FUNC_REF(_handle_unsubscribed));
-        this->not_subscribed.connect(
-          EAGINE_THIS_MEM_FUNC_REF(_handle_unsubscribed));
-    }
-
     void add_methods() {
         base::add_methods();
     }
 
-    auto update() -> work_done {
-        some_true something_done{};
-        something_done(base::update());
-        return something_done;
-    }
-
 private:
-    void _handle_alive(const subscriber_info& sub_info) {
-        if(sub_info.endpoint_id == _relay_id) {
-            _relay_timeout.reset();
-        }
-    }
-
-    void _handle_subscribed(const subscriber_info& sub_info, message_id msg_id) {
-        if(msg_id == EAGINE_MSG_ID(eagiStream, anceStream)) {
-            if(!has_relay() || (_hop_count > sub_info.hop_count)) {
-                _relay_id = invalid_endpoint_id();
-                _relay_timeout.reset();
-                _hop_count = sub_info.hop_count;
-            }
-        }
-    }
-
-    void
-    _handle_unsubscribed(const subscriber_info& sub_info, message_id msg_id) {
-        if(msg_id == EAGINE_MSG_ID(eagiStream, reqestData)) {
-            if(_relay_id == sub_info.endpoint_id) {
-                _relay_id = invalid_endpoint_id();
-                _hop_count = subscriber_info::max_hops();
-            }
-        }
-    }
-
     identifier_t _stream_id_seq{0};
-    identifier_t _relay_id{invalid_endpoint_id()};
-    timeout _relay_timeout{std::chrono::seconds{5}};
-    subscriber_info::hop_count_t _hop_count{subscriber_info::max_hops()};
-
     std::map<identifier_t, stream_info> _streams;
 };
 //------------------------------------------------------------------------------
@@ -163,16 +225,11 @@ private:
 /// @see stream_provider
 /// @see stream_relay
 template <typename Base = subscriber>
-class stream_consumer : public require_services<Base, subscriber_discovery> {
+class stream_consumer : public require_services<Base, stream_endpoint> {
     using This = stream_consumer;
-    using base = require_services<Base, subscriber_discovery>;
+    using base = require_services<Base, stream_endpoint>;
 
 public:
-    /// @brief Indicates if this consumer has associated a relay node.
-    auto has_relay() const noexcept -> bool {
-        return is_valid_endpoint_id(_relay_id);
-    }
-
     /// @brief Triggered when a data stream has appeared at the given provider.
     signal<void(
       identifier_t provider_id,
@@ -190,17 +247,6 @@ public:
 protected:
     using base::base;
 
-    void init() {
-        base::init();
-
-        this->reported_alive.connect(EAGINE_THIS_MEM_FUNC_REF(_handle_alive));
-        this->subscribed.connect(EAGINE_THIS_MEM_FUNC_REF(_handle_subscribed));
-        this->unsubscribed.connect(
-          EAGINE_THIS_MEM_FUNC_REF(_handle_unsubscribed));
-        this->not_subscribed.connect(
-          EAGINE_THIS_MEM_FUNC_REF(_handle_unsubscribed));
-    }
-
     void add_methods() {
         base::add_methods();
         base::add_method(
@@ -217,32 +263,6 @@ protected:
     }
 
 private:
-    void _handle_alive(const subscriber_info& sub_info) {
-        if(_relay_id == sub_info.endpoint_id) {
-            _relay_timeout.reset();
-        }
-    }
-
-    void _handle_subscribed(const subscriber_info& sub_info, message_id msg_id) {
-        if(msg_id == EAGINE_MSG_ID(eagiStream, reqestData)) {
-            if(!has_relay() || (_hop_count > sub_info.hop_count)) {
-                _relay_id = invalid_endpoint_id();
-                _relay_timeout.reset();
-                _hop_count = sub_info.hop_count;
-            }
-        }
-    }
-
-    void
-    _handle_unsubscribed(const subscriber_info& sub_info, message_id msg_id) {
-        if(msg_id == EAGINE_MSG_ID(eagiStream, reqestData)) {
-            if(_relay_id == sub_info.endpoint_id) {
-                _relay_id = invalid_endpoint_id();
-                _hop_count = subscriber_info::max_hops();
-            }
-        }
-    }
-
     auto _handle_appeared(const message_context&, stored_message& message)
       -> bool {
         stream_info info{};
@@ -262,10 +282,6 @@ private:
         }
         return true;
     }
-
-    identifier_t _relay_id{invalid_endpoint_id()};
-    timeout _relay_timeout{std::chrono::seconds{5}};
-    subscriber_info::hop_count_t _hop_count{subscriber_info::max_hops()};
 };
 //------------------------------------------------------------------------------
 /// @brief Service relaying stream data between providers and consumers.
