@@ -12,6 +12,7 @@
 #include "../serialize.hpp"
 #include "../signal.hpp"
 #include "../subscriber.hpp"
+#include <limits>
 
 namespace eagine::msgbus {
 //------------------------------------------------------------------------------
@@ -25,7 +26,14 @@ struct subscriber_info {
     /// @brief The type storing distance in number of hops to the endpoint.
     using hop_count_t = std::int8_t;
     /// @brief The distance in number of bus node hops to the endpoint.
+    /// @see max_hops
     hop_count_t hop_count{0};
+
+    /// @brief Returns the maximum possible value for hop_count.
+    /// @see hop_count
+    static constexpr auto max_hops() noexcept -> hop_count_t {
+        return std::numeric_limits<hop_count_t>::max();
+    }
 };
 //------------------------------------------------------------------------------
 /// @brief Service discovering information about endpoint status and subscriptions.
