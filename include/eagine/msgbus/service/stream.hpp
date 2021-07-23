@@ -15,6 +15,7 @@
 #include "../subscriber.hpp"
 #include "discovery.hpp"
 #include "ping_pong.hpp"
+#include <eagine/flat_set.hpp>
 #include <eagine/reflect/map_data_members.hpp>
 #include <eagine/timeout.hpp>
 #include <map>
@@ -125,7 +126,7 @@ protected:
                 reset_stream_relay();
             } else {
                 this->bus_node().query_subscribers_of(
-                  EAGINE_MSG_ID(eagiStream, reqestData));
+                  EAGINE_MSG_ID(eagiStream, startFrwrd));
                 _stream_relay_timeout.reset();
             }
             something_done();
@@ -144,7 +145,7 @@ private:
     void _handle_stream_relay_subscribed(
       const subscriber_info& sub_info,
       message_id msg_id) {
-        if(msg_id == EAGINE_MSG_ID(eagiStream, reqestData)) {
+        if(msg_id == EAGINE_MSG_ID(eagiStream, startFrwrd)) {
             if(!has_stream_relay() || (_stream_relay_hops > sub_info.hop_count)) {
                 set_stream_relay(sub_info.endpoint_id, sub_info.hop_count);
             }
@@ -154,7 +155,7 @@ private:
     void _handle_stream_relay_unsubscribed(
       const subscriber_info& sub_info,
       message_id msg_id) {
-        if(msg_id == EAGINE_MSG_ID(eagiStream, reqestData)) {
+        if(msg_id == EAGINE_MSG_ID(eagiStream, startFrwrd)) {
             if(_stream_relay_id == sub_info.endpoint_id) {
                 reset_stream_relay();
             }
@@ -227,10 +228,10 @@ protected:
 
         base::add_method(
           this,
-          EAGINE_MSG_MAP(eagiStream, reqestData, This, _handle_request_data));
+          EAGINE_MSG_MAP(eagiStream, startSend, This, _handle_start_send));
 
         base::add_method(
-          this, EAGINE_MSG_MAP(eagiStream, stopData, This, _handle_stop_data));
+          this, EAGINE_MSG_MAP(eagiStream, stopSend, This, _handle_stop_send));
     }
 
 private:
@@ -273,7 +274,7 @@ private:
         }
     }
 
-    auto _handle_request_data(const message_context&, stored_message& message)
+    auto _handle_start_send(const message_context&, stored_message& message)
       -> bool {
         identifier_t stream_id{0};
         if(default_deserialize(stream_id, message.content())) {
@@ -287,7 +288,7 @@ private:
         return true;
     }
 
-    auto _handle_stop_data(const message_context&, stored_message& message)
+    auto _handle_stop_send(const message_context&, stored_message& message)
       -> bool {
         identifier_t stream_id{0};
         if(default_deserialize(stream_id, message.content())) {
@@ -372,6 +373,11 @@ private:
         }
         return true;
     }
+
+    struct stream_status {
+        stream_info info{};
+    };
+    std::map<identifier_t, stream_status> _streams;
 };
 //------------------------------------------------------------------------------
 /// @brief Service relaying stream data between providers and consumers.
@@ -380,18 +386,27 @@ private:
 /// @see stream_provider
 /// @see stream_consumer
 template <typename Base = subscriber>
-class stream_relay : public require_services<Base, pingable> {
+class stream_relay
+  : public require_services<Base, subscriber_discovery, pingable> {
     using This = stream_relay;
-    using base = require_services<Base, pingable>;
+    using base = require_services<Base, subscriber_discovery, pingable>;
 
-public:
 protected:
     using base::base;
 
     void add_methods() {
         base::add_methods();
+
         base::add_method(
-          this, EAGINE_MSG_MAP(eagiStream, serchRelay, This, _handle_search));
+          this, EAGINE_MSG_MAP(eagiStream, announce, This, _handle_announce));
+        base::add_method(
+          this, EAGINE_MSG_MAP(eagiStream, retract, This, _handle_retract));
+        base::add_method(
+          this,
+          EAGINE_MSG_MAP(eagiStream, startFrwrd, This, _handle_start_forward));
+        base::add_method(
+          this,
+          EAGINE_MSG_MAP(eagiStream, stopFrwrd, This, _handle_stop_forward));
     }
 
     auto update() -> work_done {
@@ -401,9 +416,63 @@ protected:
     }
 
 private:
-    auto _handle_search(const message_context&, stored_message&) -> bool {
+    auto _handle_announce(const message_context&, stored_message&) -> bool {
         return true;
     }
+
+    auto _handle_retract(const message_context&, stored_message&) -> bool {
+        return true;
+    }
+
+    auto _handle_start_forward(const message_context&, stored_message&)
+      -> bool {
+        return true;
+    }
+
+    auto _handle_stop_forward(const message_context&, stored_message&) -> bool {
+        return true;
+    }
+
+    void _handle_stream_relay_alive(const subscriber_info& sub_info) {
+        auto pos = _relays.find(sub_info.endpoint_id);
+        if(pos != _relays.end()) {
+            std::get<1>(*pos).relay_timeout.reset();
+        }
+    }
+
+    void _handle_stream_relay_subscribed(
+      const subscriber_info& sub_info,
+      message_id msg_id) {
+        if(msg_id == EAGINE_MSG_ID(eagiStream, startFrwrd)) {
+            auto pos = _relays.find(sub_info.endpoint_id);
+            if(pos == _relays.end()) {
+                pos = _relays.emplace(sub_info.endpoint_id);
+            }
+        }
+    }
+
+    void _handle_stream_relay_unsubscribed(
+      const subscriber_info& sub_info,
+      message_id msg_id) {
+        if(msg_id == EAGINE_MSG_ID(eagiStream, startFrwrd)) {
+            auto pos = _relays.find(sub_info.endpoint_id);
+            if(pos != _relays.end()) {
+                _relays.erase(pos);
+            }
+        }
+    }
+
+    struct stream_status {
+        stream_info info{};
+        flat_set<identifier_t> forward_set;
+    };
+    // key = [endpoint_id, stream_id]
+    std::map<std::tuple<identifier_t, identifier_t>, stream_status> _streams;
+
+    struct relay_status {
+        timeout relay_timeout;
+    };
+    std::map<identifier_t, relay_status> _relays;
 };
 //------------------------------------------------------------------------------
 } // namespace eagine::msgbus
