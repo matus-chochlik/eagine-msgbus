@@ -228,10 +228,11 @@ protected:
 
         base::add_method(
           this,
-          EAGINE_MSG_MAP(eagiStream, startSend, This, _handle_start_send));
+          EAGINE_MSG_MAP(eagiStream, startSend, This, _handle_start_send_data));
 
         base::add_method(
-          this, EAGINE_MSG_MAP(eagiStream, stopSend, This, _handle_stop_send));
+          this,
+          EAGINE_MSG_MAP(eagiStream, stopSend, This, _handle_stop_send_data));
     }
 
 private:
@@ -274,13 +275,13 @@ private:
         }
     }
 
-    auto _handle_start_send(const message_context&, stored_message& message)
+    auto _handle_start_send_data(const message_context&, stored_message& message)
       -> bool {
         identifier_t stream_id{0};
         if(default_deserialize(stream_id, message.content())) {
             const auto pos = _streams.find(stream_id);
             if(pos != _streams.end()) {
-                auto& stream = std::get<1>(*pos);
+                auto& stream = pos->second;
                 stream.sequence = 0U;
                 stream.send_data = true;
             }
@@ -288,13 +289,13 @@ private:
         return true;
     }
 
-    auto _handle_stop_send(const message_context&, stored_message& message)
+    auto _handle_stop_send_data(const message_context&, stored_message& message)
       -> bool {
         identifier_t stream_id{0};
         if(default_deserialize(stream_id, message.content())) {
             const auto pos = _streams.find(stream_id);
             if(pos != _streams.end()) {
-                auto& stream = std::get<1>(*pos);
+                auto& stream = pos->second;
                 stream.send_data = false;
             }
         }
@@ -335,16 +336,45 @@ public:
       verification_bits verified)>
       stream_disappeared;
 
+    /// @brief Subscribes to the data from the specified stream.
+    /// @see unsubscribe_from_stream
+    void subscribe_to_stream(identifier_t provider_id, identifier_t stream_id) {
+        const std::tuple<identifier_t, identifier_t> key{
+          provider_id, stream_id};
+        auto pos = _streams.find(key);
+        if(pos == _streams.end()) {
+            pos = _streams.emplace(key).first;
+        }
+        if(pos->second.stream_timeout) {
+            _do_subscribe(key);
+        }
+    }
+
+    /// @brief Unsubscribes from the specified stream.
+    /// @seei subscribe_to_stream
+    void
+    unsubscribe_from_stream(identifier_t provider_id, identifier_t stream_id) {
+        const std::tuple<identifier_t, identifier_t> key{
+          provider_id, stream_id};
+        auto pos = _streams.find(key);
+        if(pos != _streams.end()) {
+            _do_unsubscribe(key);
+            _streams.erase(pos);
+        }
+    }
+
 protected:
     using base::base;
 
     void add_methods() {
         base::add_methods();
         base::add_method(
-          this, EAGINE_MSG_MAP(eagiStream, appeared, This, _handle_appeared));
+          this,
+          EAGINE_MSG_MAP(eagiStream, appeared, This, _handle_stream_appeared));
         base::add_method(
           this,
-          EAGINE_MSG_MAP(eagiStream, disapeared, This, _handle_disappeared));
+          EAGINE_MSG_MAP(
+            eagiStream, disapeared, This, _handle_stream_disappeared));
     }
 
     auto update() -> work_done {
@@ -354,7 +384,25 @@ protected:
     }
 
 private:
-    auto _handle_appeared(const message_context&, stored_message& message)
+    void _do_subscribe(const std::tuple<identifier_t, identifier_t>& key) {
+        auto buffer = default_serialize_buffer_for(key);
+        auto serialized{default_serialize(key, cover(buffer))};
+        EAGINE_ASSERT(serialized);
+        message_view message{extract(serialized)};
+        message.set_target_id(this->stream_relay());
+        this->bus_node().post(EAGINE_MSG_ID(eagiStream, startFrwrd), message);
+    }
+
+    void _do_unsubscribe(const std::tuple<identifier_t, identifier_t>& key) {
+        auto buffer = default_serialize_buffer_for(key);
+        auto serialized{default_serialize(key, cover(buffer))};
+        EAGINE_ASSERT(serialized);
+        message_view message{extract(serialized)};
+        message.set_target_id(this->stream_relay());
+        this->bus_node().post(EAGINE_MSG_ID(eagiStream, stopFrwrd), message);
+    }
+
+    auto _handle_stream_appeared(const message_context&, stored_message& message)
       -> bool {
         stream_info info{};
         if(default_deserialize(info, message.content())) {
@@ -364,7 +412,8 @@ private:
         return true;
     }
 
-    auto _handle_disappeared(const message_context&, stored_message& message)
+    auto
+    _handle_stream_disappeared(const message_context&, stored_message& message)
       -> bool {
         stream_info info{};
         if(default_deserialize(info, message.content())) {
@@ -376,6 +425,7 @@ private:
 
     struct stream_status {
         stream_info info{};
+        timeout stream_timeout{std::chrono::seconds{2}, nothing};
     };
     std::map<identifier_t, stream_status> _streams;
 };
@@ -398,9 +448,11 @@ protected:
         base::add_methods();
 
         base::add_method(
-          this, EAGINE_MSG_MAP(eagiStream, announce, This, _handle_announce));
+          this,
+          EAGINE_MSG_MAP(eagiStream, announce, This, _handle_stream_announce));
         base::add_method(
-          this, EAGINE_MSG_MAP(eagiStream, retract, This, _handle_retract));
+          this,
+          EAGINE_MSG_MAP(eagiStream, retract, This, _handle_stream_retract));
         base::add_method(
           this,
           EAGINE_MSG_MAP(eagiStream, startFrwrd, This, _handle_start_forward));
@@ -416,11 +468,20 @@ protected:
     }
 
 private:
-    auto _handle_announce(const message_context&, stored_message&) -> bool {
+    auto _handle_stream_announce(const message_context&, stored_message&)
+      -> bool {
         return true;
     }
 
-    auto _handle_retract(const message_context&, stored_message&) -> bool {
+    auto _handle_stream_retract(const message_context&, stored_message& message)
+      -> bool {
+        identifier_t stream_id{0};
+        if(default_deserialize(stream_id, message.content())) {
+            const auto pos = _streams.find({message.source_id, stream_id});
+            if(pos != _streams.end()) {
+                _streams.erase(pos);
+            }
+        }
         return true;
     }
 
@@ -436,7 +497,7 @@ private:
     void _handle_stream_relay_alive(const subscriber_info& sub_info) {
         auto pos = _relays.find(sub_info.endpoint_id);
         if(pos != _relays.end()) {
-            std::get<1>(*pos).relay_timeout.reset();
+            pos->second.relay_timeout.reset();
         }
     }
 
@@ -446,8 +507,9 @@ private:
         if(msg_id == EAGINE_MSG_ID(eagiStream, startFrwrd)) {
             auto pos = _relays.find(sub_info.endpoint_id);
             if(pos == _relays.end()) {
-                pos = _relays.emplace(sub_info.endpoint_id);
+                pos = _relays.emplace(sub_info.endpoint_id).first;
             }
+            pos->second.relay_timeout.reset();
         }
     }
 
