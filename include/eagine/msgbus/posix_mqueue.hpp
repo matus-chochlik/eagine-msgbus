@@ -111,8 +111,10 @@ public:
     auto error_message(int error_number) const -> std::string {
         if(error_number) {
             char buf[128] = {};
-            ::strerror_r(error_number, static_cast<char*>(buf), sizeof(buf));
-            buf[sizeof(buf) - 1U] = '\0';
+            ::strerror_r(
+              error_number,
+              static_cast<char*>(buf),
+              sizeof(buf))[sizeof(buf) - 1U] = '\0';
             return {static_cast<const char*>(buf)};
         }
         return {};
