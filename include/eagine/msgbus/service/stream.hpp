@@ -179,6 +179,7 @@ class stream_provider : public require_services<Base, stream_endpoint> {
 
 public:
     /// @brief Adds the information about a new stream.
+    /// @see remove_stream
     auto add_stream(stream_info info) -> identifier_t {
         if(info.id == 0) {
             if(_stream_id_seq == 0) {
@@ -192,31 +193,120 @@ public:
             }
             info.id = _stream_id_seq;
         }
-        const auto& mapped = _streams[info.id] = std::move(info);
+        const auto& stream = _streams[info.id];
+        stream.info = std::move(info);
         if(this->has_stream_relay()) {
-            auto buffer = default_serialize_buffer_for(mapped);
-
-            if(auto serialized{default_serialize(mapped, cover(buffer))}) {
-                const auto msg_id{EAGINE_MSG_ID(eagiStream, announce)};
-                message_view message{extract(serialized)};
-                message.set_target_id(this->stream_relay());
-                this->bus_node().set_next_sequence_id(msg_id, message);
-                this->bus_node().post(msg_id, message);
-            }
+            _announce_stream(this->stream_relay(), stream.info);
         }
-        return mapped.id;
+        return stream.info.id;
+    }
+
+    /// @brief Removes the information about the specified stream.
+    /// @see add_stream
+    auto remove_stream(identifier_t stream_id) -> bool {
+        if(this->has_stream_relay()) {
+            _retract_stream(this->stream_relay());
+        }
+        return _streams.erase(stream_id) > 0;
     }
 
 protected:
     using base::base;
 
+    void init() {
+        base::init();
+
+        this->stream_relay_assigned.connect(
+          EAGINE_THIS_MEM_FUNC_REF(_handle_stream_relay_assigned));
+        this->stream_relay_reset.connect(
+          EAGINE_THIS_MEM_FUNC_REF(_handle_stream_relay_reset));
+    }
+
     void add_methods() {
         base::add_methods();
+
+        base::add_method(
+          this,
+          EAGINE_MSG_MAP(eagiStream, reqestData, This, _handle_request_data));
+
+        base::add_method(
+          this, EAGINE_MSG_MAP(eagiStream, stopData, This, _handle_stop_data));
     }
 
 private:
+    void _announce_stream(identifier_t relay_id, const stream_info& info) {
+        auto buffer = default_serialize_buffer_for(info);
+
+        if(auto serialized{default_serialize(info, cover(buffer))}) {
+            const auto msg_id{EAGINE_MSG_ID(eagiStream, announce)};
+            message_view message{extract(serialized)};
+            message.set_target_id(relay_id);
+            this->bus_node().set_next_sequence_id(msg_id, message);
+            this->bus_node().post(msg_id, message);
+        }
+    }
+
+    void _retract_stream(identifier_t relay_id, identifier_t stream_id) {
+        auto buffer = default_serialize_buffer_for(stream_id);
+        auto serialized{default_serialize(stream_id, cover(buffer))};
+        EAGINE_ASSERT(serialized);
+        const auto msg_id{EAGINE_MSG_ID(eagiStream, retract)};
+        message_view message{extract(serialized)};
+        message.set_target_id(relay_id);
+        this->bus_node().set_next_sequence_id(msg_id, message);
+        this->bus_node().post(msg_id, message);
+    }
+
+    void _handle_stream_relay_assigned(identifier_t relay_id) {
+        for(const auto& [stream_id, stream] : _streams) {
+            EAGINE_ASSERT(stream_id == stream.info.id);
+            EAGINE_MAYBE_UNUSED(stream_id);
+            _announce_stream(relay_id, stream.info);
+        }
+    }
+
+    void _handle_stream_relay_reset() {
+        for(auto& [stream_id, stream] : _streams) {
+            EAGINE_ASSERT(stream_id == stream.info.id);
+            EAGINE_MAYBE_UNUSED(stream_id);
+            stream.send_data = false;
+        }
+    }
+
+    auto _handle_request_data(const message_context&, stored_message& message)
+      -> bool {
+        identifier_t stream_id{0};
+        if(default_deserialize(stream_id, message.content())) {
+            const auto pos = _streams.find(stream_id);
+            if(pos != _streams.end()) {
+                auto& stream = std::get<1>(*pos);
+                stream.sequence = 0U;
+                stream.send_data = true;
+            }
+        }
+        return true;
+    }
+
+    auto _handle_stop_data(const message_context&, stored_message& message)
+      -> bool {
+        identifier_t stream_id{0};
+        if(default_deserialize(stream_id, message.content())) {
+            const auto pos = _streams.find(stream_id);
+            if(pos != _streams.end()) {
+                auto& stream = std::get<1>(*pos);
+                stream.send_data = false;
+            }
+        }
+        return true;
+    }
+
     identifier_t _stream_id_seq{0};
-    std::map<identifier_t, stream_info> _streams;
+    struct stream_status {
+        stream_info info{};
+        std::uint64_t sequence{0U};
+        bool send_data{false};
+    };
+    std::map<identifier_t, stream_status> _streams;
 };
 //------------------------------------------------------------------------------
 /// @brief Service consuming encoded stream data.
