@@ -179,8 +179,9 @@ class stream_provider : public require_services<Base, stream_endpoint> {
     using base = require_services<Base, stream_endpoint>;
 
 public:
-    /// @brief Adds the information about a new stream.
+    /// @brief Adds the information about a new stream. Returns the stream id.
     /// @see remove_stream
+    /// @see send_stream_data
     auto add_stream(stream_info info) -> identifier_t {
         if(info.id == 0) {
             if(_stream_id_seq == 0) {
@@ -209,6 +210,22 @@ public:
             _retract_stream(this->stream_relay());
         }
         return _streams.erase(stream_id) > 0;
+    }
+
+    /// @brief Sends a fragment of encoded stream data.
+    /// @see add_stream
+    auto send_stream_data(identifier_t stream_id, memory::const_block data)
+      -> bool {
+        if(this->has_stream_relay()) {
+            const auto pos = _streams.find(stream_id);
+            if(pos != _streams.end()) {
+                if(pos->second.send_data) {
+                    // TODO
+                    EAGINE_MAYBE_UNUSED(data);
+                }
+            }
+        }
+        return false;
     }
 
 protected:
@@ -320,6 +337,7 @@ template <typename Base = subscriber>
 class stream_consumer : public require_services<Base, stream_endpoint> {
     using This = stream_consumer;
     using base = require_services<Base, stream_endpoint>;
+    using stream_key_t = std::tuple<identifier_t, identifier_t>;
 
 public:
     /// @brief Triggered when a data stream has appeared at the given provider.
@@ -339,11 +357,10 @@ public:
     /// @brief Subscribes to the data from the specified stream.
     /// @see unsubscribe_from_stream
     void subscribe_to_stream(identifier_t provider_id, identifier_t stream_id) {
-        const std::tuple<identifier_t, identifier_t> key{
-          provider_id, stream_id};
+        const stream_key_t key{provider_id, stream_id};
         auto pos = _streams.find(key);
         if(pos == _streams.end()) {
-            pos = _streams.emplace(key).first;
+            pos = _streams.emplace(key, stream_status{}).first;
         }
         if(pos->second.stream_timeout) {
             _do_subscribe(key);
@@ -354,8 +371,7 @@ public:
     /// @seei subscribe_to_stream
     void
     unsubscribe_from_stream(identifier_t provider_id, identifier_t stream_id) {
-        const std::tuple<identifier_t, identifier_t> key{
-          provider_id, stream_id};
+        const stream_key_t key{provider_id, stream_id};
         auto pos = _streams.find(key);
         if(pos != _streams.end()) {
             _do_unsubscribe(key);
@@ -384,7 +400,7 @@ protected:
     }
 
 private:
-    void _do_subscribe(const std::tuple<identifier_t, identifier_t>& key) {
+    void _do_subscribe(const stream_key_t& key) {
         auto buffer = default_serialize_buffer_for(key);
         auto serialized{default_serialize(key, cover(buffer))};
         EAGINE_ASSERT(serialized);
@@ -393,7 +409,7 @@ private:
         this->bus_node().post(EAGINE_MSG_ID(eagiStream, startFrwrd), message);
     }
 
-    void _do_unsubscribe(const std::tuple<identifier_t, identifier_t>& key) {
+    void _do_unsubscribe(const stream_key_t& key) {
         auto buffer = default_serialize_buffer_for(key);
         auto serialized{default_serialize(key, cover(buffer))};
         EAGINE_ASSERT(serialized);
@@ -425,7 +441,7 @@ private:
 
     struct stream_status {
         stream_info info{};
-        timeout stream_timeout{std::chrono::seconds{2}, nothing};
+        timeout stream_timeout{std::chrono::seconds{3}, nothing};
     };
     std::map<identifier_t, stream_status> _streams;
 };
@@ -440,6 +456,7 @@ class stream_relay
   : public require_services<Base, subscriber_discovery, pingable> {
     using This = stream_relay;
     using base = require_services<Base, subscriber_discovery, pingable>;
+    using stream_key_t = std::tuple<identifier_t, identifier_t>;
 
 protected:
     using base::base;
@@ -468,8 +485,17 @@ protected:
     }
 
 private:
-    auto _handle_stream_announce(const message_context&, stored_message&)
+    auto _handle_stream_announce(const message_context&, stored_message& message)
       -> bool {
+        stream_info info{};
+        if(default_deserialize(info, message.content())) {
+            const stream_key_t key{message.source_id, info.id};
+            auto pos = _streams.find(key);
+            if(pos == _streams.end()) {
+                pos = _streams.emplace(key, stream_status{}).first;
+            }
+            pos->second.stream_timeout.reset();
+        }
         return true;
     }
 
@@ -507,7 +533,8 @@ private:
         if(msg_id == EAGINE_MSG_ID(eagiStream, startFrwrd)) {
             auto pos = _relays.find(sub_info.endpoint_id);
             if(pos == _relays.end()) {
-                pos = _relays.emplace(sub_info.endpoint_id).first;
+                pos =
+                  _relays.emplace(sub_info.endpoint_id, relay_status{}).first;
             }
             pos->second.relay_timeout.reset();
         }
@@ -526,10 +553,10 @@ private:
 
     struct stream_status {
         stream_info info{};
-        flat_set<identifier_t> forward_set;
+        timeout stream_timeout{std::chrono::seconds{3}};
+        flat_set<identifier_t> forward_set{};
     };
-    // key = [endpoint_id, stream_id]
-    std::map<std::tuple<identifier_t, identifier_t>, stream_status> _streams;
+    std::map<stream_key_t, stream_status> _streams;
 
     struct relay_status {
         timeout relay_timeout;
