@@ -163,7 +163,7 @@ private:
     }
 
     identifier_t _stream_relay_id{invalid_endpoint_id()};
-    timeout _stream_relay_timeout{std::chrono::seconds{5}};
+    timeout _stream_relay_timeout{std::chrono::seconds{5}, nothing};
     subscriber_info::hop_count_t _stream_relay_hops{
       subscriber_info::max_hops()};
 };
@@ -195,7 +195,7 @@ public:
             }
             info.id = _stream_id_seq;
         }
-        const auto& stream = _streams[info.id];
+        auto& stream = _streams[info.id];
         stream.info = std::move(info);
         if(this->has_stream_relay()) {
             _announce_stream(this->stream_relay(), stream.info);
@@ -207,7 +207,7 @@ public:
     /// @see add_stream
     auto remove_stream(identifier_t stream_id) -> bool {
         if(this->has_stream_relay()) {
-            _retract_stream(this->stream_relay());
+            _retract_stream(this->stream_relay(), stream_id);
         }
         return _streams.erase(stream_id) > 0;
     }
@@ -341,6 +341,7 @@ class stream_consumer : public require_services<Base, stream_endpoint> {
 
 public:
     /// @brief Triggered when a data stream has appeared at the given provider.
+    /// @see stream_disappeared
     signal<void(
       identifier_t provider_id,
       const stream_info&,
@@ -348,6 +349,7 @@ public:
       stream_appeared;
 
     /// @brief Triggered when a data stream has been lost at the given provider.
+    /// @see stream_appeared
     signal<void(
       identifier_t provider_id,
       const stream_info&,
@@ -458,6 +460,23 @@ class stream_relay
     using base = require_services<Base, subscriber_discovery, pingable>;
     using stream_key_t = std::tuple<identifier_t, identifier_t>;
 
+public:
+    /// @brief Triggered when a data stream was announced by the given provider.
+    /// @see stream_retracted
+    signal<void(
+      identifier_t provider_id,
+      const stream_info&,
+      verification_bits verified)>
+      stream_announced;
+
+    /// @brief Triggered when a data stream was retracted by the given provider.
+    /// @see stream_announced
+    signal<void(
+      identifier_t provider_id,
+      const stream_info&,
+      verification_bits verified)>
+      stream_retracted;
+
 protected:
     using base::base;
 
@@ -494,7 +513,10 @@ private:
             if(pos == _streams.end()) {
                 pos = _streams.emplace(key, stream_status{}).first;
             }
-            pos->second.stream_timeout.reset();
+            auto& stream = pos->second;
+            stream_announced(
+              message.source_id, stream.info, this->verify_bits(message));
+            stream.stream_timeout.reset();
         }
         return true;
     }
@@ -505,6 +527,10 @@ private:
         if(default_deserialize(stream_id, message.content())) {
             const auto pos = _streams.find({message.source_id, stream_id});
             if(pos != _streams.end()) {
+                stream_retracted(
+                  message.source_id,
+                  pos->second.info,
+                  this->verify_bits(message));
                 _streams.erase(pos);
             }
         }
