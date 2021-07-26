@@ -163,7 +163,7 @@ private:
     }
 
     identifier_t _stream_relay_id{invalid_endpoint_id()};
-    timeout _stream_relay_timeout{std::chrono::seconds{5}, nothing};
+    timeout _stream_relay_timeout{endpoint_alive_notify_period() * 2, nothing};
     subscriber_info::hop_count_t _stream_relay_hops{
       subscriber_info::max_hops()};
 };
@@ -504,21 +504,50 @@ protected:
     }
 
 private:
+    struct stream_status {
+        stream_info info{};
+        timeout stream_timeout{std::chrono::seconds{5}};
+        flat_set<identifier_t> forward_set{};
+    };
+
     auto _handle_stream_announce(const message_context&, stored_message& message)
       -> bool {
         stream_info info{};
         if(default_deserialize(info, message.content())) {
             const stream_key_t key{message.source_id, info.id};
             auto pos = _streams.find(key);
+            bool added = false;
             if(pos == _streams.end()) {
                 pos = _streams.emplace(key, stream_status{}).first;
+                added = true;
             }
             auto& stream = pos->second;
-            stream_announced(
-              message.source_id, stream.info, this->verify_bits(message));
+            const bool changed = (stream.info.kind || info.kind) ||
+                                 (stream.info.encoding || info.encoding) ||
+                                 (stream.info.description != info.description);
+            if(added || changed) {
+                if(changed) {
+                    if(!added) {
+                        _forward_stream_retract(
+                          message.source_id,
+                          stream,
+                          this->verify_bits(message));
+                    }
+                    stream.info = info;
+                }
+                _forward_stream_announce(
+                  message.source_id, stream, this->verify_bits(message));
+            }
             stream.stream_timeout.reset();
         }
         return true;
+    }
+
+    void _forward_stream_announce(
+      identifier_t provider_id,
+      const stream_status& stream,
+      verification_bits verified) {
+        stream_announced(provider_id, stream.info, verified);
     }
 
     auto _handle_stream_retract(const message_context&, stored_message& message)
@@ -527,14 +556,19 @@ private:
         if(default_deserialize(stream_id, message.content())) {
             const auto pos = _streams.find({message.source_id, stream_id});
             if(pos != _streams.end()) {
-                stream_retracted(
-                  message.source_id,
-                  pos->second.info,
-                  this->verify_bits(message));
+                _forward_stream_retract(
+                  message.source_id, pos->second, this->verify_bits(message));
                 _streams.erase(pos);
             }
         }
         return true;
+    }
+
+    void _forward_stream_retract(
+      identifier_t provider_id,
+      const stream_status& stream,
+      verification_bits verified) {
+        stream_retracted(provider_id, stream.info, verified);
     }
 
     auto _handle_start_forward(const message_context&, stored_message&)
@@ -577,11 +611,6 @@ private:
         }
     }
 
-    struct stream_status {
-        stream_info info{};
-        timeout stream_timeout{std::chrono::seconds{3}};
-        flat_set<identifier_t> forward_set{};
-    };
     std::map<stream_key_t, stream_status> _streams;
 
     struct relay_status {

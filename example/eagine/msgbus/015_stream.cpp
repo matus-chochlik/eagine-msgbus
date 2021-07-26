@@ -1,4 +1,4 @@
-/// @example eagine/msgbus/000_stream.cpp
+/// @example eagine/msgbus/015_stream.cpp
 ///
 /// Copyright Matus Chochlik.
 /// Distributed under the Boost Software License, Version 1.0.
@@ -33,16 +33,7 @@ class data_provider_example
 public:
     data_provider_example(endpoint& bus)
       : main_ctx_object{EAGINE_ID(Provider), bus}
-      , base{bus} {}
-
-    auto is_done() const noexcept -> bool {
-        return _done && _stream_ids.empty();
-    }
-
-protected:
-    void init() {
-        base::init();
-
+      , base{bus} {
         stream_relay_assigned.connect(
           EAGINE_THIS_MEM_FUNC_REF(_handle_relay_assigned));
 
@@ -55,19 +46,26 @@ protected:
         }());
     }
 
-    void update() {
-        base::update();
+    auto is_done() const noexcept -> bool {
+        return _done && _stream_ids.empty();
+    }
+
+protected:
+    auto update() -> work_done {
+        some_true something_done{base::update()};
         if(_done) {
             for(const auto id : _stream_ids) {
                 remove_stream(id);
             }
             _stream_ids.clear();
+            something_done();
         }
+        return something_done;
     }
 
 private:
     void _handle_relay_assigned(identifier_t relay_id) {
-        log_error("stream relay ${relay} assigned")
+        log_info("stream relay ${relay} assigned")
           .arg(EAGINE_ID(relay), relay_id);
     }
 
@@ -86,22 +84,17 @@ class data_consumer_example
 public:
     data_consumer_example(endpoint& bus)
       : main_ctx_object{EAGINE_ID(Consumer), bus}
-      , base{bus} {}
-
-    auto is_done() const noexcept -> bool {
-        return _had_streams && _current_streams.empty();
-    }
-
-protected:
-    void init() {
-        base::init();
-
+      , base{bus} {
         stream_relay_assigned.connect(
           EAGINE_THIS_MEM_FUNC_REF(_handle_relay_assigned));
         stream_appeared.connect(
           EAGINE_THIS_MEM_FUNC_REF(_handle_stream_appeared));
         stream_disappeared.connect(
           EAGINE_THIS_MEM_FUNC_REF(_handle_stream_disappeared));
+    }
+
+    auto is_done() const noexcept -> bool {
+        return _had_streams && _current_streams.empty();
     }
 
 private:

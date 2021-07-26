@@ -24,6 +24,10 @@ namespace eagine::msgbus {
 //------------------------------------------------------------------------------
 class friend_of_endpoint;
 //------------------------------------------------------------------------------
+static constexpr auto endpoint_alive_notify_period() noexcept {
+    return std::chrono::seconds{30};
+}
+//------------------------------------------------------------------------------
 /// @brief Message bus client endpoint that can send and receive messages.
 /// @ingroup msgbus
 /// @see static_subscriber
@@ -441,7 +445,9 @@ private:
       nothing};
 
     resetting_timeout _should_notify_alive{
-      cfg_init("msgbus.endpoint.alive_notify_period", std::chrono::seconds{30}),
+      cfg_init(
+        "msgbus.endpoint.alive_notify_period",
+        endpoint_alive_notify_period()),
       nothing};
 
     std::unique_ptr<connection> _connection{};
