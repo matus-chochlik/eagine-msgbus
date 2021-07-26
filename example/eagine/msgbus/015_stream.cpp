@@ -22,27 +22,27 @@
 namespace eagine {
 namespace msgbus {
 //------------------------------------------------------------------------------
-using data_provider_base =
-  service_composition<require_services<subscriber, stream_provider>>;
-
+template <typename Base = subscriber>
 class data_provider_example
   : public main_ctx_object
-  , public data_provider_base {
-    using base = data_provider_base;
+  , public require_services<Base, stream_provider> {
+    using base = require_services<Base, stream_provider>;
 
 public:
     data_provider_example(endpoint& bus)
       : main_ctx_object{EAGINE_ID(Provider), bus}
       , base{bus} {
-        stream_relay_assigned.connect(
+        this->stream_relay_assigned.connect(
           EAGINE_THIS_MEM_FUNC_REF(_handle_relay_assigned));
+        this->stream_relay_reset.connect(
+          EAGINE_THIS_MEM_FUNC_REF(_handle_relay_reset));
 
         _stream_ids.push_back([this] {
             msgbus::stream_info info{};
             info.kind = EAGINE_ID(Test);
             info.encoding = EAGINE_ID(Test);
             info.description = "Test stream 1";
-            return add_stream(std::move(info));
+            return this->add_stream(std::move(info));
         }());
     }
 
@@ -55,7 +55,7 @@ protected:
         some_true something_done{base::update()};
         if(_done) {
             for(const auto id : _stream_ids) {
-                remove_stream(id);
+                this->remove_stream(id);
             }
             _stream_ids.clear();
             something_done();
@@ -69,27 +69,29 @@ private:
           .arg(EAGINE_ID(relay), relay_id);
     }
 
+    void _handle_relay_reset() {
+        log_info("stream relay reset");
+    }
+
     timeout _done{std::chrono::seconds{10}};
     std::vector<identifier_t> _stream_ids;
 };
 //------------------------------------------------------------------------------
-using data_consumer_base =
-  service_composition<require_services<subscriber, stream_consumer>>;
-
+template <typename Base = subscriber>
 class data_consumer_example
   : public main_ctx_object
-  , public data_consumer_base {
-    using base = data_consumer_base;
+  , public require_services<Base, stream_consumer> {
+    using base = require_services<Base, stream_consumer>;
 
 public:
     data_consumer_example(endpoint& bus)
       : main_ctx_object{EAGINE_ID(Consumer), bus}
       , base{bus} {
-        stream_relay_assigned.connect(
+        this->stream_relay_assigned.connect(
           EAGINE_THIS_MEM_FUNC_REF(_handle_relay_assigned));
-        stream_appeared.connect(
+        this->stream_appeared.connect(
           EAGINE_THIS_MEM_FUNC_REF(_handle_stream_appeared));
-        stream_disappeared.connect(
+        this->stream_disappeared.connect(
           EAGINE_THIS_MEM_FUNC_REF(_handle_stream_disappeared));
     }
 
@@ -166,9 +168,13 @@ auto main(main_ctx& ctx) -> int {
     relay.stream_retracted.connect({construct_from, on_stream_retracted});
 
     auto& provider =
-      the_reg.emplace<msgbus::data_provider_example>(EAGINE_ID(PrvdrEndpt));
+      the_reg
+        .emplace<msgbus::service_composition<msgbus::data_provider_example<>>>(
+          EAGINE_ID(PrvdrEndpt));
     auto& consumer =
-      the_reg.emplace<msgbus::data_consumer_example>(EAGINE_ID(CnsmrEndpt));
+      the_reg
+        .emplace<msgbus::service_composition<msgbus::data_consumer_example<>>>(
+          EAGINE_ID(CnsmrEndpt));
 
     while(!interrupted && !(provider.is_done() && consumer.is_done())) {
         if(!the_reg.update_all()) {

@@ -396,8 +396,8 @@ protected:
     }
 
     auto update() -> work_done {
-        some_true something_done{};
-        something_done(base::update());
+        some_true something_done{base::update()};
+        // TODO
         return something_done;
     }
 
@@ -498,12 +498,24 @@ protected:
     }
 
     auto update() -> work_done {
-        some_true something_done{};
-        something_done(base::update());
+        some_true something_done{base::update()};
+        // TODO
         return something_done;
     }
 
 private:
+    struct provider_status {
+        timeout provider_timeout;
+    };
+
+    struct consumer_status {
+        timeout consumer_timeout;
+    };
+
+    struct relay_status {
+        timeout relay_timeout;
+    };
+
     struct stream_status {
         stream_info info{};
         timeout stream_timeout{std::chrono::seconds{5}};
@@ -531,12 +543,16 @@ private:
                         _forward_stream_retract(
                           message.source_id,
                           stream,
-                          this->verify_bits(message));
+                          this->verify_bits(message),
+                          message);
                     }
                     stream.info = info;
                 }
                 _forward_stream_announce(
-                  message.source_id, stream, this->verify_bits(message));
+                  message.source_id,
+                  stream,
+                  this->verify_bits(message),
+                  message);
             }
             stream.stream_timeout.reset();
         }
@@ -546,7 +562,13 @@ private:
     void _forward_stream_announce(
       identifier_t provider_id,
       const stream_status& stream,
-      verification_bits verified) {
+      verification_bits verified,
+      message_view message) {
+        const auto msg_id{EAGINE_MSG_ID(eagiStream, appeared)};
+        for(const auto consumer_id : stream.forward_set) {
+            message.set_target_id(consumer_id);
+            this->bus_node().post(msg_id, message);
+        }
         stream_announced(provider_id, stream.info, verified);
     }
 
@@ -557,7 +579,10 @@ private:
             const auto pos = _streams.find({message.source_id, stream_id});
             if(pos != _streams.end()) {
                 _forward_stream_retract(
-                  message.source_id, pos->second, this->verify_bits(message));
+                  message.source_id,
+                  pos->second,
+                  this->verify_bits(message),
+                  message);
                 _streams.erase(pos);
             }
         }
@@ -567,7 +592,13 @@ private:
     void _forward_stream_retract(
       identifier_t provider_id,
       const stream_status& stream,
-      verification_bits verified) {
+      verification_bits verified,
+      message_view message) {
+        const auto msg_id{EAGINE_MSG_ID(eagiStream, disapeared)};
+        for(const auto consumer_id : stream.forward_set) {
+            message.set_target_id(consumer_id);
+            this->bus_node().post(msg_id, message);
+        }
         stream_retracted(provider_id, stream.info, verified);
     }
 
@@ -581,9 +612,19 @@ private:
     }
 
     void _handle_stream_relay_alive(const subscriber_info& sub_info) {
-        auto pos = _relays.find(sub_info.endpoint_id);
-        if(pos != _relays.end()) {
-            pos->second.relay_timeout.reset();
+        auto ppos = _providers.find(sub_info.endpoint_id);
+        if(ppos != _providers.end()) {
+            ppos->second.provider_timeout.reset();
+        }
+
+        auto cpos = _consumers.find(sub_info.endpoint_id);
+        if(cpos != _consumers.end()) {
+            cpos->second.consumer_timeout.reset();
+        }
+
+        auto rpos = _relays.find(sub_info.endpoint_id);
+        if(rpos != _relays.end()) {
+            rpos->second.relay_timeout.reset();
         }
     }
 
@@ -612,10 +653,8 @@ private:
     }
 
     std::map<stream_key_t, stream_status> _streams;
-
-    struct relay_status {
-        timeout relay_timeout;
-    };
+    std::map<identifier_t, provider_status> _providers;
+    std::map<identifier_t, consumer_status> _consumers;
     std::map<identifier_t, relay_status> _relays;
 };
 //------------------------------------------------------------------------------
