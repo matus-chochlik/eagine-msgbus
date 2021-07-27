@@ -1,4 +1,5 @@
 /// @example eagine/msgbus/015_stream.cpp
+/// @note This example and the streaming system is work in progress
 ///
 /// Copyright Matus Chochlik.
 /// Distributed under the Boost Software License, Version 1.0.
