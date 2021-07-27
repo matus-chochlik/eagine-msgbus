@@ -23,14 +23,6 @@ class bridge
   : public main_ctx_object
   , public connection_user {
 
-    static constexpr auto invalid_id() noexcept -> identifier_t {
-        return 0U;
-    }
-
-    static constexpr auto is_valid_id(identifier_t id) noexcept -> bool {
-        return id != invalid_id();
-    }
-
 public:
     bridge(main_ctx_parent parent) noexcept
       : main_ctx_object(EAGINE_ID(MsgBusBrdg), parent)
@@ -44,7 +36,7 @@ public:
     auto add_connection(std::unique_ptr<connection>) -> bool final;
 
     auto has_id() const noexcept -> bool {
-        return is_valid_id(_id);
+        return is_valid_endpoint_id(_id);
     }
 
     auto update() -> work_done;
@@ -90,7 +82,7 @@ private:
     shared_context _context{};
 
     const process_instance_id_t _instance_id{process_instance_id()};
-    identifier_t _id{invalid_id()};
+    identifier_t _id{invalid_endpoint_id()};
     timeout _no_id_timeout{adjusted_duration(std::chrono::seconds{2}), nothing};
 
     std::chrono::steady_clock::time_point _startup_time{

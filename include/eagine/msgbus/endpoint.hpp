@@ -24,6 +24,10 @@ namespace eagine::msgbus {
 //------------------------------------------------------------------------------
 class friend_of_endpoint;
 //------------------------------------------------------------------------------
+static constexpr auto endpoint_alive_notify_period() noexcept {
+    return std::chrono::seconds{30};
+}
+//------------------------------------------------------------------------------
 /// @brief Message bus client endpoint that can send and receive messages.
 /// @ingroup msgbus
 /// @see static_subscriber
@@ -33,12 +37,12 @@ class endpoint
   , public main_ctx_object {
 public:
     static constexpr auto invalid_id() noexcept -> identifier_t {
-        return 0U;
+        return invalid_endpoint_id();
     }
 
     /// @brief Tests if the specified id is a valid endpoint id.
     static constexpr auto is_valid_id(identifier_t id) noexcept -> bool {
-        return id != invalid_id();
+        return is_valid_endpoint_id(id);
     }
 
     /// @brief Alias for message fetch handler callable reference.
@@ -441,7 +445,9 @@ private:
       nothing};
 
     resetting_timeout _should_notify_alive{
-      cfg_init("msgbus.endpoint.alive_notify_period", std::chrono::seconds{30}),
+      cfg_init(
+        "msgbus.endpoint.alive_notify_period",
+        endpoint_alive_notify_period()),
       nothing};
 
     std::unique_ptr<connection> _connection{};

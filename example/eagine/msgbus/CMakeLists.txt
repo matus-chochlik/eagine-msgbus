@@ -3,7 +3,6 @@
 # See accompanying file LICENSE_1_0.txt or copy at
 #  http://www.boost.org/LICENSE_1_0.txt
 #
-
 eagine_example_common(001_log_certs)
 eagine_example_common(001_signal)
 eagine_example_common(001_loopback)
@@ -28,4 +27,5 @@ eagine_example_common(012_fib_threads)
 eagine_example_common(012_sudoku_threads)
 eagine_example_common(013_conn_setup)
 eagine_example_common(014_tracker)
+eagine_example_common(015_stream)
 
