@@ -127,8 +127,9 @@ struct asio_common_state {
 
 private:
     template <typename Tup, std::size_t... I>
-    static void
-    _do_update_flushing(Tup& flushing, std::index_sequence<I...>) noexcept {
+    static void _do_update_flushing(
+      Tup& flushing,
+      std::index_sequence<I...>) noexcept {
         (..., std::get<I>(flushing).update());
     }
 
@@ -139,9 +140,9 @@ private:
     }
 
     template <typename Tup, std::size_t... I>
-    static auto
-    _does_have_flushing(Tup& flushing, std::index_sequence<I...>) noexcept
-      -> bool {
+    static auto _does_have_flushing(
+      Tup& flushing,
+      std::index_sequence<I...>) noexcept -> bool {
         return (false || ... || !std::get<I>(flushing).empty());
     }
 
@@ -168,8 +169,9 @@ struct asio_connection_group : interface<asio_connection_group<Kind, Proto>> {
     virtual auto pack_into(endpoint_type&, memory::block)
       -> message_pack_info = 0;
 
-    virtual void
-    on_sent(const endpoint_type&, const message_pack_info& to_be_removed) = 0;
+    virtual void on_sent(
+      const endpoint_type&,
+      const message_pack_info& to_be_removed) = 0;
 
     virtual void on_received(const endpoint_type&, memory::const_block) = 0;
 
@@ -375,14 +377,18 @@ struct asio_connection_state
     }
 
     template <typename Handler>
-    void
-    do_start_receive(stream_protocol_tag, memory::block blk, Handler handler) {
+    void do_start_receive(
+      stream_protocol_tag,
+      memory::block blk,
+      Handler handler) {
         asio::async_read(socket, asio::buffer(blk.data(), blk.size()), handler);
     }
 
     template <typename Handler>
-    void
-    do_start_receive(datagram_protocol_tag, memory::block blk, Handler handler) {
+    void do_start_receive(
+      datagram_protocol_tag,
+      memory::block blk,
+      Handler handler) {
         socket.async_receive_from(
           asio::buffer(blk.data(), blk.size()), conn_endpoint, handler);
     }
@@ -900,8 +906,9 @@ private:
       nothing};
     bool _connecting{false};
 
-    void
-    _start_connect(asio::ip::tcp::resolver::iterator resolved, ipv4_port port) {
+    void _start_connect(
+      asio::ip::tcp::resolver::iterator resolved,
+      ipv4_port port) {
         auto& ep = conn_state().conn_endpoint = *resolved;
         ep.port(port);
 

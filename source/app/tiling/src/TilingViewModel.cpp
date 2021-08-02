@@ -104,4 +104,3 @@ void TilingViewModel::onTilingChanged() {
     emit progressChanged();
 }
 //------------------------------------------------------------------------------
-

@@ -595,8 +595,9 @@ private:
           _hostname_to_endpoint.end());
     }
 
-    void
-    _handle_unsubscribed(const subscriber_info& sub_info, message_id msg_id) {
+    void _handle_unsubscribed(
+      const subscriber_info& sub_info,
+      message_id msg_id) {
         if(msg_id == EAGINE_MSG_ID(eagiRsrces, getContent)) {
             _remove_server(sub_info.endpoint_id);
         }
@@ -627,9 +628,9 @@ private:
         return true;
     }
 
-    auto
-    _handle_has_not_resource(const message_context&, stored_message& message)
-      -> bool {
+    auto _handle_has_not_resource(
+      const message_context&,
+      stored_message& message) -> bool {
         std::string url_str;
         if(EAGINE_LIKELY(default_deserialize(url_str, message.content()))) {
             server_has_not_resource(message.source_id, url{std::move(url_str)});
@@ -645,9 +646,9 @@ private:
         return true;
     }
 
-    auto
-    _handle_resource_not_found(const message_context&, stored_message& message)
-      -> bool {
+    auto _handle_resource_not_found(
+      const message_context&,
+      stored_message& message) -> bool {
         _blobs.cancel_incoming(message.sequence_no);
         return true;
     }

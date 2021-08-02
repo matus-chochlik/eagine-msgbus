@@ -122,9 +122,9 @@ inline auto parent_router::update(main_ctx_object& user, identifier_t id_base)
 }
 //------------------------------------------------------------------------------
 template <typename Handler>
-inline auto
-parent_router::fetch_messages(main_ctx_object& user, const Handler& handler)
-  -> work_done {
+inline auto parent_router::fetch_messages(
+  main_ctx_object& user,
+  const Handler& handler) -> work_done {
     some_true something_done;
 
     if(the_connection) {
@@ -328,7 +328,7 @@ auto router::_handle_pending() -> work_done {
                 }
                 pos->second.the_connection = std::move(pending.the_connection);
                 pos->second.maybe_router = maybe_router;
-                _pending.erase(_pending.begin() + idx);
+                _pending.erase(_pending.begin() + signedness_cast(idx));
                 _recently_disconnected.erase(id);
                 something_done();
             } else {
@@ -733,7 +733,7 @@ auto router::_update_stats() -> work_done {
 
         const bool flow_info_changed =
           _flow_info.avg_msg_age_ms != avg_msg_age_ms;
-        _flow_info.avg_msg_age_ms = avg_msg_age_ms;
+        _flow_info.avg_msg_age_ms = limit_cast<std::int16_t>(avg_msg_age_ms);
 
         if(EAGINE_UNLIKELY(flow_info_changed)) {
             auto send_info = [&](identifier_t remote_id, const auto& conn) {

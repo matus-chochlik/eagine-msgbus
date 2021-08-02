@@ -40,9 +40,9 @@ struct has_base_service<
   Required,
   RequiredArgs...> : std::true_type {};
 
-template <class Base, template <typename...> class Required>
+template <class Base, template <typename...> class Required, typename... Args>
 constexpr const bool has_base_service_v =
-  has_base_service<Base, Required>::value;
+  has_base_service<Base, Required, Args...>::value;
 //------------------------------------------------------------------------------
 template <class Base, template <typename...> class Required, typename... Args>
 using require_service = std::conditional_t<

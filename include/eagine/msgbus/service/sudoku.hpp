@@ -167,9 +167,9 @@ static inline auto sudoku_done_msg(unsigned_constant<S>) noexcept
 }
 //------------------------------------------------------------------------------
 template <unsigned S>
-static inline auto
-sudoku_response_msg(unsigned_constant<S> rank, bool is_solved) noexcept
-  -> message_id {
+static inline auto sudoku_response_msg(
+  unsigned_constant<S> rank,
+  bool is_solved) noexcept -> message_id {
     return is_solved ? sudoku_solved_msg(rank) : sudoku_candidate_msg(rank);
 }
 //------------------------------------------------------------------------------
@@ -234,8 +234,8 @@ private:
     }
 
     template <unsigned S>
-    static constexpr auto
-    _bind_handle_search(unsigned_constant<S> rank) noexcept {
+    static constexpr auto _bind_handle_search(
+      unsigned_constant<S> rank) noexcept {
         return message_handler_map<member_function_constant<
           bool (This::*)(const message_context&, stored_message&),
           &This::_handle_search<S>>>{sudoku_search_msg(rank)};
@@ -265,8 +265,8 @@ private:
     }
 
     template <unsigned S>
-    static constexpr auto
-    _bind_handle_board(unsigned_constant<S> rank) noexcept {
+    static constexpr auto _bind_handle_board(
+      unsigned_constant<S> rank) noexcept {
         return message_handler_map<member_function_constant<
           bool (This::*)(const message_context&, stored_message&),
           &This::_handle_board<S>>>{sudoku_query_msg(rank)};
@@ -843,8 +843,8 @@ private:
     }
 
     template <unsigned S>
-    static constexpr auto
-    _bind_handle_alive(unsigned_constant<S> rank) noexcept {
+    static constexpr auto _bind_handle_alive(
+      unsigned_constant<S> rank) noexcept {
         return message_handler_map<member_function_constant<
           bool (This::*)(const message_context&, stored_message&),
           &This::_handle_alive<S>>>{sudoku_alive_msg(rank)};
@@ -860,16 +860,16 @@ private:
     }
 
     template <unsigned S>
-    static constexpr auto
-    _bind_handle_candidate(unsigned_constant<S> rank) noexcept {
+    static constexpr auto _bind_handle_candidate(
+      unsigned_constant<S> rank) noexcept {
         return message_handler_map<member_function_constant<
           bool (This::*)(const message_context&, stored_message&),
           &This::_handle_board<S>>>{sudoku_candidate_msg(rank)};
     }
 
     template <unsigned S>
-    static constexpr auto
-    _bind_handle_solved(unsigned_constant<S> rank) noexcept {
+    static constexpr auto _bind_handle_solved(
+      unsigned_constant<S> rank) noexcept {
         return message_handler_map<member_function_constant<
           bool (This::*)(const message_context&, stored_message&),
           &This::_handle_board<S>>>{sudoku_solved_msg(rank)};
@@ -1093,9 +1093,8 @@ public:
     }
 
     /// @brief Prints the current tiling using the specified sudoku board traits.
-    auto
-    print(std::ostream& out, const basic_sudoku_board_traits<S>& traits) const
-      -> auto& {
+    auto print(std::ostream& out, const basic_sudoku_board_traits<S>& traits)
+      const -> auto& {
         return print(out, {_minu, _minv}, {_maxu, _maxv}, traits);
     }
 
@@ -1165,9 +1164,11 @@ class sudoku_tiling : public sudoku_solver<Base, std::tuple<int, int>> {
 public:
     /// @brief Initializes the tiling to be generated with initial board.
     template <unsigned S>
-    auto
-    initialize(Coord min, Coord max, Coord coord, basic_sudoku_board<S> board)
-      -> auto& {
+    auto initialize(
+      Coord min,
+      Coord max,
+      Coord coord,
+      basic_sudoku_board<S> board) -> auto& {
         const auto [x, y] = coord;
         auto& info = _infos.get(unsigned_constant<S>{});
         info.set_extent(min, max);
@@ -1272,8 +1273,7 @@ private:
     template <unsigned S>
     struct rank_info : sudoku_tiles<S> {
 
-        void
-        initialize(This& solver, int x, int y, basic_sudoku_board<S> board) {
+        void initialize(This& solver, int x, int y, basic_sudoku_board<S> board) {
             solver.enqueue({x, y}, std::move(board));
             solver.bus_node()
               .log_debug("enqueuing initial board (${x}, ${y})")

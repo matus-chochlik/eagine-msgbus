@@ -34,7 +34,7 @@ void HelperContributionViewModel::helperContributed(
 //------------------------------------------------------------------------------
 auto HelperContributionViewModel::getHelperIds() const -> QStringList {
     QStringList result;
-    result.reserve(_contributions.size());
+    result.reserve(eagine::limit_cast<int>(_contributions.size()));
     for(const auto& entry : _contributions) {
         result.append(QString::number(std::get<0>(entry)));
     }
@@ -43,7 +43,7 @@ auto HelperContributionViewModel::getHelperIds() const -> QStringList {
 //------------------------------------------------------------------------------
 auto HelperContributionViewModel::getSolvedCounts() const -> QVariantList {
     QVariantList result;
-    result.reserve(_contributions.size());
+    result.reserve(eagine::limit_cast<int>(_contributions.size()));
     for(const auto& entry : _contributions) {
         result.append(qlonglong(std::get<0>(std::get<1>(entry))));
     }
@@ -51,6 +51,6 @@ auto HelperContributionViewModel::getSolvedCounts() const -> QVariantList {
 }
 //------------------------------------------------------------------------------
 auto HelperContributionViewModel::getMaxSolvedCount() const -> qreal {
-    return _maxCount;
+    return static_cast<qreal>(_maxCount);
 }
 //------------------------------------------------------------------------------

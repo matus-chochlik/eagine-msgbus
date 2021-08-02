@@ -177,7 +177,12 @@ public:
                   .arg(EAGINE_ID(rcvd), _rcvd)
                   .arg(EAGINE_ID(interval), interval)
                   .arg(EAGINE_ID(msgsPerSec), msgs_per_sec)
-                  .arg(EAGINE_ID(done), EAGINE_ID(Progress), 0, _rcvd, _max);
+                  .arg(
+                    EAGINE_ID(done),
+                    EAGINE_ID(Progress),
+                    0.F,
+                    static_cast<float>(_rcvd),
+                    static_cast<float>(_max));
             }
             prev_log = now;
         }
@@ -210,9 +215,10 @@ public:
                 for(auto& [pingable_id, entry] : _targets) {
                     if(_rcvd < _max) {
                         const auto lim{
-                          _rcvd +
-                          static_cast<std::intmax_t>(
-                            _mod * (1 + std::log(float(1 + _targets.size()))))};
+                          _rcvd + static_cast<std::intmax_t>(
+                                    static_cast<float>(_mod) *
+                                    (1.F + std::log(static_cast<float>(
+                                             1 + _targets.size()))))};
 
                         if(_sent < lim) {
                             this->ping(pingable_id, std::chrono::seconds(5));

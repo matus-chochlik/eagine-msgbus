@@ -203,7 +203,12 @@ public:
                   .arg(EAGINE_ID(rcvd), _rcvd)
                   .arg(EAGINE_ID(interval), interval)
                   .arg(EAGINE_ID(msgsPerSec), msgs_per_sec)
-                  .arg(EAGINE_ID(done), EAGINE_ID(Progress), 0, _rcvd, _max);
+                  .arg(
+                    EAGINE_ID(done),
+                    EAGINE_ID(Progress),
+                    0.F,
+                    static_cast<float>(_rcvd),
+                    static_cast<float>(_max));
             }
             prev_log = now;
         }

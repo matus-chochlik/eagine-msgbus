@@ -74,8 +74,9 @@ enum class remote_node_change : std::uint16_t {
 };
 //------------------------------------------------------------------------------
 template <typename Selector>
-constexpr auto
-enumerator_mapping(type_identity<remote_node_change>, Selector) noexcept {
+constexpr auto enumerator_mapping(
+  type_identity<remote_node_change>,
+  Selector) noexcept {
     return enumerator_map_type<remote_node_change, 16>{
       {{"kind", remote_node_change::kind},
        {"instance_id", remote_node_change::instance_id},
@@ -141,8 +142,9 @@ enum class remote_instance_change : std::uint16_t {
 };
 //------------------------------------------------------------------------------
 template <typename Selector>
-constexpr auto
-enumerator_mapping(type_identity<remote_instance_change>, Selector) noexcept {
+constexpr auto enumerator_mapping(
+  type_identity<remote_instance_change>,
+  Selector) noexcept {
     return enumerator_map_type<remote_instance_change, 5>{
       {{"host_id", remote_instance_change::host_id},
        {"started_responding", remote_instance_change::started_responding},
@@ -167,9 +169,9 @@ struct remote_instance_changes : bitfield<remote_instance_change> {
     }
 };
 
-static inline auto
-operator|(remote_instance_change l, remote_instance_change r) noexcept
-  -> remote_instance_changes {
+static inline auto operator|(
+  remote_instance_change l,
+  remote_instance_change r) noexcept -> remote_instance_changes {
     return {l, r};
 }
 //------------------------------------------------------------------------------
@@ -191,8 +193,9 @@ enum class remote_host_change : std::uint16_t {
 };
 //------------------------------------------------------------------------------
 template <typename Selector>
-constexpr auto
-enumerator_mapping(type_identity<remote_host_change>, Selector) noexcept {
+constexpr auto enumerator_mapping(
+  type_identity<remote_host_change>,
+  Selector) noexcept {
     return enumerator_map_type<remote_host_change, 5>{
       {{"hostname", remote_host_change::hostname},
        {"started_responding", remote_host_change::started_responding},
@@ -367,8 +370,9 @@ public:
     /// The function is called with (host_id_t, const remote_node_state&) as arguments.
     /// This function is subject to change without notice. Prefer using for_each_node.
     template <typename Function>
-    void
-    for_each_instance_node_state(process_instance_id_t inst_id, Function func);
+    void for_each_instance_node_state(
+      process_instance_id_t inst_id,
+      Function func);
 
     /// @brief Calls a function on tracked remote bus nodes of a remote host.
     /// @see remote_node_state

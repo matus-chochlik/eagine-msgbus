@@ -38,8 +38,9 @@ enum class connection_addr_kind {
 };
 
 template <typename Selector>
-constexpr auto
-enumerator_mapping(type_identity<connection_addr_kind>, Selector) noexcept {
+constexpr auto enumerator_mapping(
+  type_identity<connection_addr_kind>,
+  Selector) noexcept {
     return enumerator_map_type<connection_addr_kind, 3>{
       {{"none", connection_addr_kind::none},
        {"filepath", connection_addr_kind::filepath},
@@ -65,8 +66,9 @@ enum class connection_protocol {
 };
 
 template <typename Selector>
-constexpr auto
-enumerator_mapping(type_identity<connection_protocol>, Selector) noexcept {
+constexpr auto enumerator_mapping(
+  type_identity<connection_protocol>,
+  Selector) noexcept {
     return enumerator_map_type<connection_protocol, 3>{
       {{"stream", connection_protocol::stream},
        {"datagram", connection_protocol::datagram},

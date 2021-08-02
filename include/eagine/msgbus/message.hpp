@@ -92,8 +92,9 @@ static inline auto operator<(message_priority l, message_priority r) noexcept
 }
 //------------------------------------------------------------------------------
 template <typename Selector>
-constexpr auto
-enumerator_mapping(type_identity<message_priority>, Selector) noexcept {
+constexpr auto enumerator_mapping(
+  type_identity<message_priority>,
+  Selector) noexcept {
     return enumerator_map_type<message_priority, 5>{
       {{"critical", message_priority::critical},
        {"high", message_priority::high},
@@ -118,8 +119,9 @@ enum class message_crypto_flag : std::uint8_t {
 using message_crypto_flags = bitfield<message_crypto_flag>;
 //------------------------------------------------------------------------------
 template <typename Selector>
-constexpr auto
-enumerator_mapping(type_identity<message_crypto_flag>, Selector) noexcept {
+constexpr auto enumerator_mapping(
+  type_identity<message_crypto_flag>,
+  Selector) noexcept {
     return enumerator_map_type<message_crypto_flag, 3>{
       {{"asymmetric", message_crypto_flag::asymmetric},
        {"signed_header", message_crypto_flag::signed_header},
@@ -769,7 +771,7 @@ public:
             if(handler(msg_ctx, _messages[pos])) {
                 ++count;
                 _buffers.eat(_messages[pos].release_buffer());
-                _messages.erase(_messages.begin() + pos);
+                _messages.erase(_messages.begin() + signedness_cast(pos));
             } else {
                 ++pos;
             }

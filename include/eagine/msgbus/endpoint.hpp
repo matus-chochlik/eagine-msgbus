@@ -499,9 +499,10 @@ private:
 
     auto _do_send(message_id msg_id, message_view) -> bool;
 
-    auto
-    _handle_send(message_id msg_id, message_age, const message_view& message)
-      -> bool {
+    auto _handle_send(
+      message_id msg_id,
+      message_age,
+      const message_view& message) -> bool {
         // TODO: use message age
         return _do_send(msg_id, message);
     }

@@ -31,7 +31,7 @@ void SolutionIntervalViewModel::helperContributed(eagine::identifier_t) {
 //------------------------------------------------------------------------------
 auto SolutionIntervalViewModel::getIntervals() const -> QVariantList {
     QVariantList result;
-    result.reserve(_intervals.size());
+    result.reserve(eagine::limit_cast<int>(_intervals.size()));
     for(const auto& value : eagine::reverse(_intervals)) {
         result.append(value.count());
     }

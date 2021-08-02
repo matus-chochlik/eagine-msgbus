@@ -153,9 +153,8 @@ private:
 };
 //------------------------------------------------------------------------------
 template <typename... Params>
-[[nodiscard]] auto
-signal<void(Params...)>::bind(callable_ref<void(Params...)> slot)
-  -> signal_binding {
+[[nodiscard]] auto signal<void(Params...)>::bind(
+  callable_ref<void(Params...)> slot) -> signal_binding {
     return {connect(slot), this};
 }
 //------------------------------------------------------------------------------

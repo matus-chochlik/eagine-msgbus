@@ -15,8 +15,9 @@
 
 namespace eagine {
 //------------------------------------------------------------------------------
-static inline auto
-adapt_log_entry_arg(identifier name, const msgbus::remote_node& value) {
+static inline auto adapt_log_entry_arg(
+  const identifier name,
+  const msgbus::remote_node& value) {
     return [name, value](logger_backend& backend) {
         backend.add_unsigned(
           name, EAGINE_ID(uint64), extract_or(value.id(), 0U));
@@ -58,8 +59,9 @@ adapt_log_entry_arg(identifier name, const msgbus::remote_node& value) {
     };
 }
 //------------------------------------------------------------------------------
-static inline auto
-adapt_log_entry_arg(identifier name, const msgbus::remote_host& value) {
+static inline auto adapt_log_entry_arg(
+  const identifier name,
+  const msgbus::remote_host& value) {
     return [name, value](logger_backend& backend) {
         backend.add_unsigned(
           name, EAGINE_ID(uint64), extract_or(value.id(), 0U));

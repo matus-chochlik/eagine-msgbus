@@ -39,8 +39,9 @@ struct stream_info {
 };
 
 template <typename Selector>
-constexpr auto
-data_member_mapping(type_identity<stream_info>, Selector) noexcept {
+constexpr auto data_member_mapping(
+  type_identity<stream_info>,
+  Selector) noexcept {
     using S = stream_info;
     return make_data_member_mapping<
       S,
@@ -371,8 +372,9 @@ public:
 
     /// @brief Unsubscribes from the specified stream.
     /// @seei subscribe_to_stream
-    void
-    unsubscribe_from_stream(identifier_t provider_id, identifier_t stream_id) {
+    void unsubscribe_from_stream(
+      identifier_t provider_id,
+      identifier_t stream_id) {
         const stream_key_t key{provider_id, stream_id};
         auto pos = _streams.find(key);
         if(pos != _streams.end()) {
@@ -430,9 +432,9 @@ private:
         return true;
     }
 
-    auto
-    _handle_stream_disappeared(const message_context&, stored_message& message)
-      -> bool {
+    auto _handle_stream_disappeared(
+      const message_context&,
+      stored_message& message) -> bool {
         stream_info info{};
         if(default_deserialize(info, message.content())) {
             stream_disappeared(

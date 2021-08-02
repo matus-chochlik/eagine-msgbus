@@ -137,8 +137,8 @@ protected:
         }
     }
 
-    void
-    _unsubscribe_from(span<const handler_entry> msg_handlers) const noexcept {
+    void _unsubscribe_from(
+      span<const handler_entry> msg_handlers) const noexcept {
         for(auto& entry : msg_handlers) {
             try {
                 _endpoint.unsubscribe(entry.msg_id);

@@ -157,9 +157,9 @@ private:
     default_function_skeleton<power_supply_kind() noexcept, 32>
       _power_supply_kind;
 
-    auto
-    _handle_stats_query(const message_context& msg_ctx, stored_message& message)
-      -> bool {
+    auto _handle_stats_query(
+      const message_context& msg_ctx,
+      stored_message& message) -> bool {
         _cpu_concurrent_threads.invoke_by(msg_ctx, message);
         _memory_page_size.invoke_by(msg_ctx, message);
         _total_ram_size.invoke_by(msg_ctx, message);
