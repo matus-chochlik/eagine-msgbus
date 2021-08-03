@@ -30,7 +30,7 @@ registry::registry(main_ctx_parent parent)
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-auto registry::_add_entry(identifier log_id) -> registered_entry& {
+auto registry::_add_entry(const identifier log_id) -> registered_entry& {
     auto new_ept{std::make_unique<endpoint>(main_ctx_object{log_id, *this})};
     new_ept->add_connection(_acceptor->make_connection());
 

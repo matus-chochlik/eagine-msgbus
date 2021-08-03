@@ -60,13 +60,13 @@ public:
 
     /// @brief Queries the subscriptions of the remote endpoint with the specified id.
     /// @see query_subscribers_of
-    void query_subscriptions_of(identifier_t target_id) {
+    void query_subscriptions_of(const identifier_t target_id) {
         _endpoint.query_subscriptions_of(target_id);
     }
 
     /// @brief Queries remote nodes subscribing to the specified message.
     /// @see query_subscriptions_of
-    void query_subscribers_of(message_id sub_msg) {
+    void query_subscribers_of(const message_id sub_msg) {
         _endpoint.query_subscribers_of(sub_msg);
     }
 
@@ -93,8 +93,8 @@ protected:
           , handler{std::move(hndlr)} {}
 
         template <
-          identifier_t ClassId,
-          identifier_t MethodId,
+          const identifier_t ClassId,
+          const identifier_t MethodId,
           typename Class,
           bool (Class::*HandlerFunc)(const message_context&, stored_message&)>
         handler_entry(
@@ -108,8 +108,8 @@ protected:
           , handler{instance, msg_map.method()} {}
 
         template <
-          identifier_t ClassId,
-          identifier_t MethodId,
+          const identifier_t ClassId,
+          const identifier_t MethodId,
           typename Class,
           bool (Class::*HandlerFunc)(const message_context&, stored_message&)>
         handler_entry(
@@ -131,14 +131,14 @@ protected:
     subscriber_base(subscriber_base&& temp) noexcept
       : _endpoint{temp._endpoint} {}
 
-    void _subscribe_to(span<const handler_entry> msg_handlers) const {
+    void _subscribe_to(const span<const handler_entry> msg_handlers) const {
         for(auto& entry : msg_handlers) {
             _endpoint.subscribe(entry.msg_id);
         }
     }
 
     void _unsubscribe_from(
-      span<const handler_entry> msg_handlers) const noexcept {
+      const span<const handler_entry> msg_handlers) const noexcept {
         for(auto& entry : msg_handlers) {
             try {
                 _endpoint.unsubscribe(entry.msg_id);
@@ -147,20 +147,22 @@ protected:
         }
     }
 
-    void _announce_subscriptions(span<const handler_entry> msg_handlers) const {
+    void _announce_subscriptions(
+      const span<const handler_entry> msg_handlers) const {
         for(auto& entry : msg_handlers) {
             _endpoint.say_subscribes_to(entry.msg_id);
         }
     }
 
-    void _allow_subscriptions(span<const handler_entry> msg_handlers) const {
+    void _allow_subscriptions(
+      const span<const handler_entry> msg_handlers) const {
         for(auto& entry : msg_handlers) {
             _endpoint.allow_message_type(entry.msg_id);
         }
     }
 
     void _retract_subscriptions(
-      span<const handler_entry> msg_handlers) const noexcept {
+      const span<const handler_entry> msg_handlers) const noexcept {
         for(auto& entry : msg_handlers) {
             try {
                 _endpoint.say_unsubscribes_from(entry.msg_id);
@@ -170,17 +172,17 @@ protected:
     }
 
     void _respond_to_subscription_query(
-      identifier_t source_id,
-      span<const handler_entry> msg_handlers) const {
+      const identifier_t source_id,
+      const span<const handler_entry> msg_handlers) const {
         for(auto& entry : msg_handlers) {
             _endpoint.say_subscribes_to(source_id, entry.msg_id);
         }
     }
 
     void _respond_to_subscription_query(
-      identifier_t source_id,
-      message_id sub_msg,
-      span<const handler_entry> msg_handlers) const {
+      const identifier_t source_id,
+      const message_id sub_msg,
+      const span<const handler_entry> msg_handlers) const {
         for(auto& entry : msg_handlers) {
             if(entry.msg_id == sub_msg) {
                 _endpoint.say_subscribes_to(source_id, sub_msg);
@@ -190,7 +192,7 @@ protected:
         _endpoint.say_not_subscribed_to(source_id, sub_msg);
     }
 
-    auto _process_one(span<const handler_entry> msg_handlers) -> bool {
+    auto _process_one(const span<const handler_entry> msg_handlers) -> bool {
         for(auto& entry : msg_handlers) {
             EAGINE_ASSERT(entry.queue);
             const message_context msg_ctx{this->bus_node(), entry.msg_id};
@@ -201,7 +203,8 @@ protected:
         return false;
     }
 
-    auto _process_all(span<const handler_entry> msg_handlers) -> span_size_t {
+    auto _process_all(const span<const handler_entry> msg_handlers)
+      -> span_size_t {
         span_size_t result{0};
         for(auto& entry : msg_handlers) {
             EAGINE_ASSERT(entry.queue);
@@ -257,7 +260,7 @@ public:
       typename Class,
       typename... MsgMaps,
       typename = std::enable_if_t<sizeof...(MsgMaps) == N>>
-    static_subscriber(endpoint& bus, Class* instance, MsgMaps... msg_maps)
+    static_subscriber(endpoint& bus, Class* instance, const MsgMaps... msg_maps)
       : static_subscriber(bus, handler_entry(instance, msg_maps)...) {}
 
     /// @brief Not move constructible.
@@ -313,7 +316,8 @@ public:
     /// @brief Sends messages responding to a subscription query.
     /// @see retract_subscriptions
     /// @see announce_subscriptions
-    void respond_to_subscription_query(identifier_t source_id) const noexcept {
+    void respond_to_subscription_query(
+      const identifier_t source_id) const noexcept {
         this->_respond_to_subscription_query(source_id, view(_msg_handlers));
     }
 
@@ -321,8 +325,8 @@ public:
     /// @see retract_subscriptions
     /// @see announce_subscriptions
     void respond_to_subscription_query(
-      identifier_t source_id,
-      message_id sub_msg) const noexcept {
+      const identifier_t source_id,
+      const message_id sub_msg) const noexcept {
         this->_respond_to_subscription_query(
           source_id, sub_msg, view(_msg_handlers));
     }
@@ -354,8 +358,8 @@ public:
       bool (Class::*Method)(const message_context&, stored_message&)>
     void add_method(
       Class* instance,
-      message_id msg_id,
-      member_function_constant<
+      const message_id msg_id,
+      const member_function_constant<
         bool (Class::*)(const message_context&, stored_message&),
         Method> method) {
         _msg_handlers.emplace_back(msg_id, method_handler{instance, method});
@@ -396,7 +400,7 @@ public:
       identifier_t MethodId>
     void add_method(
       Class* instance,
-      static_message_handler_map<
+      const static_message_handler_map<
         static_message_id<ClassId, MethodId>,
         member_function_constant<
           bool (Class::*)(const message_context&, stored_message&),
@@ -443,7 +447,8 @@ public:
     /// @brief Sends messages responding to a subscription query.
     /// @see retract_subscriptions
     /// @see announce_subscriptions
-    void respond_to_subscription_query(identifier_t source_id) const noexcept {
+    void respond_to_subscription_query(
+      const identifier_t source_id) const noexcept {
         this->_respond_to_subscription_query(source_id, view(_msg_handlers));
     }
 
@@ -451,8 +456,8 @@ public:
     /// @see retract_subscriptions
     /// @see announce_subscriptions
     void respond_to_subscription_query(
-      identifier_t source_id,
-      message_id sub_msg) const noexcept {
+      const identifier_t source_id,
+      const message_id sub_msg) const noexcept {
         this->_respond_to_subscription_query(
           source_id, sub_msg, view(_msg_handlers));
     }
