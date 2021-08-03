@@ -41,7 +41,7 @@ public:
     }
 
     /// @brief Tests if the specified id is a valid endpoint id.
-    static constexpr auto is_valid_id(identifier_t id) noexcept -> bool {
+    static constexpr auto is_valid_id(const identifier_t id) noexcept -> bool {
         return is_valid_endpoint_id(id);
     }
 
@@ -49,10 +49,10 @@ public:
     using fetch_handler = connection::fetch_handler;
 
     /// @brief Triggered when the id is confirmed or assigned to this endpoint.
-    signal<void(identifier_t)> id_assigned;
+    signal<void(const identifier_t)> id_assigned;
 
     /// @brief Triggered when this endpoint's connection is established.
-    signal<void(bool)> connection_established;
+    signal<void(const bool)> connection_established;
 
     /// @brief Triggered when this endpoint's connection is lost.
     signal<void()> connection_lost;
@@ -62,7 +62,7 @@ public:
       : main_ctx_object{std::move(obj)} {}
 
     /// @brief Construction with an enpoint id and parent main context object.
-    endpoint(identifier id, main_ctx_parent parent) noexcept
+    endpoint(const identifier id, main_ctx_parent parent) noexcept
       : main_ctx_object{id, parent} {}
 
     /// @brief Not copy constructible.
@@ -86,7 +86,7 @@ public:
     /// @see has_id
     /// @see get_id
     /// @note Do not set manually, use preconfigure_id instead.
-    auto set_id(identifier id) -> auto& {
+    auto set_id(const identifier id) -> auto& {
         _endpoint_id = id.value();
         return *this;
     }
@@ -95,7 +95,7 @@ public:
     /// @see set_id
     /// @see has_preconfigured_id
     /// @see get_preconfigured_id
-    auto preconfigure_id(identifier_t id) -> auto& {
+    auto preconfigure_id(const identifier_t id) -> auto& {
         _preconfd_id = id;
         return *this;
     }
@@ -134,11 +134,11 @@ public:
 
     /// @brief Adds endpoint certificate in a PEM-encoded memory block.
     /// @see add_ca_certificate_pem
-    void add_certificate_pem(memory::const_block blk);
+    void add_certificate_pem(const memory::const_block blk);
 
     /// @brief Adds CA certificate in a PEM-encoded memory block.
     /// @see add_certificate_pem
-    void add_ca_certificate_pem(memory::const_block blk);
+    void add_ca_certificate_pem(const memory::const_block blk);
 
     /// @brief Adds a connection for communication with a message bus router.
     auto add_connection(std::unique_ptr<connection> conn) -> bool final;
@@ -162,19 +162,19 @@ public:
     }
 
     /// @brief Subscribes to messages with the specified id/type.
-    void subscribe(message_id);
+    void subscribe(const message_id);
 
     /// @brief Unsubscribes from messages with the specified id/type.
-    void unsubscribe(message_id);
+    void unsubscribe(const message_id);
 
-    auto set_next_sequence_id(message_id, message_info&) -> bool;
+    auto set_next_sequence_id(const message_id, message_info&) -> bool;
 
     /// @brief Enqueues a message with the specified id/type for sending.
     /// @see post_signed
     /// @see post_value
     /// @see post_blob
     /// @see post_callable
-    auto post(message_id msg_id, const message_view& message) -> bool {
+    auto post(const message_id msg_id, const message_view& message) -> bool {
         if(EAGINE_LIKELY(has_id())) {
             return _do_send(msg_id, message);
         }
@@ -192,15 +192,17 @@ public:
     /// @brief Signs and enqueues a message with the specified id/type for sending.
     /// @see post
     /// @see post_value
-    auto post_signed(message_id, message_view message) -> bool;
+    auto post_signed(const message_id, const message_view message) -> bool;
 
     /// @brief Serializes the specified value and enqueues it for sending in message.
     /// @see post
     /// @see post_signed
     /// @see default_serialize
     template <typename T>
-    auto post_value(message_id msg_id, T& value, const message_info& info = {})
-      -> bool {
+    auto post_value(
+      const message_id msg_id,
+      T& value,
+      const message_info& info = {}) -> bool {
         if(const auto opt_size = max_data_size()) {
             const auto max_size = extract(opt_size);
             return _outgoing.push_if(
@@ -224,12 +226,12 @@ public:
     /// @see post_value
     /// @see max_data_size
     auto post_blob(
-      message_id msg_id,
-      identifier_t target_id,
-      blob_id_t target_blob_id,
-      memory::const_block blob,
-      std::chrono::seconds max_time,
-      message_priority priority) -> message_sequence_t {
+      const message_id msg_id,
+      const identifier_t target_id,
+      const blob_id_t target_blob_id,
+      const memory::const_block blob,
+      const std::chrono::seconds max_time,
+      const message_priority priority) -> message_sequence_t {
         return _blobs.push_outgoing(
           msg_id,
           _endpoint_id,
@@ -246,10 +248,10 @@ public:
     /// @see post_value
     /// @see max_data_size
     auto broadcast_blob(
-      message_id msg_id,
-      memory::const_block blob,
-      std::chrono::seconds max_time,
-      message_priority priority) -> bool {
+      const message_id msg_id,
+      const memory::const_block blob,
+      const std::chrono::seconds max_time,
+      const message_priority priority) -> bool {
         return post_blob(
           msg_id, broadcast_endpoint_id(), 0, blob, max_time, priority);
     }
@@ -260,19 +262,20 @@ public:
     /// @see post_value
     /// @see max_data_size
     auto broadcast_blob(
-      message_id msg_id,
-      memory::const_block blob,
-      std::chrono::seconds max_time) -> bool {
+      const message_id msg_id,
+      const memory::const_block blob,
+      const std::chrono::seconds max_time) -> bool {
         return broadcast_blob(msg_id, blob, max_time, message_priority::normal);
     }
 
     /// @brief Posts the certificate of this enpoint to the specified remote.
-    auto post_certificate(identifier_t target_id, blob_id_t) -> bool;
+    auto post_certificate(const identifier_t target_id, const blob_id_t)
+      -> bool;
 
     /// @brief Broadcasts the certificate of this enpoint to the whole bus.
     auto broadcast_certificate() -> bool;
 
-    auto broadcast(message_id msg_id) -> bool {
+    auto broadcast(const message_id msg_id) -> bool {
         return post(msg_id, {});
     }
 
@@ -294,50 +297,52 @@ public:
     /// @see post
     /// @see post_meta_message_to
     /// @see default_serialize
-    void post_meta_message(message_id meta_msg_id, message_id msg_id);
+    void post_meta_message(
+      const message_id meta_msg_id,
+      const message_id msg_id);
 
     /// @brief Post a message with another message type as its content to target.
     /// @see post
     /// @see post_meta_message
     /// @see default_serialize
     void post_meta_message_to(
-      identifier_t target_id,
-      message_id meta_msg_id,
-      message_id msg_id);
+      const identifier_t target_id,
+      const message_id meta_msg_id,
+      const message_id msg_id);
 
     /// @brief Broadcasts a message that this subscribes to message with given id.
     /// @see post_meta_message
     /// @see say_unsubscribes_from
     /// @see say_not_subscribed_to
-    void say_subscribes_to(message_id);
+    void say_subscribes_to(const message_id);
 
     /// @brief Posts a message that this subscribes to message with given id.
     /// @see post_meta_message_to
     /// @see say_unsubscribes_from
     /// @see say_not_subscribed_to
-    void say_subscribes_to(identifier_t target_id, message_id);
+    void say_subscribes_to(const identifier_t target_id, const message_id);
 
     /// @brief Broadcasts a message that this unsubscribes from message with given type.
     /// @see post_meta_message
     /// @see say_subscribes_to
     /// @see say_not_subscribed_to
-    void say_unsubscribes_from(message_id);
+    void say_unsubscribes_from(const message_id);
 
     /// @brief Posts a message that this is not subscribed to message with given type.
     /// @see post_meta_message
     /// @see say_subscribes_to
     /// @see say_not_subscribed_to
-    void say_not_subscribed_to(identifier_t target_id, message_id);
+    void say_not_subscribed_to(const identifier_t target_id, const message_id);
 
     /// @brief Posts a message requesting all subscriptions of a target node.
     /// @see query_subscribers_of
     /// @see say_subscribes_to
-    void query_subscriptions_of(identifier_t target_id);
+    void query_subscriptions_of(const identifier_t target_id);
 
     /// @brief Posts a message requesting all subscribers of a given message type.
     /// @see query_subscribers_of
     /// @see say_subscribes_to
-    void query_subscribers_of(message_id);
+    void query_subscribers_of(const message_id);
 
     /// @brief Sends a message to router to clear its block filter for this endpoint.
     /// @see block_message_type
@@ -347,7 +352,7 @@ public:
     /// @brief Sends a message to router to start blocking message type for this endpoint.
     /// @see clear_block_list
     /// @see allow_message_type
-    void block_message_type(message_id);
+    void block_message_type(const message_id);
 
     /// @brief Sends a message to router to clear its allow filter for this endpoint.
     /// @see allow_message_type
@@ -357,23 +362,23 @@ public:
     /// @brief Sends a message to router to start blocking message type for this endpoint.
     /// @see clear_allow_list
     /// @see block_message_type
-    void allow_message_type(message_id);
+    void allow_message_type(const message_id);
 
     /// @brief Sends a message requesting remote endpoint certificate.
-    void query_certificate_of(identifier_t endpoint_id);
+    void query_certificate_of(const identifier_t endpoint_id);
 
     /// @brief Posts a message as a response to another received message.
     /// @see message_info::setup_response
     auto respond_to(
       const message_info& info,
-      message_id msg_id,
+      const message_id msg_id,
       message_view message) -> bool {
         message.setup_response(info);
         return post(msg_id, message);
     }
 
     /// @brief Posts a message as a response to another received message.
-    auto respond_to(const message_info& info, message_id msg_id) -> bool {
+    auto respond_to(const message_info& info, const message_id msg_id) -> bool {
         return respond_to(info, msg_id, {});
     }
 
@@ -386,7 +391,8 @@ public:
     /// @brief Processes a single received message of specified type with a handler.
     /// @see process_all
     /// @see process_everything
-    auto process_one(message_id msg_id, method_handler handler) -> bool;
+    auto process_one(const message_id msg_id, const method_handler handler)
+      -> bool;
 
     /// @brief Processes a single received message of specified type with a method.
     /// @see process_all
@@ -395,8 +401,8 @@ public:
       typename Class,
       bool (Class::*MemFnPtr)(const message_context&, stored_message&)>
     auto process_one(
-      message_id msg_id,
-      member_function_constant<
+      const message_id msg_id,
+      const member_function_constant<
         bool (Class::*)(const message_context&, stored_message&),
         MemFnPtr> method,
       Class* instance) -> bool {
@@ -406,12 +412,14 @@ public:
     /// @brief Processes all received messages of specified type with a handler.
     /// @see process_one
     /// @see process_everything
-    auto process_all(message_id msg_id, method_handler handler) -> span_size_t;
+    auto process_all(const message_id msg_id, const method_handler handler)
+      -> span_size_t;
 
     /// @brief Processes all received messages regardles of type with a handler.
-    auto process_everything(method_handler handler) -> span_size_t;
+    auto process_everything(const method_handler handler) -> span_size_t;
 
-    auto ensure_queue(message_id msg_id) noexcept -> message_priority_queue& {
+    auto ensure_queue(const message_id msg_id) noexcept
+      -> message_priority_queue& {
         return _ensure_incoming(msg_id).queue;
     }
 
@@ -462,7 +470,7 @@ private:
 
     flat_map<message_id, std::unique_ptr<incoming_state>> _incoming{};
 
-    auto _ensure_incoming(message_id msg_id) -> incoming_state& {
+    auto _ensure_incoming(const message_id msg_id) -> incoming_state& {
         auto pos = _incoming.find(msg_id);
         if(pos == _incoming.end()) {
             pos = _incoming.emplace(msg_id, std::make_unique<incoming_state>())
@@ -472,12 +480,14 @@ private:
         return *pos->second;
     }
 
-    auto _find_incoming(message_id msg_id) const noexcept -> incoming_state* {
+    auto _find_incoming(const message_id msg_id) const noexcept
+      -> incoming_state* {
         const auto pos = _incoming.find(msg_id);
         return (pos != _incoming.end()) ? pos->second.get() : nullptr;
     }
 
-    auto _get_incoming(message_id msg_id) const noexcept -> incoming_state& {
+    auto _get_incoming(const message_id msg_id) const noexcept
+      -> incoming_state& {
         const auto pos = _incoming.find(msg_id);
         EAGINE_ASSERT(pos != _incoming.end());
         EAGINE_ASSERT(pos->second);
@@ -497,11 +507,11 @@ private:
 
     fetch_handler _store_handler{_default_store_handler()};
 
-    auto _do_send(message_id msg_id, message_view) -> bool;
+    auto _do_send(const message_id msg_id, message_view) -> bool;
 
     auto _handle_send(
-      message_id msg_id,
-      message_age,
+      const message_id msg_id,
+      const message_age,
       const message_view& message) -> bool {
         // TODO: use message age
         return _do_send(msg_id, message);
@@ -537,13 +547,15 @@ private:
       -> message_handling_result;
     auto _handle_stats_query(const message_view&) noexcept
       -> message_handling_result;
-    auto _handle_special(message_id msg_id, const message_view&) noexcept
+    auto _handle_special(const message_id msg_id, const message_view&) noexcept
       -> message_handling_result;
 
-    auto _store_message(message_id msg_id, message_age, const message_view&)
-      -> bool;
+    auto _store_message(
+      const message_id msg_id,
+      const message_age,
+      const message_view&) -> bool;
 
-    auto _accept_message(message_id msg_id, const message_view&) -> bool;
+    auto _accept_message(const message_id msg_id, const message_view&) -> bool;
 
     explicit endpoint(main_ctx_object obj, fetch_handler store_message) noexcept
       : main_ctx_object{std::move(obj)}
@@ -577,19 +589,19 @@ class friend_of_endpoint {
 protected:
     static auto _make_endpoint(
       main_ctx_object obj,
-      endpoint::fetch_handler store_message) noexcept {
+      const endpoint::fetch_handler store_message) noexcept {
         return endpoint{std::move(obj), store_message};
     }
 
     static auto _move_endpoint(
       endpoint&& bus,
-      endpoint::fetch_handler store_message) noexcept {
+      const endpoint::fetch_handler store_message) noexcept {
         return endpoint{std::move(bus), store_message};
     }
 
     inline auto _accept_message(
       endpoint& ep,
-      message_id msg_id,
+      const message_id msg_id,
       const message_view& message) -> bool {
         return ep._accept_message(msg_id, message);
     }

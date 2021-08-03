@@ -28,7 +28,7 @@ struct acceptor : connection_info {
     }
 
     /// @brief Lets the handler process the pending accepted connections.
-    virtual auto process_accepted(const accept_handler& handler)
+    virtual auto process_accepted(const accept_handler handler)
       -> work_done = 0;
 };
 //------------------------------------------------------------------------------

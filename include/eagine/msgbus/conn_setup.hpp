@@ -24,7 +24,7 @@ class connection_setup;
 void connection_setup_configure(connection_setup&, application_config&);
 //------------------------------------------------------------------------------
 static inline auto adapt_log_entry_arg(
-  identifier name,
+  const identifier name,
   const std::unique_ptr<connection_factory>& value) {
     return [name, &value](logger_backend& backend) {
         if(value) {
@@ -54,10 +54,10 @@ public:
     }
 
     /// @brief Sets up acceptors listening on the specified address.
-    void setup_acceptors(acceptor_user& target, string_view address);
+    void setup_acceptors(acceptor_user& target, const string_view address);
 
     /// @brief Sets up acceptors listening on the specified address.
-    void setup_acceptors(acceptor_user& target, identifier address) {
+    void setup_acceptors(acceptor_user& target, const identifier address) {
         setup_acceptors(target, address.name());
     }
 
@@ -69,46 +69,46 @@ public:
     /// @brief Sets up acceptors listening on the specified address.
     void setup_acceptors(
       acceptor_user& target,
-      connection_kinds kinds,
-      string_view address);
+      const connection_kinds kinds,
+      const string_view address);
 
     /// @brief Sets up acceptors listening on the specified address.
     void setup_acceptors(
       acceptor_user& target,
-      connection_kinds kinds,
-      identifier address) {
+      const connection_kinds kinds,
+      const identifier address) {
         setup_acceptors(target, kinds, address.name());
     }
 
     /// @brief Sets up acceptors listening on the default address.
-    void setup_acceptors(acceptor_user& target, connection_kinds kinds) {
+    void setup_acceptors(acceptor_user& target, const connection_kinds kinds) {
         setup_acceptors(target, kinds, string_view{});
     }
 
     /// @brief Sets up acceptors listening on the specified address.
     void setup_acceptors(
       acceptor_user& target,
-      connection_kind kind,
-      string_view address);
+      const connection_kind kind,
+      const string_view address);
 
     /// @brief Sets up acceptors listening on the specified address.
     void setup_acceptors(
       acceptor_user& target,
-      connection_kind kind,
-      identifier address) {
+      const connection_kind kind,
+      const identifier address) {
         setup_acceptors(target, kind, address.name());
     }
 
     /// @brief Sets up acceptors listening on the default address.
-    void setup_acceptors(acceptor_user& target, connection_kind kind) {
+    void setup_acceptors(acceptor_user& target, const connection_kind kind) {
         setup_acceptors(target, kind, string_view{});
     }
 
     /// @brief Sets up connectors connecting to the specified address.
-    void setup_connectors(connection_user& target, string_view address);
+    void setup_connectors(connection_user& target, const string_view address);
 
     /// @brief Sets up connectors connecting to the specified address.
-    void setup_connectors(connection_user& target, identifier address) {
+    void setup_connectors(connection_user& target, const identifier address) {
         setup_connectors(target, address.name());
     }
 
@@ -120,38 +120,40 @@ public:
     /// @brief Sets up connectors connecting to the specified address.
     void setup_connectors(
       connection_user& target,
-      connection_kinds kinds,
-      string_view address);
+      const connection_kinds kinds,
+      const string_view address);
 
     /// @brief Sets up connectors connecting to the specified address.
     void setup_connectors(
       connection_user& target,
-      connection_kinds kinds,
-      identifier address) {
+      const connection_kinds kinds,
+      const identifier address) {
         setup_connectors(target, kinds, address.name());
     }
 
     /// @brief Sets up connectors connecting to the default address.
-    void setup_connectors(connection_user& target, connection_kinds kinds) {
+    void setup_connectors(
+      connection_user& target,
+      const connection_kinds kinds) {
         setup_connectors(target, kinds, string_view{});
     }
 
     /// @brief Sets up connectors connecting to the specified address.
     void setup_connectors(
       connection_user& target,
-      connection_kind kind,
-      string_view address);
+      const connection_kind kind,
+      const string_view address);
 
     /// @brief Sets up connectors connecting to the specified address.
     void setup_connectors(
       connection_user& target,
-      connection_kind kind,
-      identifier address) {
+      const connection_kind kind,
+      const identifier address) {
         setup_connectors(target, kind, address.name());
     }
 
     /// @brief Sets up connectors connecting to the default address.
-    void setup_connectors(connection_user& target, connection_kind kind) {
+    void setup_connectors(connection_user& target, const connection_kind kind) {
         setup_connectors(target, kind, string_view{});
     }
 
@@ -188,16 +190,18 @@ private:
 
     void _do_setup_acceptors(
       acceptor_user& target,
-      string_view address,
+      const string_view address,
       _factory_list& factories);
 
     void _do_setup_connectors(
       connection_user& target,
-      string_view address,
+      const string_view address,
       _factory_list& factories);
 
-    auto _make_call_setup_acceptors(acceptor_user&, string_view address);
-    auto _make_call_setup_connectors(connection_user&, string_view address);
+    auto _make_call_setup_acceptors(acceptor_user&, const string_view address);
+    auto _make_call_setup_connectors(
+      connection_user&,
+      const string_view address);
 };
 //------------------------------------------------------------------------------
 } // namespace msgbus

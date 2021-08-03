@@ -765,8 +765,7 @@ public:
         return false;
     }
 
-    auto process_accepted(const acceptor::accept_handler& handler)
-      -> work_done {
+    auto process_accepted(const acceptor::accept_handler handler) -> work_done {
         some_true something_done;
         for(auto& p : _pending) {
             handler(std::make_unique<asio_datagram_client_connection<Kind>>(
@@ -1014,7 +1013,7 @@ public:
         return something_done;
     }
 
-    auto process_accepted(const accept_handler& handler) -> work_done final {
+    auto process_accepted(const accept_handler handler) -> work_done final {
         some_true something_done{};
         for(auto& socket : _accepted) {
             auto conn = std::make_unique<asio_connection<
@@ -1194,7 +1193,7 @@ public:
         return _conn.update();
     }
 
-    auto process_accepted(const accept_handler& handler) -> work_done final {
+    auto process_accepted(const accept_handler handler) -> work_done final {
         return _conn.process_accepted(handler);
     }
 
@@ -1356,7 +1355,7 @@ public:
         return something_done;
     }
 
-    auto process_accepted(const accept_handler& handler) -> work_done final {
+    auto process_accepted(const accept_handler handler) -> work_done final {
         some_true something_done{};
         for(auto& socket : _accepted) {
             auto conn = std::make_unique<asio_connection<

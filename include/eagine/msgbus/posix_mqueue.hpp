@@ -638,7 +638,7 @@ public:
         return something_done;
     }
 
-    auto process_accepted(const accept_handler& handler) -> work_done final {
+    auto process_accepted(const accept_handler handler) -> work_done final {
         auto fetch_handler = [this, &handler](
                                const message_id msg_id,
                                const message_age,

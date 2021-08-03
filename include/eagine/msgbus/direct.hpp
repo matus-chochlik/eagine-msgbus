@@ -294,7 +294,7 @@ public:
       : main_ctx_object{EAGINE_ID(DrctAccptr), parent}
       , _address{std::make_shared<direct_connection_address>(*this)} {}
 
-    auto process_accepted(const accept_handler& handler) -> work_done final {
+    auto process_accepted(const accept_handler handler) -> work_done final {
         some_true something_done{};
         if(_address) {
             auto wrapped_handler = [&handler](shared_state& state) {
