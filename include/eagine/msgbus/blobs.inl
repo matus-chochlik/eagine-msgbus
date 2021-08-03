@@ -26,7 +26,7 @@ public:
         copy(src, cover(_buf));
     }
 
-    auto is_at_eod(span_size_t offs) -> bool final {
+    auto is_at_eod(const span_size_t offs) -> bool final {
         return offs >= _buf.size();
     }
 
@@ -34,14 +34,14 @@ public:
         return _buf.size();
     }
 
-    auto fetch_fragment(span_size_t offs, memory::block dst)
+    auto fetch_fragment(const span_size_t offs, memory::block dst)
       -> span_size_t final {
         const auto src = head(skip(view(_buf), offs), dst.size());
         copy(src, dst);
         return src.size();
     }
 
-    auto store_fragment(span_size_t offs, memory::const_block src)
+    auto store_fragment(const span_size_t offs, const memory::const_block src)
       -> bool final {
         auto dst = skip(cover(_buf), offs);
         if(EAGINE_LIKELY(src.size() <= dst.size())) {
@@ -51,7 +51,8 @@ public:
         return false;
     }
 
-    auto check_stored(span_size_t offs, memory::const_block blk) -> bool final {
+    auto check_stored(const span_size_t offs, const memory::const_block blk)
+      -> bool final {
         return are_equal(head(skip(view(_buf), offs), blk.size()), blk);
     }
 
@@ -89,7 +90,7 @@ auto pending_blob::received_size() const noexcept -> span_size_t {
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-auto pending_blob::total_size_mismatch(span_size_t size) const noexcept
+auto pending_blob::total_size_mismatch(const span_size_t size) const noexcept
   -> bool {
     return (total_size != 0) && (total_size != size);
 }
@@ -114,8 +115,9 @@ EAGINE_LIB_FUNC auto pending_blob::received_everything() const noexcept
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-auto pending_blob::merge_fragment(span_size_t bgn, memory::const_block fragment)
-  -> bool {
+auto pending_blob::merge_fragment(
+  const span_size_t bgn,
+  const memory::const_block fragment) -> bool {
     const auto end = bgn + fragment.size();
     fragment_parts.swap();
     auto& dst = done_parts();
@@ -179,7 +181,7 @@ auto pending_blob::merge_fragment(span_size_t bgn, memory::const_block fragment)
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-void pending_blob::merge_resend_request(span_size_t bgn, span_size_t end) {
+void pending_blob::merge_resend_request(const span_size_t bgn, span_size_t end) {
     if(end == 0) {
         end = total_size;
     }
@@ -233,7 +235,7 @@ void pending_blob::merge_resend_request(span_size_t bgn, span_size_t end) {
 // blob manipulator
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-auto blob_manipulator::update(blob_manipulator::send_handler do_send)
+auto blob_manipulator::update(const blob_manipulator::send_handler do_send)
   -> work_done {
     const auto now = std::chrono::steady_clock::now();
     some_true something_done{};
@@ -291,7 +293,7 @@ auto blob_manipulator::update(blob_manipulator::send_handler do_send)
     return something_done;
 }
 //------------------------------------------------------------------------------
-auto blob_manipulator::make_io(span_size_t total_size)
+auto blob_manipulator::make_io(const span_size_t total_size)
   -> std::unique_ptr<blob_io> {
     if(total_size < _max_blob_size) {
         return std::make_unique<buffer_blob_io>(_buffers.get(total_size));
@@ -304,19 +306,19 @@ auto blob_manipulator::make_io(span_size_t total_size)
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
 auto blob_manipulator::_make_io(
-  message_id,
-  span_size_t total_size,
+  const message_id,
+  const span_size_t total_size,
   blob_manipulator&) -> std::unique_ptr<blob_io> {
     return make_io(total_size);
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
 auto blob_manipulator::expect_incoming(
-  message_id msg_id,
-  identifier_t source_id,
-  blob_id_t target_blob_id,
+  const message_id msg_id,
+  const identifier_t source_id,
+  const blob_id_t target_blob_id,
   std::shared_ptr<blob_io> io,
-  std::chrono::seconds max_time) -> bool {
+  const std::chrono::seconds max_time) -> bool {
     log_debug("expecting incoming fragment")
       .arg(EAGINE_ID(source), source_id)
       .arg(EAGINE_ID(tgtBlobId), target_blob_id)
@@ -337,15 +339,15 @@ auto blob_manipulator::expect_incoming(
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
 auto blob_manipulator::push_incoming_fragment(
-  message_id msg_id,
-  identifier_t source_id,
-  blob_id_t source_blob_id,
-  blob_id_t target_blob_id,
-  std::int64_t offset,
-  std::int64_t total_size,
+  const message_id msg_id,
+  const identifier_t source_id,
+  const blob_id_t source_blob_id,
+  const blob_id_t target_blob_id,
+  const std::int64_t offset,
+  const std::int64_t total_size,
   io_getter get_io,
-  memory::const_block fragment,
-  message_priority priority) -> bool {
+  const memory::const_block fragment,
+  const message_priority priority) -> bool {
 
     auto pos = std::find_if(
       _incoming.begin(),
@@ -526,7 +528,8 @@ auto blob_manipulator::process_resend(const message_view& message) -> bool {
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-auto blob_manipulator::cancel_incoming(identifier_t target_blob_id) -> bool {
+auto blob_manipulator::cancel_incoming(const identifier_t target_blob_id)
+  -> bool {
     const auto pos = std::find_if(
       _incoming.begin(), _incoming.end(), [target_blob_id](auto& pending) {
           return pending.target_blob_id == target_blob_id;
@@ -546,7 +549,7 @@ auto blob_manipulator::cancel_incoming(identifier_t target_blob_id) -> bool {
 EAGINE_LIB_FUNC
 auto blob_manipulator::message_size(
   const pending_blob& pending,
-  span_size_t max_message_size) const noexcept -> span_size_t {
+  const span_size_t max_message_size) const noexcept -> span_size_t {
     switch(pending.priority) {
         case message_priority::critical:
             return max_message_size - 92;
@@ -562,20 +565,20 @@ auto blob_manipulator::message_size(
     return 0;
 }
 //------------------------------------------------------------------------------
-inline auto blob_manipulator::_scratch_block(span_size_t size)
+inline auto blob_manipulator::_scratch_block(const span_size_t size)
   -> memory::block {
     return cover(_scratch_buffer.resize(size));
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
 auto blob_manipulator::push_outgoing(
-  message_id msg_id,
-  identifier_t source_id,
-  identifier_t target_id,
-  blob_id_t target_blob_id,
+  const message_id msg_id,
+  const identifier_t source_id,
+  const identifier_t target_id,
+  const blob_id_t target_blob_id,
   std::shared_ptr<blob_io> io,
-  std::chrono::seconds max_time,
-  message_priority priority) -> blob_id_t {
+  const std::chrono::seconds max_time,
+  const message_priority priority) -> blob_id_t {
     EAGINE_ASSERT(io);
     _outgoing.emplace_back();
     auto& pending = _outgoing.back();
@@ -594,13 +597,13 @@ auto blob_manipulator::push_outgoing(
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
 auto blob_manipulator::push_outgoing(
-  message_id msg_id,
-  identifier_t source_id,
-  identifier_t target_id,
-  blob_id_t target_blob_id,
-  memory::const_block src,
-  std::chrono::seconds max_time,
-  message_priority priority) -> blob_id_t {
+  const message_id msg_id,
+  const identifier_t source_id,
+  const identifier_t target_id,
+  const blob_id_t target_blob_id,
+  const memory::const_block src,
+  const std::chrono::seconds max_time,
+  const message_priority priority) -> blob_id_t {
     return push_outgoing(
       msg_id,
       source_id,
@@ -613,8 +616,8 @@ auto blob_manipulator::push_outgoing(
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
 auto blob_manipulator::process_outgoing(
-  send_handler do_send,
-  span_size_t max_message_size) -> work_done {
+  const send_handler do_send,
+  const span_size_t max_message_size) -> work_done {
     some_true something_done{};
 
     for(auto& pending : _outgoing) {
@@ -634,7 +637,7 @@ auto blob_manipulator::process_outgoing(
               _scratch_block(message_size(pending, max_message_size)));
             default_serializer_backend backend(sink);
 
-            auto errors = serialize(header, backend);
+            const auto errors = serialize(header, backend);
             if(!errors) {
 
                 const auto offset = bgn;
@@ -705,8 +708,8 @@ auto blob_manipulator::handle_complete() -> span_size_t {
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-auto blob_manipulator::fetch_all(blob_manipulator::fetch_handler handle_fetch)
-  -> span_size_t {
+auto blob_manipulator::fetch_all(
+  const blob_manipulator::fetch_handler handle_fetch) -> span_size_t {
 
     span_size_t done_count{0};
     auto predicate = [this, &done_count, &handle_fetch](auto& pending) {

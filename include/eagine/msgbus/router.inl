@@ -45,7 +45,7 @@ routed_node::routed_node() {
     message_allow_list.reserve(8);
 }
 //------------------------------------------------------------------------------
-auto routed_node::is_allowed(message_id msg_id) const noexcept -> bool {
+auto routed_node::is_allowed(const message_id msg_id) const noexcept -> bool {
     if(EAGINE_UNLIKELY(is_special_message(msg_id))) {
         return true;
     }
@@ -60,7 +60,7 @@ auto routed_node::is_allowed(message_id msg_id) const noexcept -> bool {
 //------------------------------------------------------------------------------
 auto routed_node::send(
   main_ctx_object& user,
-  message_id msg_id,
+  const message_id msg_id,
   const message_view& message) const -> bool {
     if(EAGINE_LIKELY(the_connection)) {
         if(EAGINE_UNLIKELY(!the_connection->send(msg_id, message))) {
@@ -74,11 +74,11 @@ auto routed_node::send(
     return true;
 }
 //------------------------------------------------------------------------------
-void routed_node::block_message(message_id msg_id) {
+void routed_node::block_message(const message_id msg_id) {
     message_id_list_add(message_block_list, msg_id);
 }
 //------------------------------------------------------------------------------
-void routed_node::allow_message(message_id msg_id) {
+void routed_node::allow_message(const message_id msg_id) {
     message_id_list_add(message_allow_list, msg_id);
 }
 //------------------------------------------------------------------------------

@@ -67,12 +67,13 @@ struct routed_node {
     auto operator=(const routed_node&) -> routed_node& = delete;
     ~routed_node() noexcept = default;
 
-    void block_message(message_id);
-    void allow_message(message_id);
+    void block_message(const message_id);
+    void allow_message(const message_id);
 
-    auto is_allowed(message_id) const noexcept -> bool;
+    auto is_allowed(const message_id) const noexcept -> bool;
 
-    auto send(main_ctx_object&, message_id, const message_view&) const -> bool;
+    auto send(main_ctx_object&, const message_id, const message_view&) const
+      -> bool;
 };
 //------------------------------------------------------------------------------
 struct parent_router {
