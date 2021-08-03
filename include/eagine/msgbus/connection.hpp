@@ -39,8 +39,8 @@ enum class connection_addr_kind {
 
 template <typename Selector>
 constexpr auto enumerator_mapping(
-  type_identity<connection_addr_kind>,
-  Selector) noexcept {
+  const type_identity<connection_addr_kind>,
+  const Selector) noexcept {
     return enumerator_map_type<connection_addr_kind, 3>{
       {{"none", connection_addr_kind::none},
        {"filepath", connection_addr_kind::filepath},
@@ -67,8 +67,8 @@ enum class connection_protocol {
 
 template <typename Selector>
 constexpr auto enumerator_mapping(
-  type_identity<connection_protocol>,
-  Selector) noexcept {
+  const type_identity<connection_protocol>,
+  const Selector) noexcept {
     return enumerator_map_type<connection_protocol, 3>{
       {{"stream", connection_protocol::stream},
        {"datagram", connection_protocol::datagram},
@@ -117,8 +117,8 @@ struct connection_info : interface<connection_info> {
 struct connection : connection_info {
 
     /// @brief Alias for fetch handler callable reference type.
-    using fetch_handler =
-      callable_ref<bool(message_id, message_age, const message_view&)>;
+    using fetch_handler = callable_ref<
+      bool(const message_id, const message_age, const message_view&)>;
 
     /// @brief Updates the internal state of the connection (called repeatedly).
     /// @see send
@@ -143,12 +143,12 @@ struct connection : connection_info {
     /// @brief Sent a message with the specified id.
     /// @see fetch_messages
     /// @see update
-    virtual auto send(message_id msg_id, const message_view&) -> bool = 0;
+    virtual auto send(const message_id msg_id, const message_view&) -> bool = 0;
 
     /// @brief Fetch all enqueued messages that have been received since last fetch.
     /// @see send
     /// @see update
-    virtual auto fetch_messages(fetch_handler handler) -> work_done = 0;
+    virtual auto fetch_messages(const fetch_handler handler) -> work_done = 0;
 
     /// @brief Fill in the available statistics information for this connection.
     virtual auto query_statistics(connection_statistics&) -> bool = 0;

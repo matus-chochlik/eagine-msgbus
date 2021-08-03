@@ -88,7 +88,7 @@ public:
         return *this;
     }
 
-    static auto name_from(identifier id) -> std::string {
+    static auto name_from(const identifier id) -> std::string {
         std::string result;
         result.reserve(std_size(identifier::max_size() + 1));
         id.name().str(result);
@@ -97,7 +97,7 @@ public:
 
     /// @brief Sets the unique name of the queue.
     /// @see get_name
-    auto set_name(identifier id) -> auto& {
+    auto set_name(const identifier id) -> auto& {
         return set_name(name_from(id));
     }
 
@@ -108,7 +108,7 @@ public:
         set_name(std::move(name));
     }
 
-    auto error_message(int error_number) const -> std::string {
+    auto error_message(const int error_number) const -> std::string {
         if(error_number) {
             char buf[128] = {};
             ::strerror_r(
@@ -286,7 +286,7 @@ public:
     }
 
     /// @brief Sends a block of data with the specified priority.
-    auto send(unsigned priority, span<const char> blk) -> auto& {
+    auto send(const unsigned priority, const span<const char> blk) -> auto& {
         if(is_open()) {
             errno = 0;
             ::mq_send(_ohandle, blk.data(), std_size(blk.size()), priority);
@@ -306,7 +306,8 @@ public:
     using receive_handler = callable_ref<void(unsigned, span<const char>)>;
 
     /// @brief Receives messages and calls the specified handler on them.
-    auto receive(memory::span<char> blk, receive_handler handler) -> auto& {
+    auto receive(memory::span<char> blk, const receive_handler handler)
+      -> auto& {
         if(is_open()) {
             unsigned priority{0U};
             errno = 0;
@@ -411,7 +412,8 @@ public:
         return something_done;
     }
 
-    auto send(message_id msg_id, const message_view& message) -> bool final {
+    auto send(const message_id msg_id, const message_view& message)
+      -> bool final {
         std::unique_lock lock{_mutex};
         block_data_sink sink(cover(_buffer));
         default_serializer_backend backend(sink);
@@ -425,7 +427,7 @@ public:
         return false;
     }
 
-    auto fetch_messages(fetch_handler handler) -> work_done final {
+    auto fetch_messages(const fetch_handler handler) -> work_done final {
         std::unique_lock lock{_mutex};
         return _incoming.fetch_all(handler);
     }
@@ -502,11 +504,12 @@ protected:
     }
 
 protected:
-    auto _handle_send(message_timestamp, memory::const_block data) -> bool {
+    auto _handle_send(const message_timestamp, const memory::const_block data)
+      -> bool {
         return !_data_queue.send(1, as_chars(data)).had_error();
     }
 
-    void _handle_receive(unsigned, memory::span<const char> data) {
+    void _handle_receive(const unsigned, const memory::span<const char> data) {
         _incoming.push_if(
           [data](
             message_id& msg_id, message_timestamp&, stored_message& message) {
@@ -548,7 +551,7 @@ public:
     /// @brief Construction from parent main context object and queue identifier.
     posix_mqueue_connector(
       main_ctx_parent parent,
-      identifier id,
+      const identifier id,
       std::shared_ptr<posix_mqueue_shared_state> shared_state) noexcept
       : base{parent, std::move(shared_state)}
       , _connect_queue{*this, posix_mqueue::name_from(id)} {}
@@ -612,7 +615,7 @@ public:
     /// @brief Construction from parent main context object and queue identifier.
     posix_mqueue_acceptor(
       main_ctx_parent parent,
-      identifier id,
+      const identifier id,
       std::shared_ptr<posix_mqueue_shared_state> shared_state)
       : posix_mqueue_acceptor{
           parent,
@@ -637,8 +640,8 @@ public:
 
     auto process_accepted(const accept_handler& handler) -> work_done final {
         auto fetch_handler = [this, &handler](
-                               message_id msg_id,
-                               message_age,
+                               const message_id msg_id,
+                               const message_age,
                                const message_view& message) -> bool {
             EAGINE_ASSERT((msg_id == EAGINE_MSGBUS_ID(pmqConnect)));
             EAGINE_MAYBE_UNUSED(msg_id);
@@ -688,7 +691,7 @@ private:
         return something_done;
     }
 
-    void _handle_receive(unsigned, memory::span<const char> data) {
+    void _handle_receive(const unsigned, const memory::span<const char> data) {
         _requests.push_if(
           [data](
             message_id& msg_id, message_timestamp&, stored_message& message) {
@@ -727,13 +730,14 @@ public:
     using connection_factory::make_connector;
 
     /// @brief Makes an connection acceptor listening at queue with the specified name.
-    auto make_acceptor(string_view address) -> std::unique_ptr<acceptor> final {
+    auto make_acceptor(const string_view address)
+      -> std::unique_ptr<acceptor> final {
         return std::make_unique<posix_mqueue_acceptor>(
           *this, to_string(address), _shared_state);
     }
 
     /// @brief Makes a connector connecting to queue with the specified name.
-    auto make_connector(string_view address)
+    auto make_connector(const string_view address)
       -> std::unique_ptr<connection> final {
         return std::make_unique<posix_mqueue_connector>(
           *this, to_string(address), _shared_state);

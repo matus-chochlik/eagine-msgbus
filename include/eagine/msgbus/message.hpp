@@ -33,7 +33,7 @@ namespace eagine::msgbus {
 //------------------------------------------------------------------------------
 /// @brief Indicates if the specified message id denotes a special message bus message.
 /// @ingroup msgbus
-static constexpr auto is_special_message(message_id msg_id) noexcept {
+static constexpr auto is_special_message(const message_id msg_id) noexcept {
     return msg_id.has_class(EAGINE_ID(eagiMsgBus));
 }
 //------------------------------------------------------------------------------
@@ -53,7 +53,8 @@ static constexpr auto invalid_endpoint_id() noexcept -> identifier_t {
 /// @brief Indicates if the specified endpoint id is valid.
 /// @ingroup msgbus
 /// @see invalid_endpoint_id
-static constexpr auto is_valid_endpoint_id(identifier_t id) noexcept -> bool {
+static constexpr auto is_valid_endpoint_id(const identifier_t id) noexcept
+  -> bool {
     return id != 0U;
 }
 //------------------------------------------------------------------------------
@@ -85,16 +86,17 @@ enum class message_priority : std::uint8_t {
 /// @brief Message priority ordering.
 /// @ingroup msgbus
 /// @relates message_priority
-static inline auto operator<(message_priority l, message_priority r) noexcept
-  -> bool {
+static inline auto operator<(
+  const message_priority l,
+  const message_priority r) noexcept -> bool {
     using U = std::underlying_type_t<message_priority>;
     return U(l) < U(r);
 }
 //------------------------------------------------------------------------------
 template <typename Selector>
 constexpr auto enumerator_mapping(
-  type_identity<message_priority>,
-  Selector) noexcept {
+  const type_identity<message_priority>,
+  const Selector) noexcept {
     return enumerator_map_type<message_priority, 5>{
       {{"critical", message_priority::critical},
        {"high", message_priority::high},
@@ -120,8 +122,8 @@ using message_crypto_flags = bitfield<message_crypto_flag>;
 //------------------------------------------------------------------------------
 template <typename Selector>
 constexpr auto enumerator_mapping(
-  type_identity<message_crypto_flag>,
-  Selector) noexcept {
+  const type_identity<message_crypto_flag>,
+  const Selector) noexcept {
     return enumerator_map_type<message_crypto_flag, 3>{
       {{"asymmetric", message_crypto_flag::asymmetric},
        {"signed_header", message_crypto_flag::signed_header},
@@ -228,9 +230,9 @@ struct message_info {
     /// @brief Adds to the age seconds counter.
     /// @see age
     /// @see too_old
-    auto add_age(message_age age) noexcept -> auto& {
+    auto add_age(const message_age age) noexcept -> auto& {
         const float added_quarter_seconds = (age.count() + 0.20F) * 4.F;
-        if(auto new_age{convert_if_fits<age_t>(
+        if(const auto new_age{convert_if_fits<age_t>(
              int(age_quarter_seconds) + int(added_quarter_seconds))}) {
             age_quarter_seconds = extract(new_age);
         } else {
@@ -247,19 +249,19 @@ struct message_info {
     }
 
     /// @brief Sets the priority of this message.
-    auto set_priority(message_priority new_priority) noexcept -> auto& {
+    auto set_priority(const message_priority new_priority) noexcept -> auto& {
         priority = new_priority;
         return *this;
     }
 
     /// @brief Sets the source endpoint identifier.
-    auto set_source_id(identifier_t id) noexcept -> auto& {
+    auto set_source_id(const identifier_t id) noexcept -> auto& {
         source_id = id;
         return *this;
     }
 
     /// @brief Sets the target endpoint identifier.
-    auto set_target_id(identifier_t id) noexcept -> auto& {
+    auto set_target_id(const identifier_t id) noexcept -> auto& {
         target_id = id;
         return *this;
     }
@@ -267,21 +269,21 @@ struct message_info {
     /// @brief Tests if a data serializer with the specified id was used.
     /// @see serializer_id
     /// @see set_serializer_id
-    auto has_serializer_id(identifier id) const noexcept -> bool {
+    auto has_serializer_id(const identifier id) const noexcept -> bool {
         return serializer_id == id.value();
     }
 
     /// @brief Sets the id of the used data content serializer.
     /// @see serializer_id
     /// @see has_serializer_id
-    auto set_serializer_id(identifier id) noexcept -> auto& {
+    auto set_serializer_id(const identifier id) noexcept -> auto& {
         serializer_id = id.value();
         return *this;
     }
 
     /// @brief Sets the sequence number of this message (has message-type specific meaning).
     /// @see sequence_no
-    auto set_sequence_no(message_sequence_t no) noexcept -> auto& {
+    auto set_sequence_no(const message_sequence_t no) noexcept -> auto& {
         sequence_no = no;
         return *this;
     }
@@ -307,7 +309,7 @@ public:
     constexpr message_view() noexcept = default;
 
     /// @brief Construction from a const memory block.
-    constexpr message_view(memory::const_block init) noexcept
+    constexpr message_view(const memory::const_block init) noexcept
       : _data{init} {}
 
     /// @brief Construction from a mutable memory block.
@@ -315,11 +317,13 @@ public:
       : _data{init} {}
 
     /// @brief Construction from a string view.
-    constexpr message_view(string_view init) noexcept
+    constexpr message_view(const string_view init) noexcept
       : _data{as_bytes(init)} {}
 
     /// @brief Construction from a message info and a const memory block.
-    constexpr message_view(message_info info, memory::const_block init) noexcept
+    constexpr message_view(
+      const message_info info,
+      memory::const_block init) noexcept
       : message_info{info}
       , _data{init} {}
 
@@ -376,14 +380,14 @@ public:
 
     /// @brief Construction from a message view and storage buffer.
     /// Adopts the buffer and copies the content from the message view into it.
-    stored_message(message_view message, memory::buffer buf) noexcept
+    stored_message(const message_view message, memory::buffer buf) noexcept
       : message_info{message}
       , _buffer{std::move(buf)} {
         memory::copy_into(view(message.data()), _buffer);
     }
 
     /// @brief Conversion to message view.
-    operator message_view() const {
+    operator message_view() const noexcept {
         return {*this, data()};
     }
 
@@ -500,8 +504,8 @@ public:
 
     /// @brief Stores the specified data and signs it.
     auto store_and_sign(
-      memory::const_block data,
-      span_size_t max_size,
+      const memory::const_block data,
+      const span_size_t max_size,
       context&,
       main_ctx_object&) -> bool;
 
@@ -534,7 +538,7 @@ public:
     }
 
     /// @brief Pushes a message into this storage.
-    void push(message_id msg_id, const message_view& message) {
+    void push(const message_id msg_id, const message_view& message) {
         _messages.emplace_back(
           msg_id,
           stored_message{message, _buffers.get(message.data().size())},
@@ -545,7 +549,7 @@ public:
     ///
     /// The function's Boolean return value indicates if the message should be kept.
     template <typename Function>
-    auto push_if(Function function, span_size_t req_size = 0) -> bool {
+    auto push_if(Function function, const span_size_t req_size = 0) -> bool {
         _messages.emplace_back(
           message_id{},
           stored_message{{}, _buffers.get(req_size)},
@@ -573,20 +577,20 @@ public:
     ///
     /// The return value indicates if the message is considered handled
     /// and should be removed.
-    using fetch_handler =
-      callable_ref<bool(message_id, message_age, const message_view&)>;
+    using fetch_handler = callable_ref<
+      bool(const message_id, const message_age, const message_view&)>;
 
     /// @brief Fetches all currently stored messages and calls handler on them.
-    auto fetch_all(fetch_handler handler) -> bool;
+    auto fetch_all(const fetch_handler handler) -> bool;
 
     /// @brief Alias for message cleanup callable predicate.
     /// @see cleanup
     ///
     /// The return value indicates if a message should be removed.
-    using cleanup_predicate = callable_ref<bool(message_age)>;
+    using cleanup_predicate = callable_ref<bool(const message_age)>;
 
     /// @brief Removes messages based on the result of the specified predicate.
-    void cleanup(cleanup_predicate predicate);
+    void cleanup(const cleanup_predicate predicate);
 
 private:
     using _clock_t = std::chrono::steady_clock;
@@ -599,7 +603,7 @@ class message_pack_info {
 public:
     using bit_set = std::uint64_t;
 
-    message_pack_info(span_size_t total_size) noexcept
+    message_pack_info(const span_size_t total_size) noexcept
       : _total_size{limit_cast<std::uint16_t>(total_size)} {}
 
     operator bool() const noexcept {
@@ -636,7 +640,7 @@ public:
         return float(used()) / float(total());
     }
 
-    void add(span_size_t msg_size, bit_set current_bit) noexcept {
+    void add(const span_size_t msg_size, const bit_set current_bit) noexcept {
         _packed_size += limit_cast<std::uint16_t>(msg_size);
         _packed_bits |= current_bit;
     }
@@ -652,7 +656,7 @@ public:
     /// The return value indicates if the message is considered handled
     /// and should be removed.
     using fetch_handler =
-      callable_ref<bool(message_timestamp, memory::const_block)>;
+      callable_ref<bool(const message_timestamp, const memory::const_block)>;
 
     serialized_message_storage() {
         _messages.reserve(32);
@@ -679,14 +683,14 @@ public:
         _messages.erase(_messages.begin());
     }
 
-    void push(memory::const_block message) {
+    void push(const memory::const_block message) {
         EAGINE_ASSERT(!message.empty());
         auto buf = _buffers.get(message.size());
         memory::copy_into(message, buf);
         _messages.emplace_back(std::move(buf), _clock_t::now());
     }
 
-    auto fetch_all(fetch_handler handler) -> bool;
+    auto fetch_all(const fetch_handler handler) -> bool;
 
     auto pack_into(memory::block dest) -> message_pack_info;
 
@@ -751,7 +755,7 @@ public:
           pos, message, _buffers.get(message.data().size()));
     }
 
-    auto process_one(const message_context& msg_ctx, handler_type handler)
+    auto process_one(const message_context& msg_ctx, const handler_type handler)
       -> bool {
         if(!_messages.empty()) {
             if(handler(msg_ctx, _messages.back())) {
@@ -763,7 +767,7 @@ public:
         return false;
     }
 
-    auto process_all(const message_context& msg_ctx, handler_type handler)
+    auto process_all(const message_context& msg_ctx, const handler_type handler)
       -> span_size_t {
         span_size_t count{0};
         std::size_t pos = 0;
@@ -796,7 +800,7 @@ public:
 
     auto enqueue(
       main_ctx_object& user,
-      message_id,
+      const message_id,
       const message_view&,
       memory::block) -> bool;
 
@@ -814,8 +818,8 @@ private:
 //------------------------------------------------------------------------------
 class connection_incoming_messages {
 public:
-    using fetch_handler =
-      callable_ref<bool(message_id, message_age, const message_view&)>;
+    using fetch_handler = callable_ref<
+      bool(const message_id, const message_age, const message_view&)>;
 
     auto empty() const noexcept -> bool {
         return _packed.empty();
@@ -825,11 +829,12 @@ public:
         return _packed.count();
     }
 
-    void push(memory::const_block data) {
+    void push(const memory::const_block data) {
         _packed.push(data);
     }
 
-    auto fetch_messages(main_ctx_object& user, fetch_handler handler) -> bool;
+    auto fetch_messages(main_ctx_object& user, const fetch_handler handler)
+      -> bool;
 
 private:
     serialized_message_storage _packed{};
