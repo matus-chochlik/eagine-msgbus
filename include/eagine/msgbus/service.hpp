@@ -110,7 +110,7 @@ class service_node
   , private protected_member<endpoint>
   , public service_composition<Base> {
 public:
-    service_node(identifier id, main_ctx_parent parent)
+    service_node(const identifier id, main_ctx_parent parent)
       : main_ctx_object{id, parent}
       , protected_member<endpoint>{id, parent}
       , service_composition<Base>{this->get_the_member()} {}

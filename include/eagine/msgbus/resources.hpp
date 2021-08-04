@@ -14,13 +14,13 @@
 namespace eagine::msgbus {
 //------------------------------------------------------------------------------
 auto router_certificate_pem(
-  memory::const_block embedded_blk,
+  const memory::const_block embedded_blk,
   memory::buffer&,
   application_config&,
   logger&) -> memory::const_block;
 //------------------------------------------------------------------------------
 inline auto router_certificate_pem(
-  memory::const_block embedded_blk,
+  const memory::const_block embedded_blk,
   main_ctx& ctx) -> memory::const_block {
     return router_certificate_pem(
       embedded_blk, ctx.scratch_space(), ctx.config(), ctx.log());
@@ -29,13 +29,13 @@ inline auto router_certificate_pem(
 auto router_certificate_pem(main_ctx& ctx) -> memory::const_block;
 //------------------------------------------------------------------------------
 auto bridge_certificate_pem(
-  memory::const_block embedded_blk,
+  const memory::const_block embedded_blk,
   memory::buffer&,
   application_config&,
   logger&) -> memory::const_block;
 //------------------------------------------------------------------------------
 inline auto bridge_certificate_pem(
-  memory::const_block embedded_blk,
+  const memory::const_block embedded_blk,
   main_ctx& ctx) -> memory::const_block {
     return bridge_certificate_pem(
       embedded_blk, ctx.scratch_space(), ctx.config(), ctx.log());
@@ -44,13 +44,13 @@ inline auto bridge_certificate_pem(
 auto bridge_certificate_pem(main_ctx& ctx) -> memory::const_block;
 //------------------------------------------------------------------------------
 auto endpoint_certificate_pem(
-  memory::const_block embedded_blk,
+  const memory::const_block embedded_blk,
   memory::buffer&,
   application_config&,
   logger&) -> memory::const_block;
 //------------------------------------------------------------------------------
 inline auto endpoint_certificate_pem(
-  memory::const_block embedded_blk,
+  const memory::const_block embedded_blk,
   main_ctx& ctx) -> memory::const_block {
     return endpoint_certificate_pem(
       embedded_blk, ctx.scratch_space(), ctx.config(), ctx.log());

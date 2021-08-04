@@ -10,7 +10,7 @@ namespace eagine::msgbus {
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
 auto router_certificate_pem(
-  memory::const_block embedded_blk,
+  const memory::const_block embedded_blk,
   memory::buffer& buf,
   application_config& cfg,
   logger& log) -> memory::const_block {
@@ -25,7 +25,7 @@ auto router_certificate_pem(
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
 auto bridge_certificate_pem(
-  memory::const_block embedded_blk,
+  const memory::const_block embedded_blk,
   memory::buffer& buf,
   application_config& cfg,
   logger& log) -> memory::const_block {
@@ -40,7 +40,7 @@ auto bridge_certificate_pem(
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
 auto endpoint_certificate_pem(
-  memory::const_block embedded_blk,
+  const memory::const_block embedded_blk,
   memory::buffer& buf,
   application_config& cfg,
   logger& log) -> memory::const_block {

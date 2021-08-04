@@ -112,7 +112,7 @@ public:
     constexpr signal_binding() noexcept = default;
 
     template <typename Signature>
-    signal_binding(signal_binding_key key, signal<Signature>* sig) noexcept
+    signal_binding(const signal_binding_key key, signal<Signature>* sig) noexcept
       : _key{key}
       , _disconnect{sig, EAGINE_MEM_FUNC_C(signal<Signature>, unbind)} {}
 
