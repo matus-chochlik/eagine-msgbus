@@ -47,7 +47,8 @@ protected:
     }
 
 private:
-    auto _handle_ping(const message_context&, stored_message& message) -> bool {
+    auto _handle_ping(const message_context&, const stored_message& message)
+      -> bool {
         if(respond_to_ping(
              message.source_id,
              message.sequence_no,
@@ -171,7 +172,8 @@ protected:
     }
 
 private:
-    auto _handle_pong(const message_context&, stored_message& message) -> bool {
+    auto _handle_pong(const message_context&, const stored_message& message)
+      -> bool {
         _pending.erase(
           std::remove_if(
             _pending.begin(),

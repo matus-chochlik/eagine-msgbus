@@ -49,7 +49,7 @@ protected:
     }
 
 private:
-    auto _handle_shutdown(const message_context&, stored_message& message)
+    auto _handle_shutdown(const message_context&, const stored_message& message)
       -> bool {
         typename shutdown_service_duration::rep count{0};
         if(default_deserialize(count, message.content())) {

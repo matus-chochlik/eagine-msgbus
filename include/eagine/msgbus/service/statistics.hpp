@@ -81,7 +81,7 @@ protected:
     }
 
 private:
-    auto _handle_router(const message_context&, stored_message& message)
+    auto _handle_router(const message_context&, const stored_message& message)
       -> bool {
         router_statistics stats{};
         if(default_deserialize(stats, message.content())) {
@@ -90,7 +90,7 @@ private:
         return true;
     }
 
-    auto _handle_bridge(const message_context&, stored_message& message)
+    auto _handle_bridge(const message_context&, const stored_message& message)
       -> bool {
         bridge_statistics stats{};
         if(default_deserialize(stats, message.content())) {
@@ -99,7 +99,7 @@ private:
         return true;
     }
 
-    auto _handle_endpoint(const message_context&, stored_message& message)
+    auto _handle_endpoint(const message_context&, const stored_message& message)
       -> bool {
         endpoint_statistics stats{};
         if(default_deserialize(stats, message.content())) {
@@ -108,8 +108,9 @@ private:
         return true;
     }
 
-    auto _handle_connection(const message_context&, stored_message& message)
-      -> bool {
+    auto _handle_connection(
+      const message_context&,
+      const stored_message& message) -> bool {
         connection_statistics stats{};
         if(default_deserialize(stats, message.content())) {
             connection_stats_received(stats);

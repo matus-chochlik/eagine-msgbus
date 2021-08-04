@@ -156,7 +156,7 @@ public:
         return *this;
     }
 
-    auto invoke_by(const message_context& msg_ctx, stored_message& request)
+    auto invoke_by(const message_context& msg_ctx, const stored_message& request)
       -> bool {
         return this->call(msg_ctx.bus_node(), request, _response_id, _function);
     }

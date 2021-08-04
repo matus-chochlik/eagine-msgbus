@@ -82,13 +82,13 @@ protected:
     }
 
 private:
-    auto _handle_sup_query(const message_context&, stored_message& message)
+    auto _handle_sup_query(const message_context&, const stored_message& message)
       -> bool {
         this->respond_to_subscription_query(message.source_id);
         return true;
     }
 
-    auto _handle_sub_query(const message_context&, stored_message& message)
+    auto _handle_sub_query(const message_context&, const stored_message& message)
       -> bool {
         message_id sub_msg_id{};
         if(default_deserialize_message_type(sub_msg_id, message.content())) {

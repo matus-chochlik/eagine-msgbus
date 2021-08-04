@@ -293,8 +293,9 @@ private:
         }
     }
 
-    auto _handle_start_send_data(const message_context&, stored_message& message)
-      -> bool {
+    auto _handle_start_send_data(
+      const message_context&,
+      const stored_message& message) -> bool {
         identifier_t stream_id{0};
         if(default_deserialize(stream_id, message.content())) {
             const auto pos = _streams.find(stream_id);
@@ -307,8 +308,9 @@ private:
         return true;
     }
 
-    auto _handle_stop_send_data(const message_context&, stored_message& message)
-      -> bool {
+    auto _handle_stop_send_data(
+      const message_context&,
+      const stored_message& message) -> bool {
         identifier_t stream_id{0};
         if(default_deserialize(stream_id, message.content())) {
             const auto pos = _streams.find(stream_id);
@@ -422,8 +424,9 @@ private:
         this->bus_node().post(EAGINE_MSG_ID(eagiStream, stopFrwrd), message);
     }
 
-    auto _handle_stream_appeared(const message_context&, stored_message& message)
-      -> bool {
+    auto _handle_stream_appeared(
+      const message_context&,
+      const stored_message& message) -> bool {
         stream_info info{};
         if(default_deserialize(info, message.content())) {
             stream_appeared(
@@ -434,7 +437,7 @@ private:
 
     auto _handle_stream_disappeared(
       const message_context&,
-      stored_message& message) -> bool {
+      const stored_message& message) -> bool {
         stream_info info{};
         if(default_deserialize(info, message.content())) {
             stream_disappeared(
@@ -524,8 +527,9 @@ private:
         flat_set<identifier_t> forward_set{};
     };
 
-    auto _handle_stream_announce(const message_context&, stored_message& message)
-      -> bool {
+    auto _handle_stream_announce(
+      const message_context&,
+      const stored_message& message) -> bool {
         stream_info info{};
         if(default_deserialize(info, message.content())) {
             const stream_key_t key{message.source_id, info.id};
@@ -574,8 +578,9 @@ private:
         stream_announced(provider_id, stream.info, verified);
     }
 
-    auto _handle_stream_retract(const message_context&, stored_message& message)
-      -> bool {
+    auto _handle_stream_retract(
+      const message_context&,
+      const stored_message& message) -> bool {
         identifier_t stream_id{0};
         if(default_deserialize(stream_id, message.content())) {
             const auto pos = _streams.find({message.source_id, stream_id});
@@ -604,12 +609,13 @@ private:
         stream_retracted(provider_id, stream.info, verified);
     }
 
-    auto _handle_start_forward(const message_context&, stored_message&)
+    auto _handle_start_forward(const message_context&, const stored_message&)
       -> bool {
         return true;
     }
 
-    auto _handle_stop_forward(const message_context&, stored_message&) -> bool {
+    auto _handle_stop_forward(const message_context&, const stored_message&)
+      -> bool {
         return true;
     }
 

@@ -24,7 +24,7 @@ class ability_provider : public Base {
 
 public:
     /// @brief Indicates if the given message type is handled by the endpoint.
-    virtual auto can_handle(message_id) -> bool = 0;
+    virtual auto can_handle(const message_id) -> bool = 0;
 
 protected:
     using Base::Base;
@@ -36,11 +36,12 @@ protected:
     }
 
 private:
-    auto _handle_query(const message_context& msg_ctx, stored_message& message)
-      -> bool {
+    auto _handle_query(
+      const message_context& msg_ctx,
+      const stored_message& message) -> bool {
         message_id msg_id{};
         if(default_deserialize_message_type(msg_id, message.content())) {
-            if(can_handle()) {
+            if(can_handle(msg_id)) {
                 msg_ctx.bus_node().respond_to(
                   message,
                   EAGINE_MSG_ID(Ability, response),
@@ -86,7 +87,7 @@ protected:
     }
 
 private:
-    auto _handle_response(const message_context&, stored_message& message)
+    auto _handle_response(const message_context&, const stored_message& message)
       -> bool {
         message_id msg_id{};
         if(default_deserialize_message_type(msg_id, message.content())) {

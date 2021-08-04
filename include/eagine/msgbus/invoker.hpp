@@ -53,8 +53,9 @@ template <typename Result, typename Deserializer, typename Source, bool NoExcept
 class callback_invoker_base {
 
 public:
-    auto fulfill_by(const message_context& msg_ctx, stored_message& response)
-      -> bool {
+    auto fulfill_by(
+      const message_context& msg_ctx,
+      const stored_message& response) -> bool {
         Result result{};
 
         _source.reset(response.content());
@@ -84,8 +85,9 @@ template <typename Deserializer, typename Source, bool NoExcept>
 class callback_invoker_base<void, Deserializer, Source, NoExcept> {
 
 public:
-    auto fulfill_by(const message_context& msg_ctx, stored_message& response)
-      -> bool {
+    auto fulfill_by(
+      const message_context& msg_ctx,
+      const stored_message& response) -> bool {
         const result_context res_ctx{
           msg_ctx, response.source_id, response.sequence_no};
         _callback();
@@ -195,7 +197,8 @@ private:
 template <typename Result, typename Deserializer, typename Source>
 class invoker_base {
 public:
-    auto fulfill_by(const message_context&, stored_message& message) -> bool {
+    auto fulfill_by(const message_context&, const stored_message& message)
+      -> bool {
         const auto invocation_id = message.sequence_no;
         std::remove_cv_t<std::remove_reference_t<Result>> result{};
 

@@ -32,20 +32,23 @@ struct str_utils_server
           EAGINE_MSG_MAP(StrUtilReq, UpperCase, this_class, uppercase),
           EAGINE_MSG_MAP(StrUtilReq, Reverse, this_class, reverse)) {}
 
-    auto reverse(const message_context&, stored_message& msg) -> bool {
-        auto str = msg.text_content();
+    auto reverse(const message_context&, const stored_message& msg) -> bool {
+        auto str = as_chars(copy(msg.content(), _buf));
         log_trace("received request: ${content}").arg(EAGINE_ID(content), str);
         memory::reverse(str);
         bus_node().post(EAGINE_MSG_ID(StrUtilRes, Reverse), as_bytes(str));
         return true;
     }
 
-    auto uppercase(const message_context&, stored_message& msg) -> bool {
-        auto str = msg.text_content();
+    auto uppercase(const message_context&, const stored_message& msg) -> bool {
+        auto str = as_chars(copy(msg.content(), _buf));
         transform(str, [](char x) { return char(std::toupper(x)); });
         bus_node().post(EAGINE_MSG_ID(StrUtilRes, UpperCase), as_bytes(str));
         return true;
     }
+
+private:
+    memory::buffer _buf;
 };
 //------------------------------------------------------------------------------
 struct str_utils_client
@@ -73,7 +76,7 @@ struct str_utils_client
         bus_node().post(EAGINE_MSG_ID(StrUtilReq, UpperCase), as_bytes(str));
     }
 
-    auto print(const message_context&, stored_message& msg) -> bool {
+    auto print(const message_context&, const stored_message& msg) -> bool {
         log_info("received response: ${content}")
           .arg(EAGINE_ID(content), msg.text_content());
         --_remaining;

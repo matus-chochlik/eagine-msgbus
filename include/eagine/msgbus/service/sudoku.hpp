@@ -226,7 +226,7 @@ protected:
 
 private:
     template <unsigned S>
-    auto _handle_search(const message_context&, stored_message& message)
+    auto _handle_search(const message_context&, const stored_message& message)
       -> bool {
         _infos.get(unsigned_constant<S>{}).on_search(message.source_id);
         mark_activity();
@@ -237,12 +237,12 @@ private:
     static constexpr auto _bind_handle_search(
       unsigned_constant<S> rank) noexcept {
         return message_handler_map<member_function_constant<
-          bool (This::*)(const message_context&, stored_message&),
+          bool (This::*)(const message_context&, const stored_message&),
           &This::_handle_search<S>>>{sudoku_search_msg(rank)};
     }
 
     template <unsigned S>
-    auto _handle_board(const message_context&, stored_message& message)
+    auto _handle_board(const message_context&, const stored_message& message)
       -> bool {
         const unsigned_constant<S> rank{};
         auto& info = _infos.get(rank);
@@ -268,7 +268,7 @@ private:
     static constexpr auto _bind_handle_board(
       unsigned_constant<S> rank) noexcept {
         return message_handler_map<member_function_constant<
-          bool (This::*)(const message_context&, stored_message&),
+          bool (This::*)(const message_context&, const stored_message&),
           &This::_handle_board<S>>>{sudoku_query_msg(rank)};
     }
 
@@ -661,7 +661,7 @@ private:
         void handle_response(
           This& parent,
           message_id msg_id,
-          stored_message& message) {
+          const stored_message& message) {
             const unsigned_constant<S> rank{};
             basic_sudoku_board<S> board{traits};
 
@@ -835,7 +835,7 @@ private:
     bool _can_work{false};
 
     template <unsigned S>
-    auto _handle_alive(const message_context&, stored_message& message)
+    auto _handle_alive(const message_context&, const stored_message& message)
       -> bool {
         _infos.get(unsigned_constant<S>{})
           .helper_alive(*this, message.source_id);
@@ -846,13 +846,14 @@ private:
     static constexpr auto _bind_handle_alive(
       unsigned_constant<S> rank) noexcept {
         return message_handler_map<member_function_constant<
-          bool (This::*)(const message_context&, stored_message&),
+          bool (This::*)(const message_context&, const stored_message&),
           &This::_handle_alive<S>>>{sudoku_alive_msg(rank)};
     }
 
     template <unsigned S>
-    auto _handle_board(const message_context& msg_ctx, stored_message& message)
-      -> bool {
+    auto _handle_board(
+      const message_context& msg_ctx,
+      const stored_message& message) -> bool {
 
         _infos.get(unsigned_constant<S>{})
           .handle_response(*this, msg_ctx.msg_id(), message);
@@ -863,7 +864,7 @@ private:
     static constexpr auto _bind_handle_candidate(
       unsigned_constant<S> rank) noexcept {
         return message_handler_map<member_function_constant<
-          bool (This::*)(const message_context&, stored_message&),
+          bool (This::*)(const message_context&, const stored_message&),
           &This::_handle_board<S>>>{sudoku_candidate_msg(rank)};
     }
 
@@ -871,12 +872,13 @@ private:
     static constexpr auto _bind_handle_solved(
       unsigned_constant<S> rank) noexcept {
         return message_handler_map<member_function_constant<
-          bool (This::*)(const message_context&, stored_message&),
+          bool (This::*)(const message_context&, const stored_message&),
           &This::_handle_board<S>>>{sudoku_solved_msg(rank)};
     }
 
     template <unsigned S>
-    auto _handle_done(const message_context&, stored_message& message) -> bool {
+    auto _handle_done(const message_context&, const stored_message& message)
+      -> bool {
         _infos.get(unsigned_constant<S>{}).pending_done(message.sequence_no);
         return true;
     }
@@ -884,7 +886,7 @@ private:
     template <unsigned S>
     static constexpr auto _bind_handle_done(unsigned_constant<S> rank) noexcept {
         return message_handler_map<member_function_constant<
-          bool (This::*)(const message_context&, stored_message&),
+          bool (This::*)(const message_context&, const stored_message&),
           &This::_handle_done<S>>>{sudoku_done_msg(rank)};
     }
 };

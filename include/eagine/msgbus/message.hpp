@@ -734,7 +734,7 @@ private:
 class message_priority_queue {
 public:
     using handler_type =
-      callable_ref<bool(const message_context&, stored_message&)>;
+      callable_ref<bool(const message_context&, const stored_message&)>;
 
     message_priority_queue() {
         _messages.reserve(128);

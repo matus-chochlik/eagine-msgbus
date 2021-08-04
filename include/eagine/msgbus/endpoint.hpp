@@ -386,7 +386,7 @@ public:
     /// @see process_one
     /// @see process_all
     using method_handler =
-      callable_ref<bool(const message_context&, stored_message&)>;
+      callable_ref<bool(const message_context&, const stored_message&)>;
 
     /// @brief Processes a single received message of specified type with a handler.
     /// @see process_all
@@ -399,11 +399,11 @@ public:
     /// @see process_everything
     template <
       typename Class,
-      bool (Class::*MemFnPtr)(const message_context&, stored_message&)>
+      bool (Class::*MemFnPtr)(const message_context&, const stored_message&)>
     auto process_one(
       const message_id msg_id,
       const member_function_constant<
-        bool (Class::*)(const message_context&, stored_message&),
+        bool (Class::*)(const message_context&, const stored_message&),
         MemFnPtr> method,
       Class* instance) -> bool {
         return process_one(msg_id, {instance, method});

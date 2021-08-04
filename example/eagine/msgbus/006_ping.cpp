@@ -43,7 +43,7 @@ public:
           address);
     }
 
-    auto pong(const message_context&, stored_message&) -> bool {
+    auto pong(const message_context&, const stored_message&) -> bool {
         if(++_rcvd % _lmod == 0) {
             bus_node()
               .log_info("received ${count} pongs")
@@ -55,7 +55,7 @@ public:
         return true;
     }
 
-    auto ready(const message_context&, stored_message&) -> bool {
+    auto ready(const message_context&, const stored_message&) -> bool {
         _ready = true;
         bus_node().log_info("received pong ready message");
         return true;

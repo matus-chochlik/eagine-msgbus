@@ -97,7 +97,7 @@ protected:
     }
 
 private:
-    auto _handle_router(const message_context&, stored_message& message)
+    auto _handle_router(const message_context&, const stored_message& message)
       -> bool {
         router_topology_info info{};
         if(default_deserialize(info, message.content())) {
@@ -106,7 +106,7 @@ private:
         return true;
     }
 
-    auto _handle_bridge(const message_context&, stored_message& message)
+    auto _handle_bridge(const message_context&, const stored_message& message)
       -> bool {
         bridge_topology_info info{};
         if(default_deserialize(info, message.content())) {
@@ -115,7 +115,7 @@ private:
         return true;
     }
 
-    auto _handle_endpoint(const message_context&, stored_message& message)
+    auto _handle_endpoint(const message_context&, const stored_message& message)
       -> bool {
         endpoint_topology_info info{};
         if(default_deserialize(info, message.content())) {
@@ -124,20 +124,23 @@ private:
         return true;
     }
 
-    auto _handle_router_bye(const message_context&, stored_message& message)
-      -> bool {
+    auto _handle_router_bye(
+      const message_context&,
+      const stored_message& message) -> bool {
         router_disappeared(message.source_id);
         return true;
     }
 
-    auto _handle_bridge_bye(const message_context&, stored_message& message)
-      -> bool {
+    auto _handle_bridge_bye(
+      const message_context&,
+      const stored_message& message) -> bool {
         bridge_disappeared(message.source_id);
         return true;
     }
 
-    auto _handle_endpoint_bye(const message_context&, stored_message& message)
-      -> bool {
+    auto _handle_endpoint_bye(
+      const message_context&,
+      const stored_message& message) -> bool {
         endpoint_disappeared(message.source_id);
         return true;
     }
