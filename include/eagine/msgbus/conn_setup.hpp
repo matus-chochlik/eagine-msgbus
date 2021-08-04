@@ -44,7 +44,7 @@ static inline auto adapt_log_entry_arg(
 /// @see application_config
 class connection_setup : public main_ctx_object {
 public:
-    connection_setup(main_ctx_parent parent, nothing_t) noexcept
+    connection_setup(main_ctx_parent parent, const nothing_t) noexcept
       : main_ctx_object{EAGINE_ID(ConnSetup), parent} {}
 
     /// @brief Construction from a parent main context object.

@@ -72,7 +72,7 @@ public:
 
     remote_node_changes changes{};
 
-    auto get_sub(message_id msg_id) const noexcept -> tribool {
+    auto get_sub(const message_id msg_id) const noexcept -> tribool {
         auto pos = _subscriptions.find(msg_id);
         if(pos != _subscriptions.end()) {
             return pos->second;
@@ -80,7 +80,7 @@ public:
         return indeterminate;
     }
 
-    auto get_sub(message_id msg_id) -> tribool& {
+    auto get_sub(const message_id msg_id) -> tribool& {
         auto pos = _subscriptions.find(msg_id);
         if(pos == _subscriptions.end()) {
             pos = _subscriptions.emplace(msg_id, indeterminate).first;
@@ -202,7 +202,7 @@ auto remote_instance_state::changes() -> remote_instance_changes {
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-auto remote_instance_state::add_change(remote_instance_change change)
+auto remote_instance_state::add_change(const remote_instance_change change)
   -> remote_instance_state& {
     if(auto impl{_impl()}) {
         extract(impl).changes |= change;
@@ -223,7 +223,7 @@ auto remote_instance_state::notice_alive() -> remote_instance_state& {
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-auto remote_instance_state::set_host_id(host_id_t host_id)
+auto remote_instance_state::set_host_id(const host_id_t host_id)
   -> remote_instance_state& {
     if(auto impl{_impl()}) {
         auto& i = extract(impl);
@@ -317,7 +317,7 @@ auto remote_host_state::changes() -> remote_host_changes {
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-auto remote_host_state::add_change(remote_host_change change)
+auto remote_host_state::add_change(const remote_host_change change)
   -> remote_host_state& {
     if(auto impl{_impl()}) {
         extract(impl).changes |= change;
@@ -686,7 +686,8 @@ auto remote_node::connections() const noexcept -> node_connections {
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-auto remote_node::subscribes_to(message_id msg_id) const noexcept -> tribool {
+auto remote_node::subscribes_to(const message_id msg_id) const noexcept
+  -> tribool {
     if(auto impl{_impl()}) {
         return extract(impl).get_sub(msg_id);
     }
@@ -712,7 +713,8 @@ auto remote_node::is_pingable() const noexcept -> tribool {
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-void remote_node::set_ping_interval(std::chrono::milliseconds ms) noexcept {
+void remote_node::set_ping_interval(
+  const std::chrono::milliseconds ms) noexcept {
     if(auto impl{_impl()}) {
         extract(impl).should_ping.reset(ms, nothing);
     }
@@ -800,7 +802,7 @@ auto remote_node_state::changes() -> remote_node_changes {
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-auto remote_node_state::add_change(remote_node_change change)
+auto remote_node_state::add_change(const remote_node_change change)
   -> remote_node_state& {
     if(auto impl{_impl()}) {
         extract(impl).changes |= change;
@@ -809,7 +811,7 @@ auto remote_node_state::add_change(remote_node_change change)
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-auto remote_node_state::set_instance_id(process_instance_id_t instance_id)
+auto remote_node_state::set_instance_id(const process_instance_id_t instance_id)
   -> remote_node_state& {
     if(auto impl{_impl()}) {
         auto& i = extract(impl);
@@ -822,7 +824,8 @@ auto remote_node_state::set_instance_id(process_instance_id_t instance_id)
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-auto remote_node_state::set_host_id(host_id_t host_id) -> remote_node_state& {
+auto remote_node_state::set_host_id(const host_id_t host_id)
+  -> remote_node_state& {
     if(auto impl{_impl()}) {
         auto& i = extract(impl);
         if(i.host_id != host_id) {
@@ -837,7 +840,7 @@ auto remote_node_state::set_host_id(host_id_t host_id) -> remote_node_state& {
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-auto remote_node_state::assign(node_kind kind) -> remote_node_state& {
+auto remote_node_state::assign(const node_kind kind) -> remote_node_state& {
     if(auto impl{_impl()}) {
         auto& i = extract(impl);
         if(i.kind != kind) {
@@ -937,7 +940,7 @@ auto remote_node_state::assign(const endpoint_statistics& stats)
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-auto remote_node_state::add_subscription(message_id msg_id)
+auto remote_node_state::add_subscription(const message_id msg_id)
   -> remote_node_state& {
     if(auto impl{_impl()}) {
         auto& i = extract(impl);
@@ -951,7 +954,7 @@ auto remote_node_state::add_subscription(message_id msg_id)
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-auto remote_node_state::remove_subscription(message_id msg_id)
+auto remote_node_state::remove_subscription(const message_id msg_id)
   -> remote_node_state& {
     if(auto impl{_impl()}) {
         auto& i = extract(impl);
@@ -1006,8 +1009,8 @@ auto remote_node_state::pinged() -> remote_node_state& {
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
 auto remote_node_state::ping_response(
-  message_sequence_t,
-  std::chrono::microseconds age) -> remote_node_state& {
+  const message_sequence_t,
+  const std::chrono::microseconds age) -> remote_node_state& {
     if(auto impl{_impl()}) {
         auto& i = extract(impl);
         const auto was_responsive = bool(i.ping_bits);
@@ -1026,8 +1029,8 @@ auto remote_node_state::ping_response(
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
 auto remote_node_state::ping_timeout(
-  message_sequence_t,
-  std::chrono::microseconds age) -> remote_node_state& {
+  const message_sequence_t,
+  const std::chrono::microseconds age) -> remote_node_state& {
     if(auto impl{_impl()}) {
         auto& i = extract(impl);
         const auto was_responsive = bool(i.ping_bits);
@@ -1080,7 +1083,7 @@ auto remote_host_state::set_hostname(std::string hn) -> remote_host_state& {
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-auto remote_host_state::set_cpu_concurrent_threads(span_size_t value)
+auto remote_host_state::set_cpu_concurrent_threads(const span_size_t value)
   -> remote_host_state& {
     if(auto impl{_impl()}) {
         auto& i = extract(impl);
@@ -1091,7 +1094,7 @@ auto remote_host_state::set_cpu_concurrent_threads(span_size_t value)
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-auto remote_host_state::set_short_average_load(float value)
+auto remote_host_state::set_short_average_load(const float value)
   -> remote_host_state& {
     if(auto impl{_impl()}) {
         auto& i = extract(impl);
@@ -1102,7 +1105,7 @@ auto remote_host_state::set_short_average_load(float value)
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-auto remote_host_state::set_long_average_load(float value)
+auto remote_host_state::set_long_average_load(const float value)
   -> remote_host_state& {
     if(auto impl{_impl()}) {
         auto& i = extract(impl);
@@ -1113,7 +1116,7 @@ auto remote_host_state::set_long_average_load(float value)
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-auto remote_host_state::set_total_ram_size(span_size_t value)
+auto remote_host_state::set_total_ram_size(const span_size_t value)
   -> remote_host_state& {
     if(auto impl{_impl()}) {
         auto& i = extract(impl);
@@ -1124,7 +1127,7 @@ auto remote_host_state::set_total_ram_size(span_size_t value)
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-auto remote_host_state::set_total_swap_size(span_size_t value)
+auto remote_host_state::set_total_swap_size(const span_size_t value)
   -> remote_host_state& {
     if(auto impl{_impl()}) {
         auto& i = extract(impl);
@@ -1135,7 +1138,7 @@ auto remote_host_state::set_total_swap_size(span_size_t value)
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-auto remote_host_state::set_free_ram_size(span_size_t value)
+auto remote_host_state::set_free_ram_size(const span_size_t value)
   -> remote_host_state& {
     if(auto impl{_impl()}) {
         auto& i = extract(impl);
@@ -1146,7 +1149,7 @@ auto remote_host_state::set_free_ram_size(span_size_t value)
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-auto remote_host_state::set_free_swap_size(span_size_t value)
+auto remote_host_state::set_free_swap_size(const span_size_t value)
   -> remote_host_state& {
     if(auto impl{_impl()}) {
         auto& i = extract(impl);
@@ -1158,8 +1161,8 @@ auto remote_host_state::set_free_swap_size(span_size_t value)
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
 auto remote_host_state::set_temperature_min_max(
-  kelvins_t<float> min,
-  kelvins_t<float> max) -> remote_host_state& {
+  const kelvins_t<float> min,
+  const kelvins_t<float> max) -> remote_host_state& {
     if(auto impl{_impl()}) {
         auto& i = extract(impl);
         i.min_temperature = min.value();
@@ -1170,7 +1173,7 @@ auto remote_host_state::set_temperature_min_max(
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-auto remote_host_state::set_power_supply(power_supply_kind value)
+auto remote_host_state::set_power_supply(const power_supply_kind value)
   -> remote_host_state& {
     if(auto impl{_impl()}) {
         auto& i = extract(impl);
@@ -1227,7 +1230,7 @@ auto node_connection::bytes_per_second() const noexcept
 // node_connection_state
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-auto node_connection_state::set_kind(connection_kind kind)
+auto node_connection_state::set_kind(const connection_kind kind)
   -> node_connection_state& {
     if(auto impl{_impl()}) {
         auto& i = extract(impl);
@@ -1325,7 +1328,8 @@ auto remote_node_tracker::_get_connections() const noexcept
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-auto remote_node_tracker::get_node(identifier_t node_id) -> remote_node_state& {
+auto remote_node_tracker::get_node(const identifier_t node_id)
+  -> remote_node_state& {
     EAGINE_ASSERT(_pimpl);
     EAGINE_ASSERT(node_id != 0U);
     auto pos = _pimpl->nodes.find(node_id);
@@ -1337,13 +1341,14 @@ auto remote_node_tracker::get_node(identifier_t node_id) -> remote_node_state& {
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-auto remote_node_tracker::remove_node(identifier_t node_id) -> bool {
+auto remote_node_tracker::remove_node(const identifier_t node_id) -> bool {
     EAGINE_ASSERT(_pimpl);
     return _pimpl->nodes.erase(node_id) > 0;
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-auto remote_node_tracker::get_host(host_id_t host_id) -> remote_host_state& {
+auto remote_node_tracker::get_host(const host_id_t host_id)
+  -> remote_host_state& {
     EAGINE_ASSERT(_pimpl);
     auto pos = _pimpl->hosts.find(host_id);
     if(pos == _pimpl->hosts.end()) {
@@ -1354,7 +1359,7 @@ auto remote_node_tracker::get_host(host_id_t host_id) -> remote_host_state& {
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-auto remote_node_tracker::get_host(host_id_t host_id) const
+auto remote_node_tracker::get_host(const host_id_t host_id) const
   -> remote_host_state {
     if(_pimpl) {
         auto pos = _pimpl->hosts.find(host_id);
@@ -1366,7 +1371,7 @@ auto remote_node_tracker::get_host(host_id_t host_id) const
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-auto remote_node_tracker::get_instance(process_instance_id_t instance_id)
+auto remote_node_tracker::get_instance(const process_instance_id_t instance_id)
   -> remote_instance_state& {
     EAGINE_ASSERT(_pimpl);
     auto pos = _pimpl->instances.find(instance_id);
@@ -1378,8 +1383,8 @@ auto remote_node_tracker::get_instance(process_instance_id_t instance_id)
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-auto remote_node_tracker::get_instance(process_instance_id_t instance_id) const
-  -> remote_instance_state {
+auto remote_node_tracker::get_instance(
+  const process_instance_id_t instance_id) const -> remote_instance_state {
     if(_pimpl) {
         auto pos = _pimpl->instances.find(instance_id);
         if(pos != _pimpl->instances.end()) {
@@ -1391,8 +1396,8 @@ auto remote_node_tracker::get_instance(process_instance_id_t instance_id) const
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
 auto remote_node_tracker::get_connection(
-  identifier_t node_id1,
-  identifier_t node_id2) -> node_connection_state& {
+  const identifier_t node_id1,
+  const identifier_t node_id2) -> node_connection_state& {
     EAGINE_ASSERT(_pimpl);
     for(auto& conn : _pimpl->connections) {
         if(conn.connects(node_id1, node_id2)) {
@@ -1407,8 +1412,8 @@ auto remote_node_tracker::get_connection(
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
 auto remote_node_tracker::get_connection(
-  identifier_t node_id1,
-  identifier_t node_id2) const -> node_connection_state {
+  const identifier_t node_id1,
+  const identifier_t node_id2) const -> node_connection_state {
     if(_pimpl) {
         for(auto& conn : _pimpl->connections) {
             if(conn.connects(node_id1, node_id2)) {
@@ -1421,8 +1426,8 @@ auto remote_node_tracker::get_connection(
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
 auto remote_node_tracker::notice_instance(
-  identifier_t node_id,
-  process_instance_id_t instance_id) -> remote_node_state& {
+  const identifier_t node_id,
+  const process_instance_id_t instance_id) -> remote_node_state& {
     auto& node = get_node(node_id);
     if(const auto node_inst{node.instance_id()}) {
         // if node instance changed
