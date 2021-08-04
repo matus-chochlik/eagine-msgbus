@@ -502,7 +502,7 @@ public:
     }
 
     /// @brief Triggered when a helper service appears.
-    signal<void(identifier_t)> helper_appeared;
+    signal<void(const identifier_t)> helper_appeared;
 
     /// @brief Triggered when the board with the specified key is solved.
     signal<void(identifier_t, const Key&, basic_sudoku_board<3>&)> solved_3;

@@ -49,13 +49,13 @@ public:
     signal<void(const subscriber_info&)> reported_alive;
 
     /// @brief Triggered on receipt of info that endpoint subscribes to message.
-    signal<void(const subscriber_info&, message_id)> subscribed;
+    signal<void(const subscriber_info&, const message_id)> subscribed;
 
     /// @brief Triggered on receipt of info that endpoint unsubscribes from message.
-    signal<void(const subscriber_info&, message_id)> unsubscribed;
+    signal<void(const subscriber_info&, const message_id)> unsubscribed;
 
     /// @brief Triggered on receipt of info that endpoint doesn't handle message type.
-    signal<void(const subscriber_info&, message_id)> not_subscribed;
+    signal<void(const subscriber_info&, const message_id)> not_subscribed;
 
 protected:
     using Base::Base;

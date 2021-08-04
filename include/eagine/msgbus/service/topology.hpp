@@ -60,19 +60,19 @@ public:
     /// @see router_appeared
     /// @see bridge_disappeared
     /// @see endpoint_disappeared
-    signal<void(identifier_t)> router_disappeared;
+    signal<void(const identifier_t)> router_disappeared;
 
     /// @brief Triggered on receipt of bye-bye message from a bridge node.
     /// @see bridge_appeared
     /// @see router_disappeared
     /// @see endpoint_disappeared
-    signal<void(identifier_t)> bridge_disappeared;
+    signal<void(const identifier_t)> bridge_disappeared;
 
     /// @brief Triggered on receipt of bye-bye message from an endpoint node.
     /// @see endpoint_appeared
     /// @see router_disappeared
     /// @see bridge_disappeared
-    signal<void(identifier_t)> endpoint_disappeared;
+    signal<void(const identifier_t)> endpoint_disappeared;
 
 protected:
     using Base::Base;

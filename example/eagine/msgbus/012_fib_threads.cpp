@@ -53,7 +53,7 @@ public:
         return true;
     }
 
-    static auto fib(std::int64_t arg) noexcept -> std::int64_t {
+    static auto fib(const std::int64_t arg) noexcept -> std::int64_t {
         return arg <= 2 ? 1 : fib(arg - 2) + fib(arg - 1);
     }
 
@@ -103,7 +103,7 @@ public:
           EAGINE_MSG_MAP(Fibonacci, IsReady, this_class, dispatch),
           EAGINE_MSG_MAP(Fibonacci, Result, this_class, print)) {}
 
-    void enqueue(std::int64_t arg) {
+    void enqueue(const std::int64_t arg) {
         _remaining.push(arg);
     }
 

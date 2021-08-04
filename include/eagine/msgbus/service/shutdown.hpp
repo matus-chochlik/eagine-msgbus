@@ -34,9 +34,9 @@ class shutdown_target
 public:
     /// @brief Triggered when a shutdown request is received.
     signal<void(
-      std::chrono::milliseconds age,
-      identifier_t source_id,
-      verification_bits verified)>
+      const std::chrono::milliseconds age,
+      const identifier_t source_id,
+      const verification_bits verified)>
       shutdown_requested;
 
 protected:

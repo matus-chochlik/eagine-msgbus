@@ -98,12 +98,12 @@ public:
           EAGINE_THIS_MEM_FUNC_REF(on_hostname_received));
     }
 
-    void on_id_assigned(identifier_t endpoint_id) {
+    void on_id_assigned(const identifier_t endpoint_id) {
         log_info("new id ${id} assigned").arg(EAGINE_ID(id), endpoint_id);
         _do_ping = true;
     }
 
-    void on_connection_established(bool usable) {
+    void on_connection_established(const bool usable) {
         log_info("connection established");
         _do_ping = usable;
     }
@@ -113,7 +113,7 @@ public:
         _do_ping = false;
     }
 
-    void on_subscribed(const subscriber_info& info, message_id sub_msg) {
+    void on_subscribed(const subscriber_info& info, const message_id sub_msg) {
         if(sub_msg == this->ping_msg_id()) {
             if(_targets.try_emplace(info.endpoint_id, ping_stats{}).second) {
                 log_info("new pingable ${id} appeared")
@@ -122,14 +122,16 @@ public:
         }
     }
 
-    void on_unsubscribed(const subscriber_info& info, message_id sub_msg) {
+    void on_unsubscribed(const subscriber_info& info, const message_id sub_msg) {
         if(sub_msg == this->ping_msg_id()) {
             log_info("pingable ${id} disappeared")
               .arg(EAGINE_ID(id), info.endpoint_id);
         }
     }
 
-    void on_not_subscribed(const subscriber_info& info, message_id sub_msg) {
+    void on_not_subscribed(
+      const subscriber_info& info,
+      const message_id sub_msg) {
         if(sub_msg == this->ping_msg_id()) {
             log_info("target ${id} is not pingable")
               .arg(EAGINE_ID(id), info.endpoint_id);
@@ -155,10 +157,10 @@ public:
     }
 
     void on_ping_response(
-      identifier_t pinger_id,
-      message_sequence_t,
-      std::chrono::microseconds age,
-      verification_bits) {
+      const identifier_t pinger_id,
+      const message_sequence_t,
+      const std::chrono::microseconds age,
+      const verification_bits) {
         auto& stats = _targets[pinger_id];
         stats.responded++;
         stats.min_time = std::min(stats.min_time, age);
@@ -189,9 +191,9 @@ public:
     }
 
     void on_ping_timeout(
-      identifier_t pinger_id,
-      message_sequence_t,
-      std::chrono::microseconds) {
+      const identifier_t pinger_id,
+      const message_sequence_t,
+      const std::chrono::microseconds) {
         auto& stats = _targets[pinger_id];
         stats.timeouted++;
         if(EAGINE_UNLIKELY((++_tout % _mod) == 0)) {
@@ -286,7 +288,7 @@ private:
     std::chrono::steady_clock::time_point prev_log{
       std::chrono::steady_clock::now()};
     std::map<identifier_t, ping_stats> _targets{};
-    std::intmax_t _mod{5000};
+    std::intmax_t _mod{10000};
     std::intmax_t _max{100000};
     std::intmax_t _sent{0};
     std::intmax_t _rcvd{0};

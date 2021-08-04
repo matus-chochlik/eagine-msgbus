@@ -66,7 +66,7 @@ public:
         return true;
     }
 
-    static auto fib(std::int64_t arg) noexcept -> std::int64_t {
+    static auto fib(const std::int64_t arg) noexcept -> std::int64_t {
         return arg <= 2 ? 1 : fib(arg - 2) + fib(arg - 1);
     }
 
@@ -118,7 +118,7 @@ public:
         conn_setup.setup_connectors(*this, connection_kind::in_process);
     }
 
-    void enqueue(std::int64_t arg) {
+    void enqueue(const std::int64_t arg) {
         _remaining.push(arg);
     }
 

@@ -24,7 +24,7 @@ public:
     pong(
       main_ctx_parent parent,
       connection_setup& conn_setup,
-      string_view address)
+      const string_view address)
       : base(
           {EAGINE_ID(ExamplPong), parent},
           this,

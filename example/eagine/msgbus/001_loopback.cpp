@@ -53,7 +53,7 @@ struct str_utils_client
       , base{ep, this, EAGINE_MSG_MAP(StrUtilRes, Reverse, this_class, print)} {
     }
 
-    void call_reverse(string_view str) {
+    void call_reverse(const string_view str) {
         ++_remaining;
         bus_node().post(EAGINE_MSG_ID(StrUtilReq, Reverse), as_bytes(str));
     }

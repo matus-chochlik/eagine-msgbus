@@ -54,9 +54,9 @@ public:
 
 private:
     void _handle_shutdown(
-      std::chrono::milliseconds age,
-      identifier_t source_id,
-      verification_bits verified) {
+      const std::chrono::milliseconds age,
+      const identifier_t source_id,
+      const verification_bits verified) {
         log_info("received shutdown request from ${source}")
           .arg(EAGINE_ID(age), age)
           .arg(EAGINE_ID(source), source_id)
@@ -71,7 +71,7 @@ private:
 } // namespace msgbus
 
 auto main(main_ctx& ctx) -> int {
-    signal_switch interrupted;
+    const signal_switch interrupted;
     enable_message_bus(ctx);
     ctx.preinitialize();
 

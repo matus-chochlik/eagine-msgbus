@@ -25,7 +25,7 @@ public:
     ping(
       main_ctx_parent parent,
       connection_setup& conn_setup,
-      string_view address,
+      const string_view address,
       const valid_if_positive<std::size_t>& max)
       : base(
           {EAGINE_ID(ExamplPing), parent},
@@ -83,7 +83,7 @@ public:
         return (_rcvd >= _max) || _timeout;
     }
 
-    auto pings_per_second(std::chrono::duration<float> s) const noexcept {
+    auto pings_per_second(const std::chrono::duration<float> s) const noexcept {
         return float(_rcvd) / s.count();
     }
 

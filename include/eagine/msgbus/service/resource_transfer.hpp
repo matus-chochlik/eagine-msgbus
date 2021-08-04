@@ -380,17 +380,17 @@ class resource_manipulator
 public:
     /// @brief Triggered when a server responds that is has a resource.
     /// @see search_resource
-    signal<void(identifier_t, const url&)> server_has_resource;
+    signal<void(const identifier_t, const url&)> server_has_resource;
 
     /// @brief Triggered when a server responds that is has not a resource.
     /// @see search_resource
-    signal<void(identifier_t, const url&)> server_has_not_resource;
+    signal<void(const identifier_t, const url&)> server_has_not_resource;
 
     /// @brief Triggered when a resource server appears on the bus.
-    signal<void(identifier_t)> resource_server_appeared;
+    signal<void(const identifier_t)> resource_server_appeared;
 
     /// @brief Triggered when a resource server dissapears from the bus.
-    signal<void(identifier_t)> resource_server_lost;
+    signal<void(const identifier_t)> resource_server_lost;
 
     /// @brief Returns the best-guess of server endpoint id for a URL.
     /// @see query_resource_content

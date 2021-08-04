@@ -35,7 +35,7 @@ private:
     default_lazy_skeleton<std::int64_t(std::int64_t), 64> _calc_skeleton{
       std::chrono::minutes(1)};
 
-    static auto fib(std::int64_t arg) -> std::int64_t {
+    static auto fib(const std::int64_t arg) -> std::int64_t {
         return arg <= 2 ? 1 : fib(arg - 2) + fib(arg - 1);
     }
 
@@ -74,7 +74,7 @@ private:
     default_invoker<std::int64_t(std::int64_t), 64> _calc_invoker{};
 
 public:
-    auto fib(std::int64_t arg) -> future<std::int64_t> {
+    auto fib(const std::int64_t arg) -> future<std::int64_t> {
         return _calc_invoker.invoke(
           bus_node(), EAGINE_MSG_ID(Fibonacci, Calculate), arg);
     }

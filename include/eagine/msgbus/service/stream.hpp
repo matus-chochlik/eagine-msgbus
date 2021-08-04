@@ -98,7 +98,7 @@ public:
     }
 
     /// @brief Triggered when a new relay has been assigned.
-    signal<void(identifier_t relay_id)> stream_relay_assigned;
+    signal<void(const identifier_t relay_id)> stream_relay_assigned;
 
     /// @brief Triggered when the current relay has been reset.
     signal<void()> stream_relay_reset;
@@ -346,17 +346,17 @@ public:
     /// @brief Triggered when a data stream has appeared at the given provider.
     /// @see stream_disappeared
     signal<void(
-      identifier_t provider_id,
+      const identifier_t provider_id,
       const stream_info&,
-      verification_bits verified)>
+      const verification_bits verified)>
       stream_appeared;
 
     /// @brief Triggered when a data stream has been lost at the given provider.
     /// @see stream_appeared
     signal<void(
-      identifier_t provider_id,
+      const identifier_t provider_id,
       const stream_info&,
-      verification_bits verified)>
+      const verification_bits verified)>
       stream_disappeared;
 
     /// @brief Subscribes to the data from the specified stream.
@@ -469,17 +469,17 @@ public:
     /// @brief Triggered when a data stream was announced by the given provider.
     /// @see stream_retracted
     signal<void(
-      identifier_t provider_id,
+      const identifier_t provider_id,
       const stream_info&,
-      verification_bits verified)>
+      const verification_bits verified)>
       stream_announced;
 
     /// @brief Triggered when a data stream was retracted by the given provider.
     /// @see stream_announced
     signal<void(
-      identifier_t provider_id,
+      const identifier_t provider_id,
       const stream_info&,
-      verification_bits verified)>
+      const verification_bits verified)>
       stream_retracted;
 
 protected:

@@ -52,13 +52,14 @@ class node_tracker : public node_tracker_base<Base> {
 
 public:
     /// @brief Triggered when message bus host information changes.
-    signal<void(remote_host&, remote_host_changes)> host_changed;
+    signal<void(remote_host&, const remote_host_changes)> host_changed;
 
     /// @brief Triggered when message bus instance information changes.
-    signal<void(remote_instance&, remote_instance_changes)> instance_changed;
+    signal<void(remote_instance&, const remote_instance_changes)>
+      instance_changed;
 
     /// @brief Triggered when message bus node information changes.
-    signal<void(remote_node&, remote_node_changes)> node_changed;
+    signal<void(remote_node&, const remote_node_changes)> node_changed;
 
     /// @brief Returns handler for the node alive message.
     auto on_alive() noexcept {

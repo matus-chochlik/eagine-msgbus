@@ -75,7 +75,7 @@ private:
     default_invoker<std::int64_t(std::int64_t), 64> _calc_invoker{};
 
 public:
-    auto fib(std::int64_t arg) -> future<std::int64_t> {
+    auto fib(const std::int64_t arg) -> future<std::int64_t> {
         return _calc_invoker.invoke(
           bus_node(), EAGINE_MSG_ID(Fibonacci, Calculate), arg);
     }

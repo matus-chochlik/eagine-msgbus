@@ -30,9 +30,9 @@ class pingable : public Base {
 public:
     /// @brief Decides if a ping request should be responded.
     virtual auto respond_to_ping(
-      identifier_t pinger_id,
-      message_sequence_t,
-      verification_bits) -> bool {
+      const identifier_t pinger_id,
+      const message_sequence_t,
+      const verification_bits) -> bool {
         EAGINE_MAYBE_UNUSED(pinger_id);
         return true;
     }
@@ -146,10 +146,10 @@ public:
     /// @see ping_timeouted
     /// @see has_pending_pings
     signal<void(
-      identifier_t pingable_id,
-      message_sequence_t sequence_no,
-      std::chrono::microseconds age,
-      verification_bits)>
+      const identifier_t pingable_id,
+      const message_sequence_t sequence_no,
+      const std::chrono::microseconds age,
+      const verification_bits)>
       ping_responded;
 
     /// @brief Triggered on timeout of ping response.
@@ -157,9 +157,9 @@ public:
     /// @see ping_responded
     /// @see has_pending_pings
     signal<void(
-      identifier_t pingable_id,
-      message_sequence_t sequence_no,
-      std::chrono::microseconds age)>
+      const identifier_t pingable_id,
+      const message_sequence_t sequence_no,
+      const std::chrono::microseconds age)>
       ping_timeouted;
 
 protected:

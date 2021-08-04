@@ -75,7 +75,7 @@ public:
 
     /// @brief Triggered on receipt of response about message handling by endpoint.
     /// @see find_handler
-    signal<void(identifier_t target_id, message_id)> handler_found;
+    signal<void(const identifier_t target_id, const message_id)> handler_found;
 
 protected:
     using Base::Base;

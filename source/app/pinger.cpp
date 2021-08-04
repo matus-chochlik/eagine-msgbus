@@ -114,12 +114,12 @@ public:
         bus().setup_connectors(*this);
     }
 
-    void on_id_assigned(identifier_t endpoint_id) {
+    void on_id_assigned(const identifier_t endpoint_id) {
         log_info("new id ${id} assigned").arg(EAGINE_ID(id), endpoint_id);
         _can_ping = true;
     }
 
-    void on_connection_established(bool usable) {
+    void on_connection_established(const bool usable) {
         log_info("connection established");
         _can_ping = usable;
     }
@@ -129,7 +129,7 @@ public:
         _can_ping = false;
     }
 
-    void on_subscribed(const subscriber_info& info, message_id sub_msg) {
+    void on_subscribed(const subscriber_info& info, const message_id sub_msg) {
         if(sub_msg == this->ping_msg_id()) {
             auto& stats = _targets[info.endpoint_id];
             if(!stats.is_active) {
@@ -140,7 +140,7 @@ public:
         }
     }
 
-    void on_unsubscribed(const subscriber_info& info, message_id sub_msg) {
+    void on_unsubscribed(const subscriber_info& info, const message_id sub_msg) {
         if(sub_msg == this->ping_msg_id()) {
             auto& state = _targets[info.endpoint_id];
             if(state.is_active) {
@@ -151,7 +151,9 @@ public:
         }
     }
 
-    void on_not_subscribed(const subscriber_info& info, message_id sub_msg) {
+    void on_not_subscribed(
+      const subscriber_info& info,
+      const message_id sub_msg) {
         if(sub_msg == this->ping_msg_id()) {
             auto& state = _targets[info.endpoint_id];
             state.is_active = false;
@@ -181,10 +183,10 @@ public:
     }
 
     void on_ping_response(
-      identifier_t pinger_id,
-      message_sequence_t,
-      std::chrono::microseconds age,
-      verification_bits) {
+      const identifier_t pinger_id,
+      const message_sequence_t,
+      const std::chrono::microseconds age,
+      const verification_bits) {
         auto& state = _targets[pinger_id];
         state.responded++;
         state.min_time = std::min(state.min_time, age);
@@ -215,9 +217,9 @@ public:
     }
 
     void on_ping_timeout(
-      identifier_t pinger_id,
-      message_sequence_t,
-      std::chrono::microseconds) {
+      const identifier_t pinger_id,
+      const message_sequence_t,
+      const std::chrono::microseconds) {
         auto& state = _targets[pinger_id];
         state.timeouted++;
         if(EAGINE_UNLIKELY((++_tout % _mod) == 0)) {
@@ -325,7 +327,7 @@ private:
 } // namespace msgbus
 
 auto main(main_ctx& ctx) -> int {
-    signal_switch interrupted;
+    const signal_switch interrupted;
     enable_message_bus(ctx);
     ctx.preinitialize();
 
