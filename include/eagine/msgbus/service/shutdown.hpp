@@ -78,7 +78,7 @@ class shutdown_invoker
 
 public:
     /// @brief Sends shutdown request to the specified target endpoint.
-    void shutdown_one(identifier_t target_id) {
+    void shutdown_one(const identifier_t target_id) {
         std::array<byte, 32> temp{};
         const auto ts{this->now()};
         const auto ticks{std::chrono::duration_cast<shutdown_service_duration>(

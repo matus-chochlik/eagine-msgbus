@@ -25,7 +25,7 @@ class network_topology : public Base {
 public:
     /// @brief Queries the topology information of the specified bus node.
     /// @see discover_topology
-    void query_topology(identifier_t node_id) {
+    void query_topology(const identifier_t node_id) {
         message_view message{};
         message.set_target_id(node_id);
         const auto msg_id{EAGINE_MSGBUS_ID(topoQuery)};

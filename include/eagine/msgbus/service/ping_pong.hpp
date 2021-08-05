@@ -88,7 +88,9 @@ public:
     /// @see ping_responded
     /// @see ping_timeouted
     /// @see has_pending_pings
-    void ping(identifier_t pingable_id, std::chrono::milliseconds max_time) {
+    void ping(
+      const identifier_t pingable_id,
+      const std::chrono::milliseconds max_time) {
         message_view message{};
         auto msg_id{EAGINE_MSGBUS_ID(ping)};
         message.set_target_id(pingable_id);
@@ -102,7 +104,7 @@ public:
     /// @see ping_responded
     /// @see ping_timeouted
     /// @see has_pending_pings
-    void ping(identifier_t pingable_id) {
+    void ping(const identifier_t pingable_id) {
         ping(
           pingable_id,
           adjusted_duration(

@@ -65,7 +65,7 @@ class endpoint_info_consumer : public Base {
 public:
     /// @brief Queries basic information about the specified endpoint.
     /// @see endpoint_info_received
-    void query_endpoint_info(identifier_t endpoint_id) {
+    void query_endpoint_info(const identifier_t endpoint_id) {
         _info.invoke_on(
           this->bus_node(), endpoint_id, EAGINE_MSG_ID(eagiEptInf, request));
     }

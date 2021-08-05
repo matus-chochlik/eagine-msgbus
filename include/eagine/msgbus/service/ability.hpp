@@ -64,7 +64,7 @@ class ability_tester : public Base {
 public:
     /// @brief Sends a query to endpoints if they handle the specified message type.
     /// @see handler_found
-    void find_handler(message_id msg_id) {
+    void find_handler(const message_id msg_id) {
         std::array<byte, 32> temp{};
         auto serialized{default_serialize(msg_id, cover(temp))};
         EAGINE_ASSERT(serialized);
