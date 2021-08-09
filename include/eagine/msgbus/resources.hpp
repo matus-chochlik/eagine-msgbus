@@ -17,7 +17,7 @@ auto router_certificate_pem(
   const memory::const_block embedded_blk,
   memory::buffer&,
   application_config&,
-  logger&) -> memory::const_block;
+  const logger&) -> memory::const_block;
 //------------------------------------------------------------------------------
 inline auto router_certificate_pem(
   const memory::const_block embedded_blk,
@@ -32,7 +32,7 @@ auto bridge_certificate_pem(
   const memory::const_block embedded_blk,
   memory::buffer&,
   application_config&,
-  logger&) -> memory::const_block;
+  const logger&) -> memory::const_block;
 //------------------------------------------------------------------------------
 inline auto bridge_certificate_pem(
   const memory::const_block embedded_blk,
@@ -47,7 +47,7 @@ auto endpoint_certificate_pem(
   const memory::const_block embedded_blk,
   memory::buffer&,
   application_config&,
-  logger&) -> memory::const_block;
+  const logger&) -> memory::const_block;
 //------------------------------------------------------------------------------
 inline auto endpoint_certificate_pem(
   const memory::const_block embedded_blk,

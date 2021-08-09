@@ -121,7 +121,7 @@ auto main(main_ctx& ctx) -> int {
     const signal_switch interrupted;
     enable_message_bus(ctx);
 
-    auto& log = ctx.log();
+    const auto& log = ctx.log();
     log.info("message bus router starting up");
 
     ctx.system().preinitialize();

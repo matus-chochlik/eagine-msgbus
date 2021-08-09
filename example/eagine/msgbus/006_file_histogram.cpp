@@ -22,7 +22,7 @@ namespace msgbus {
 
 class example_blob_io : public blob_io {
 public:
-    example_blob_io(logger& log, url loc) noexcept
+    example_blob_io(const logger& log, url loc) noexcept
       : _log{log}
       , _locator{std::move(loc)} {
         zero(cover(_byte_counts));
@@ -78,7 +78,7 @@ public:
     }
 
 private:
-    logger& _log;
+    const logger& _log;
     url _locator;
     span_size_t _max_count{0};
     std::array<span_size_t, 256> _byte_counts{};
