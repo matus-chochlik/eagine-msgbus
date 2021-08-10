@@ -35,7 +35,7 @@ public:
     }
 
     template <unsigned S>
-    void print(identifier_t, const int& id, basic_sudoku_board<S>& board) {
+    void print(const identifier_t, const int& id, basic_sudoku_board<S>& board) {
         std::cout << "board: " << id << '\n' << board << std::endl;
     }
 };
@@ -55,7 +55,7 @@ auto main(main_ctx& ctx) -> int {
     auto board_count = 5;
     ctx.args().find("--count").parse_next(board_count, std::cerr);
 
-    auto enqueue = [&](auto generator) {
+    const auto enqueue = [&](auto generator) {
         for(int id = 0; id < board_count; ++id) {
             solver.enqueue(id, generator.generate_medium());
         }

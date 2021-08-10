@@ -82,13 +82,13 @@ protected:
     }
 
 private:
-    auto _handle_sup_query(const message_context&, stored_message& message)
+    auto _handle_sup_query(const message_context&, const stored_message& message)
       -> bool {
         this->respond_to_subscription_query(message.source_id);
         return true;
     }
 
-    auto _handle_sub_query(const message_context&, stored_message& message)
+    auto _handle_sub_query(const message_context&, const stored_message& message)
       -> bool {
         message_id sub_msg_id{};
         if(default_deserialize_message_type(sub_msg_id, message.content())) {
@@ -110,7 +110,7 @@ class service_node
   , private protected_member<endpoint>
   , public service_composition<Base> {
 public:
-    service_node(identifier id, main_ctx_parent parent)
+    service_node(const identifier id, main_ctx_parent parent)
       : main_ctx_object{id, parent}
       , protected_member<endpoint>{id, parent}
       , service_composition<Base>{this->get_the_member()} {}

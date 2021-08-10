@@ -33,7 +33,7 @@ public:
     /// @brief Connects the specified callable, returns a key for removal.
     /// @see bind
     /// @see disconnect
-    auto connect(callable_ref<void(Params...)> slot) -> binding_key {
+    auto connect(const callable_ref<void(Params...)> slot) -> binding_key {
         auto get_key = [](auto& entry) {
             return std::get<0>(entry);
         };
@@ -63,17 +63,17 @@ public:
     /// @brief Connects the specified callable, returns a binding object.
     /// @see connect
     /// @see signal_binding
-    [[nodiscard]] auto bind(callable_ref<void(Params...)> slot)
+    [[nodiscard]] auto bind(const callable_ref<void(Params...)> slot)
       -> signal_binding;
 
     /// @brief Disconnects the callable by specifying the connection key.
     /// @see connect
-    auto disconnect(binding_key key) noexcept -> auto& {
+    auto disconnect(const binding_key key) noexcept -> auto& {
         _slots.erase(key);
         return *this;
     }
 
-    void unbind(binding_key key) noexcept {
+    void unbind(const binding_key key) noexcept {
         _slots.erase(key);
     }
 
@@ -112,7 +112,7 @@ public:
     constexpr signal_binding() noexcept = default;
 
     template <typename Signature>
-    signal_binding(signal_binding_key key, signal<Signature>* sig) noexcept
+    signal_binding(const signal_binding_key key, signal<Signature>* sig) noexcept
       : _key{key}
       , _disconnect{sig, EAGINE_MEM_FUNC_C(signal<Signature>, unbind)} {}
 
@@ -153,9 +153,8 @@ private:
 };
 //------------------------------------------------------------------------------
 template <typename... Params>
-[[nodiscard]] auto
-signal<void(Params...)>::bind(callable_ref<void(Params...)> slot)
-  -> signal_binding {
+[[nodiscard]] auto signal<void(Params...)>::bind(
+  callable_ref<void(Params...)> slot) -> signal_binding {
     return {connect(slot), this};
 }
 //------------------------------------------------------------------------------

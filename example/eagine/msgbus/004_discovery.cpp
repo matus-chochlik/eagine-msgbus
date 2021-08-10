@@ -42,23 +42,23 @@ public:
           .arg(EAGINE_ID(subscrbr), info.endpoint_id);
     }
 
-    void on_subscribed(const subscriber_info& info, message_id sub_msg) {
+    void on_subscribed(const subscriber_info& info, const message_id sub_msg) {
         log_info("endpoint ${subscrbr} subscribed to ${message}")
           .arg(EAGINE_ID(subscrbr), info.endpoint_id)
           .arg(EAGINE_ID(message), sub_msg);
         this->bus_node().query_certificate_of(info.endpoint_id);
     }
 
-    void on_unsubscribed(const subscriber_info& info, message_id sub_msg) {
+    void on_unsubscribed(const subscriber_info& info, const message_id sub_msg) {
         log_info("endpoint ${subscrbr} unsubscribed from ${message}")
           .arg(EAGINE_ID(subscrbr), info.endpoint_id)
           .arg(EAGINE_ID(message), sub_msg);
     }
 
     void on_shutdown(
-      std::chrono::milliseconds age,
-      identifier_t subscriber_id,
-      verification_bits verified) {
+      const std::chrono::milliseconds age,
+      const identifier_t subscriber_id,
+      const verification_bits verified) {
         log_info("received ${age} old shutdown request from ${subscrbr}")
           .arg(EAGINE_ID(age), age)
           .arg(EAGINE_ID(subscrbr), subscriber_id)
@@ -81,7 +81,7 @@ private:
 } // namespace msgbus
 
 auto main(main_ctx& ctx) -> int {
-    signal_switch interrupted;
+    const signal_switch interrupted;
     enable_message_bus(ctx);
 
     msgbus::endpoint bus{EAGINE_ID(DiscoverEx), ctx};

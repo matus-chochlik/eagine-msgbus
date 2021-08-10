@@ -30,8 +30,9 @@ enum class connection_kind : std::uint8_t {
 };
 //------------------------------------------------------------------------------
 template <typename Selector>
-constexpr auto
-enumerator_mapping(type_identity<connection_kind>, Selector) noexcept {
+constexpr auto enumerator_mapping(
+  const type_identity<connection_kind>,
+  const Selector) noexcept {
     return enumerator_map_type<connection_kind, 4>{
       {{"unknown", connection_kind::unknown},
        {"in_process", connection_kind::in_process},
@@ -43,8 +44,9 @@ enumerator_mapping(type_identity<connection_kind>, Selector) noexcept {
 /// @ingroup msgbus
 using connection_kinds = bitfield<connection_kind>;
 
-static inline auto operator|(connection_kind l, connection_kind r) noexcept
-  -> connection_kinds {
+static inline auto operator|(
+  const connection_kind l,
+  const connection_kind r) noexcept -> connection_kinds {
     return {l, r};
 }
 //------------------------------------------------------------------------------

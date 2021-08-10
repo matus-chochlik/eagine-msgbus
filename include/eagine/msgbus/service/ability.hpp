@@ -24,7 +24,7 @@ class ability_provider : public Base {
 
 public:
     /// @brief Indicates if the given message type is handled by the endpoint.
-    virtual auto can_handle(message_id) -> bool = 0;
+    virtual auto can_handle(const message_id) -> bool = 0;
 
 protected:
     using Base::Base;
@@ -36,11 +36,12 @@ protected:
     }
 
 private:
-    auto _handle_query(const message_context& msg_ctx, stored_message& message)
-      -> bool {
+    auto _handle_query(
+      const message_context& msg_ctx,
+      const stored_message& message) -> bool {
         message_id msg_id{};
         if(default_deserialize_message_type(msg_id, message.content())) {
-            if(can_handle()) {
+            if(can_handle(msg_id)) {
                 msg_ctx.bus_node().respond_to(
                   message,
                   EAGINE_MSG_ID(Ability, response),
@@ -63,7 +64,7 @@ class ability_tester : public Base {
 public:
     /// @brief Sends a query to endpoints if they handle the specified message type.
     /// @see handler_found
-    void find_handler(message_id msg_id) {
+    void find_handler(const message_id msg_id) {
         std::array<byte, 32> temp{};
         auto serialized{default_serialize(msg_id, cover(temp))};
         EAGINE_ASSERT(serialized);
@@ -74,7 +75,7 @@ public:
 
     /// @brief Triggered on receipt of response about message handling by endpoint.
     /// @see find_handler
-    signal<void(identifier_t target_id, message_id)> handler_found;
+    signal<void(const identifier_t target_id, const message_id)> handler_found;
 
 protected:
     using Base::Base;
@@ -86,7 +87,7 @@ protected:
     }
 
 private:
-    auto _handle_response(const message_context&, stored_message& message)
+    auto _handle_response(const message_context&, const stored_message& message)
       -> bool {
         message_id msg_id{};
         if(default_deserialize_message_type(msg_id, message.content())) {

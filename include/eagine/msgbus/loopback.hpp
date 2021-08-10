@@ -30,13 +30,15 @@ public:
         return EAGINE_ID(Loopback);
     }
 
-    auto send(message_id msg_id, const message_view& message) -> bool final {
+    auto send(const message_id msg_id, const message_view& message)
+      -> bool final {
         std::unique_lock lock{_mutex};
         _messages.push(msg_id, message);
         return true;
     }
 
-    auto fetch_messages(connection::fetch_handler handler) -> work_done final {
+    auto fetch_messages(const connection::fetch_handler handler)
+      -> work_done final {
         std::unique_lock lock{_mutex};
         return _messages.fetch_all(handler);
     }

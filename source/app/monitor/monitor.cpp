@@ -64,4 +64,3 @@ auto main(int argc, const char** argv) -> int {
     options.app_id = EAGINE_ID(MonitorExe);
     return eagine::main_impl(argc, argv, options);
 }
-

@@ -25,7 +25,7 @@ auto main(main_ctx& ctx) -> int {
 
     auto log_byte_hist = [&ctx, &byte_counts](
                            const msgbus::message_context& mc,
-                           msgbus::stored_message& msg) {
+                           const msgbus::stored_message& msg) {
         if(msg.data().size()) {
             zero(cover(byte_counts));
 

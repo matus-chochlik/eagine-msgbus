@@ -30,8 +30,8 @@ public:
         _setup_from_config();
     }
 
-    void add_certificate_pem(memory::const_block blk);
-    void add_ca_certificate_pem(memory::const_block blk);
+    void add_certificate_pem(const memory::const_block blk);
+    void add_ca_certificate_pem(const memory::const_block blk);
 
     auto add_connection(std::unique_ptr<connection>) -> bool final;
 
@@ -57,26 +57,27 @@ private:
     auto _check_state() -> work_done;
     auto _update_connections() -> work_done;
 
-    auto _do_send(message_id, message_view&) -> bool;
-    auto _send(message_id, message_view&) -> bool;
+    auto _do_send(const message_id, message_view&) -> bool;
+    auto _send(const message_id, message_view&) -> bool;
 
     enum message_handling_result { should_be_forwarded, was_handled };
 
     auto _handle_id_assigned(const message_view&) -> message_handling_result;
     auto _handle_id_confirmed(const message_view&) -> message_handling_result;
-    auto _handle_ping(const message_view&, bool) -> message_handling_result;
-
-    auto _handle_topo_bridge_conn(const message_view&, bool)
-      -> message_handling_result;
-    auto _handle_topology_query(const message_view&, bool)
-      -> message_handling_result;
-    auto _handle_stats_query(const message_view&, bool)
+    auto _handle_ping(const message_view&, const bool)
       -> message_handling_result;
 
-    auto _handle_special(message_id, const message_view&, bool)
+    auto _handle_topo_bridge_conn(const message_view&, const bool)
+      -> message_handling_result;
+    auto _handle_topology_query(const message_view&, const bool)
+      -> message_handling_result;
+    auto _handle_stats_query(const message_view&, const bool)
       -> message_handling_result;
 
-    auto _do_push(message_id, message_view&) -> bool;
+    auto _handle_special(const message_id, const message_view&, const bool)
+      -> message_handling_result;
+
+    auto _do_push(const message_id, message_view&) -> bool;
     auto _forward_messages() -> work_done;
 
     shared_context _context{};

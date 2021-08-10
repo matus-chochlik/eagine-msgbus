@@ -22,20 +22,24 @@ namespace msgbus {
 
 class example_blob_io : public blob_io {
 public:
-    example_blob_io(logger& log, url loc) noexcept
+    example_blob_io(const logger& log, url loc) noexcept
       : _log{log}
       , _locator{std::move(loc)} {
         zero(cover(_byte_counts));
     }
 
-    auto store_fragment(span_size_t, memory::const_block src) -> bool final {
+    auto store_fragment(const span_size_t, const memory::const_block src)
+      -> bool final {
         for(auto b : src) {
             _max_count = math::maximum(_max_count, ++_byte_counts[std_size(b)]);
         }
         return true;
     }
 
-    void handle_finished(message_id, message_age, const message_info&) final {
+    void handle_finished(
+      const message_id,
+      const message_age,
+      const message_info&) final {
         _finished = true;
         _log.info("blob byte counts")
           .arg(EAGINE_ID(url), EAGINE_ID(URL), _locator.str())
@@ -74,7 +78,7 @@ public:
     }
 
 private:
-    logger& _log;
+    const logger& _log;
     url _locator;
     span_size_t _max_count{0};
     std::array<span_size_t, 256> _byte_counts{};
@@ -103,7 +107,7 @@ auto main(main_ctx& ctx) -> int {
           ctx.log(), url("eagires:///zeroes?count=1073741824")));
     }
 
-    auto is_done = [&] {
+    const auto is_done = [&] {
         if(idle_too_long) {
             return true;
         }
@@ -118,7 +122,7 @@ auto main(main_ctx& ctx) -> int {
     msgbus::manipulator_node node{EAGINE_ID(FileManip), ctx};
     ctx.bus().setup_connectors(node);
 
-    auto on_server_appeared = [&](identifier_t endpoint_id) {
+    const auto on_server_appeared = [&](identifier_t endpoint_id) {
         for(const auto& blob_io : blobs) {
             if(!blob_io->is_done()) {
                 node.search_resource(endpoint_id, blob_io->locator());
@@ -127,24 +131,25 @@ auto main(main_ctx& ctx) -> int {
     };
     node.resource_server_appeared.connect({construct_from, on_server_appeared});
 
-    auto on_resource_found = [&](identifier_t endpoint_id, const url& locator) {
-        for(const auto& blob_io : blobs) {
-            if(!blob_io->is_active() && !blob_io->is_done()) {
-                if(blob_io->locator() == locator) {
-                    blob_io->activate();
-                    node.query_resource_content(
-                      endpoint_id,
-                      blob_io->locator(),
-                      blob_io,
-                      msgbus::message_priority::high,
-                      std::chrono::hours{1});
-                }
-            }
-        }
-    };
+    const auto on_resource_found =
+      [&](identifier_t endpoint_id, const url& locator) {
+          for(const auto& blob_io : blobs) {
+              if(!blob_io->is_active() && !blob_io->is_done()) {
+                  if(blob_io->locator() == locator) {
+                      blob_io->activate();
+                      node.query_resource_content(
+                        endpoint_id,
+                        blob_io->locator(),
+                        blob_io,
+                        msgbus::message_priority::high,
+                        std::chrono::hours{1});
+                  }
+              }
+          }
+      };
     node.server_has_resource.connect({construct_from, on_resource_found});
 
-    auto on_resource_missing = [&](identifier_t, const url& locator) {
+    const auto on_resource_missing = [&](identifier_t, const url& locator) {
         for(const auto& blob_io : blobs) {
             if(!blob_io->is_active() && !blob_io->is_done()) {
                 if(blob_io->locator() == locator) {

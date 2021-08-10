@@ -34,9 +34,9 @@ class shutdown_target
 public:
     /// @brief Triggered when a shutdown request is received.
     signal<void(
-      std::chrono::milliseconds age,
-      identifier_t source_id,
-      verification_bits verified)>
+      const std::chrono::milliseconds age,
+      const identifier_t source_id,
+      const verification_bits verified)>
       shutdown_requested;
 
 protected:
@@ -49,7 +49,7 @@ protected:
     }
 
 private:
-    auto _handle_shutdown(const message_context&, stored_message& message)
+    auto _handle_shutdown(const message_context&, const stored_message& message)
       -> bool {
         typename shutdown_service_duration::rep count{0};
         if(default_deserialize(count, message.content())) {
@@ -78,7 +78,7 @@ class shutdown_invoker
 
 public:
     /// @brief Sends shutdown request to the specified target endpoint.
-    void shutdown_one(identifier_t target_id) {
+    void shutdown_one(const identifier_t target_id) {
         std::array<byte, 32> temp{};
         const auto ts{this->now()};
         const auto ticks{std::chrono::duration_cast<shutdown_service_duration>(

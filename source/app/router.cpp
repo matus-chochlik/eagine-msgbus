@@ -81,7 +81,7 @@ private:
       cfg_init("msgbus.router.shutdown.verify", true)};
     bool _do_shutdown{false};
 
-    auto _shutdown_verified(verification_bits v) const noexcept -> bool {
+    auto _shutdown_verified(const verification_bits v) const noexcept -> bool {
         return v.has_all(
           verification_bit::source_id,
           verification_bit::source_certificate,
@@ -90,9 +90,9 @@ private:
     }
 
     void on_shutdown(
-      std::chrono::milliseconds age,
-      identifier_t source_id,
-      verification_bits verified) {
+      const std::chrono::milliseconds age,
+      const identifier_t source_id,
+      const verification_bits verified) {
         log_info("received ${age} old shutdown request from ${source}")
           .arg(EAGINE_ID(age), age)
           .arg(EAGINE_ID(source), source_id)
@@ -118,10 +118,10 @@ private:
 } // namespace msgbus
 //------------------------------------------------------------------------------
 auto main(main_ctx& ctx) -> int {
-    signal_switch interrupted;
+    const signal_switch interrupted;
     enable_message_bus(ctx);
 
-    auto& log = ctx.log();
+    const auto& log = ctx.log();
     log.info("message bus router starting up");
 
     ctx.system().preinitialize();

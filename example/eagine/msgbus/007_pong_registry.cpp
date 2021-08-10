@@ -45,8 +45,10 @@ public:
         shutdown_requested.connect(EAGINE_THIS_MEM_FUNC_REF(on_shutdown));
     }
 
-    auto respond_to_ping(identifier_t, message_sequence_t, verification_bits)
-      -> bool final {
+    auto respond_to_ping(
+      const identifier_t,
+      const message_sequence_t,
+      const verification_bits) -> bool final {
         if(EAGINE_UNLIKELY((++_sent % _mod) == 0)) {
             log_info("sent ${sent} pongs").arg(EAGINE_ID(sent), _sent);
         }
@@ -54,9 +56,9 @@ public:
     }
 
     void on_shutdown(
-      std::chrono::milliseconds age,
-      identifier_t source_id,
-      verification_bits verified) {
+      const std::chrono::milliseconds age,
+      const identifier_t source_id,
+      const verification_bits verified) {
         log_info("received shutdown request from ${source}")
           .arg(EAGINE_ID(age), age)
           .arg(EAGINE_ID(source), source_id)

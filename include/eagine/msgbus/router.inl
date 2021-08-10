@@ -45,7 +45,7 @@ routed_node::routed_node() {
     message_allow_list.reserve(8);
 }
 //------------------------------------------------------------------------------
-auto routed_node::is_allowed(message_id msg_id) const noexcept -> bool {
+auto routed_node::is_allowed(const message_id msg_id) const noexcept -> bool {
     if(EAGINE_UNLIKELY(is_special_message(msg_id))) {
         return true;
     }
@@ -60,7 +60,7 @@ auto routed_node::is_allowed(message_id msg_id) const noexcept -> bool {
 //------------------------------------------------------------------------------
 auto routed_node::send(
   main_ctx_object& user,
-  message_id msg_id,
+  const message_id msg_id,
   const message_view& message) const -> bool {
     if(EAGINE_LIKELY(the_connection)) {
         if(EAGINE_UNLIKELY(!the_connection->send(msg_id, message))) {
@@ -74,11 +74,11 @@ auto routed_node::send(
     return true;
 }
 //------------------------------------------------------------------------------
-void routed_node::block_message(message_id msg_id) {
+void routed_node::block_message(const message_id msg_id) {
     message_id_list_add(message_block_list, msg_id);
 }
 //------------------------------------------------------------------------------
-void routed_node::allow_message(message_id msg_id) {
+void routed_node::allow_message(const message_id msg_id) {
     message_id_list_add(message_allow_list, msg_id);
 }
 //------------------------------------------------------------------------------
@@ -89,8 +89,9 @@ inline void parent_router::reset(std::unique_ptr<connection> a_connection) {
     confirmed_id = 0;
 }
 //------------------------------------------------------------------------------
-inline auto parent_router::update(main_ctx_object& user, identifier_t id_base)
-  -> work_done {
+inline auto parent_router::update(
+  main_ctx_object& user,
+  const identifier_t id_base) -> work_done {
     some_true something_done{};
 
     if(the_connection) {
@@ -122,9 +123,9 @@ inline auto parent_router::update(main_ctx_object& user, identifier_t id_base)
 }
 //------------------------------------------------------------------------------
 template <typename Handler>
-inline auto
-parent_router::fetch_messages(main_ctx_object& user, const Handler& handler)
-  -> work_done {
+inline auto parent_router::fetch_messages(
+  main_ctx_object& user,
+  const Handler& handler) -> work_done {
     some_true something_done;
 
     if(the_connection) {
@@ -160,7 +161,7 @@ parent_router::fetch_messages(main_ctx_object& user, const Handler& handler)
 //------------------------------------------------------------------------------
 auto parent_router::send(
   main_ctx_object& user,
-  message_id msg_id,
+  const message_id msg_id,
   const message_view& message) const -> bool {
     if(the_connection) {
         if(EAGINE_UNLIKELY(!the_connection->send(msg_id, message))) {
@@ -181,14 +182,14 @@ auto router::_uptime_seconds() -> std::int64_t {
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-void router::add_certificate_pem(memory::const_block blk) {
+void router::add_certificate_pem(const memory::const_block blk) {
     if(_context) {
         _context->add_own_certificate_pem(blk);
     }
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-void router::add_ca_certificate_pem(memory::const_block blk) {
+void router::add_ca_certificate_pem(const memory::const_block blk) {
     if(_context) {
         _context->add_ca_certificate_pem(blk);
     }
@@ -328,7 +329,7 @@ auto router::_handle_pending() -> work_done {
                 }
                 pos->second.the_connection = std::move(pending.the_connection);
                 pos->second.maybe_router = maybe_router;
-                _pending.erase(_pending.begin() + idx);
+                _pending.erase(_pending.begin() + signedness_cast(idx));
                 _recently_disconnected.erase(id);
                 something_done();
             } else {
@@ -373,7 +374,7 @@ auto router::_remove_timeouted() -> work_done {
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-auto router::_is_disconnected(identifier_t endpoint_id) -> bool {
+auto router::_is_disconnected(const identifier_t endpoint_id) -> bool {
     auto pos = _recently_disconnected.find(endpoint_id);
     if(pos != _recently_disconnected.end()) {
         if(pos->second.is_expired()) {
@@ -386,7 +387,7 @@ auto router::_is_disconnected(identifier_t endpoint_id) -> bool {
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-auto router::_mark_disconnected(identifier_t endpoint_id) -> void {
+auto router::_mark_disconnected(const identifier_t endpoint_id) -> void {
     _recently_disconnected.erase_if(
       [](auto& p) { return std::get<1>(p).is_expired(); });
     _recently_disconnected.emplace(endpoint_id, std::chrono::seconds{15});
@@ -490,8 +491,8 @@ auto router::_process_blobs() -> work_done {
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
 auto router::_do_get_blob_io(
-  message_id msg_id,
-  span_size_t size,
+  const message_id msg_id,
+  const span_size_t size,
   blob_manipulator& blobs) -> std::unique_ptr<blob_io> {
     if(is_special_message(msg_id)) {
         if(msg_id.has_method(EAGINE_ID(eptCertPem))) {
@@ -503,8 +504,8 @@ auto router::_do_get_blob_io(
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
 auto router::_handle_blob(
-  message_id msg_id,
-  message_age,
+  const message_id msg_id,
+  const message_age,
   const message_view& message) -> bool {
     // TODO: use message age
     if(is_special_message(msg_id)) {
@@ -536,7 +537,7 @@ auto router::_handle_blob(
 }
 //------------------------------------------------------------------------------
 auto router::_update_endpoint_info(
-  identifier_t incoming_id,
+  const identifier_t incoming_id,
   const message_view& message) -> router_endpoint_info& {
     _endpoint_idx[message.source_id] = incoming_id;
     auto& info = _endpoint_infos[message.source_id];
@@ -560,7 +561,7 @@ auto router::_handle_ping(const message_view& message)
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
 auto router::_handle_subscribed(
-  identifier_t incoming_id,
+  const identifier_t incoming_id,
   const message_view& message) -> message_handling_result {
     message_id sub_msg_id{};
     if(default_deserialize_message_type(sub_msg_id, message.content())) {
@@ -577,7 +578,7 @@ auto router::_handle_subscribed(
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
 auto router::_handle_not_subscribed(
-  identifier_t incoming_id,
+  const identifier_t incoming_id,
   const message_view& message) -> message_handling_result {
     message_id sub_msg_id{};
     if(default_deserialize_message_type(sub_msg_id, message.content())) {
@@ -733,7 +734,7 @@ auto router::_update_stats() -> work_done {
 
         const bool flow_info_changed =
           _flow_info.avg_msg_age_ms != avg_msg_age_ms;
-        _flow_info.avg_msg_age_ms = avg_msg_age_ms;
+        _flow_info.avg_msg_age_ms = limit_cast<std::int16_t>(avg_msg_age_ms);
 
         if(EAGINE_UNLIKELY(flow_info_changed)) {
             auto send_info = [&](identifier_t remote_id, const auto& conn) {
@@ -772,7 +773,7 @@ auto router::_handle_stats_query(const message_view& message)
           EAGINE_MSGBUS_ID(statsRutr), _id_base, response);
     }
 
-    auto respond = [&](identifier_t remote_id, const auto& conn) {
+    auto respond = [&](const identifier_t remote_id, const auto& conn) {
         connection_statistics conn_stats{};
         conn_stats.local_id = _id_base;
         conn_stats.remote_id = remote_id;
@@ -819,8 +820,8 @@ auto router::_handle_blob_resend(const message_view& message)
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
 auto router::_handle_special_common(
-  message_id msg_id,
-  identifier_t incoming_id,
+  const message_id msg_id,
+  const identifier_t incoming_id,
   const message_view& message) -> message_handling_result {
 
     if(msg_id.has_method(EAGINE_ID(ping))) {
@@ -874,8 +875,8 @@ auto router::_handle_special_common(
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
 auto router::_handle_special(
-  message_id msg_id,
-  identifier_t incoming_id,
+  const message_id msg_id,
+  const identifier_t incoming_id,
   const message_view& message) -> message_handling_result {
     if(EAGINE_UNLIKELY(is_special_message(msg_id))) {
         log_debug("router handling special message ${message} from parent")
@@ -896,8 +897,8 @@ auto router::_handle_special(
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
 auto router::_handle_special(
-  message_id msg_id,
-  identifier_t incoming_id,
+  const message_id msg_id,
+  const identifier_t incoming_id,
   routed_node& node,
   const message_view& message) -> message_handling_result {
     if(EAGINE_UNLIKELY(is_special_message(msg_id))) {
@@ -973,8 +974,8 @@ auto router::_handle_special(
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
 auto router::_do_route_message(
-  message_id msg_id,
-  identifier_t incoming_id,
+  const message_id msg_id,
+  const identifier_t incoming_id,
   message_view& message) -> bool {
 
     bool result = true;

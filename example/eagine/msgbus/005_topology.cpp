@@ -47,13 +47,13 @@ public:
         std::cout << "	splines=true\n";
         std::cout << "	node [style=filled]\n";
         std::cout << "	node [shape=egg;color=\"#B0D0B0\"]\n";
-        for(auto id : _routers) {
+        for(const auto id : _routers) {
             std::cout << "	n" << id << "[label=\"Router-" << id << "\"]\n";
         }
         std::cout << "\n";
 
         std::cout << "	node [shape=parallelogram;color=\"#80B080\"]\n";
-        for(auto id : _bridges) {
+        for(const auto id : _bridges) {
             std::cout << "	n" << id << " [label=\"Bridge-" << id << "\"]\n";
         }
         std::cout << "\n";
@@ -63,7 +63,7 @@ public:
                   << "[label=\"Self\\nEndpoint-" << this->bus_node().get_id()
                   << "\"]\n";
 
-        for(auto id : _endpoints) {
+        for(const auto id : _endpoints) {
             std::cout << "	n" << id << "[label=\"Endpoint-" << id << "\"]\n";
         }
         std::cout << "\n";
@@ -109,9 +109,9 @@ public:
     }
 
     void on_shutdown(
-      std::chrono::milliseconds age,
-      identifier_t subscriber_id,
-      verification_bits verified) {
+      const std::chrono::milliseconds age,
+      const identifier_t subscriber_id,
+      const verification_bits verified) {
         _log.info("received ${age} old shutdown request from ${subscrbr}")
           .arg(EAGINE_ID(age), age)
           .arg(EAGINE_ID(subscrbr), subscriber_id)
@@ -129,7 +129,7 @@ private:
 } // namespace msgbus
 
 auto main(main_ctx& ctx) -> int {
-    signal_switch interrupted;
+    const signal_switch interrupted;
     enable_message_bus(ctx);
 
     msgbus::endpoint bus{EAGINE_ID(TopologyEx), ctx};

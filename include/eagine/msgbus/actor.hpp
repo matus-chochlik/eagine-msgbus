@@ -71,8 +71,8 @@ public:
 
 protected:
     auto _process_message(
-      message_id msg_id,
-      message_age,
+      const message_id msg_id,
+      const message_age,
       const message_view& message) -> bool {
         // TODO: use message age
         if(!_accept_message(_endpoint, msg_id, message)) {
@@ -106,7 +106,7 @@ protected:
       typename... MsgMaps,
       typename = std::enable_if_t<
         (sizeof...(MsgMaps) == N) && std::is_base_of_v<actor, Derived>>>
-    actor(Derived&& temp, Class* instance, MsgMaps... msg_maps) noexcept
+    actor(Derived&& temp, Class* instance, const MsgMaps... msg_maps) noexcept
       : _endpoint{_move_endpoint(
           std::move(temp._endpoint),
           EAGINE_THIS_MEM_FUNC_REF(_process_message))}

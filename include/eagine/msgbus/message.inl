@@ -12,8 +12,8 @@
 namespace eagine::msgbus {
 //------------------------------------------------------------------------------
 auto stored_message::store_and_sign(
-  memory::const_block data,
-  span_size_t max_size,
+  const memory::const_block data,
+  const span_size_t max_size,
   context& ctx,
   main_ctx_object& user) -> bool {
 
@@ -72,7 +72,7 @@ auto stored_message::verify_bits(context& ctx, main_ctx_object&) const noexcept
 // message_storage
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-auto message_storage::fetch_all(fetch_handler handler) -> bool {
+auto message_storage::fetch_all(const fetch_handler handler) -> bool {
     bool fetched_some = false;
     bool keep_some = false;
     for(auto& [msg_id, message, insert_time] : _messages) {
@@ -99,7 +99,7 @@ auto message_storage::fetch_all(fetch_handler handler) -> bool {
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-void message_storage::cleanup(cleanup_predicate predicate) {
+void message_storage::cleanup(const cleanup_predicate predicate) {
     _messages.erase(
       std::remove_if(
         _messages.begin(),
@@ -114,7 +114,8 @@ void message_storage::cleanup(cleanup_predicate predicate) {
 // serialized_message_storage
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-auto serialized_message_storage::fetch_all(fetch_handler handler) -> bool {
+auto serialized_message_storage::fetch_all(const fetch_handler handler)
+  -> bool {
     bool fetched_some = false;
     bool keep_some = false;
     for(auto& [message, timestamp] : _messages) {
@@ -142,7 +143,7 @@ class message_packing_context {
 public:
     using bit_set = message_pack_info::bit_set;
 
-    message_packing_context(memory::block blk) noexcept
+    message_packing_context(const memory::block blk) noexcept
       : _blk{blk}
       , _info{_blk.size()} {}
 
@@ -158,7 +159,7 @@ public:
         return _current_bit == 0U;
     }
 
-    void add(span_size_t size) noexcept {
+    void add(const span_size_t size) noexcept {
         _blk = skip(_blk, size);
         _info.add(size, _current_bit);
     }
@@ -223,7 +224,7 @@ void serialized_message_storage::cleanup(const message_pack_info& packed) {
 EAGINE_LIB_FUNC
 auto connection_outgoing_messages::enqueue(
   main_ctx_object& user,
-  message_id msg_id,
+  const message_id msg_id,
   const message_view& message,
   memory::block temp) -> bool {
 
@@ -246,7 +247,7 @@ auto connection_outgoing_messages::enqueue(
 EAGINE_LIB_FUNC
 auto connection_incoming_messages::fetch_messages(
   main_ctx_object& user,
-  fetch_handler handler) -> bool {
+  const fetch_handler handler) -> bool {
     _unpacked.fetch_all(handler);
     auto unpacker = [this, &user, &handler](
                       message_timestamp data_ts, memory::const_block data) {

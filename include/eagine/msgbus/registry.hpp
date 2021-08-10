@@ -36,14 +36,14 @@ public:
 
     /// @brief Establishes a new endpoint with the specified logger identifier.
     /// @see emplace
-    [[nodiscard]] auto establish(identifier log_id) -> endpoint& {
+    [[nodiscard]] auto establish(const identifier log_id) -> endpoint& {
         return extract(_add_entry(log_id)._endpoint);
     }
 
     /// @brief Establishes an endpoint and instantiates a service object tied to it.
     /// @see establish
     template <typename Service, typename... Args>
-    auto emplace(identifier log_id, Args&&... args) -> std::
+    auto emplace(const identifier log_id, Args&&... args) -> std::
       enable_if_t<std::is_base_of_v<service_interface, Service>, Service&> {
         auto& entry = _add_entry(log_id);
         auto temp{std::make_unique<Service>(
@@ -72,7 +72,7 @@ private:
     router _router;
     std::vector<registered_entry> _entries;
 
-    auto _add_entry(identifier log_id) -> registered_entry&;
+    auto _add_entry(const identifier log_id) -> registered_entry&;
 };
 //------------------------------------------------------------------------------
 } // namespace eagine::msgbus

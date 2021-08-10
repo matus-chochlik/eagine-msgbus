@@ -67,12 +67,13 @@ struct routed_node {
     auto operator=(const routed_node&) -> routed_node& = delete;
     ~routed_node() noexcept = default;
 
-    void block_message(message_id);
-    void allow_message(message_id);
+    void block_message(const message_id);
+    void allow_message(const message_id);
 
-    auto is_allowed(message_id) const noexcept -> bool;
+    auto is_allowed(const message_id) const noexcept -> bool;
 
-    auto send(main_ctx_object&, message_id, const message_view&) const -> bool;
+    auto send(main_ctx_object&, const message_id, const message_view&) const
+      -> bool;
 };
 //------------------------------------------------------------------------------
 struct parent_router {
@@ -84,12 +85,13 @@ struct parent_router {
 
     void reset(std::unique_ptr<connection>);
 
-    auto update(main_ctx_object&, identifier_t id_base) -> work_done;
+    auto update(main_ctx_object&, const identifier_t id_base) -> work_done;
 
     template <typename Handler>
     auto fetch_messages(main_ctx_object&, const Handler&) -> work_done;
 
-    auto send(main_ctx_object&, message_id, const message_view&) const -> bool;
+    auto send(main_ctx_object&, const message_id, const message_view&) const
+      -> bool;
 };
 //------------------------------------------------------------------------------
 class router
@@ -108,8 +110,8 @@ public:
           "Message bus router id " + to_string(_id_base));
     }
 
-    void add_certificate_pem(memory::const_block blk);
-    void add_ca_certificate_pem(memory::const_block blk);
+    void add_certificate_pem(const memory::const_block blk);
+    void add_ca_certificate_pem(const memory::const_block blk);
 
     auto add_acceptor(std::shared_ptr<acceptor>) -> bool final;
     auto add_connection(std::unique_ptr<connection>) -> bool final;
@@ -135,13 +137,13 @@ public:
     }
 
     void post_blob(
-      message_id msg_id,
-      identifier_t source_id,
-      identifier_t target_id,
-      blob_id_t target_blob_id,
-      memory::const_block blob,
-      std::chrono::seconds max_time,
-      message_priority priority) {
+      const message_id msg_id,
+      const identifier_t source_id,
+      const identifier_t target_id,
+      const blob_id_t target_blob_id,
+      const memory::const_block blob,
+      const std::chrono::seconds max_time,
+      const message_priority priority) {
         _blobs.push_outgoing(
           msg_id,
           source_id,
@@ -160,30 +162,33 @@ private:
     auto _handle_accept() -> work_done;
     auto _handle_pending() -> work_done;
     auto _remove_timeouted() -> work_done;
-    auto _is_disconnected(identifier_t endpoint_id) -> bool;
-    auto _mark_disconnected(identifier_t endpoint_id) -> void;
+    auto _is_disconnected(const identifier_t endpoint_id) -> bool;
+    auto _mark_disconnected(const identifier_t endpoint_id) -> void;
     auto _remove_disconnected() -> work_done;
     void _assign_id(std::unique_ptr<connection>& conn);
     void _handle_connection(std::unique_ptr<connection> conn);
 
     auto _process_blobs() -> work_done;
-    auto _do_get_blob_io(message_id, span_size_t, blob_manipulator&)
+    auto _do_get_blob_io(const message_id, const span_size_t, blob_manipulator&)
       -> std::unique_ptr<blob_io>;
 
     enum message_handling_result { should_be_forwarded, was_handled };
 
-    auto _handle_blob(message_id, message_age, const message_view&) -> bool;
+    auto _handle_blob(const message_id, const message_age, const message_view&)
+      -> bool;
 
-    auto _update_endpoint_info(identifier_t incoming_id, const message_view&)
-      -> router_endpoint_info&;
+    auto _update_endpoint_info(
+      const identifier_t incoming_id,
+      const message_view&) -> router_endpoint_info&;
 
     auto _handle_ping(const message_view&) -> message_handling_result;
 
-    auto _handle_subscribed(identifier_t incoming_id, const message_view&)
+    auto _handle_subscribed(const identifier_t incoming_id, const message_view&)
       -> message_handling_result;
 
-    auto _handle_not_subscribed(identifier_t incoming_id, const message_view&)
-      -> message_handling_result;
+    auto _handle_not_subscribed(
+      const identifier_t incoming_id,
+      const message_view&) -> message_handling_result;
 
     auto _handle_subscribers_query(const message_view&)
       -> message_handling_result;
@@ -205,24 +210,24 @@ private:
     auto _handle_blob_resend(const message_view&) -> message_handling_result;
 
     auto _handle_special_common(
-      message_id msg_id,
-      identifier_t incoming_id,
+      const message_id msg_id,
+      const identifier_t incoming_id,
       const message_view&) -> message_handling_result;
 
     auto _handle_special(
-      message_id msg_id,
-      identifier_t incoming_id,
+      const message_id msg_id,
+      const identifier_t incoming_id,
       const message_view&) -> message_handling_result;
 
     auto _handle_special(
-      message_id msg_id,
-      identifier_t incoming_id,
+      const message_id msg_id,
+      const identifier_t incoming_id,
       routed_node&,
       const message_view&) -> message_handling_result;
 
     auto _do_route_message(
-      message_id msg_id,
-      identifier_t incoming_id,
+      const message_id msg_id,
+      const identifier_t incoming_id,
       message_view& message) -> bool;
 
     auto _route_messages() -> work_done;

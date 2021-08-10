@@ -24,7 +24,7 @@ public:
     pong(
       main_ctx_parent parent,
       connection_setup& conn_setup,
-      string_view address)
+      const string_view address)
       : base(
           {EAGINE_ID(ExamplPong), parent},
           this,
@@ -39,7 +39,7 @@ public:
           address);
     }
 
-    auto ping(const message_context&, stored_message& msg_in) -> bool {
+    auto ping(const message_context&, const stored_message& msg_in) -> bool {
         bus_node().respond_to(msg_in, EAGINE_MSG_ID(PingPong, Pong));
         if(++_sent % _lmod == 0) {
             bus_node()
@@ -50,7 +50,7 @@ public:
         return true;
     }
 
-    auto shutdown(const message_context&, stored_message&) -> bool {
+    auto shutdown(const message_context&, const stored_message&) -> bool {
         _done = true;
         bus_node().log_info("received shutdown message");
         return true;

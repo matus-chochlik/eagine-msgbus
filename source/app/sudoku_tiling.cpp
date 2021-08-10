@@ -44,7 +44,7 @@ public:
 private:
     template <unsigned S>
     void _handle_generated(
-      eagine::identifier_t,
+      const eagine::identifier_t,
       const sudoku_tiles<S>& tiles,
       const std::tuple<int, int>&) {
         if(_print_progress) {
@@ -70,7 +70,7 @@ private:
 } // namespace msgbus
 
 auto main(main_ctx& ctx) -> int {
-    signal_switch interrupted;
+    const signal_switch interrupted;
     enable_message_bus(ctx);
     ctx.preinitialize();
 
@@ -104,7 +104,7 @@ auto main(main_ctx& ctx) -> int {
             return -1;
     }
 
-    auto keep_running = [&] {
+    const auto keep_running = [&] {
         return !(interrupted || tiling_generator.tiling_complete());
     };
 

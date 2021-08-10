@@ -55,21 +55,23 @@ public:
     auto operator=(const fibonacci_server&) = delete;
     ~fibonacci_server() noexcept final = default;
 
-    auto shutdown(const message_context&, stored_message&) -> bool {
+    auto shutdown(const message_context&, const stored_message&) -> bool {
         _done = true;
         return true;
     }
 
-    auto is_ready(const message_context&, stored_message& msg_in) -> bool {
+    auto is_ready(const message_context&, const stored_message& msg_in)
+      -> bool {
         bus_node().respond_to(msg_in, EAGINE_MSG_ID(Fibonacci, IsReady));
         return true;
     }
 
-    static auto fib(std::int64_t arg) noexcept -> std::int64_t {
+    static auto fib(const std::int64_t arg) noexcept -> std::int64_t {
         return arg <= 2 ? 1 : fib(arg - 2) + fib(arg - 1);
     }
 
-    auto calculate(const message_context&, stored_message& msg_in) -> bool {
+    auto calculate(const message_context&, const stored_message& msg_in)
+      -> bool {
         std::int64_t arg{0};
         std::int64_t result{0};
         auto tup = std::tie(arg, result);
@@ -116,7 +118,7 @@ public:
         conn_setup.setup_connectors(*this, connection_kind::in_process);
     }
 
-    void enqueue(std::int64_t arg) {
+    void enqueue(const std::int64_t arg) {
         _remaining.push(arg);
     }
 
@@ -130,7 +132,8 @@ public:
         }
     }
 
-    auto dispatch(const message_context&, stored_message& msg_in) -> bool {
+    auto dispatch(const message_context&, const stored_message& msg_in)
+      -> bool {
         if(!_remaining.empty()) {
             auto arg = _remaining.front();
             _pending.insert(arg);
@@ -148,7 +151,7 @@ public:
         return true;
     }
 
-    auto print(const message_context&, stored_message& msg_in) -> bool {
+    auto print(const message_context&, const stored_message& msg_in) -> bool {
         std::int64_t arg{0};
         std::int64_t result{0};
         auto tup = std::tie(arg, result);

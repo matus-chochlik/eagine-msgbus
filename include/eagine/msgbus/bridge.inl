@@ -75,7 +75,7 @@ public:
         return input_usable() && output_usable();
     }
 
-    void push(message_id msg_id, const message_view& message) {
+    void push(const message_id msg_id, const message_view& message) {
         std::unique_lock lock{_output_mutex};
         _outgoing.back().push(msg_id, message);
     }
@@ -97,32 +97,34 @@ public:
     }
 
     void send_output() {
-        auto handler =
-          [this](message_id msg_id, message_age msg_age, message_view message) {
-              if(EAGINE_UNLIKELY(message.add_age(msg_age).too_old())) {
-                  ++_dropped_messages;
-              } else {
-                  default_serializer_backend backend(_sink);
-                  serialize_message_header(msg_id, message, backend);
+        auto handler = [this](
+                         const message_id msg_id,
+                         const message_age msg_age,
+                         message_view message) {
+            if(EAGINE_UNLIKELY(message.add_age(msg_age).too_old())) {
+                ++_dropped_messages;
+            } else {
+                default_serializer_backend backend(_sink);
+                serialize_message_header(msg_id, message, backend);
 
-                  span_size_t i = 0;
-                  do_dissolve_bits(
-                    make_span_getter(i, message.data()),
-                    [this](byte b) {
-                        const auto encode{make_base64_encode_transform()};
-                        if(auto opt_c{encode(b)}) {
-                            this->_output << extract(opt_c);
-                            return true;
-                        }
-                        return false;
-                    },
-                    6);
+                span_size_t i = 0;
+                do_dissolve_bits(
+                  make_span_getter(i, message.data()),
+                  [this](byte b) {
+                      const auto encode{make_base64_encode_transform()};
+                      if(auto opt_c{encode(b)}) {
+                          this->_output << extract(opt_c);
+                          return true;
+                      }
+                      return false;
+                  },
+                  6);
 
-                  _output << '\n' << std::flush;
-                  ++_forwarded_messages;
-              }
-              return true;
-          };
+                _output << '\n' << std::flush;
+                ++_forwarded_messages;
+            }
+            return true;
+        };
         auto& queue = [this]() -> message_storage& {
             std::unique_lock lock{_output_mutex};
             _output_ready.wait(lock);
@@ -134,7 +136,7 @@ public:
 
     using fetch_handler = message_storage::fetch_handler;
 
-    auto fetch_messages(fetch_handler handler) {
+    auto fetch_messages(const fetch_handler handler) {
         auto& queue = [this]() -> message_storage& {
             std::unique_lock lock{_input_mutex};
             _incoming.swap();
@@ -144,7 +146,7 @@ public:
     }
 
     void recv_input() {
-        if(auto pos{_source.scan_for('\n', _max_read)}) {
+        if(const auto pos{_source.scan_for('\n', _max_read)}) {
             block_data_source source(_source.top(extract(pos)));
             default_deserializer_backend backend(source);
             identifier class_id{};
@@ -209,14 +211,14 @@ auto bridge::_uptime_seconds() -> std::int64_t {
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-void bridge::add_certificate_pem(memory::const_block blk) {
+void bridge::add_certificate_pem(const memory::const_block blk) {
     if(_context) {
         _context->add_own_certificate_pem(blk);
     }
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-void bridge::add_ca_certificate_pem(memory::const_block blk) {
+void bridge::add_ca_certificate_pem(const memory::const_block blk) {
     if(_context) {
         _context->add_ca_certificate_pem(blk);
     }
@@ -260,7 +262,7 @@ auto bridge::_handle_id_confirmed(const message_view& message)
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-auto bridge::_handle_ping(const message_view& message, bool to_connection)
+auto bridge::_handle_ping(const message_view& message, const bool to_connection)
   -> message_handling_result {
     if(has_id()) {
         if(_id == message.target_id) {
@@ -281,7 +283,7 @@ auto bridge::_handle_ping(const message_view& message, bool to_connection)
 EAGINE_LIB_FUNC
 auto bridge::_handle_topo_bridge_conn(
   const message_view& message,
-  bool to_connection) -> message_handling_result {
+  const bool to_connection) -> message_handling_result {
     if(to_connection) {
         bridge_topology_info info{};
         if(default_deserialize(info, message.content())) {
@@ -300,7 +302,7 @@ auto bridge::_handle_topo_bridge_conn(
 EAGINE_LIB_FUNC
 auto bridge::_handle_topology_query(
   const message_view& message,
-  bool to_connection) -> message_handling_result {
+  const bool to_connection) -> message_handling_result {
     bridge_topology_info info{};
     info.bridge_id = _id;
     info.instance_id = _instance_id;
@@ -318,8 +320,9 @@ auto bridge::_handle_topology_query(
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-auto bridge::_handle_stats_query(const message_view& message, bool to_connection)
-  -> message_handling_result {
+auto bridge::_handle_stats_query(
+  const message_view& message,
+  const bool to_connection) -> message_handling_result {
     _stats.forwarded_messages = _forwarded_messages_i2c;
     _stats.dropped_messages = _dropped_messages_i2c;
     _stats.uptime_seconds = _uptime_seconds();
@@ -351,9 +354,9 @@ auto bridge::_handle_stats_query(const message_view& message, bool to_connection
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
 auto bridge::_handle_special(
-  message_id msg_id,
+  const message_id msg_id,
   const message_view& message,
-  bool to_connection) -> message_handling_result {
+  const bool to_connection) -> message_handling_result {
     if(EAGINE_UNLIKELY(is_special_message(msg_id))) {
         log_debug("bridge handling special message ${message}")
           .arg(EAGINE_ID(bridge), _id)
@@ -381,7 +384,7 @@ auto bridge::_handle_special(
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-auto bridge::_do_send(message_id msg_id, message_view& message) -> bool {
+auto bridge::_do_send(const message_id msg_id, message_view& message) -> bool {
     message.add_hop();
     if(EAGINE_LIKELY(_connection)) {
         if(_connection->send(msg_id, message)) {
@@ -395,14 +398,14 @@ auto bridge::_do_send(message_id msg_id, message_view& message) -> bool {
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-auto bridge::_send(message_id msg_id, message_view& message) -> bool {
+auto bridge::_send(const message_id msg_id, message_view& message) -> bool {
     EAGINE_ASSERT(has_id());
     message.set_source_id(_id);
     return _do_send(msg_id, message);
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-auto bridge::_do_push(message_id msg_id, message_view& message) -> bool {
+auto bridge::_do_push(const message_id msg_id, message_view& message) -> bool {
     if(EAGINE_LIKELY(_state)) {
         message.add_hop();
         _state->push(msg_id, message);

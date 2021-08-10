@@ -49,13 +49,13 @@ public:
     signal<void(const subscriber_info&)> reported_alive;
 
     /// @brief Triggered on receipt of info that endpoint subscribes to message.
-    signal<void(const subscriber_info&, message_id)> subscribed;
+    signal<void(const subscriber_info&, const message_id)> subscribed;
 
     /// @brief Triggered on receipt of info that endpoint unsubscribes from message.
-    signal<void(const subscriber_info&, message_id)> unsubscribed;
+    signal<void(const subscriber_info&, const message_id)> unsubscribed;
 
     /// @brief Triggered on receipt of info that endpoint doesn't handle message type.
-    signal<void(const subscriber_info&, message_id)> not_subscribed;
+    signal<void(const subscriber_info&, const message_id)> not_subscribed;
 
 protected:
     using Base::Base;
@@ -76,7 +76,7 @@ protected:
     }
 
 private:
-    auto _handle_alive(const message_context&, stored_message& message)
+    auto _handle_alive(const message_context&, const stored_message& message)
       -> bool {
         subscriber_info info{};
         info.endpoint_id = message.source_id;
@@ -86,8 +86,9 @@ private:
         return true;
     }
 
-    auto _handle_subscribed(const message_context&, stored_message& message)
-      -> bool {
+    auto _handle_subscribed(
+      const message_context&,
+      const stored_message& message) -> bool {
         message_id sub_msg_id{};
         if(default_deserialize_message_type(sub_msg_id, message.content())) {
             subscriber_info info{};
@@ -99,8 +100,9 @@ private:
         return true;
     }
 
-    auto _handle_unsubscribed(const message_context&, stored_message& message)
-      -> bool {
+    auto _handle_unsubscribed(
+      const message_context&,
+      const stored_message& message) -> bool {
         message_id sub_msg_id{};
         if(default_deserialize_message_type(sub_msg_id, message.content())) {
             subscriber_info info{};
@@ -112,8 +114,9 @@ private:
         return true;
     }
 
-    auto _handle_not_subscribed(const message_context&, stored_message& message)
-      -> bool {
+    auto _handle_not_subscribed(
+      const message_context&,
+      const stored_message& message) -> bool {
         message_id sub_msg_id{};
         if(default_deserialize_message_type(sub_msg_id, message.content())) {
             subscriber_info info{};

@@ -68,7 +68,7 @@ public:
     /// @brief Queries the endpoint's host identifier.
     /// @see host_id_received
     /// @see query_hostname
-    void query_host_id(identifier_t endpoint_id) {
+    void query_host_id(const identifier_t endpoint_id) {
         _host_id.invoke_on(
           this->bus_node(), endpoint_id, EAGINE_MSG_ID(eagiSysInf, rqHostId));
     }
@@ -81,7 +81,7 @@ public:
     /// @brief Queries the endpoint's host name.
     /// @see hostname_received
     /// @see query_host_id
-    void query_hostname(identifier_t endpoint_id) {
+    void query_hostname(const identifier_t endpoint_id) {
         _hostname.invoke_on(
           this->bus_node(), endpoint_id, EAGINE_MSG_ID(eagiSysInf, rqHostname));
     }

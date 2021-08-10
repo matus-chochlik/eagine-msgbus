@@ -10,33 +10,33 @@
 #include <iostream>
 
 auto main() -> int {
-    eagine::msgbus::signal<void(int)> sig;
-    eagine::callable_ref<void(int)> f = sig;
+    eagine::msgbus::signal<void(const int)> sig;
+    eagine::callable_ref<void(const int)> f = sig;
 
-    auto fa = [](int i) {
+    const auto fa = [](const int i) {
         std::cout << "A: " << i << std::endl;
     };
-    auto ka = sig.connect({eagine::construct_from, fa});
+    const auto ka = sig.connect({eagine::construct_from, fa});
     f(1);
 
-    auto fb = [](int i) {
+    const auto fb = [](const int i) {
         std::cout << "B: " << i << std::endl;
     };
-    auto kb = sig.connect({eagine::construct_from, fb});
+    const auto kb = sig.connect({eagine::construct_from, fb});
     f(2);
 
-    auto fc = [](int i) {
+    const auto fc = [](const int i) {
         std::cout << "C: " << i << std::endl;
     };
-    auto kc = sig.connect({eagine::construct_from, fc});
+    const auto kc = sig.connect({eagine::construct_from, fc});
     f(3);
 
     sig.disconnect(ka);
 
-    auto fd = [](int i) {
+    const auto fd = [](const int i) {
         std::cout << "D: " << i << std::endl;
     };
-    auto kd = sig.connect({eagine::construct_from, fd});
+    const auto kd = sig.connect({eagine::construct_from, fd});
     f(4);
 
     sig.disconnect(ka);
@@ -51,7 +51,7 @@ auto main() -> int {
     sig.disconnect(kd);
     f(8);
 
-    auto fe = [](int i) {
+    const auto fe = [](int i) {
         std::cout << "E: " << i << std::endl;
     };
     if(auto be{sig.bind({eagine::construct_from, fe})}) {
@@ -60,4 +60,3 @@ auto main() -> int {
 
     return 0;
 }
-

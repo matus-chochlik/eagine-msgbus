@@ -97,10 +97,10 @@ context::~context() noexcept {
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-auto context::next_sequence_no(message_id msg_id) noexcept
+auto context::next_sequence_no(const message_id msg_id) noexcept
   -> message_sequence_t {
 
-    auto [pos, newone] = _msg_id_seq.try_emplace(msg_id);
+    const auto [pos, newone] = _msg_id_seq.try_emplace(msg_id);
 
     if(newone) {
         std::get<1>(*pos) = 0U;
@@ -111,7 +111,7 @@ auto context::next_sequence_no(message_id msg_id) noexcept
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-auto context::verify_certificate(sslplus::x509 cert) -> bool {
+auto context::verify_certificate(const sslplus::x509 cert) -> bool {
     if(ok vrfy_ctx{_ssl.new_x509_store_ctx()}) {
         auto del_vrfy{_ssl.delete_x509_store_ctx.raii(vrfy_ctx)};
 
@@ -133,8 +133,9 @@ auto context::verify_certificate(sslplus::x509 cert) -> bool {
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-auto context::verify_certificate_node_kind(sslplus::x509 cert, node_kind kind)
-  -> bool {
+auto context::verify_certificate_node_kind(
+  const sslplus::x509 cert,
+  const node_kind kind) -> bool {
     return _ssl.certificate_subject_name_has_entry_value(
       cert,
       "eagiMsgBusNodeKind",
@@ -143,7 +144,7 @@ auto context::verify_certificate_node_kind(sslplus::x509 cert, node_kind kind)
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-auto context::add_own_certificate_pem(memory::const_block blk) -> bool {
+auto context::add_own_certificate_pem(const memory::const_block blk) -> bool {
     if(blk) {
         if(ok cert{_ssl.parse_x509(blk, {})}) {
             if(_own_cert) {
@@ -162,7 +163,7 @@ auto context::add_own_certificate_pem(memory::const_block blk) -> bool {
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-auto context::add_ca_certificate_pem(memory::const_block blk) -> bool {
+auto context::add_ca_certificate_pem(const memory::const_block blk) -> bool {
     if(blk) {
         if(ok cert{_ssl.parse_x509(blk, {})}) {
             if(_ssl.add_cert_into_x509_store(_ssl_store, cert)) {
@@ -188,8 +189,8 @@ auto context::add_ca_certificate_pem(memory::const_block blk) -> bool {
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
 auto context::add_remote_certificate_pem(
-  identifier_t node_id,
-  memory::const_block blk) -> bool {
+  const identifier_t node_id,
+  const memory::const_block blk) -> bool {
     if(blk) {
         if(ok cert{_ssl.parse_x509(blk, {})}) {
             auto& info = _remotes[node_id];
@@ -232,8 +233,8 @@ auto context::add_remote_certificate_pem(
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-auto context::get_remote_certificate_pem(identifier_t node_id) const noexcept
-  -> memory::const_block {
+auto context::get_remote_certificate_pem(
+  const identifier_t node_id) const noexcept -> memory::const_block {
     auto pos = _remotes.find(node_id);
     if(pos != _remotes.end()) {
         return view(std::get<1>(*pos).cert_pem);
@@ -242,9 +243,9 @@ auto context::get_remote_certificate_pem(identifier_t node_id) const noexcept
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-auto context::get_remote_nonce(identifier_t node_id) const noexcept
+auto context::get_remote_nonce(const identifier_t node_id) const noexcept
   -> memory::const_block {
-    auto pos = _remotes.find(node_id);
+    const auto pos = _remotes.find(node_id);
     if(pos != _remotes.end()) {
         return view(std::get<1>(*pos).nonce);
     }
@@ -252,8 +253,9 @@ auto context::get_remote_nonce(identifier_t node_id) const noexcept
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-auto context::verified_remote_key(identifier_t node_id) const noexcept -> bool {
-    auto pos = _remotes.find(node_id);
+auto context::verified_remote_key(const identifier_t node_id) const noexcept
+  -> bool {
+    const auto pos = _remotes.find(node_id);
     if(pos != _remotes.end()) {
         return std::get<1>(*pos).verified_key;
     }
@@ -268,8 +270,8 @@ auto context::default_message_digest() noexcept
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
 auto context::message_digest_sign_init(
-  sslplus::message_digest mdc,
-  sslplus::message_digest_type mdt) noexcept
+  const sslplus::message_digest mdc,
+  const sslplus::message_digest_type mdt) noexcept
   -> decltype(_ssl.message_digest_sign_init.fake()) {
     if(_own_pkey) {
         return _ssl.message_digest_sign_init(mdc, mdt, _own_pkey);
@@ -279,9 +281,9 @@ auto context::message_digest_sign_init(
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
 auto context::message_digest_verify_init(
-  sslplus::message_digest mdc,
-  sslplus::message_digest_type mdt,
-  identifier_t node_id) noexcept
+  const sslplus::message_digest mdc,
+  const sslplus::message_digest_type mdt,
+  const identifier_t node_id) noexcept
   -> decltype(_ssl.message_digest_verify_init.fake()) {
     auto pos = _remotes.find(node_id);
     if(pos != _remotes.end()) {
@@ -296,7 +298,7 @@ auto context::message_digest_verify_init(
     return _ssl.message_digest_verify_init.fake();
 }
 //------------------------------------------------------------------------------
-auto context::get_own_signature(memory::const_block nonce)
+auto context::get_own_signature(const memory::const_block nonce)
   -> memory::const_block {
     if(ok md_type{default_message_digest()}) {
         if(ok md_ctx{_ssl.new_message_digest()}) {
@@ -337,10 +339,10 @@ auto context::get_own_signature(memory::const_block nonce)
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
 auto context::verify_remote_signature(
-  memory::const_block content,
-  memory::const_block signature,
-  identifier_t node_id,
-  bool verified_key) -> verification_bits {
+  const memory::const_block content,
+  const memory::const_block signature,
+  const identifier_t node_id,
+  const bool verified_key) -> verification_bits {
     verification_bits result{};
 
     if(content && signature) {
@@ -387,9 +389,9 @@ auto context::verify_remote_signature(
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
 auto context::verify_remote_signature(
-  memory::const_block sig,
-  identifier_t node_id) -> bool {
-    auto pos = _remotes.find(node_id);
+  const memory::const_block sig,
+  const identifier_t node_id) -> bool {
+    const auto pos = _remotes.find(node_id);
     if(pos != _remotes.end()) {
         auto& remote{std::get<1>(*pos)};
         const auto result{

@@ -38,8 +38,9 @@ struct router_topology_info {
 };
 
 template <typename Selector>
-constexpr auto
-data_member_mapping(type_identity<router_topology_info>, Selector) noexcept {
+constexpr auto data_member_mapping(
+  const type_identity<router_topology_info>,
+  const Selector) noexcept {
     using S = router_topology_info;
     return make_data_member_mapping<
       S,
@@ -73,8 +74,9 @@ struct router_statistics {
 };
 
 template <typename Selector>
-constexpr auto
-data_member_mapping(type_identity<router_statistics>, Selector) noexcept {
+constexpr auto data_member_mapping(
+  const type_identity<router_statistics>,
+  const Selector) noexcept {
     using S = router_statistics;
     return make_data_member_mapping<
       S,
@@ -104,8 +106,9 @@ struct bridge_topology_info {
 };
 
 template <typename Selector>
-constexpr auto
-data_member_mapping(type_identity<bridge_topology_info>, Selector) noexcept {
+constexpr auto data_member_mapping(
+  const type_identity<bridge_topology_info>,
+  const Selector) noexcept {
     using S = bridge_topology_info;
     return make_data_member_mapping<
       S,
@@ -137,8 +140,9 @@ struct bridge_statistics {
 };
 
 template <typename Selector>
-constexpr auto
-data_member_mapping(type_identity<bridge_statistics>, Selector) noexcept {
+constexpr auto data_member_mapping(
+  const type_identity<bridge_statistics>,
+  const Selector) noexcept {
     using S = bridge_statistics;
     return make_data_member_mapping<
       S,
@@ -165,8 +169,9 @@ struct endpoint_topology_info {
 };
 
 template <typename Selector>
-constexpr auto
-data_member_mapping(type_identity<endpoint_topology_info>, Selector) noexcept {
+constexpr auto data_member_mapping(
+  const type_identity<endpoint_topology_info>,
+  const Selector) noexcept {
     using S = endpoint_topology_info;
     return make_data_member_mapping<S, identifier_t, process_instance_id_t>(
       {"endpoint_id", &S::endpoint_id}, {"instance_id", &S::instance_id});
@@ -189,8 +194,9 @@ struct endpoint_statistics {
 };
 
 template <typename Selector>
-constexpr auto
-data_member_mapping(type_identity<endpoint_statistics>, Selector) noexcept {
+constexpr auto data_member_mapping(
+  const type_identity<endpoint_statistics>,
+  const Selector) noexcept {
     using S = endpoint_statistics;
     return make_data_member_mapping<
       S,
@@ -224,16 +230,17 @@ struct endpoint_info {
           display_name, description, is_router_node, is_bridge_node);
     }
 
-    friend auto
-    operator!=(const endpoint_info& l, const endpoint_info& r) noexcept
-      -> bool {
+    friend auto operator!=(
+      const endpoint_info& l,
+      const endpoint_info& r) noexcept -> bool {
         return l.tie() != r.tie();
     }
 };
 
 template <typename Selector>
-constexpr auto
-data_member_mapping(type_identity<endpoint_info>, Selector) noexcept {
+constexpr auto data_member_mapping(
+  const type_identity<endpoint_info>,
+  const Selector) noexcept {
     using S = endpoint_info;
     return make_data_member_mapping<S, std::string, std::string, bool, bool>(
       {"display_name", &S::display_name},
@@ -258,15 +265,16 @@ struct connection_statistics {
     float bytes_per_second{-1.F};
 };
 
-template <typename selector>
-constexpr auto
-data_member_mapping(type_identity<connection_statistics>, selector) noexcept {
-    using s = connection_statistics;
-    return make_data_member_mapping<s, identifier_t, identifier_t, float, float>(
-      {"local_id", &s::local_id},
-      {"remote_id", &s::remote_id},
-      {"block_usage_ratio", &s::block_usage_ratio},
-      {"bytes_per_second", &s::bytes_per_second});
+template <typename Selector>
+constexpr auto data_member_mapping(
+  const type_identity<connection_statistics>,
+  const Selector) noexcept {
+    using S = connection_statistics;
+    return make_data_member_mapping<S, identifier_t, identifier_t, float, float>(
+      {"local_id", &S::local_id},
+      {"remote_id", &S::remote_id},
+      {"block_usage_ratio", &S::block_usage_ratio},
+      {"bytes_per_second", &S::bytes_per_second});
 }
 //------------------------------------------------------------------------------
 /// @brief Structure holding message bus data flow information.
@@ -276,12 +284,13 @@ struct message_flow_info {
     std::int16_t avg_msg_age_ms{0};
 };
 
-template <typename selector>
-constexpr auto
-data_member_mapping(type_identity<message_flow_info>, selector) noexcept {
-    using s = message_flow_info;
-    return make_data_member_mapping<s, std::int16_t>(
-      {"avg_msg_age_ms", &s::avg_msg_age_ms});
+template <typename Selector>
+constexpr auto data_member_mapping(
+  const type_identity<message_flow_info>,
+  const Selector) noexcept {
+    using S = message_flow_info;
+    return make_data_member_mapping<S, std::int16_t>(
+      {"avg_msg_age_ms", &S::avg_msg_age_ms});
 }
 //------------------------------------------------------------------------------
 } // namespace eagine::msgbus

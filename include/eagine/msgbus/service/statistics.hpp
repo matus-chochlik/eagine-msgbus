@@ -44,21 +44,23 @@ public:
     /// @see bridge_stats_received
     /// @see endpoint_stats_received
     /// @see connection_stats_received
-    signal<void(identifier_t, const router_statistics&)> router_stats_received;
+    signal<void(const identifier_t, const router_statistics&)>
+      router_stats_received;
 
     /// @brief Triggered on receipt of bridge node statistics information.
     /// @see bridge_disappeared
     /// @see router_stats_received
     /// @see endpoint_stats_received
     /// @see connection_stats_received
-    signal<void(identifier_t, const bridge_statistics&)> bridge_stats_received;
+    signal<void(const identifier_t, const bridge_statistics&)>
+      bridge_stats_received;
 
     /// @brief Triggered on receipt of endpoint node statistics information.
     /// @see endpoint_disappeared
     /// @see router_stats_received
     /// @see bridge_stats_received
     /// @see connection_stats_received
-    signal<void(identifier_t, const endpoint_statistics&)>
+    signal<void(const identifier_t, const endpoint_statistics&)>
       endpoint_stats_received;
 
     /// @brief Triggered on receipt of connection statistics information.
@@ -81,7 +83,7 @@ protected:
     }
 
 private:
-    auto _handle_router(const message_context&, stored_message& message)
+    auto _handle_router(const message_context&, const stored_message& message)
       -> bool {
         router_statistics stats{};
         if(default_deserialize(stats, message.content())) {
@@ -90,7 +92,7 @@ private:
         return true;
     }
 
-    auto _handle_bridge(const message_context&, stored_message& message)
+    auto _handle_bridge(const message_context&, const stored_message& message)
       -> bool {
         bridge_statistics stats{};
         if(default_deserialize(stats, message.content())) {
@@ -99,7 +101,7 @@ private:
         return true;
     }
 
-    auto _handle_endpoint(const message_context&, stored_message& message)
+    auto _handle_endpoint(const message_context&, const stored_message& message)
       -> bool {
         endpoint_statistics stats{};
         if(default_deserialize(stats, message.content())) {
@@ -108,8 +110,9 @@ private:
         return true;
     }
 
-    auto _handle_connection(const message_context&, stored_message& message)
-      -> bool {
+    auto _handle_connection(
+      const message_context&,
+      const stored_message& message) -> bool {
         connection_statistics stats{};
         if(default_deserialize(stats, message.content())) {
             connection_stats_received(stats);

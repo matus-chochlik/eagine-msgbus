@@ -19,7 +19,7 @@ namespace eagine::msgbus {
 EAGINE_LIB_FUNC
 void connection_setup::_do_setup_acceptors(
   acceptor_user& target,
-  string_view address,
+  const string_view address,
   _factory_list& factories) {
     for(auto& factory : factories) {
         EAGINE_ASSERT(factory);
@@ -38,7 +38,7 @@ void connection_setup::_do_setup_acceptors(
 EAGINE_LIB_FUNC
 void connection_setup::_do_setup_connectors(
   connection_user& target,
-  string_view address,
+  const string_view address,
   _factory_list& factories) {
     for(auto& factory : factories) {
         EAGINE_ASSERT(factory);
@@ -57,7 +57,7 @@ void connection_setup::_do_setup_connectors(
 EAGINE_LIB_FUNC
 auto connection_setup::_make_call_setup_acceptors(
   acceptor_user& target,
-  string_view address) {
+  const string_view address) {
     return [this, &target, address](auto, auto& factories) {
         _do_setup_acceptors(target, address, factories);
     };
@@ -66,7 +66,7 @@ auto connection_setup::_make_call_setup_acceptors(
 EAGINE_LIB_FUNC
 void connection_setup::setup_acceptors(
   acceptor_user& target,
-  string_view address) {
+  const string_view address) {
     std::unique_lock lock{_mutex};
     _factory_map.visit_all(_make_call_setup_acceptors(target, address));
 }
@@ -74,8 +74,8 @@ void connection_setup::setup_acceptors(
 EAGINE_LIB_FUNC
 void connection_setup::setup_acceptors(
   acceptor_user& target,
-  connection_kinds kinds,
-  string_view address) {
+  const connection_kinds kinds,
+  const string_view address) {
     std::unique_lock lock{_mutex};
     _factory_map.visit(kinds, _make_call_setup_acceptors(target, address));
 }
@@ -83,8 +83,8 @@ void connection_setup::setup_acceptors(
 EAGINE_LIB_FUNC
 void connection_setup::setup_acceptors(
   acceptor_user& target,
-  connection_kind kind,
-  string_view address) {
+  const connection_kind kind,
+  const string_view address) {
     std::unique_lock lock{_mutex};
     _factory_map.visit(kind, _make_call_setup_acceptors(target, address));
 }
@@ -92,8 +92,8 @@ void connection_setup::setup_acceptors(
 EAGINE_LIB_FUNC
 auto connection_setup::_make_call_setup_connectors(
   connection_user& target,
-  string_view address) {
-    return [this, &target, address](auto, auto& factories) {
+  const string_view address) {
+    return [this, &target, address](const auto, auto& factories) {
         _do_setup_connectors(target, address, factories);
     };
 }
@@ -101,7 +101,7 @@ auto connection_setup::_make_call_setup_connectors(
 EAGINE_LIB_FUNC
 void connection_setup::setup_connectors(
   connection_user& target,
-  string_view address) {
+  const string_view address) {
     std::unique_lock lock{_mutex};
     _factory_map.visit_all(_make_call_setup_connectors(target, address));
 }
@@ -109,8 +109,8 @@ void connection_setup::setup_connectors(
 EAGINE_LIB_FUNC
 void connection_setup::setup_connectors(
   connection_user& target,
-  connection_kinds kinds,
-  string_view address) {
+  const connection_kinds kinds,
+  const string_view address) {
     std::unique_lock lock{_mutex};
     _factory_map.visit(kinds, _make_call_setup_connectors(target, address));
 }
@@ -118,8 +118,8 @@ void connection_setup::setup_connectors(
 EAGINE_LIB_FUNC
 void connection_setup::setup_connectors(
   connection_user& target,
-  connection_kind kind,
-  string_view address) {
+  const connection_kind kind,
+  const string_view address) {
     std::unique_lock lock{_mutex};
     _factory_map.visit(kind, _make_call_setup_connectors(target, address));
 }

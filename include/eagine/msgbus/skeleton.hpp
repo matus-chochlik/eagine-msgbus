@@ -34,9 +34,9 @@ public:
     auto call(
       const message_context& msg_ctx,
       const stored_message& request,
-      message_id response_id,
+      const message_id response_id,
       memory::block buffer,
-      callable_ref<Signature> func) -> bool {
+      const callable_ref<Signature> func) -> bool {
         return _do_call(
           msg_ctx, request, response_id, buffer, func, func.argument_tuple());
     }
@@ -44,8 +44,8 @@ public:
     auto call(
       const message_context& msg_ctx,
       const stored_message& request,
-      message_id response_id,
-      callable_ref<Signature> func) -> bool {
+      const message_id response_id,
+      const callable_ref<Signature> func) -> bool {
         std::array<byte, MaxDataSize> buffer{};
         return call(msg_ctx, request, response_id, cover(buffer), func);
     }
@@ -55,9 +55,9 @@ private:
     auto _do_call(
       const message_context& msg_ctx,
       const stored_message& request,
-      message_id response_id,
+      const message_id response_id,
       memory::block buffer,
-      callable_ref<Signature> func,
+      const callable_ref<Signature> func,
       std::tuple<Params...> args) -> bool {
 
         _source.reset(request.content());
@@ -86,9 +86,9 @@ private:
     auto _do_call(
       const message_context& msg_ctx,
       const stored_message& request,
-      message_id response_id,
+      const message_id response_id,
       memory::block buffer,
-      callable_ref<Signature> func,
+      const callable_ref<Signature> func,
       std::tuple<>) -> bool {
 
         _sink.reset(buffer);
@@ -129,46 +129,46 @@ public:
       : _response_id{std::move(response_id)}
       , _function{std::move(function)} {}
 
-    auto operator()(message_id response_id, _function_t function)
+    auto operator()(const message_id response_id, const _function_t function)
       -> function_skeleton& {
-        _response_id = std::move(response_id);
+        _response_id = response_id;
         _function = function;
         return *this;
     }
 
     template <typename Class, typename MfcT, MfcT Mfc>
     auto operator()(
-      message_id response_id,
+      const message_id response_id,
       Class* that,
-      member_function_constant<MfcT, Mfc> func) -> function_skeleton& {
-        _response_id = std::move(response_id);
+      const member_function_constant<MfcT, Mfc> func) -> function_skeleton& {
+        _response_id = response_id;
         _function = _function_t{that, func};
         return *this;
     }
 
     template <typename Class, typename MfcT, MfcT Mfc>
     auto operator()(
-      message_id response_id,
+      const message_id response_id,
       const Class* that,
-      member_function_constant<MfcT, Mfc> func) -> function_skeleton& {
-        _response_id = std::move(response_id);
+      const member_function_constant<MfcT, Mfc> func) -> function_skeleton& {
+        _response_id = response_id;
         _function = _function_t{that, func};
         return *this;
     }
 
-    auto invoke_by(const message_context& msg_ctx, stored_message& request)
+    auto invoke_by(const message_context& msg_ctx, const stored_message& request)
       -> bool {
         return this->call(msg_ctx.bus_node(), request, _response_id, _function);
     }
 
-    constexpr auto map_invoke_by(message_id msg_id) noexcept {
+    constexpr auto map_invoke_by(const message_id msg_id) noexcept {
         return std::tuple<
           function_skeleton*,
           message_handler_map<EAGINE_MEM_FUNC_T(function_skeleton, invoke_by)>>(
           this, msg_id);
     }
 
-    constexpr auto operator[](message_id msg_id) noexcept {
+    constexpr auto operator[](const message_id msg_id) noexcept {
         return map_invoke_by(msg_id);
     }
 
@@ -194,13 +194,13 @@ public:
     lazy_skeleton() noexcept = default;
 
     template <typename R, typename P>
-    lazy_skeleton(std::chrono::duration<R, P> default_timeout) noexcept
+    lazy_skeleton(const std::chrono::duration<R, P> default_timeout) noexcept
       : _default_timeout{default_timeout} {}
 
     auto enqueue(
       const stored_message& request,
-      message_id response_id,
-      callable_ref<Signature> func) -> bool {
+      const message_id response_id,
+      const callable_ref<Signature> func) -> bool {
         auto [pos, emplaced] = _pending.try_emplace(request.sequence_no);
 
         if(emplaced) {
@@ -304,8 +304,8 @@ public:
 
     auto enqueue(
       const stored_message& request,
-      message_id response_id,
-      callable_ref<Signature> func,
+      const message_id response_id,
+      const callable_ref<Signature> func,
       workshop& workers) -> bool {
         auto [pos, emplaced] = _pending.try_emplace(request.sequence_no);
 

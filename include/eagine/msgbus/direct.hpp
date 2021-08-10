@@ -42,13 +42,13 @@ public:
     }
 
     /// @brief Sends a message to the server counterpart.
-    void send_to_server(message_id msg_id, const message_view& message) {
+    void send_to_server(const message_id msg_id, const message_view& message) {
         std::unique_lock lock{_mutex};
         _client_to_server.back().push(msg_id, message);
     }
 
     /// @brief Sends a message to the client counterpart.
-    auto send_to_client(message_id msg_id, const message_view& message)
+    auto send_to_client(const message_id msg_id, const message_view& message)
       -> bool {
         if(_client_connected) {
             std::unique_lock lock{_mutex};
@@ -59,7 +59,7 @@ public:
     }
 
     /// @brief Fetches received messages from the client counterpart.
-    auto fetch_from_client(connection::fetch_handler handler) noexcept
+    auto fetch_from_client(const connection::fetch_handler handler) noexcept
       -> std::tuple<bool, bool> {
         auto& c2s = [this]() -> message_storage& {
             std::unique_lock lock{_mutex};
@@ -70,7 +70,8 @@ public:
     }
 
     /// @brief Fetches received messages from the service counterpart.
-    auto fetch_from_server(connection::fetch_handler handler) noexcept -> bool {
+    auto fetch_from_server(const connection::fetch_handler handler) noexcept
+      -> bool {
         auto& s2c = [this]() -> message_storage& {
             std::unique_lock lock{_mutex};
             _server_to_client.swap();
@@ -116,7 +117,7 @@ public:
 
     /// @brief Handles the pending server counterparts for created client connections.
     /// @see connect
-    auto process_all(process_handler handler) -> work_done {
+    auto process_all(const process_handler handler) -> work_done {
         some_true something_done{};
         for(auto& state : _pending) {
             handler(state);
@@ -184,7 +185,8 @@ public:
         return bool(_state);
     }
 
-    auto send(message_id msg_id, const message_view& message) -> bool final {
+    auto send(const message_id msg_id, const message_view& message)
+      -> bool final {
         _checkup();
         if(EAGINE_LIKELY(_state)) {
             _state->send_to_server(msg_id, message);
@@ -193,7 +195,8 @@ public:
         return false;
     }
 
-    auto fetch_messages(connection::fetch_handler handler) -> work_done final {
+    auto fetch_messages(const connection::fetch_handler handler)
+      -> work_done final {
         some_true something_done{_checkup()};
         if(EAGINE_LIKELY(_state)) {
             something_done(_state->fetch_from_server(handler));
@@ -244,14 +247,16 @@ public:
         return false;
     }
 
-    auto send(message_id msg_id, const message_view& message) -> bool final {
+    auto send(const message_id msg_id, const message_view& message)
+      -> bool final {
         if(EAGINE_LIKELY(_state)) {
             return _state->send_to_client(msg_id, message);
         }
         return false;
     }
 
-    auto fetch_messages(connection::fetch_handler handler) -> work_done final {
+    auto fetch_messages(const connection::fetch_handler handler)
+      -> work_done final {
         bool result = false;
         if(EAGINE_LIKELY(_state)) {
             std::tie(result, _is_usable) = _state->fetch_from_client(handler);
@@ -289,7 +294,7 @@ public:
       : main_ctx_object{EAGINE_ID(DrctAccptr), parent}
       , _address{std::make_shared<direct_connection_address>(*this)} {}
 
-    auto process_accepted(const accept_handler& handler) -> work_done final {
+    auto process_accepted(const accept_handler handler) -> work_done final {
         some_true something_done{};
         if(_address) {
             auto wrapped_handler = [&handler](shared_state& state) {
@@ -330,7 +335,7 @@ public:
       : main_ctx_object{EAGINE_ID(DrctConnFc), parent}
       , _default_addr{_make_addr()} {}
 
-    auto make_acceptor(string_view addr_str)
+    auto make_acceptor(const string_view addr_str)
       -> std::unique_ptr<acceptor> final {
         if(addr_str) {
             return std::make_unique<direct_acceptor>(*this, _get(addr_str));
@@ -338,7 +343,7 @@ public:
         return std::make_unique<direct_acceptor>(*this, _default_addr);
     }
 
-    auto make_connector(string_view addr_str)
+    auto make_connector(const string_view addr_str)
       -> std::unique_ptr<connection> final {
         if(addr_str) {
             return std::make_unique<direct_client_connection>(_get(addr_str));
@@ -358,7 +363,7 @@ private:
         return std::make_shared<direct_connection_address>(*this);
     }
 
-    auto _get(string_view addr_str)
+    auto _get(const string_view addr_str)
       -> std::shared_ptr<direct_connection_address>& {
         auto pos = _addrs.find(addr_str);
         if(pos == _addrs.end()) {

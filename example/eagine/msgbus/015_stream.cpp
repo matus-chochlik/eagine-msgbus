@@ -65,7 +65,7 @@ protected:
     }
 
 private:
-    void _handle_relay_assigned(identifier_t relay_id) {
+    void _handle_relay_assigned(const identifier_t relay_id) {
         log_info("stream relay ${relay} assigned")
           .arg(EAGINE_ID(relay), relay_id);
     }
@@ -101,15 +101,15 @@ public:
     }
 
 private:
-    void _handle_relay_assigned(identifier_t relay_id) {
+    void _handle_relay_assigned(const identifier_t relay_id) {
         log_info("stream relay ${relay} assigned")
           .arg(EAGINE_ID(relay), relay_id);
     }
 
     void _handle_stream_appeared(
-      identifier_t provider_id,
+      const identifier_t provider_id,
       const stream_info& info,
-      msgbus::verification_bits) {
+      const msgbus::verification_bits) {
         log_info("stream ${stream} appeared at ${provider}")
           .arg(EAGINE_ID(provider), provider_id)
           .arg(EAGINE_ID(stream), info.id)
@@ -119,9 +119,9 @@ private:
     }
 
     void _handle_stream_disappeared(
-      identifier_t provider_id,
+      const identifier_t provider_id,
       const stream_info& info,
-      msgbus::verification_bits) {
+      const msgbus::verification_bits) {
         log_info("stream ${stream} disappeared from ${provider}")
           .arg(EAGINE_ID(provider), provider_id)
           .arg(EAGINE_ID(stream), info.id)
@@ -136,7 +136,7 @@ private:
 } // namespace msgbus
 
 auto main(main_ctx& ctx) -> int {
-    signal_switch interrupted;
+    const signal_switch interrupted;
     enable_message_bus(ctx);
     msgbus::registry the_reg{ctx};
 
@@ -144,10 +144,10 @@ auto main(main_ctx& ctx) -> int {
       the_reg.emplace<msgbus::service_composition<msgbus::stream_relay<>>>(
         EAGINE_ID(RelayEndpt));
 
-    auto on_stream_announced = [&ctx](
-                                 identifier_t provider_id,
-                                 const msgbus::stream_info& info,
-                                 msgbus::verification_bits) {
+    const auto on_stream_announced = [&ctx](
+                                       identifier_t provider_id,
+                                       const msgbus::stream_info& info,
+                                       msgbus::verification_bits) {
         ctx.log()
           .info("stream ${stream} announced by ${provider}")
           .arg(EAGINE_ID(provider), provider_id)
@@ -156,10 +156,10 @@ auto main(main_ctx& ctx) -> int {
     };
     relay.stream_announced.connect({construct_from, on_stream_announced});
 
-    auto on_stream_retracted = [&ctx](
-                                 identifier_t provider_id,
-                                 const msgbus::stream_info& info,
-                                 msgbus::verification_bits) {
+    const auto on_stream_retracted = [&ctx](
+                                       identifier_t provider_id,
+                                       const msgbus::stream_info& info,
+                                       msgbus::verification_bits) {
         ctx.log()
           .info("stream ${stream} retracted by ${provider}")
           .arg(EAGINE_ID(provider), provider_id)

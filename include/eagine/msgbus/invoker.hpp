@@ -25,8 +25,8 @@ class result_context {
 public:
     result_context(
       const message_context& msg_ctx,
-      identifier_t src_id,
-      message_sequence_t invc_id) noexcept
+      const identifier_t src_id,
+      const message_sequence_t invc_id) noexcept
       : _msg_ctx{msg_ctx}
       , _source_id{src_id}
       , _invocation_id{invc_id} {}
@@ -45,16 +45,17 @@ public:
 
 private:
     const message_context& _msg_ctx;
-    identifier_t _source_id{0U};
-    message_sequence_t _invocation_id{0};
+    const identifier_t _source_id{0U};
+    const message_sequence_t _invocation_id{0};
 };
 //------------------------------------------------------------------------------
 template <typename Result, typename Deserializer, typename Source, bool NoExcept>
 class callback_invoker_base {
 
 public:
-    auto fulfill_by(const message_context& msg_ctx, stored_message& response)
-      -> bool {
+    auto fulfill_by(
+      const message_context& msg_ctx,
+      const stored_message& response) -> bool {
         Result result{};
 
         _source.reset(response.content());
@@ -84,8 +85,9 @@ template <typename Deserializer, typename Source, bool NoExcept>
 class callback_invoker_base<void, Deserializer, Source, NoExcept> {
 
 public:
-    auto fulfill_by(const message_context& msg_ctx, stored_message& response)
-      -> bool {
+    auto fulfill_by(
+      const message_context& msg_ctx,
+      const stored_message& response) -> bool {
         const result_context res_ctx{
           msg_ctx, response.source_id, response.sequence_no};
         _callback();
@@ -123,21 +125,22 @@ class callback_invoker
 public:
     using base::base;
 
-    auto operator()(_callback_t callback) -> callback_invoker& {
+    auto operator()(const _callback_t callback) -> callback_invoker& {
         this->_callback = callback;
         return *this;
     }
 
     template <typename Class, typename MfcT, MfcT Mfc>
-    auto operator()(Class* that, member_function_constant<MfcT, Mfc> func)
+    auto operator()(Class* that, const member_function_constant<MfcT, Mfc> func)
       -> callback_invoker& {
         this->_callback = _callback_t{that, func};
         return *this;
     }
 
     template <typename Class, typename MfcT, MfcT Mfc>
-    auto operator()(const Class* that, member_function_constant<MfcT, Mfc> func)
-      -> callback_invoker& {
+    auto operator()(
+      const Class* that,
+      const member_function_constant<MfcT, Mfc> func) -> callback_invoker& {
         this->_callback = _callback_t{that, func};
         return *this;
     }
@@ -145,8 +148,8 @@ public:
     template <typename... Args>
     auto invoke_on(
       endpoint& bus,
-      identifier_t target_id,
-      message_id msg_id,
+      const identifier_t target_id,
+      const message_id msg_id,
       memory::block buffer,
       Args&&... args) -> bool {
         auto tupl{std::tie(std::forward<Args>(args)...)};
@@ -169,21 +172,21 @@ public:
     template <typename... Args>
     auto invoke_on(
       endpoint& bus,
-      identifier_t target_id,
-      message_id msg_id,
+      const identifier_t target_id,
+      const message_id msg_id,
       Args&&... args) -> bool {
         std::array<byte, MaxDataSize> temp{};
         return invoke_on(
           bus, target_id, msg_id, cover(temp), std::forward<Args>(args)...);
     }
 
-    constexpr auto map_fulfill_by(message_id msg_id) noexcept {
+    constexpr auto map_fulfill_by(const message_id msg_id) noexcept {
         return std::
           tuple<base*, message_handler_map<EAGINE_MEM_FUNC_T(base, fulfill_by)>>(
             this, msg_id);
     }
 
-    constexpr auto operator[](message_id msg_id) noexcept {
+    constexpr auto operator[](const message_id msg_id) noexcept {
         return map_fulfill_by(msg_id);
     }
 
@@ -194,7 +197,8 @@ private:
 template <typename Result, typename Deserializer, typename Source>
 class invoker_base {
 public:
-    auto fulfill_by(const message_context&, stored_message& message) -> bool {
+    auto fulfill_by(const message_context&, const stored_message& message)
+      -> bool {
         const auto invocation_id = message.sequence_no;
         std::remove_cv_t<std::remove_reference_t<Result>> result{};
 
@@ -210,14 +214,14 @@ public:
         return true;
     }
 
-    constexpr auto map_fulfill_by(message_id msg_id) noexcept {
+    constexpr auto map_fulfill_by(const message_id msg_id) noexcept {
         return std::tuple<
           invoker_base*,
           message_handler_map<EAGINE_MEM_FUNC_T(invoker_base, fulfill_by)>>(
           this, msg_id);
     }
 
-    constexpr auto operator[](message_id msg_id) noexcept {
+    constexpr auto operator[](const message_id msg_id) noexcept {
         return map_fulfill_by(msg_id);
     }
 
@@ -258,8 +262,8 @@ class invoker<Result(Params...), Serializer, Deserializer, Sink, Source, MaxData
 public:
     auto invoke_on(
       endpoint& bus,
-      identifier_t target_id,
-      message_id msg_id,
+      const identifier_t target_id,
+      const message_id msg_id,
       memory::block buffer,
       std::add_lvalue_reference_t<std::add_const_t<Params>>... args)
       -> future<Result> {
@@ -285,8 +289,8 @@ public:
 
     auto invoke_on(
       endpoint& bus,
-      identifier_t target_id,
-      message_id msg_id,
+      const identifier_t target_id,
+      const message_id msg_id,
       std::add_lvalue_reference_t<std::add_const_t<Params>>... args)
       -> future<Result> {
         std::array<byte, MaxDataSize> buffer{};
@@ -295,7 +299,7 @@ public:
 
     auto invoke(
       endpoint& bus,
-      message_id msg_id,
+      const message_id msg_id,
       std::add_lvalue_reference_t<std::add_const_t<Params>>... args)
       -> future<Result> {
         return invoke_on(bus, broadcast_endpoint_id(), msg_id, args...);
@@ -314,8 +318,8 @@ class invoker<Result(), Serializer, Deserializer, Sink, Source, MaxDataSize>
 public:
     auto invoke_on(
       endpoint& bus,
-      identifier_t target_id,
-      message_id msg_id,
+      const identifier_t target_id,
+      const message_id msg_id,
       memory::block) -> future<Result> {
         auto [invocation_id, result] = this->_results.make();
 
@@ -327,12 +331,14 @@ public:
         return result;
     }
 
-    auto invoke_on(endpoint& bus, identifier_t target_id, message_id msg_id)
-      -> future<Result> {
+    auto invoke_on(
+      endpoint& bus,
+      const identifier_t target_id,
+      const message_id msg_id) -> future<Result> {
         return invoke_on(bus, target_id, msg_id, {});
     }
 
-    auto invoke(endpoint& bus, message_id msg_id) -> future<Result> {
+    auto invoke(endpoint& bus, const message_id msg_id) -> future<Result> {
         return invoke_on(bus, broadcast_endpoint_id(), msg_id);
     }
 };

@@ -26,4 +26,3 @@ struct service_interface : interface<service_interface> {
 } // namespace eagine::msgbus
 
 #endif // EAGINE_MSGBUS_SERVICE_INTERFACE_HPP
-

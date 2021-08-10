@@ -58,7 +58,7 @@ class build_info_consumer : public Base {
 public:
     /// @brief Queries endpoint's build version information.
     /// @see build_info_received
-    void query_build_info(identifier_t endpoint_id) {
+    void query_build_info(const identifier_t endpoint_id) {
         _build.invoke_on(
           this->bus_node(), endpoint_id, EAGINE_MSG_ID(eagiBldInf, request));
     }

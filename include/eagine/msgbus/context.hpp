@@ -60,43 +60,45 @@ public:
     }
 
     /// @brief Returns the next sequence number value for the specified message type.
-    auto next_sequence_no(message_id) noexcept -> message_sequence_t;
+    auto next_sequence_no(const message_id) noexcept -> message_sequence_t;
 
     /// @brief Verifies the specified x509 certificate against CA certificate.
-    auto verify_certificate(sslplus::x509 cert) -> bool;
+    auto verify_certificate(const sslplus::x509 cert) -> bool;
 
     /// @brief Checks if x509 certificate has the specified node kind DN entry.
-    auto verify_certificate_node_kind(sslplus::x509 cert, node_kind kind)
-      -> bool;
+    auto verify_certificate_node_kind(
+      const sslplus::x509 cert,
+      const node_kind kind) -> bool;
 
     /// @brief Sets this bus node certificate encoded in PEM format.
     /// @see get_own_certificate_pem
     /// @see add_ca_certificate_pem
     /// @see add_remote_certificate_pem
     /// @see add_router_certificate_pem
-    auto add_own_certificate_pem(memory::const_block) -> bool;
+    auto add_own_certificate_pem(const memory::const_block) -> bool;
 
     /// @brief Sets a CA certificate encoded in PEM format.
     /// @see get_ca_certificate_pem
     /// @see add_own_certificate_pem
     /// @see add_remote_certificate_pem
     /// @see add_router_certificate_pem
-    auto add_ca_certificate_pem(memory::const_block) -> bool;
+    auto add_ca_certificate_pem(const memory::const_block) -> bool;
 
     /// @brief Sets remote bus node certificate encoded in PEM format.
     /// @see get_remote_certificate_pem
     /// @see add_ca_certificate_pem
     /// @see add_remote_certificate_pem
     /// @see add_router_certificate_pem
-    auto add_remote_certificate_pem(identifier_t node_id, memory::const_block)
-      -> bool;
+    auto add_remote_certificate_pem(
+      const identifier_t node_id,
+      memory::const_block) -> bool;
 
     /// @brief Sets the router certificate encoded in PEM format.
     /// @see get_router_certificate_pem
     /// @see add_own_certificate_pem
     /// @see add_ca_certificate_pem
     /// @see add_remote_certificate_pem
-    auto add_router_certificate_pem(memory::const_block blk) -> bool {
+    auto add_router_certificate_pem(const memory::const_block blk) -> bool {
         return add_remote_certificate_pem(0, blk);
     }
 
@@ -123,7 +125,7 @@ public:
     /// @see get_ca_certificate_pem
     /// @see get_remote_certificate_pem
     /// @see get_router_certificate_pem
-    auto get_remote_certificate_pem(identifier_t) const noexcept
+    auto get_remote_certificate_pem(const identifier_t) const noexcept
       -> memory::const_block;
 
     /// @brief Gets the router certificate encoded in PEM format.
@@ -135,37 +137,40 @@ public:
         return get_remote_certificate_pem(0);
     }
 
-    auto get_remote_nonce(identifier_t) const noexcept -> memory::const_block;
+    auto get_remote_nonce(const identifier_t) const noexcept
+      -> memory::const_block;
 
     /// @brief Indicates if the private key of a remote node was verified.
-    auto verified_remote_key(identifier_t) const noexcept -> bool;
+    auto verified_remote_key(const identifier_t) const noexcept -> bool;
 
     /// @brief Returns the default message digest type.
     auto default_message_digest() noexcept
       -> decltype(ssl().message_digest_sha256());
 
     auto message_digest_sign_init(
-      sslplus::message_digest mdc,
-      sslplus::message_digest_type mdt) noexcept
+      const sslplus::message_digest mdc,
+      const sslplus::message_digest_type mdt) noexcept
       -> decltype(ssl().message_digest_sign_init.fake());
 
     auto message_digest_verify_init(
-      sslplus::message_digest mdc,
-      sslplus::message_digest_type mdt,
-      identifier_t node_id) noexcept
+      const sslplus::message_digest mdc,
+      const sslplus::message_digest_type mdt,
+      const identifier_t node_id) noexcept
       -> decltype(ssl().message_digest_verify_init.fake());
 
     /// @brief Signs the specified memory block and returns the signature.
-    auto get_own_signature(memory::const_block) -> memory::const_block;
+    auto get_own_signature(const memory::const_block) -> memory::const_block;
 
     auto verify_remote_signature(
-      memory::const_block data,
-      memory::const_block sig,
-      identifier_t,
-      bool = false) -> verification_bits;
+      const memory::const_block data,
+      const memory::const_block sig,
+      const identifier_t,
+      const bool = false) -> verification_bits;
 
     /// @brief Verifies the signature on a data block from a remote node.
-    auto verify_remote_signature(memory::const_block sig, identifier_t) -> bool;
+    auto verify_remote_signature(
+      const memory::const_block sig,
+      const identifier_t) -> bool;
 
 private:
     //

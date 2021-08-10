@@ -58,7 +58,7 @@ class compiler_info_consumer : public Base {
 public:
     /// @brief Queries information about compiler used to build given endpoint.
     /// @see compiler_info_received
-    void query_compiler_info(identifier_t endpoint_id) {
+    void query_compiler_info(const identifier_t endpoint_id) {
         _compiler.invoke_on(
           this->bus_node(), endpoint_id, EAGINE_MSG_ID(eagiCplInf, request));
     }

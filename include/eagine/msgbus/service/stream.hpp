@@ -39,8 +39,9 @@ struct stream_info {
 };
 
 template <typename Selector>
-constexpr auto
-data_member_mapping(type_identity<stream_info>, Selector) noexcept {
+constexpr auto data_member_mapping(
+  type_identity<stream_info>,
+  Selector) noexcept {
     using S = stream_info;
     return make_data_member_mapping<
       S,
@@ -83,8 +84,8 @@ public:
 
     ///@brief Explicitly sets the id of the relay node.
     void set_stream_relay(
-      identifier_t endpoint_id,
-      subscriber_info::hop_count_t hop_count =
+      const identifier_t endpoint_id,
+      const subscriber_info::hop_count_t hop_count =
         subscriber_info::max_hops()) noexcept {
         if(EAGINE_LIKELY(is_valid_endpoint_id(endpoint_id))) {
             _stream_relay_id = endpoint_id;
@@ -97,7 +98,7 @@ public:
     }
 
     /// @brief Triggered when a new relay has been assigned.
-    signal<void(identifier_t relay_id)> stream_relay_assigned;
+    signal<void(const identifier_t relay_id)> stream_relay_assigned;
 
     /// @brief Triggered when the current relay has been reset.
     signal<void()> stream_relay_reset;
@@ -144,7 +145,7 @@ private:
 
     void _handle_stream_relay_subscribed(
       const subscriber_info& sub_info,
-      message_id msg_id) {
+      const message_id msg_id) {
         if(msg_id == EAGINE_MSG_ID(eagiStream, startFrwrd)) {
             if(!has_stream_relay() || (_stream_relay_hops > sub_info.hop_count)) {
                 set_stream_relay(sub_info.endpoint_id, sub_info.hop_count);
@@ -154,7 +155,7 @@ private:
 
     void _handle_stream_relay_unsubscribed(
       const subscriber_info& sub_info,
-      message_id msg_id) {
+      const message_id msg_id) {
         if(msg_id == EAGINE_MSG_ID(eagiStream, startFrwrd)) {
             if(_stream_relay_id == sub_info.endpoint_id) {
                 reset_stream_relay();
@@ -205,7 +206,7 @@ public:
 
     /// @brief Removes the information about the specified stream.
     /// @see add_stream
-    auto remove_stream(identifier_t stream_id) -> bool {
+    auto remove_stream(const identifier_t stream_id) -> bool {
         if(this->has_stream_relay()) {
             _retract_stream(this->stream_relay(), stream_id);
         }
@@ -214,8 +215,9 @@ public:
 
     /// @brief Sends a fragment of encoded stream data.
     /// @see add_stream
-    auto send_stream_data(identifier_t stream_id, memory::const_block data)
-      -> bool {
+    auto send_stream_data(
+      const identifier_t stream_id,
+      const memory::const_block data) -> bool {
         if(this->has_stream_relay()) {
             const auto pos = _streams.find(stream_id);
             if(pos != _streams.end()) {
@@ -253,7 +255,7 @@ protected:
     }
 
 private:
-    void _announce_stream(identifier_t relay_id, const stream_info& info) {
+    void _announce_stream(const identifier_t relay_id, const stream_info& info) {
         auto buffer = default_serialize_buffer_for(info);
 
         if(auto serialized{default_serialize(info, cover(buffer))}) {
@@ -265,7 +267,9 @@ private:
         }
     }
 
-    void _retract_stream(identifier_t relay_id, identifier_t stream_id) {
+    void _retract_stream(
+      const identifier_t relay_id,
+      const identifier_t stream_id) {
         auto buffer = default_serialize_buffer_for(stream_id);
         auto serialized{default_serialize(stream_id, cover(buffer))};
         EAGINE_ASSERT(serialized);
@@ -276,7 +280,7 @@ private:
         this->bus_node().post(msg_id, message);
     }
 
-    void _handle_stream_relay_assigned(identifier_t relay_id) {
+    void _handle_stream_relay_assigned(const identifier_t relay_id) {
         for(const auto& [stream_id, stream] : _streams) {
             EAGINE_ASSERT(stream_id == stream.info.id);
             EAGINE_MAYBE_UNUSED(stream_id);
@@ -292,8 +296,9 @@ private:
         }
     }
 
-    auto _handle_start_send_data(const message_context&, stored_message& message)
-      -> bool {
+    auto _handle_start_send_data(
+      const message_context&,
+      const stored_message& message) -> bool {
         identifier_t stream_id{0};
         if(default_deserialize(stream_id, message.content())) {
             const auto pos = _streams.find(stream_id);
@@ -306,8 +311,9 @@ private:
         return true;
     }
 
-    auto _handle_stop_send_data(const message_context&, stored_message& message)
-      -> bool {
+    auto _handle_stop_send_data(
+      const message_context&,
+      const stored_message& message) -> bool {
         identifier_t stream_id{0};
         if(default_deserialize(stream_id, message.content())) {
             const auto pos = _streams.find(stream_id);
@@ -343,22 +349,24 @@ public:
     /// @brief Triggered when a data stream has appeared at the given provider.
     /// @see stream_disappeared
     signal<void(
-      identifier_t provider_id,
+      const identifier_t provider_id,
       const stream_info&,
-      verification_bits verified)>
+      const verification_bits verified)>
       stream_appeared;
 
     /// @brief Triggered when a data stream has been lost at the given provider.
     /// @see stream_appeared
     signal<void(
-      identifier_t provider_id,
+      const identifier_t provider_id,
       const stream_info&,
-      verification_bits verified)>
+      const verification_bits verified)>
       stream_disappeared;
 
     /// @brief Subscribes to the data from the specified stream.
     /// @see unsubscribe_from_stream
-    void subscribe_to_stream(identifier_t provider_id, identifier_t stream_id) {
+    void subscribe_to_stream(
+      const identifier_t provider_id,
+      const identifier_t stream_id) {
         const stream_key_t key{provider_id, stream_id};
         auto pos = _streams.find(key);
         if(pos == _streams.end()) {
@@ -371,8 +379,9 @@ public:
 
     /// @brief Unsubscribes from the specified stream.
     /// @seei subscribe_to_stream
-    void
-    unsubscribe_from_stream(identifier_t provider_id, identifier_t stream_id) {
+    void unsubscribe_from_stream(
+      const identifier_t provider_id,
+      const identifier_t stream_id) {
         const stream_key_t key{provider_id, stream_id};
         auto pos = _streams.find(key);
         if(pos != _streams.end()) {
@@ -420,8 +429,9 @@ private:
         this->bus_node().post(EAGINE_MSG_ID(eagiStream, stopFrwrd), message);
     }
 
-    auto _handle_stream_appeared(const message_context&, stored_message& message)
-      -> bool {
+    auto _handle_stream_appeared(
+      const message_context&,
+      const stored_message& message) -> bool {
         stream_info info{};
         if(default_deserialize(info, message.content())) {
             stream_appeared(
@@ -430,9 +440,9 @@ private:
         return true;
     }
 
-    auto
-    _handle_stream_disappeared(const message_context&, stored_message& message)
-      -> bool {
+    auto _handle_stream_disappeared(
+      const message_context&,
+      const stored_message& message) -> bool {
         stream_info info{};
         if(default_deserialize(info, message.content())) {
             stream_disappeared(
@@ -464,17 +474,17 @@ public:
     /// @brief Triggered when a data stream was announced by the given provider.
     /// @see stream_retracted
     signal<void(
-      identifier_t provider_id,
+      const identifier_t provider_id,
       const stream_info&,
-      verification_bits verified)>
+      const verification_bits verified)>
       stream_announced;
 
     /// @brief Triggered when a data stream was retracted by the given provider.
     /// @see stream_announced
     signal<void(
-      identifier_t provider_id,
+      const identifier_t provider_id,
       const stream_info&,
-      verification_bits verified)>
+      const verification_bits verified)>
       stream_retracted;
 
 protected:
@@ -522,8 +532,9 @@ private:
         flat_set<identifier_t> forward_set{};
     };
 
-    auto _handle_stream_announce(const message_context&, stored_message& message)
-      -> bool {
+    auto _handle_stream_announce(
+      const message_context&,
+      const stored_message& message) -> bool {
         stream_info info{};
         if(default_deserialize(info, message.content())) {
             const stream_key_t key{message.source_id, info.id};
@@ -560,9 +571,9 @@ private:
     }
 
     void _forward_stream_announce(
-      identifier_t provider_id,
+      const identifier_t provider_id,
       const stream_status& stream,
-      verification_bits verified,
+      const verification_bits verified,
       message_view message) {
         const auto msg_id{EAGINE_MSG_ID(eagiStream, appeared)};
         for(const auto consumer_id : stream.forward_set) {
@@ -572,8 +583,9 @@ private:
         stream_announced(provider_id, stream.info, verified);
     }
 
-    auto _handle_stream_retract(const message_context&, stored_message& message)
-      -> bool {
+    auto _handle_stream_retract(
+      const message_context&,
+      const stored_message& message) -> bool {
         identifier_t stream_id{0};
         if(default_deserialize(stream_id, message.content())) {
             const auto pos = _streams.find({message.source_id, stream_id});
@@ -590,9 +602,9 @@ private:
     }
 
     void _forward_stream_retract(
-      identifier_t provider_id,
+      const identifier_t provider_id,
       const stream_status& stream,
-      verification_bits verified,
+      const verification_bits verified,
       message_view message) {
         const auto msg_id{EAGINE_MSG_ID(eagiStream, disapeared)};
         for(const auto consumer_id : stream.forward_set) {
@@ -602,12 +614,13 @@ private:
         stream_retracted(provider_id, stream.info, verified);
     }
 
-    auto _handle_start_forward(const message_context&, stored_message&)
+    auto _handle_start_forward(const message_context&, const stored_message&)
       -> bool {
         return true;
     }
 
-    auto _handle_stop_forward(const message_context&, stored_message&) -> bool {
+    auto _handle_stop_forward(const message_context&, const stored_message&)
+      -> bool {
         return true;
     }
 
@@ -630,7 +643,7 @@ private:
 
     void _handle_stream_relay_subscribed(
       const subscriber_info& sub_info,
-      message_id msg_id) {
+      const message_id msg_id) {
         if(msg_id == EAGINE_MSG_ID(eagiStream, startFrwrd)) {
             auto pos = _relays.find(sub_info.endpoint_id);
             if(pos == _relays.end()) {
@@ -643,7 +656,7 @@ private:
 
     void _handle_stream_relay_unsubscribed(
       const subscriber_info& sub_info,
-      message_id msg_id) {
+      const message_id msg_id) {
         if(msg_id == EAGINE_MSG_ID(eagiStream, startFrwrd)) {
             auto pos = _relays.find(sub_info.endpoint_id);
             if(pos != _relays.end()) {

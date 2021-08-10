@@ -40,7 +40,7 @@ private:
         return arg <= 2 ? 1 : fib(arg - 2) + fib(arg - 1);
     }
 
-    auto calculate(const message_context&, stored_message& msg_in) {
+    auto calculate(const message_context&, const stored_message& msg_in) {
         _calc_skeleton.enqueue(
           msg_in, EAGINE_MSG_ID(Fibonacci, Result), {&fib}, _workers);
         return true;
@@ -75,7 +75,7 @@ private:
     default_invoker<std::int64_t(std::int64_t), 64> _calc_invoker{};
 
 public:
-    auto fib(std::int64_t arg) -> future<std::int64_t> {
+    auto fib(const std::int64_t arg) -> future<std::int64_t> {
         return _calc_invoker.invoke(
           bus_node(), EAGINE_MSG_ID(Fibonacci, Calculate), arg);
     }

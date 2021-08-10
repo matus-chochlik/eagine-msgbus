@@ -52,13 +52,14 @@ class node_tracker : public node_tracker_base<Base> {
 
 public:
     /// @brief Triggered when message bus host information changes.
-    signal<void(remote_host&, remote_host_changes)> host_changed;
+    signal<void(remote_host&, const remote_host_changes)> host_changed;
 
     /// @brief Triggered when message bus instance information changes.
-    signal<void(remote_instance&, remote_instance_changes)> instance_changed;
+    signal<void(remote_instance&, const remote_instance_changes)>
+      instance_changed;
 
     /// @brief Triggered when message bus node information changes.
-    signal<void(remote_node&, remote_node_changes)> node_changed;
+    signal<void(remote_node&, const remote_node_changes)> node_changed;
 
     /// @brief Returns handler for the node alive message.
     auto on_alive() noexcept {
@@ -308,17 +309,17 @@ public:
     }
 
     /// @brief Returns information about a host with the specified id.
-    auto get_host(identifier_t id) -> const remote_host& {
+    auto get_host(const identifier_t id) -> const remote_host& {
         return _tracker.get_host(id);
     }
 
     /// @brief Returns information about an instance with the specified id.
-    auto get_instance(identifier_t id) -> const remote_instance& {
+    auto get_instance(const identifier_t id) -> const remote_instance& {
         return _tracker.get_instance(id);
     }
 
     /// @brief Returns information about a node with the specified id.
-    auto get_node(identifier_t id) -> const remote_node& {
+    auto get_node(const identifier_t id) -> const remote_node& {
         return _tracker.get_node(id);
     }
 
@@ -376,36 +377,38 @@ private:
 
     remote_node_tracker _tracker{};
 
-    auto _get_host(identifier_t id) -> remote_host_state& {
+    auto _get_host(const identifier_t id) -> remote_host_state& {
         return _tracker.get_host(id);
     }
 
-    auto _get_instance(identifier_t id) -> remote_instance_state& {
+    auto _get_instance(const identifier_t id) -> remote_instance_state& {
         return _tracker.get_instance(id);
     }
 
-    auto _get_node(identifier_t id) -> remote_node_state& {
+    auto _get_node(const identifier_t id) -> remote_node_state& {
         return _tracker.get_node(id);
     }
 
-    auto _get_connection(identifier_t id1, identifier_t id2)
+    auto _get_connection(const identifier_t id1, const identifier_t id2)
       -> node_connection_state& {
         return _tracker.get_connection(id1, id2);
     }
 
-    void _handle_host_change(identifier_t, remote_host_state& host) {
+    void _handle_host_change(const identifier_t, remote_host_state& host) {
         if(const auto changes{host.update().changes()}) {
             host_changed(host, changes);
         }
     }
 
-    void _handle_inst_change(identifier_t, remote_instance_state& inst) {
+    void _handle_inst_change(const identifier_t, remote_instance_state& inst) {
         if(const auto changes{inst.update().changes()}) {
             instance_changed(inst, changes);
         }
     }
 
-    void _handle_node_change(identifier_t node_id, remote_node_state& node) {
+    void _handle_node_change(
+      const identifier_t node_id,
+      remote_node_state& node) {
         if(const auto changes{node.update().changes()}) {
             node_changed(node, changes);
             if(EAGINE_UNLIKELY(changes.new_instance())) {
@@ -422,17 +425,23 @@ private:
           .assign(node_kind::endpoint);
     }
 
-    void _handle_subscribed(const subscriber_info& info, message_id msg_id) {
+    void _handle_subscribed(
+      const subscriber_info& info,
+      const message_id msg_id) {
         _tracker.notice_instance(info.endpoint_id, info.instance_id)
           .add_subscription(msg_id);
     }
 
-    void _handle_unsubscribed(const subscriber_info& info, message_id msg_id) {
+    void _handle_unsubscribed(
+      const subscriber_info& info,
+      const message_id msg_id) {
         _tracker.notice_instance(info.endpoint_id, info.instance_id)
           .remove_subscription(msg_id);
     }
 
-    void _handle_not_subscribed(const subscriber_info& info, message_id msg_id) {
+    void _handle_not_subscribed(
+      const subscriber_info& info,
+      const message_id msg_id) {
         _tracker.notice_instance(info.endpoint_id, info.instance_id)
           .remove_subscription(msg_id);
     }
@@ -460,32 +469,32 @@ private:
           .assign(node_kind::endpoint);
     }
 
-    void _handle_router_disappeared(identifier_t router_id) {
+    void _handle_router_disappeared(const identifier_t router_id) {
         _tracker.remove_node(router_id);
     }
 
-    void _handle_bridge_disappeared(identifier_t bridge_id) {
+    void _handle_bridge_disappeared(const identifier_t bridge_id) {
         _tracker.remove_node(bridge_id);
     }
 
-    void _handle_endpoint_disappeared(identifier_t endpoint_id) {
+    void _handle_endpoint_disappeared(const identifier_t endpoint_id) {
         _tracker.remove_node(endpoint_id);
     }
 
     void _handle_router_stats_received(
-      identifier_t router_id,
+      const identifier_t router_id,
       const router_statistics& stats) {
         _get_node(router_id).assign(stats).notice_alive();
     }
 
     void _handle_bridge_stats_received(
-      identifier_t bridge_id,
+      const identifier_t bridge_id,
       const bridge_statistics& stats) {
         _get_node(bridge_id).assign(stats).notice_alive();
     }
 
     void _handle_endpoint_stats_received(
-      identifier_t endpoint_id,
+      const identifier_t endpoint_id,
       const endpoint_statistics& stats) {
         _get_node(endpoint_id).assign(stats).notice_alive();
     }
@@ -704,7 +713,7 @@ private:
 
     void _handle_power_supply_kind_received(
       const result_context& ctx,
-      power_supply_kind value) {
+      const power_supply_kind value) {
         auto& node = _get_node(ctx.source_id()).notice_alive();
         if(auto host_id{node.host_id()}) {
             auto& host = _get_host(extract(host_id)).notice_alive();
@@ -717,17 +726,17 @@ private:
     }
 
     void _handle_ping_response(
-      identifier_t node_id,
-      message_sequence_t sequence_no,
-      std::chrono::microseconds age,
-      verification_bits) {
+      const identifier_t node_id,
+      const message_sequence_t sequence_no,
+      const std::chrono::microseconds age,
+      const verification_bits) {
         _get_node(node_id).ping_response(sequence_no, age);
     }
 
     void _handle_ping_timeout(
-      identifier_t node_id,
-      message_sequence_t sequence_no,
-      std::chrono::microseconds age) {
+      const identifier_t node_id,
+      const message_sequence_t sequence_no,
+      const std::chrono::microseconds age) {
         _get_node(node_id).ping_timeout(sequence_no, age);
     }
 };

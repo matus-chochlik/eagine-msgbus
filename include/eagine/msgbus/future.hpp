@@ -92,7 +92,7 @@ public:
 
     /// @brief Sets the timeout for this future if there is shared state.
     template <typename R, typename P>
-    auto set_timeout(std::chrono::duration<R, P> dur) -> future<T>& {
+    auto set_timeout(const std::chrono::duration<R, P> dur) -> future<T>& {
         if(_state) {
             _state->too_late.reset(dur);
         }
@@ -176,8 +176,8 @@ public:
     }
 
     /// @brief Fulfills the promise/future pair idenified by id with the given value.
-    void fulfill(message_sequence_t id, T value) {
-        auto pos = _promises.find(id);
+    void fulfill(const message_sequence_t id, T value) {
+        const auto pos = _promises.find(id);
         if(pos != _promises.end()) {
             pos->second.fulfill(std::move(value));
             _promises.erase(pos);

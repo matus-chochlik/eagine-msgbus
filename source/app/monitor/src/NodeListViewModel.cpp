@@ -825,4 +825,3 @@ auto NodeListViewModel::getSelectedRow() const noexcept -> int {
     return _selectedRow;
 }
 //------------------------------------------------------------------------------
-

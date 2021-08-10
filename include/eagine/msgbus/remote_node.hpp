@@ -74,8 +74,9 @@ enum class remote_node_change : std::uint16_t {
 };
 //------------------------------------------------------------------------------
 template <typename Selector>
-constexpr auto
-enumerator_mapping(type_identity<remote_node_change>, Selector) noexcept {
+constexpr auto enumerator_mapping(
+  const type_identity<remote_node_change>,
+  const Selector) noexcept {
     return enumerator_map_type<remote_node_change, 16>{
       {{"kind", remote_node_change::kind},
        {"instance_id", remote_node_change::instance_id},
@@ -141,8 +142,9 @@ enum class remote_instance_change : std::uint16_t {
 };
 //------------------------------------------------------------------------------
 template <typename Selector>
-constexpr auto
-enumerator_mapping(type_identity<remote_instance_change>, Selector) noexcept {
+constexpr auto enumerator_mapping(
+  const type_identity<remote_instance_change>,
+  const Selector) noexcept {
     return enumerator_map_type<remote_instance_change, 5>{
       {{"host_id", remote_instance_change::host_id},
        {"started_responding", remote_instance_change::started_responding},
@@ -167,9 +169,9 @@ struct remote_instance_changes : bitfield<remote_instance_change> {
     }
 };
 
-static inline auto
-operator|(remote_instance_change l, remote_instance_change r) noexcept
-  -> remote_instance_changes {
+static inline auto operator|(
+  const remote_instance_change l,
+  const remote_instance_change r) noexcept -> remote_instance_changes {
     return {l, r};
 }
 //------------------------------------------------------------------------------
@@ -191,8 +193,9 @@ enum class remote_host_change : std::uint16_t {
 };
 //------------------------------------------------------------------------------
 template <typename Selector>
-constexpr auto
-enumerator_mapping(type_identity<remote_host_change>, Selector) noexcept {
+constexpr auto enumerator_mapping(
+  const type_identity<remote_host_change>,
+  const Selector) noexcept {
     return enumerator_map_type<remote_host_change, 5>{
       {{"hostname", remote_host_change::hostname},
        {"started_responding", remote_host_change::started_responding},
@@ -217,8 +220,9 @@ struct remote_host_changes : bitfield<remote_host_change> {
     }
 };
 
-static inline auto operator|(remote_host_change l, remote_host_change r) noexcept
-  -> remote_host_changes {
+static inline auto operator|(
+  const remote_host_change l,
+  const remote_host_change r) noexcept -> remote_host_changes {
     return {l, r};
 }
 //------------------------------------------------------------------------------
@@ -260,44 +264,44 @@ public:
     /// @see get_connection
     /// @see for_each_node
     /// @see remove_node
-    auto get_node(identifier_t node_id) -> remote_node_state&;
+    auto get_node(const identifier_t node_id) -> remote_node_state&;
 
     /// @brief Removes tracked node with the specified id.
     /// @see get_node
-    auto remove_node(identifier_t node_id) -> bool;
+    auto remove_node(const identifier_t node_id) -> bool;
 
     /// @brief Finds and returns the state information about a remote host.
     /// @see get_node
     /// @see get_instance
     /// @see get_connection
     /// @see for_each_host
-    auto get_host(host_id_t) -> remote_host_state&;
+    auto get_host(const host_id_t) -> remote_host_state&;
 
     /// @brief Finds and returns the state information about a remote host.
     /// @see get_node
     /// @see get_instance
     /// @see get_connection
     /// @see for_each_host
-    auto get_host(host_id_t) const -> remote_host_state;
+    auto get_host(const host_id_t) const -> remote_host_state;
 
     /// @brief Finds and returns the information about a remote instance (process).
     /// @see get_node
     /// @see get_host
     /// @see get_connection
-    auto get_instance(host_id_t) -> remote_instance_state&;
+    auto get_instance(const host_id_t) -> remote_instance_state&;
 
     /// @brief Finds and returns the information about a remote instance (process).
     /// @see get_node
     /// @see get_host
     /// @see get_connection
-    auto get_instance(host_id_t) const -> remote_instance_state;
+    auto get_instance(const host_id_t) const -> remote_instance_state;
 
     /// @brief Finds and returns the information about remote node connections.
     /// @see get_node
     /// @see get_host
     /// @see get_instance
     /// @see for_each_connection
-    auto get_connection(identifier_t node_id1, identifier_t node_id2)
+    auto get_connection(const identifier_t node_id1, const identifier_t node_id2)
       -> node_connection_state&;
 
     /// @brief Finds and returns the information about remote node connections.
@@ -305,10 +309,11 @@ public:
     /// @see get_host
     /// @see get_instance
     /// @see for_each_connection
-    auto get_connection(identifier_t node_id1, identifier_t node_id2) const
-      -> node_connection_state;
+    auto get_connection(
+      const identifier_t node_id1,
+      const identifier_t node_id2) const -> node_connection_state;
 
-    auto notice_instance(identifier_t node_id, process_instance_id_t)
+    auto notice_instance(const identifier_t node_id, const process_instance_id_t)
       -> remote_node_state&;
 
     /// @brief Calls a function on each tracked remote host.
@@ -367,8 +372,9 @@ public:
     /// The function is called with (host_id_t, const remote_node_state&) as arguments.
     /// This function is subject to change without notice. Prefer using for_each_node.
     template <typename Function>
-    void
-    for_each_instance_node_state(process_instance_id_t inst_id, Function func);
+    void for_each_instance_node_state(
+      const process_instance_id_t inst_id,
+      Function func);
 
     /// @brief Calls a function on tracked remote bus nodes of a remote host.
     /// @see remote_node_state
@@ -378,7 +384,7 @@ public:
     /// The function is called with (host_id_t, const remote_node_state&) as arguments.
     /// This function is subject to change without notice. Prefer using for_each_node.
     template <typename Function>
-    void for_each_host_node_state(host_id_t host_id, Function func);
+    void for_each_host_node_state(const host_id_t host_id, Function func);
 
     template <typename Function>
     void for_each_connection(Function func);
@@ -414,7 +420,7 @@ private:
 class remote_host {
 public:
     remote_host() noexcept = default;
-    remote_host(host_id_t host_id) noexcept
+    remote_host(const host_id_t host_id) noexcept
       : _host_id{host_id} {}
 
     /// @brief Indicates if this is not-empty and has actual information.
@@ -589,23 +595,24 @@ public:
 
     auto update() -> remote_host_state&;
     auto changes() -> remote_host_changes;
-    auto add_change(remote_host_change) -> remote_host_state&;
+    auto add_change(const remote_host_change) -> remote_host_state&;
 
     auto should_query_sensors() -> bool;
     auto sensors_queried() -> remote_host_state&;
 
     auto notice_alive() -> remote_host_state&;
     auto set_hostname(std::string) -> remote_host_state&;
-    auto set_cpu_concurrent_threads(span_size_t) -> remote_host_state&;
-    auto set_short_average_load(float) -> remote_host_state&;
-    auto set_long_average_load(float) -> remote_host_state&;
-    auto set_total_ram_size(span_size_t) -> remote_host_state&;
-    auto set_total_swap_size(span_size_t) -> remote_host_state&;
-    auto set_free_ram_size(span_size_t) -> remote_host_state&;
-    auto set_free_swap_size(span_size_t) -> remote_host_state&;
-    auto set_temperature_min_max(kelvins_t<float> min, kelvins_t<float> max)
-      -> remote_host_state&;
-    auto set_power_supply(power_supply_kind) -> remote_host_state&;
+    auto set_cpu_concurrent_threads(const span_size_t) -> remote_host_state&;
+    auto set_short_average_load(const float) -> remote_host_state&;
+    auto set_long_average_load(const float) -> remote_host_state&;
+    auto set_total_ram_size(const span_size_t) -> remote_host_state&;
+    auto set_total_swap_size(const span_size_t) -> remote_host_state&;
+    auto set_free_ram_size(const span_size_t) -> remote_host_state&;
+    auto set_free_swap_size(const span_size_t) -> remote_host_state&;
+    auto set_temperature_min_max(
+      const kelvins_t<float> min,
+      const kelvins_t<float> max) -> remote_host_state&;
+    auto set_power_supply(const power_supply_kind) -> remote_host_state&;
 };
 //------------------------------------------------------------------------------
 /// @brief Class providing information about a remote instance running bus nodes.
@@ -618,7 +625,7 @@ class remote_instance {
 public:
     remote_instance() noexcept = default;
     remote_instance(
-      process_instance_id_t inst_id,
+      const process_instance_id_t inst_id,
       remote_node_tracker tracker) noexcept
       : _inst_id{inst_id}
       , _tracker{std::move(tracker)} {}
@@ -670,10 +677,10 @@ public:
 
     auto update() -> remote_instance_state&;
     auto changes() -> remote_instance_changes;
-    auto add_change(remote_instance_change) -> remote_instance_state&;
+    auto add_change(const remote_instance_change) -> remote_instance_state&;
 
     auto notice_alive() -> remote_instance_state&;
-    auto set_host_id(host_id_t) -> remote_instance_state&;
+    auto set_host_id(const host_id_t) -> remote_instance_state&;
     auto set_app_name(const std::string&) -> remote_instance_state&;
     auto assign(compiler_info) -> remote_instance_state&;
     auto assign(build_info) -> remote_instance_state&;
@@ -688,7 +695,7 @@ public:
 class remote_node {
 public:
     remote_node() noexcept = default;
-    remote_node(identifier_t node_id, remote_node_tracker tracker) noexcept
+    remote_node(const identifier_t node_id, remote_node_tracker tracker) noexcept
       : _node_id{node_id}
       , _tracker{std::move(tracker)} {}
 
@@ -756,7 +763,7 @@ public:
 
     /// @brief Sets the ping interval for the remote node.
     /// @see is_pingable
-    void set_ping_interval(std::chrono::milliseconds) noexcept;
+    void set_ping_interval(const std::chrono::milliseconds) noexcept;
 
     /// @brief Returns the last ping roundtrip time.
     /// @see is_responsive
@@ -837,28 +844,30 @@ public:
 
     auto update() -> remote_node_state&;
     auto changes() -> remote_node_changes;
-    auto add_change(remote_node_change) -> remote_node_state&;
+    auto add_change(const remote_node_change) -> remote_node_state&;
 
-    auto set_instance_id(process_instance_id_t) -> remote_node_state&;
-    auto set_host_id(host_id_t) -> remote_node_state&;
+    auto set_instance_id(const process_instance_id_t) -> remote_node_state&;
+    auto set_host_id(const host_id_t) -> remote_node_state&;
 
-    auto assign(node_kind) -> remote_node_state&;
+    auto assign(const node_kind) -> remote_node_state&;
     auto assign(const endpoint_info&) -> remote_node_state&;
 
     auto assign(const router_statistics&) -> remote_node_state&;
     auto assign(const bridge_statistics&) -> remote_node_state&;
     auto assign(const endpoint_statistics&) -> remote_node_state&;
 
-    auto add_subscription(message_id) -> remote_node_state&;
-    auto remove_subscription(message_id) -> remote_node_state&;
+    auto add_subscription(const message_id) -> remote_node_state&;
+    auto remove_subscription(const message_id) -> remote_node_state&;
 
     auto should_ping() -> std::tuple<bool, std::chrono::milliseconds>;
     auto notice_alive() -> remote_node_state&;
     auto pinged() -> remote_node_state&;
-    auto ping_response(message_sequence_t, std::chrono::microseconds age)
-      -> remote_node_state&;
-    auto ping_timeout(message_sequence_t, std::chrono::microseconds age)
-      -> remote_node_state&;
+    auto ping_response(
+      const message_sequence_t,
+      const std::chrono::microseconds age) -> remote_node_state&;
+    auto ping_timeout(
+      const message_sequence_t,
+      const std::chrono::microseconds age) -> remote_node_state&;
 };
 //------------------------------------------------------------------------------
 /// @brief Class providing information about connection between bus nodes.
@@ -872,8 +881,8 @@ class node_connection {
 public:
     node_connection() noexcept = default;
     node_connection(
-      identifier_t id1,
-      identifier_t id2,
+      const identifier_t id1,
+      const identifier_t id2,
       remote_node_tracker tracker) noexcept
       : _id1{id1}
       , _id2{id2}
@@ -886,20 +895,21 @@ public:
 
     /// @brief Indicates if the connection connects node with the specified id.
     /// @see opposite_id
-    auto connects(identifier_t id) const noexcept {
+    auto connects(const identifier_t id) const noexcept {
         return (_id1 == id) || (_id2 == id);
     }
 
     /// @brief Indicates if the connection connects nodes with the specified id.
     /// @see opposite_id
-    auto connects(identifier_t id1, identifier_t id2) const noexcept {
+    auto connects(const identifier_t id1, const identifier_t id2)
+      const noexcept {
         return ((_id1 == id1) && (_id2 == id2)) ||
                ((_id1 == id2) && (_id2 == id1));
     }
 
     /// @brief Returns the id of the node opposite to the node with id in argument.
     /// @see connects
-    auto opposite_id(identifier_t id) const noexcept
+    auto opposite_id(const identifier_t id) const noexcept
       -> valid_if_not_zero<identifier_t> {
         if(_id1 == id) {
             return {_id2};
@@ -941,7 +951,7 @@ class node_connection_state : public node_connection {
 public:
     using node_connection::node_connection;
 
-    auto set_kind(connection_kind) -> node_connection_state&;
+    auto set_kind(const connection_kind) -> node_connection_state&;
     auto assign(const connection_statistics&) -> node_connection_state&;
 };
 //------------------------------------------------------------------------------
@@ -978,7 +988,7 @@ public:
     /// @see count
     /// @see remote
     /// @pre index >= 0 && index < count()
-    auto get(span_size_t index) -> node_connection {
+    auto get(const span_size_t index) -> node_connection {
         EAGINE_ASSERT((index >= 0) && (index < count()));
         return _tracker.get_connection(
           _origin_id, _remote_ids[std_size(index)]);
@@ -988,7 +998,7 @@ public:
     /// @see count
     /// @see get
     /// @pre index >= 0 && index < count()
-    auto remote(span_size_t index) -> remote_node {
+    auto remote(const span_size_t index) -> remote_node {
         EAGINE_ASSERT((index >= 0) && (index < count()));
         return _tracker.get_node(_remote_ids[std_size(index)]);
     }
@@ -1046,7 +1056,7 @@ void remote_node_tracker::for_each_instance_state(Function func) {
 //------------------------------------------------------------------------------
 template <typename Function>
 void remote_node_tracker::for_each_instance_node_state(
-  process_instance_id_t inst_id,
+  const process_instance_id_t inst_id,
   Function func) {
     if(EAGINE_LIKELY(_pimpl)) {
         for(auto& [node_id, node] : _get_nodes()) {
@@ -1059,7 +1069,7 @@ void remote_node_tracker::for_each_instance_node_state(
 //------------------------------------------------------------------------------
 template <typename Function>
 void remote_node_tracker::for_each_host_node_state(
-  host_id_t host_id,
+  const host_id_t host_id,
   Function func) {
     if(EAGINE_LIKELY(_pimpl)) {
         for(auto& [node_id, node] : _get_nodes()) {

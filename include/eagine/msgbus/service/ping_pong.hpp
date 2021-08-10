@@ -30,9 +30,9 @@ class pingable : public Base {
 public:
     /// @brief Decides if a ping request should be responded.
     virtual auto respond_to_ping(
-      identifier_t pinger_id,
-      message_sequence_t,
-      verification_bits) -> bool {
+      const identifier_t pinger_id,
+      const message_sequence_t,
+      const verification_bits) -> bool {
         EAGINE_MAYBE_UNUSED(pinger_id);
         return true;
     }
@@ -47,7 +47,8 @@ protected:
     }
 
 private:
-    auto _handle_ping(const message_context&, stored_message& message) -> bool {
+    auto _handle_ping(const message_context&, const stored_message& message)
+      -> bool {
         if(respond_to_ping(
              message.source_id,
              message.sequence_no,
@@ -87,7 +88,9 @@ public:
     /// @see ping_responded
     /// @see ping_timeouted
     /// @see has_pending_pings
-    void ping(identifier_t pingable_id, std::chrono::milliseconds max_time) {
+    void ping(
+      const identifier_t pingable_id,
+      const std::chrono::milliseconds max_time) {
         message_view message{};
         auto msg_id{EAGINE_MSGBUS_ID(ping)};
         message.set_target_id(pingable_id);
@@ -101,7 +104,7 @@ public:
     /// @see ping_responded
     /// @see ping_timeouted
     /// @see has_pending_pings
-    void ping(identifier_t pingable_id) {
+    void ping(const identifier_t pingable_id) {
         ping(
           pingable_id,
           adjusted_duration(
@@ -145,10 +148,10 @@ public:
     /// @see ping_timeouted
     /// @see has_pending_pings
     signal<void(
-      identifier_t pingable_id,
-      message_sequence_t sequence_no,
-      std::chrono::microseconds age,
-      verification_bits)>
+      const identifier_t pingable_id,
+      const message_sequence_t sequence_no,
+      const std::chrono::microseconds age,
+      const verification_bits)>
       ping_responded;
 
     /// @brief Triggered on timeout of ping response.
@@ -156,9 +159,9 @@ public:
     /// @see ping_responded
     /// @see has_pending_pings
     signal<void(
-      identifier_t pingable_id,
-      message_sequence_t sequence_no,
-      std::chrono::microseconds age)>
+      const identifier_t pingable_id,
+      const message_sequence_t sequence_no,
+      const std::chrono::microseconds age)>
       ping_timeouted;
 
 protected:
@@ -171,7 +174,8 @@ protected:
     }
 
 private:
-    auto _handle_pong(const message_context&, stored_message& message) -> bool {
+    auto _handle_pong(const message_context&, const stored_message& message)
+      -> bool {
         _pending.erase(
           std::remove_if(
             _pending.begin(),

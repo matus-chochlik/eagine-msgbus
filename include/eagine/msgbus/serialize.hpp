@@ -69,7 +69,7 @@ inline auto default_serialize_buffer_for(const T& inst) {
 /// @see deserialize_message_header
 template <typename Backend>
 auto serialize_message_header(
-  message_id msg_id,
+  const message_id msg_id,
   const message_view& msg,
   Backend& backend)
   -> std::enable_if_t<
@@ -97,7 +97,7 @@ auto serialize_message_header(
 /// @see default_serialize
 template <typename Backend>
 auto serialize_message(
-  message_id msg_id,
+  const message_id msg_id,
   const message_view& msg,
   Backend& backend)
   -> std::enable_if_t<
@@ -234,8 +234,9 @@ inline auto default_serialize_packed(
 /// @see default_serializer_backend
 /// @see default_serialize
 /// @see message_id
-inline auto
-default_serialize_message_type(message_id msg_id, memory::block blk) {
+inline auto default_serialize_message_type(
+  const message_id msg_id,
+  memory::block blk) {
     const auto value{msg_id.id_tuple()};
     return default_serialize(value, blk);
 }
@@ -248,7 +249,7 @@ default_serialize_message_type(message_id msg_id, memory::block blk) {
 /// @see default_serialize
 /// @see deserialize
 template <typename T>
-inline auto default_deserialize(T& value, memory::const_block blk)
+inline auto default_deserialize(T& value, const memory::const_block blk)
   -> deserialization_result<memory::const_block> {
     block_data_source source(blk);
     default_deserializer_backend backend(source);
@@ -265,7 +266,7 @@ inline auto default_deserialize(T& value, memory::const_block blk)
 template <typename T>
 inline auto default_deserialize_packed(
   T& value,
-  memory::const_block blk,
+  const memory::const_block blk,
   data_compressor compressor) -> deserialization_result<memory::const_block> {
     packed_block_data_source source(std::move(compressor), blk);
     default_deserializer_backend backend(source);
@@ -278,8 +279,9 @@ inline auto default_deserialize_packed(
 /// @see default_deserializer_backend
 /// @see default_deserialize
 /// @see message_id
-inline auto
-default_deserialize_message_type(message_id& msg_id, memory::const_block blk) {
+inline auto default_deserialize_message_type(
+  message_id& msg_id,
+  const memory::const_block blk) {
     std::tuple<identifier, identifier> value{};
     auto result = default_deserialize(value, blk);
     if(result) {
@@ -289,9 +291,9 @@ default_deserialize_message_type(message_id& msg_id, memory::const_block blk) {
 }
 //------------------------------------------------------------------------------
 template <typename Backend, typename Value>
-inline auto
-stored_message::do_store_value(const Value& value, span_size_t max_size)
-  -> bool {
+inline auto stored_message::do_store_value(
+  const Value& value,
+  const span_size_t max_size) -> bool {
     _buffer.resize(max_size);
     block_data_sink sink(cover(_buffer));
     Backend backend(sink);
@@ -305,8 +307,9 @@ stored_message::do_store_value(const Value& value, span_size_t max_size)
 }
 //------------------------------------------------------------------------------
 template <typename Value>
-inline auto
-stored_message::store_value(const Value& value, span_size_t max_size) -> bool {
+inline auto stored_message::store_value(
+  const Value& value,
+  const span_size_t max_size) -> bool {
     return do_store_value<default_serializer_backend>(value, max_size);
 }
 //------------------------------------------------------------------------------

@@ -25,7 +25,7 @@ public:
     ping(
       main_ctx_parent parent,
       connection_setup& conn_setup,
-      string_view address,
+      const string_view address,
       const valid_if_positive<std::size_t>& max)
       : base(
           {EAGINE_ID(ExamplPing), parent},
@@ -43,7 +43,7 @@ public:
           address);
     }
 
-    auto pong(const message_context&, stored_message&) -> bool {
+    auto pong(const message_context&, const stored_message&) -> bool {
         if(++_rcvd % _lmod == 0) {
             bus_node()
               .log_info("received ${count} pongs")
@@ -55,7 +55,7 @@ public:
         return true;
     }
 
-    auto ready(const message_context&, stored_message&) -> bool {
+    auto ready(const message_context&, const stored_message&) -> bool {
         _ready = true;
         bus_node().log_info("received pong ready message");
         return true;
@@ -83,7 +83,7 @@ public:
         return (_rcvd >= _max) || _timeout;
     }
 
-    auto pings_per_second(std::chrono::duration<float> s) const noexcept {
+    auto pings_per_second(const std::chrono::duration<float> s) const noexcept {
         return float(_rcvd) / s.count();
     }
 
