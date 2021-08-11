@@ -84,6 +84,18 @@ auto TilingModel::getProgress() const noexcept -> QVariant {
     return {};
 }
 //------------------------------------------------------------------------------
+auto TilingModel::getUpdatedByHelper(
+  eagine::identifier_t helperId) const noexcept -> qlonglong {
+    return qlonglong(
+      _tiling.updated_by_helper(helperId, eagine::unsigned_constant<4>{}));
+}
+//------------------------------------------------------------------------------
+auto TilingModel::getSolvedByHelper(eagine::identifier_t helperId) const noexcept
+  -> qlonglong {
+    return qlonglong(
+      _tiling.solved_by_helper(helperId, eagine::unsigned_constant<4>{}));
+}
+//------------------------------------------------------------------------------
 auto TilingModel::getCell(int row, int column) const noexcept -> QVariant {
     if(const char c{getCellChar(row, column)}) {
         const char s[2] = {c, '\0'};

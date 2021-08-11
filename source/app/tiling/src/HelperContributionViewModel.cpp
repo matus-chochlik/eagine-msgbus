@@ -5,52 +5,74 @@
 ///
 
 #include "HelperContributionViewModel.hpp"
+#include "TilingBackend.hpp"
+#include "TilingModel.hpp"
 
 //------------------------------------------------------------------------------
-HelperContributionViewModel::HelperContributionViewModel(
-  eagine::main_ctx_parent parent)
+HelperContributionViewModel::HelperContributionViewModel(TilingBackend& backend)
   : QObject{nullptr}
-  , eagine::main_ctx_object{EAGINE_ID(CntrbModel), parent} {}
+  , eagine::main_ctx_object{EAGINE_ID(CntrbModel), backend}
+  , _backend{backend} {}
+//------------------------------------------------------------------------------
+void HelperContributionViewModel::_cacheHelpers() {
+    _helperIds.clear();
+    for(const auto id : _helpers) {
+        _helperIds.append(QString::number(id));
+    }
+}
+//------------------------------------------------------------------------------
+void HelperContributionViewModel::_cacheCounts() {
+    _updatedCounts.clear();
+    _solvedCounts.clear();
+    if(auto tilingModel{_backend.getTilingModel()}) {
+        for(const auto helperId : _helpers) {
+            const auto updatedByHelper =
+              extract(tilingModel).getUpdatedByHelper(helperId);
+            _maxUpdatedCount = std::max(_maxUpdatedCount, updatedByHelper);
+            _updatedCounts.append(updatedByHelper);
+
+            const auto solvedByHelper =
+              extract(tilingModel).getSolvedByHelper(helperId);
+            _maxSolvedCount = std::max(_maxSolvedCount, solvedByHelper);
+            _solvedCounts.append(solvedByHelper);
+        }
+    }
+}
 //------------------------------------------------------------------------------
 void HelperContributionViewModel::helperAppeared(eagine::identifier_t helperId) {
-    const auto pos = _contributions.find(helperId);
-    if(pos == _contributions.end()) {
-        _contributions.emplace(helperId, 0);
-        emit dataChanged();
+    if(_helpers.insert(helperId).second) {
+        _cacheHelpers();
+        _cacheCounts();
+        emit helpersChanged();
     }
 }
 //------------------------------------------------------------------------------
 void HelperContributionViewModel::helperContributed(
   eagine::identifier_t helperId) {
-    auto pos = _contributions.find(helperId);
-    if(pos == _contributions.end()) {
-        pos = _contributions.emplace(helperId, 0).first;
-    }
-    auto& [solvedCount] = pos->second;
-    ++solvedCount;
-    _maxCount = std::max(_maxCount, solvedCount);
-    emit dataChanged();
+    _helpers.insert(helperId);
+    _cacheCounts();
+    emit solved();
 }
 //------------------------------------------------------------------------------
-auto HelperContributionViewModel::getHelperIds() const -> QStringList {
-    QStringList result;
-    result.reserve(eagine::limit_cast<int>(_contributions.size()));
-    for(const auto& entry : _contributions) {
-        result.append(QString::number(std::get<0>(entry)));
-    }
-    return result;
+auto HelperContributionViewModel::getHelperIds() const -> const QStringList& {
+    return _helperIds;
 }
 //------------------------------------------------------------------------------
-auto HelperContributionViewModel::getSolvedCounts() const -> QVariantList {
-    QVariantList result;
-    result.reserve(eagine::limit_cast<int>(_contributions.size()));
-    for(const auto& entry : _contributions) {
-        result.append(qlonglong(std::get<0>(std::get<1>(entry))));
-    }
-    return result;
+auto HelperContributionViewModel::getUpdatedCounts() const
+  -> const QVariantList& {
+    return _updatedCounts;
+}
+//------------------------------------------------------------------------------
+auto HelperContributionViewModel::getMaxUpdatedCount() const -> qreal {
+    return static_cast<qreal>(_maxUpdatedCount);
+}
+//------------------------------------------------------------------------------
+auto HelperContributionViewModel::getSolvedCounts() const
+  -> const QVariantList& {
+    return _solvedCounts;
 }
 //------------------------------------------------------------------------------
 auto HelperContributionViewModel::getMaxSolvedCount() const -> qreal {
-    return static_cast<qreal>(_maxCount);
+    return static_cast<qreal>(_maxSolvedCount);
 }
 //------------------------------------------------------------------------------

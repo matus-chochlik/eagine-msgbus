@@ -35,6 +35,10 @@ public:
 
     auto getResetCount() const noexcept -> QVariant;
     auto getProgress() const noexcept -> QVariant;
+    auto getUpdatedByHelper(eagine::identifier_t helperId) const noexcept
+      -> qlonglong;
+    auto getSolvedByHelper(eagine::identifier_t helperId) const noexcept
+      -> qlonglong;
 
 signals:
     void reinitialized();
