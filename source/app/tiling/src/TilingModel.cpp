@@ -30,6 +30,7 @@ TilingModel::TilingModel(TilingBackend& backend)
     reinitialize(
       extract_or(app_config().get<int>("msgbus.sudoku.solver.width"), 64),
       extract_or(app_config().get<int>("msgbus.sudoku.solver.height"), 64));
+    _resetCount = 0;
 }
 //------------------------------------------------------------------------------
 void TilingModel::update() {
@@ -47,6 +48,7 @@ void TilingModel::reinitialize(int w, int h) {
         _cellCache.resize(eagine::std_size(w * h));
     }
     zero(eagine::cover(_cellCache));
+    _resetCount++;
     _progress = -1.F;
 
     _tiling.reinitialize(
@@ -69,6 +71,10 @@ auto TilingModel::getHeight() const noexcept -> int {
 auto TilingModel::getCellChar(int row, int column) const noexcept -> char {
     const auto k = eagine::std_size(row * _width + column);
     return _cellCache[k];
+}
+//------------------------------------------------------------------------------
+auto TilingModel::getResetCount() const noexcept -> QVariant {
+    return {_resetCount};
 }
 //------------------------------------------------------------------------------
 auto TilingModel::getProgress() const noexcept -> QVariant {

@@ -77,6 +77,13 @@ auto TilingViewModel::roleNames() const -> QHash<int, QByteArray> {
     return {{Qt::DisplayRole, "tile"}};
 }
 //------------------------------------------------------------------------------
+auto TilingViewModel::getResetCount() const -> QVariant {
+    if(auto tilingModel{_backend.getTilingModel()}) {
+        return extract(tilingModel).getResetCount();
+    }
+    return {};
+}
+//------------------------------------------------------------------------------
 auto TilingViewModel::getProgress() const -> QVariant {
     if(auto tilingModel{_backend.getTilingModel()}) {
         return extract(tilingModel).getProgress();

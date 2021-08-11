@@ -1,6 +1,9 @@
 <!DOCTYPE RCC><RCC version="1.0">
 <qresource>
 	<file>qtquickcontrols2.conf</file>
+
+	<file>scripts/Format.js</file>
+
 	<file>tiling.qml</file>
 
 	<file>views/HelperContributionView.qml</file>
