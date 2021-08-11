@@ -485,6 +485,34 @@ public:
         return _infos.get(rank).solution_timeout.is_expired();
     }
 
+    /// @brief Returns the number of boards updated by the specified helper.
+    /// @see solved_by_helper
+    template <unsigned S>
+    auto updated_by_helper(
+      const identifier_t helper_id,
+      const unsigned_constant<S> rank) const noexcept -> std::intmax_t {
+        const auto& helper_map = _infos.get(rank).updated_by_helper;
+        const auto pos = helper_map.find(helper_id);
+        if(pos != helper_map.end()) {
+            return pos->second;
+        }
+        return 0;
+    }
+
+    /// @brief Returns the number of boards solved by the specified helper.
+    /// @see updated_by_helper
+    template <unsigned S>
+    auto solved_by_helper(
+      const identifier_t helper_id,
+      const unsigned_constant<S> rank) const noexcept -> std::intmax_t {
+        const auto& helper_map = _infos.get(rank).solved_by_helper;
+        const auto pos = helper_map.find(helper_id);
+        if(pos != helper_map.end()) {
+            return pos->second;
+        }
+        return 0;
+    }
+
     /// @brief Indicates if board with the specified rank is already solved.
     virtual auto already_done(const Key&, const unsigned_constant<3>) -> bool {
         return false;
@@ -587,6 +615,8 @@ private:
         flat_set<identifier_t> known_helpers;
         flat_set<identifier_t> ready_helpers;
         flat_map<identifier_t, timeout> used_helpers;
+        flat_map<identifier_t, std::intmax_t> updated_by_helper;
+        flat_map<identifier_t, std::intmax_t> solved_by_helper;
         std::vector<identifier_t> found_helpers;
 
         std::default_random_engine randeng{std::random_device{}()};
@@ -682,7 +712,6 @@ private:
                   });
 
                 if(pos != pending.end()) {
-
                     if(msg_id == sudoku_solved_msg(rank)) {
                         EAGINE_ASSERT(board.is_solved());
                         key_boards.erase(
@@ -693,11 +722,25 @@ private:
                                 return pos->key == std::get<0>(entry);
                             }),
                           key_boards.end());
+                        auto spos = solved_by_helper.find(pos->used_helper);
+                        if(spos == solved_by_helper.end()) {
+                            spos =
+                              solved_by_helper.emplace(pos->used_helper, 0L)
+                                .first;
+                        }
+                        spos->second++;
                         parent.solved_signal(rank)(
                           pos->used_helper, pos->key, board);
                         solution_timeout.reset();
                     } else {
                         add_board(pos->key, std::move(board));
+                        auto upos = updated_by_helper.find(pos->used_helper);
+                        if(upos == updated_by_helper.end()) {
+                            upos =
+                              updated_by_helper.emplace(pos->used_helper, 0L)
+                                .first;
+                        }
+                        upos->second++;
                     }
                     pos->too_late.reset();
                 }
