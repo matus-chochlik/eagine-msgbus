@@ -38,6 +38,7 @@ signals:
     void progressChanged();
 private slots:
     void onTilingModelChanged();
+    void onTilingReset();
     void onTilingChanged();
 
 private:

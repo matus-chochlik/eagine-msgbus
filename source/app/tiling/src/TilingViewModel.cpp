@@ -29,6 +29,7 @@ TilingViewModel::TilingViewModel(TilingBackend& backend)
 void TilingViewModel::reinitialize(int w, int h) {
     if(auto tilingModel{_backend.getTilingModel()}) {
         extract(tilingModel).reinitialize(w, h);
+        emit reinitialized();
     }
 }
 //------------------------------------------------------------------------------
@@ -96,13 +97,20 @@ void TilingViewModel::onTilingModelChanged() {
       _backend.getTilingModel(),
       &TilingModel::reinitialized,
       this,
-      &TilingViewModel::onTilingChanged);
+      &TilingViewModel::onTilingReset);
     connect(
       _backend.getTilingModel(),
       &TilingModel::fragmentAdded,
       this,
       &TilingViewModel::onTilingChanged);
     emit modelReset({});
+    emit reinitialized();
+    emit progressChanged();
+}
+//------------------------------------------------------------------------------
+void TilingViewModel::onTilingReset() {
+    emit modelReset({});
+    emit reinitialized();
     emit progressChanged();
 }
 //------------------------------------------------------------------------------
