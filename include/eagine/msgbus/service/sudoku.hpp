@@ -487,6 +487,7 @@ public:
 
     /// @brief Returns the number of boards updated by the specified helper.
     /// @see solved_by_helper
+    /// @see updated_count
     template <unsigned S>
     auto updated_by_helper(
       const identifier_t helper_id,
@@ -499,8 +500,23 @@ public:
         return 0;
     }
 
+    /// @brief Returns the number of boards updated by the specified helper.
+    /// @see solved_count
+    /// @see updated_by_helper
+    template <unsigned S>
+    auto updated_count(const unsigned_constant<S> rank) const noexcept
+      -> std::intmax_t {
+        const auto& helper_map = _infos.get(rank).updated_by_helper;
+        return std::accumulate(
+          helper_map.begin(),
+          helper_map.end(),
+          static_cast<std::intmax_t>(0),
+          [](const auto s, const auto& e) { return s + e.second; });
+    }
+
     /// @brief Returns the number of boards solved by the specified helper.
     /// @see updated_by_helper
+    /// @see solved_count
     template <unsigned S>
     auto solved_by_helper(
       const identifier_t helper_id,
@@ -511,6 +527,20 @@ public:
             return pos->second;
         }
         return 0;
+    }
+
+    /// @brief Returns the number of boards updated by the specified helper.
+    /// @see updated_count
+    /// @see solved_by_helper
+    template <unsigned S>
+    auto solved_count(const unsigned_constant<S> rank) const noexcept
+      -> std::intmax_t {
+        const auto& helper_map = _infos.get(rank).solved_by_helper;
+        return std::accumulate(
+          helper_map.begin(),
+          helper_map.end(),
+          static_cast<std::intmax_t>(0),
+          [](const auto s, const auto& e) { return s + e.second; });
     }
 
     /// @brief Indicates if board with the specified rank is already solved.
