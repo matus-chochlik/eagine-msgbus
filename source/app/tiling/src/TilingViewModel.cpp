@@ -102,7 +102,7 @@ void TilingViewModel::onTilingModelChanged() {
       _backend.getTilingModel(),
       &TilingModel::fragmentAdded,
       this,
-      &TilingViewModel::onTilingChanged);
+      &TilingViewModel::onTilesAdded);
     emit modelReset({});
     emit reinitialized();
     emit progressChanged();
@@ -116,6 +116,11 @@ void TilingViewModel::onTilingReset() {
 //------------------------------------------------------------------------------
 void TilingViewModel::onTilingChanged() {
     emit modelReset({});
+    emit progressChanged();
+}
+//------------------------------------------------------------------------------
+void TilingViewModel::onTilesAdded(int rmin, int cmin, int rmax, int cmax) {
+    emit dataChanged(createIndex(rmin, cmin), createIndex(rmax + 1, cmax + 1));
     emit progressChanged();
 }
 //------------------------------------------------------------------------------

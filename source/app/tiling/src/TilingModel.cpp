@@ -49,7 +49,7 @@ void TilingModel::reinitialize(int w, int h) {
     }
     zero(eagine::cover(_cellCache));
     _resetCount++;
-    _progress = -1.F;
+    _cellsDone = 0;
 
     _tiling.reinitialize(
       {_width, _height},
@@ -78,8 +78,8 @@ auto TilingModel::getResetCount() const noexcept -> QVariant {
 }
 //------------------------------------------------------------------------------
 auto TilingModel::getProgress() const noexcept -> QVariant {
-    if(_progress >= 0.F) {
-        return {_progress};
+    if(const auto total = _cellCache.size()) {
+        return {float(_cellsDone) / float(total)};
     }
     return {};
 }
@@ -115,22 +115,24 @@ void TilingModel::onFragmentAdded(
     _backend.onHelperContributed(helperId);
 
     const auto fragment = tiles.get_fragment(fragCoord);
+    int rmin = _width, rmax = 0;
+    int cmin = _height, cmax = 0;
     fragment.for_each_cell(
-      [this](const auto& coord, const auto& offs, const auto& glyph) {
+      [&](const auto& coord, const auto& offs, const auto& glyph) {
           if(auto glyphStr{_traits_4.to_string(glyph)}) {
               const auto column = std::get<0>(coord) + std::get<0>(offs);
               const auto row = std::get<1>(coord) + std::get<1>(offs);
               const auto k = eagine::std_size(row * _width + column);
-              _cellCache[k] = extract(glyphStr).front();
+              if(_cellCache[k] == '\0') {
+                  _cellCache[k] = extract(glyphStr).front();
+                  ++_cellsDone;
+                  rmin = std::min(rmin, row);
+                  rmax = std::max(rmax, row);
+                  cmin = std::min(cmin, column);
+                  cmax = std::max(cmax, column);
+              }
           }
       });
-    if(const auto total = _cellCache.size()) {
-        const auto todo =
-          std::count(_cellCache.begin(), _cellCache.end(), '\0');
-        _progress = {float(total - todo) / float(total)};
-    } else {
-        _progress = -1.F;
-    }
-    emit fragmentAdded();
+    emit fragmentAdded(rmin, cmin, rmax, cmax);
 }
 //------------------------------------------------------------------------------

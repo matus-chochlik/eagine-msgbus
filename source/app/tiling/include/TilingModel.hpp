@@ -42,7 +42,7 @@ public:
 
 signals:
     void reinitialized();
-    void fragmentAdded();
+    void fragmentAdded(int rmin, int cmin, int rmax, int cmax);
 
 private:
     TilingBackend& _backend;
@@ -65,7 +65,7 @@ private:
     int _width{0};
     int _height{0};
     int _resetCount{0};
-    float _progress{-1.F};
+    std::size_t _cellsDone{0U};
 };
 //------------------------------------------------------------------------------
 #endif

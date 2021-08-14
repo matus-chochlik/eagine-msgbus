@@ -40,6 +40,7 @@ private slots:
     void onTilingModelChanged();
     void onTilingReset();
     void onTilingChanged();
+    void onTilesAdded(int rmin, int cmin, int rmax, int cmax);
 
 private:
     TilingBackend& _backend;
