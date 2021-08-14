@@ -462,13 +462,14 @@ protected:
 
                         block_data_sink sink(cover(_buffer));
                         default_serializer_backend backend(sink);
-                        auto errors = serialize_message(
+                        const auto errors = serialize_message(
                           EAGINE_MSGBUS_ID(pmqConnect),
                           message_view(_data_queue.get_name()),
                           backend);
                         if(EAGINE_LIKELY(!errors)) {
                             connect_queue.send(1, as_chars(sink.done()));
                             _buffer.resize(_data_queue.data_size());
+                            something_done();
                         } else {
                             log_error("failed to serialize connection name")
                               .arg(EAGINE_ID(client), _data_queue.get_name())
@@ -479,7 +480,6 @@ protected:
                           .arg(EAGINE_ID(server), connect_queue.get_name());
                     }
                     _reconnect_timeout.reset();
-                    something_done();
                 }
             }
         }
@@ -583,9 +583,10 @@ private:
         if(!_connect_queue.is_usable()) {
             if(_reconnect_timeout) {
                 _connect_queue.close();
-                _connect_queue.open();
+                if(!_connect_queue.open().had_error()) {
+                    something_done();
+                }
                 _reconnect_timeout.reset();
-                something_done();
             }
         }
         something_done(posix_mqueue_connection::_checkup(_connect_queue));
@@ -690,7 +691,7 @@ private:
             while(_accept_queue.receive(
               as_chars(cover(_buffer)),
               EAGINE_THIS_MEM_FUNC_REF(_handle_receive))) {
-                // something_done();
+                something_done();
             }
         }
         return something_done;
