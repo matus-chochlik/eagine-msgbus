@@ -112,7 +112,9 @@ public:
     auto error_message(const int error_number) const -> std::string {
         if(error_number) {
             char buf[128] = {};
-            ::strerror_r(error_number, static_cast<char*>(buf), sizeof(buf));
+            const auto unused =
+              ::strerror_r(error_number, static_cast<char*>(buf), sizeof(buf));
+            EAGINE_MAYBE_UNUSED(unused);
             return {static_cast<const char*>(buf)};
         }
         return {};
