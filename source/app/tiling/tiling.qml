@@ -166,6 +166,12 @@ ApplicationWindow {
 					}
 				}
 			}
+			Label {
+				Layout.preferredWidth: 65
+				Layout.preferredHeight: 25
+
+				text: Format.percentStr(backend.tiling.progress)
+			}
 		}
     }
 
