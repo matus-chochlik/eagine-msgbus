@@ -1,4 +1,4 @@
-/// @example eagine/sslplus/001_list_engines.cpp
+/// @example eagine/msgbus/001_log_certs.cpp
 ///
 /// Copyright Matus Chochlik.
 /// Distributed under the Boost Software License, Version 1.0.
