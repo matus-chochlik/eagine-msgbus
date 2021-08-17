@@ -1,0 +1,2 @@
+eagine_msgbus_name="$<TARGET_FILE_NAME:eagine-msgbus>"
+eagine_msgbus_path="$<TARGET_FILE:eagine-msgbus>"
