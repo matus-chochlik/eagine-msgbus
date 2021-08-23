@@ -236,7 +236,7 @@ private:
 //------------------------------------------------------------------------------
 } // namespace eagine::msgbus
 
-#if !EAGINE_MSGBUS_LIBRARY || defined(EAGINE_IMPLEMENTING_LIBRARY)
+#if !EAGINE_MSGBUS_LIBRARY || defined(EAGINE_IMPLEMENTING_MSGBUS_LIBRARY)
 #include <eagine/msgbus/blobs.inl>
 #endif
 #endif // EAGINE_MSGBUS_BLOBS_HPP
