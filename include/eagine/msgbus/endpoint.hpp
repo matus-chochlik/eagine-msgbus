@@ -609,7 +609,7 @@ protected:
 //------------------------------------------------------------------------------
 } // namespace eagine::msgbus
 
-#if !EAGINE_MSGBUS_LIBRARY || defined(EAGINE_IMPLEMENTING_LIBRARY)
+#if !EAGINE_MSGBUS_LIBRARY || defined(EAGINE_IMPLEMENTING_MSGBUS_LIBRARY)
 #include <eagine/msgbus/endpoint.inl>
 #endif
 

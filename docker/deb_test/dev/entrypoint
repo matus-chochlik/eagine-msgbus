@@ -1,0 +1,10 @@
+#!/bin/sh
+apt --yes install /tmp/eagine-core-dev.deb /tmp/eagine-sslplus-dev.deb /tmp/eagine-msgbus-dev.deb
+mkdir -p /tmp/eagine/_build
+cd /tmp/eagine/_build
+cmake /tmp/eagine
+VERBOSE=1 cmake --build /tmp/eagine/_build
+ls -la /usr/lib/x86_64-linux-gnu/eagine/
+for e in /tmp/eagine/_build/example/eagine-*
+do ${e} --use-null-log
+done

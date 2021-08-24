@@ -60,7 +60,7 @@ auto endpoint_certificate_pem(main_ctx& ctx) -> memory::const_block;
 //------------------------------------------------------------------------------
 } // namespace eagine::msgbus
 
-#if !EAGINE_MSGBUS_LIBRARY || defined(EAGINE_IMPLEMENTING_LIBRARY)
+#if !EAGINE_MSGBUS_LIBRARY || defined(EAGINE_IMPLEMENTING_MSGBUS_LIBRARY)
 #include <eagine/msgbus/resources.inl>
 #endif
 

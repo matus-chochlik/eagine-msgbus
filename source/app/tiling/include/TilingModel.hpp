@@ -33,11 +33,16 @@ public:
     auto getCellChar(int row, int column) const noexcept -> char;
     auto getCell(int row, int column) const noexcept -> QVariant;
 
+    auto getResetCount() const noexcept -> QVariant;
     auto getProgress() const noexcept -> QVariant;
+    auto getUpdatedByHelper(eagine::identifier_t helperId) const noexcept
+      -> qlonglong;
+    auto getSolvedByHelper(eagine::identifier_t helperId) const noexcept
+      -> qlonglong;
 
 signals:
     void reinitialized();
-    void fragmentAdded();
+    void fragmentAdded(int rmin, int cmin, int rmax, int cmax);
 
 private:
     TilingBackend& _backend;
@@ -59,7 +64,8 @@ private:
     std::vector<char> _cellCache;
     int _width{0};
     int _height{0};
-    float _progress{-1.F};
+    int _resetCount{0};
+    std::size_t _cellsDone{0U};
 };
 //------------------------------------------------------------------------------
 #endif

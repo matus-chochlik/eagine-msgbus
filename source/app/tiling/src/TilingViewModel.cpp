@@ -29,6 +29,7 @@ TilingViewModel::TilingViewModel(TilingBackend& backend)
 void TilingViewModel::reinitialize(int w, int h) {
     if(auto tilingModel{_backend.getTilingModel()}) {
         extract(tilingModel).reinitialize(w, h);
+        emit reinitialized();
     }
 }
 //------------------------------------------------------------------------------
@@ -77,6 +78,13 @@ auto TilingViewModel::roleNames() const -> QHash<int, QByteArray> {
     return {{Qt::DisplayRole, "tile"}};
 }
 //------------------------------------------------------------------------------
+auto TilingViewModel::getResetCount() const -> QVariant {
+    if(auto tilingModel{_backend.getTilingModel()}) {
+        return extract(tilingModel).getResetCount();
+    }
+    return {};
+}
+//------------------------------------------------------------------------------
 auto TilingViewModel::getProgress() const -> QVariant {
     if(auto tilingModel{_backend.getTilingModel()}) {
         return extract(tilingModel).getProgress();
@@ -89,18 +97,30 @@ void TilingViewModel::onTilingModelChanged() {
       _backend.getTilingModel(),
       &TilingModel::reinitialized,
       this,
-      &TilingViewModel::onTilingChanged);
+      &TilingViewModel::onTilingReset);
     connect(
       _backend.getTilingModel(),
       &TilingModel::fragmentAdded,
       this,
-      &TilingViewModel::onTilingChanged);
+      &TilingViewModel::onTilesAdded);
     emit modelReset({});
+    emit reinitialized();
+    emit progressChanged();
+}
+//------------------------------------------------------------------------------
+void TilingViewModel::onTilingReset() {
+    emit modelReset({});
+    emit reinitialized();
     emit progressChanged();
 }
 //------------------------------------------------------------------------------
 void TilingViewModel::onTilingChanged() {
     emit modelReset({});
+    emit progressChanged();
+}
+//------------------------------------------------------------------------------
+void TilingViewModel::onTilesAdded(int rmin, int cmin, int rmax, int cmax) {
+    emit dataChanged(createIndex(rmin, cmin), createIndex(rmax + 1, cmax + 1));
     emit progressChanged();
 }
 //------------------------------------------------------------------------------

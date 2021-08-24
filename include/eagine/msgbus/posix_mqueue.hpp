@@ -23,6 +23,7 @@
 #include <mqueue.h>
 #include <mutex>
 #include <random>
+#include <sys/resource.h>
 #include <sys/stat.h>
 
 namespace eagine::msgbus {
@@ -111,10 +112,9 @@ public:
     auto error_message(const int error_number) const -> std::string {
         if(error_number) {
             char buf[128] = {};
-            ::strerror_r(
-              error_number,
-              static_cast<char*>(buf),
-              sizeof(buf))[sizeof(buf) - 1U] = '\0';
+            const auto unused =
+              ::strerror_r(error_number, static_cast<char*>(buf), sizeof(buf));
+            EAGINE_MAYBE_UNUSED(unused);
             return {static_cast<const char*>(buf)};
         }
         return {};
@@ -177,6 +177,10 @@ public:
         log_debug("creating new message queue ${name}")
           .arg(EAGINE_ID(name), get_name());
 
+        struct ::mq_attr attr {};
+        zero(as_bytes(cover_one(attr)));
+        attr.mq_maxmsg = limit_cast<long>(8);
+        attr.mq_msgsize = limit_cast<long>(default_data_size());
         errno = 0;
         // NOLINTNEXTLINE(hicpp-vararg)
         _ihandle = ::mq_open(
@@ -185,7 +189,7 @@ public:
           O_RDONLY | O_CREAT | O_EXCL | O_NONBLOCK,
           // NOLINTNEXTLINE(hicpp-signed-bitwise)
           S_IRUSR | S_IWUSR,
-          nullptr);
+          &attr);
         _last_errno = errno;
         if(_last_errno == 0) {
             // NOLINTNEXTLINE(hicpp-vararg)
@@ -195,7 +199,7 @@ public:
               O_WRONLY | O_CREAT | O_EXCL | O_NONBLOCK,
               // NOLINTNEXTLINE(hicpp-signed-bitwise)
               S_IRUSR | S_IWUSR,
-              nullptr);
+              &attr);
             _last_errno = errno;
         }
         if(_last_errno) {
@@ -264,7 +268,7 @@ public:
     }
 
     constexpr static auto default_data_size() noexcept -> span_size_t {
-        return 8 * 1024;
+        return 2 * 1024;
     }
 
     /// @brief Returns the absolute maximum block size that can be sent in a message.
@@ -307,7 +311,7 @@ public:
 
     /// @brief Receives messages and calls the specified handler on them.
     auto receive(memory::span<char> blk, const receive_handler handler)
-      -> auto& {
+      -> bool {
         if(is_open()) {
             unsigned priority{0U};
             errno = 0;
@@ -316,6 +320,7 @@ public:
             _last_errno = errno;
             if(received > 0) {
                 handler(priority, head(blk, received));
+                return true;
             } else if(EAGINE_UNLIKELY(
                         (_last_errno != 0) && (_last_errno != EAGAIN) &&
                         (_last_errno != ETIMEDOUT))) {
@@ -324,7 +329,7 @@ public:
                   .arg(EAGINE_ID(errno), _last_errno);
             }
         }
-        return *this;
+        return false;
     }
 
 private:
@@ -414,15 +419,17 @@ public:
 
     auto send(const message_id msg_id, const message_view& message)
       -> bool final {
-        std::unique_lock lock{_mutex};
-        block_data_sink sink(cover(_buffer));
-        default_serializer_backend backend(sink);
-        auto errors = serialize_message(msg_id, message, backend);
-        if(!errors) {
-            _outgoing.push(sink.done());
-            return true;
-        } else {
-            log_error("failed to serialize message");
+        if(EAGINE_LIKELY(is_usable())) {
+            block_data_sink sink(cover(_buffer));
+            default_serializer_backend backend(sink);
+            auto errors = serialize_message(msg_id, message, backend);
+            if(!errors) {
+                std::unique_lock lock{_mutex};
+                _outgoing.push(sink.done());
+                return true;
+            } else {
+                log_error("failed to serialize message");
+            }
         }
         return false;
     }
@@ -457,13 +464,14 @@ protected:
 
                         block_data_sink sink(cover(_buffer));
                         default_serializer_backend backend(sink);
-                        auto errors = serialize_message(
+                        const auto errors = serialize_message(
                           EAGINE_MSGBUS_ID(pmqConnect),
                           message_view(_data_queue.get_name()),
                           backend);
                         if(EAGINE_LIKELY(!errors)) {
                             connect_queue.send(1, as_chars(sink.done()));
                             _buffer.resize(_data_queue.data_size());
+                            something_done();
                         } else {
                             log_error("failed to serialize connection name")
                               .arg(EAGINE_ID(client), _data_queue.get_name())
@@ -474,7 +482,6 @@ protected:
                           .arg(EAGINE_ID(server), connect_queue.get_name());
                     }
                     _reconnect_timeout.reset();
-                    something_done();
                 }
             }
         }
@@ -484,12 +491,10 @@ protected:
     auto _receive() -> work_done {
         some_true something_done{};
         if(_data_queue.is_usable()) {
-            while(!_data_queue
-                     .receive(
-                       as_chars(cover(_buffer)),
-                       posix_mqueue::receive_handler(
-                         EAGINE_THIS_MEM_FUNC_REF(_handle_receive)))
-                     .had_error()) {
+            while(_data_queue.receive(
+              as_chars(cover(_buffer)),
+              posix_mqueue::receive_handler(
+                EAGINE_THIS_MEM_FUNC_REF(_handle_receive)))) {
                 something_done();
             }
         }
@@ -578,15 +583,20 @@ private:
     auto _checkup() -> work_done {
         some_true something_done{};
         if(!_connect_queue.is_usable()) {
-            _connect_queue.close();
-            _connect_queue.open();
-            something_done();
+            if(_reconnect_timeout) {
+                _connect_queue.close();
+                if(!_connect_queue.open().had_error()) {
+                    something_done();
+                }
+                _reconnect_timeout.reset();
+            }
         }
         something_done(posix_mqueue_connection::_checkup(_connect_queue));
         return something_done;
     }
 
     posix_mqueue _connect_queue{*this};
+    timeout _reconnect_timeout{std::chrono::seconds{2}, nothing};
 };
 //------------------------------------------------------------------------------
 /// @brief Implementation of acceptor on top of POSIX message queues.
@@ -669,9 +679,9 @@ private:
                 _accept_queue.unlink();
                 if(!_accept_queue.create().had_error()) {
                     _buffer.resize(_accept_queue.data_size());
+                    something_done();
                 }
                 _reconnect_timeout.reset();
-                something_done();
             }
         }
         return something_done;
@@ -680,11 +690,9 @@ private:
     auto _receive() -> work_done {
         some_true something_done{};
         if(_accept_queue.is_usable()) {
-            while(!_accept_queue
-                     .receive(
-                       as_chars(cover(_buffer)),
-                       EAGINE_THIS_MEM_FUNC_REF(_handle_receive))
-                     .had_error()) {
+            while(_accept_queue.receive(
+              as_chars(cover(_buffer)),
+              EAGINE_THIS_MEM_FUNC_REF(_handle_receive))) {
                 something_done();
             }
         }
@@ -724,7 +732,9 @@ class posix_mqueue_connection_factory
 public:
     /// @brief Construction from parent main context object.
     posix_mqueue_connection_factory(main_ctx_parent parent)
-      : main_ctx_object{EAGINE_ID(MQueConnFc), parent} {}
+      : main_ctx_object{EAGINE_ID(MQueConnFc), parent} {
+        _increase_res_limit();
+    }
 
     using connection_factory::make_acceptor;
     using connection_factory::make_connector;
@@ -746,6 +756,15 @@ public:
 private:
     std::shared_ptr<posix_mqueue_shared_state> _shared_state{
       std::make_shared<posix_mqueue_shared_state>()};
+
+    void _increase_res_limit() {
+        struct rlimit rlim {};
+        zero(as_bytes(cover_one(rlim)));
+        rlim.rlim_cur = RLIM_INFINITY;
+        rlim.rlim_max = RLIM_INFINITY;
+        errno = 0;
+        ::setrlimit(RLIMIT_MSGQUEUE, &rlim);
+    }
 };
 //------------------------------------------------------------------------------
 } // namespace eagine::msgbus

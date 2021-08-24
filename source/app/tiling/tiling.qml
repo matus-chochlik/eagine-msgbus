@@ -9,6 +9,7 @@ import QtQuick.Dialogs 1.3
 import QtQuick.Controls.Material 2.4
 import QtQuick.Layouts 1.5
 import "qrc:///views"
+import "qrc:///scripts/Format.js" as Format
 
 ApplicationWindow {
     id: root
@@ -138,25 +139,40 @@ ApplicationWindow {
             
         }
 
-        ProgressBar {
-            Layout.fillWidth: true
-            Layout.preferredHeight: 25
+		RowLayout {
+			Label {
+				Layout.preferredWidth: 75
+				Layout.preferredHeight: 25
 
-            property real progress: backend.tiling.progress
-                ? backend.tiling.progress
-                : 0.0
+				text: qsTr("Resets: %1")
+					.arg(Format.integerStr(backend.tiling.resetCount))
+			}
+			ProgressBar {
+				Layout.fillWidth: true
+				Layout.preferredHeight: 25
 
-            from: 0
-            to: 1
-            value: progress
-            indeterminate: !backend.tiling.progress
+				property real progress: backend.tiling.progress
+					? backend.tiling.progress
+					: 0.0
 
-            Behavior on progress {
-                NumberAnimation {
-                    duration: 1000
-                }
-            }
-        }
+				from: 0
+				to: 1
+				value: progress
+				indeterminate: !backend.tiling.progress
+
+				Behavior on progress {
+					NumberAnimation {
+						duration: 1000
+					}
+				}
+			}
+			Label {
+				Layout.preferredWidth: 65
+				Layout.preferredHeight: 25
+
+				text: Format.percentStr(backend.tiling.progress)
+			}
+		}
     }
 
     FileDialog {

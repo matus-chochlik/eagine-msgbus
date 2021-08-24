@@ -1,4 +1,4 @@
-/// @example eagine/msgbus/001_log_certs.cpp
+/// @example eagine/msgbus/log_certs.cpp
 ///
 /// Copyright Matus Chochlik.
 /// Distributed under the Boost Software License, Version 1.0.
