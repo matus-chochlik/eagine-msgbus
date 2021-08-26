@@ -147,7 +147,7 @@ void InstViewModel::onTrackerModelChanged() {
     }
 }
 //------------------------------------------------------------------------------
-void InstViewModel::onInstIdChanged(eagine::identifier_t instId) {
+void InstViewModel::onInstIdChanged(eagine::process_instance_id_t instId) {
     if(instId) {
         if(auto trackerModel{_backend.trackerModel()}) {
             auto& tracker = trackerModel->tracker();

@@ -166,7 +166,7 @@ public:
       const result_context& res_ctx,
       const valid_if_positive<host_id_t>& host_id) {
         if(host_id) {
-            if(host_id != this->bus_node().get_id()) {
+            if(res_ctx.source_id() != this->bus_node().get_id()) {
                 auto& state = _targets[res_ctx.source_id()];
                 state.host_id = extract(host_id);
             }

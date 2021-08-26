@@ -288,13 +288,14 @@ public:
     /// @see get_node
     /// @see get_host
     /// @see get_connection
-    auto get_instance(const host_id_t) -> remote_instance_state&;
+    auto get_instance(const process_instance_id_t) -> remote_instance_state&;
 
     /// @brief Finds and returns the information about a remote instance (process).
     /// @see get_node
     /// @see get_host
     /// @see get_connection
-    auto get_instance(const host_id_t) const -> remote_instance_state;
+    auto get_instance(const process_instance_id_t) const
+      -> remote_instance_state;
 
     /// @brief Finds and returns the information about remote node connections.
     /// @see get_node

@@ -95,7 +95,7 @@ signals:
 
 private slots:
     void onTrackerModelChanged();
-    void onHostIdChanged(eagine::identifier_t hostId);
+    void onHostIdChanged(eagine::host_id_t hostId);
     void onHostInfoChanged(const remote_host& host);
 
 private:

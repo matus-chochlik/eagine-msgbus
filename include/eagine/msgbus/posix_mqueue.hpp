@@ -538,7 +538,7 @@ protected:
 /// @ingroup msgbus
 /// @see posix_mqueue
 /// @see posix_mqueue_acceptor
-class posix_mqueue_connector : public posix_mqueue_connection {
+class posix_mqueue_connector final : public posix_mqueue_connection {
     using base = posix_mqueue_connection;
 
 public:
@@ -596,14 +596,13 @@ private:
     }
 
     posix_mqueue _connect_queue{*this};
-    timeout _reconnect_timeout{std::chrono::seconds{2}, nothing};
 };
 //------------------------------------------------------------------------------
 /// @brief Implementation of acceptor on top of POSIX message queues.
 /// @ingroup msgbus
 /// @see posix_mqueue
 /// @see posix_mqueue_connector
-class posix_mqueue_acceptor
+class posix_mqueue_acceptor final
   : public posix_mqueue_connection_info<acceptor>
   , public main_ctx_object {
 

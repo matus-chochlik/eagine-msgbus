@@ -211,7 +211,7 @@ void HostViewModel::onTrackerModelChanged() {
     }
 }
 //------------------------------------------------------------------------------
-void HostViewModel::onHostIdChanged(eagine::identifier_t hostId) {
+void HostViewModel::onHostIdChanged(eagine::host_id_t hostId) {
     if(hostId) {
         if(auto trackerModel{_backend.trackerModel()}) {
             auto& tracker = trackerModel->tracker();

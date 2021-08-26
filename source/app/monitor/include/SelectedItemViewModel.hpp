@@ -52,15 +52,15 @@ public:
 
 signals:
     void itemSelectionChanged();
-    void hostChanged(eagine::identifier_t);
-    void instChanged(eagine::identifier_t);
+    void hostChanged(eagine::host_id_t);
+    void instChanged(eagine::process_instance_id_t);
     void nodeChanged(eagine::identifier_t);
 
 private slots:
     void onItemInfoChanged();
     void onItemSelected(
-      eagine::identifier_t,
-      eagine::identifier_t,
+      eagine::host_id_t,
+      eagine::process_instance_id_t,
       eagine::identifier_t);
     void onItemUnselected();
 
