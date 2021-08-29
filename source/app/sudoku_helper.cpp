@@ -17,6 +17,7 @@
 #include <eagine/msgbus/service/sudoku.hpp>
 #include <eagine/signal_switch.hpp>
 #include <eagine/watchdog.hpp>
+#include <atomic>
 #include <condition_variable>
 #include <mutex>
 #include <thread>
@@ -90,7 +91,7 @@ auto main(main_ctx& ctx) -> int {
     std::vector<std::thread> helpers;
     helpers.reserve(std_size(helper_count));
 
-    volatile auto remaining = helper_count + 1;
+    std::atomic<span_size_t> remaining = helper_count + 1;
 
     auto helper_main = [&]() {
         std::unique_lock init_lock{helper_mutex};
