@@ -29,6 +29,7 @@ enum class connection_kind : std::uint8_t {
     remote_interprocess = 1U << 2U
 };
 //------------------------------------------------------------------------------
+#if !EAGINE_CXX_REFLECTION
 template <typename Selector>
 constexpr auto enumerator_mapping(
   const type_identity<connection_kind>,
@@ -39,6 +40,7 @@ constexpr auto enumerator_mapping(
        {"local_interprocess", connection_kind::local_interprocess},
        {"remote_interprocess", connection_kind::remote_interprocess}}};
 }
+#endif
 //------------------------------------------------------------------------------
 /// @brief Alias for connection kind bitfield.
 /// @ingroup msgbus

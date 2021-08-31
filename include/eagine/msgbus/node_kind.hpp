@@ -26,6 +26,7 @@ enum class node_kind : std::uint8_t {
     router
 };
 //------------------------------------------------------------------------------
+#if !EAGINE_CXX_REFLECTION
 template <typename Selector>
 constexpr auto enumerator_mapping(
   const type_identity<node_kind>,
@@ -36,6 +37,7 @@ constexpr auto enumerator_mapping(
        {"bridge", node_kind::bridge},
        {"router", node_kind::router}}};
 }
+#endif
 //------------------------------------------------------------------------------
 } // namespace eagine::msgbus
 

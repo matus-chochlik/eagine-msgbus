@@ -31,6 +31,7 @@ enum class verification_bit : std::uint8_t {
     message_content = 1U << 4U
 };
 //------------------------------------------------------------------------------
+#if !EAGINE_CXX_REFLECTION
 template <typename Selector>
 constexpr auto enumerator_mapping(
   const type_identity<verification_bit>,
@@ -42,6 +43,7 @@ constexpr auto enumerator_mapping(
        {"message_id", verification_bit::message_id},
        {"message_content", verification_bit::message_content}}};
 }
+#endif
 //------------------------------------------------------------------------------
 /// @brief Alias for a bus message verification bitfield.
 /// @ingroup msgbus
