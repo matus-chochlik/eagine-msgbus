@@ -37,6 +37,7 @@ enum class connection_addr_kind {
     ipv4
 };
 
+#if !EAGINE_CXX_REFLECTION
 template <typename Selector>
 constexpr auto enumerator_mapping(
   const type_identity<connection_addr_kind>,
@@ -46,6 +47,7 @@ constexpr auto enumerator_mapping(
        {"filepath", connection_addr_kind::filepath},
        {"ipv4", connection_addr_kind::ipv4}}};
 }
+#endif
 
 /// @brief Tag template alias for specifying connection address kind.
 /// @ingroup msgbus
@@ -65,6 +67,7 @@ enum class connection_protocol {
     message
 };
 
+#if !EAGINE_CXX_REFLECTION
 template <typename Selector>
 constexpr auto enumerator_mapping(
   const type_identity<connection_protocol>,
@@ -74,6 +77,7 @@ constexpr auto enumerator_mapping(
        {"datagram", connection_protocol::datagram},
        {"message", connection_protocol::message}}};
 }
+#endif
 
 /// @brief Tag template alias for specifying connection protocol kind.
 /// @ingroup msgbus

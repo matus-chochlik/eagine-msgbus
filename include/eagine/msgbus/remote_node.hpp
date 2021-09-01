@@ -73,6 +73,7 @@ enum class remote_node_change : std::uint16_t {
     connection_info = 1U << 15U
 };
 //------------------------------------------------------------------------------
+#if !EAGINE_CXX_REFLECTION
 template <typename Selector>
 constexpr auto enumerator_mapping(
   const type_identity<remote_node_change>,
@@ -95,6 +96,7 @@ constexpr auto enumerator_mapping(
        {"statistics", remote_node_change::statistics},
        {"connection_info", remote_node_change::connection_info}}};
 }
+#endif
 //------------------------------------------------------------------------------
 /// @brief Class providing and manipulating information about remote node changes.
 /// @ingroup msgbus
@@ -141,6 +143,7 @@ enum class remote_instance_change : std::uint16_t {
     statistics = 1U << 5U
 };
 //------------------------------------------------------------------------------
+#if !EAGINE_CXX_REFLECTION
 template <typename Selector>
 constexpr auto enumerator_mapping(
   const type_identity<remote_instance_change>,
@@ -152,6 +155,7 @@ constexpr auto enumerator_mapping(
        {"application_info", remote_instance_change::application_info},
        {"statistics", remote_instance_change::statistics}}};
 }
+#endif
 //------------------------------------------------------------------------------
 /// @brief Class providing and manipulating information about remote instance changes.
 /// @ingroup msgbus
@@ -192,6 +196,7 @@ enum class remote_host_change : std::uint16_t {
     sensor_values = 1U << 4U
 };
 //------------------------------------------------------------------------------
+#if !EAGINE_CXX_REFLECTION
 template <typename Selector>
 constexpr auto enumerator_mapping(
   const type_identity<remote_host_change>,
@@ -203,6 +208,7 @@ constexpr auto enumerator_mapping(
        {"hardware_config", remote_host_change::hardware_config},
        {"sensor_values", remote_host_change::sensor_values}}};
 }
+#endif
 //------------------------------------------------------------------------------
 /// @brief Class providing and manipulating information about remote host changes.
 /// @ingroup msgbus
@@ -288,13 +294,14 @@ public:
     /// @see get_node
     /// @see get_host
     /// @see get_connection
-    auto get_instance(const host_id_t) -> remote_instance_state&;
+    auto get_instance(const process_instance_id_t) -> remote_instance_state&;
 
     /// @brief Finds and returns the information about a remote instance (process).
     /// @see get_node
     /// @see get_host
     /// @see get_connection
-    auto get_instance(const host_id_t) const -> remote_instance_state;
+    auto get_instance(const process_instance_id_t) const
+      -> remote_instance_state;
 
     /// @brief Finds and returns the information about remote node connections.
     /// @see get_node

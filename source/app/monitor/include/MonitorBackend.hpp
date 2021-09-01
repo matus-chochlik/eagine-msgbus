@@ -15,7 +15,7 @@
 
 class TrackerModel;
 //------------------------------------------------------------------------------
-class MonitorBackend
+class MonitorBackend final
   : public QObject
   , public eagine::main_ctx_object {
     Q_OBJECT

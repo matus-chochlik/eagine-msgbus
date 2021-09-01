@@ -55,8 +55,8 @@ public:
 signals:
     void selectedRowChanged();
     void itemSelected(
-      eagine::identifier_t,
-      eagine::identifier_t,
+      eagine::host_id_t,
+      eagine::process_instance_id_t,
       eagine::identifier_t);
     void itemUnselected();
 
@@ -103,7 +103,7 @@ private:
     struct HostInfo {
         remote_host host;
         std::shared_ptr<HostParameterModel> parameters;
-        eagine::flat_map<eagine::identifier_t, InstanceInfo> instances;
+        eagine::flat_map<eagine::process_instance_id_t, InstanceInfo> instances;
 
         auto count() const noexcept -> int;
         auto subCount() const noexcept -> int;
@@ -112,23 +112,24 @@ private:
     };
 
     struct Data {
-        eagine::flat_map<eagine::identifier_t, HostInfo> hosts;
-        eagine::flat_map<eagine::identifier_t, eagine::identifier_t> node2Inst;
-        eagine::flat_map<eagine::identifier_t, eagine::identifier_t> inst2Host;
+        eagine::flat_map<eagine::host_id_t, HostInfo> hosts;
+        eagine::flat_map<eagine::identifier_t, eagine::process_instance_id_t>
+          node2Inst;
+        eagine::flat_map<eagine::process_instance_id_t, eagine::host_id_t>
+          inst2Host;
 
-        eagine::identifier_t selectedHostId{0U};
-        eagine::identifier_t selectedInstId{0U};
+        eagine::host_id_t selectedHostId{0U};
+        eagine::process_instance_id_t selectedInstId{0U};
         eagine::identifier_t selectedNodeId{0U};
 
         auto totalCount() const noexcept -> int;
 
         template <typename Function>
-        auto forHost(eagine::identifier_t hostId, Function function) const
-          -> bool;
+        auto forHost(eagine::host_id_t hostId, Function function) const -> bool;
 
         template <typename Function>
-        auto forInst(eagine::identifier_t instId, Function function) const
-          -> bool;
+        auto forInst(eagine::process_instance_id_t instId, Function function)
+          const -> bool;
 
         template <typename Function>
         auto forNode(eagine::identifier_t nodeId, Function function) const
@@ -147,8 +148,8 @@ private:
         auto findSelectedRow() const noexcept -> int;
 
         void fixupHierarchy(
-          eagine::identifier_t hostId,
-          eagine::identifier_t instId,
+          eagine::host_id_t hostId,
+          eagine::process_instance_id_t instId,
           eagine::identifier_t nodeId);
 
         auto updateNode(MonitorBackend&, const remote_node&) -> int;
@@ -160,8 +161,8 @@ private:
     int _selectedRow{-1};
 
     void _select(
-      eagine::identifier_t hostId,
-      eagine::identifier_t instId,
+      eagine::host_id_t hostId,
+      eagine::process_instance_id_t instId,
       eagine::identifier_t nodeId);
     void _unselect();
 };

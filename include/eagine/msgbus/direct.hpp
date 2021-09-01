@@ -25,7 +25,7 @@ namespace eagine::msgbus {
 /// @note Implementation detail. Do not use directly.
 ///
 /// Connectors and acceptors sharing the same shared state object are "connected".
-class direct_connection_state : public main_ctx_object {
+class direct_connection_state final : public main_ctx_object {
 public:
     /// @brief Construction from a parent main context object.
     direct_connection_state(main_ctx_parent parent)
@@ -158,7 +158,8 @@ public:
 /// @see direct_server_connection
 /// @see direct_acceptor
 /// @see direct_connection_factory
-class direct_client_connection : public direct_connection_info<connection> {
+class direct_client_connection final
+  : public direct_connection_info<connection> {
 public:
     direct_client_connection(
       std::shared_ptr<direct_connection_address>& address) noexcept

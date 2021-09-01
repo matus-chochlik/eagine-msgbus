@@ -30,6 +30,9 @@ EAGINE_DIAG_OFF(disabled-macro-expansion)
 EAGINE_DIAG_OFF(covered-switch-default)
 EAGINE_DIAG_OFF(zero-as-null-pointer-constant)
 EAGINE_DIAG_OFF(shorten-64-to-32)
+EAGINE_DIAG_OFF(suggest-destructor-override)
+EAGINE_DIAG_OFF(suggest-override)
+EAGINE_DIAG_OFF(shadow)
 EAGINE_DIAG_OFF(deprecated)
 #endif
 
@@ -260,11 +263,11 @@ struct asio_connection_state
                 ? float(total_sent_messages) / float(total_sent_blocks)
                 : 0.F;
             used_per_sec =
-              total_used_size /
+              float(total_used_size) /
               std::chrono::duration<float>(clock_type::now() - send_start_time)
                 .count();
             const auto sent_per_sec =
-              total_sent_size /
+              float(total_sent_size) /
               std::chrono::duration<float>(clock_type::now() - send_start_time)
                 .count();
 

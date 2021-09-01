@@ -309,12 +309,13 @@ public:
     }
 
     /// @brief Returns information about a host with the specified id.
-    auto get_host(const identifier_t id) -> const remote_host& {
+    auto get_host(const host_id_t id) -> const remote_host& {
         return _tracker.get_host(id);
     }
 
     /// @brief Returns information about an instance with the specified id.
-    auto get_instance(const identifier_t id) -> const remote_instance& {
+    auto get_instance(const process_instance_id_t id)
+      -> const remote_instance& {
         return _tracker.get_instance(id);
     }
 
@@ -377,11 +378,12 @@ private:
 
     remote_node_tracker _tracker{};
 
-    auto _get_host(const identifier_t id) -> remote_host_state& {
+    auto _get_host(const host_id_t id) -> remote_host_state& {
         return _tracker.get_host(id);
     }
 
-    auto _get_instance(const identifier_t id) -> remote_instance_state& {
+    auto _get_instance(const process_instance_id_t id)
+      -> remote_instance_state& {
         return _tracker.get_instance(id);
     }
 

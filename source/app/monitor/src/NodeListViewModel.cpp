@@ -93,7 +93,7 @@ auto NodeListViewModel::Data::totalCount() const noexcept -> int {
 //------------------------------------------------------------------------------
 template <typename Function>
 auto NodeListViewModel::Data::forHost(
-  eagine::identifier_t hostId,
+  eagine::host_id_t hostId,
   Function function) const -> bool {
     const auto hostPos = hosts.find(hostId);
     if(hostPos != hosts.end()) {
@@ -106,7 +106,7 @@ auto NodeListViewModel::Data::forHost(
 //------------------------------------------------------------------------------
 template <typename Function>
 auto NodeListViewModel::Data::forInst(
-  eagine::identifier_t instId,
+  eagine::process_instance_id_t instId,
   Function function) const -> bool {
     const auto hostIdPos = inst2Host.find(instId);
     if(hostIdPos != inst2Host.end()) {
@@ -245,8 +245,8 @@ auto NodeListViewModel::Data::findSelectedRow() const noexcept -> int {
 }
 //------------------------------------------------------------------------------
 void NodeListViewModel::Data::fixupHierarchy(
-  eagine::identifier_t hostId,
-  eagine::identifier_t instId,
+  eagine::host_id_t hostId,
+  eagine::process_instance_id_t instId,
   eagine::identifier_t nodeId) {
     for(auto& hostEntry : hosts) {
         auto& hostInfo = hostEntry.second;
@@ -589,8 +589,8 @@ auto NodeListViewModel::roleNames() const -> QHash<int, QByteArray> {
 }
 //------------------------------------------------------------------------------
 void NodeListViewModel::_select(
-  eagine::identifier_t hostId,
-  eagine::identifier_t instId,
+  eagine::host_id_t hostId,
+  eagine::process_instance_id_t instId,
   eagine::identifier_t nodeId) {
     _model.selectedHostId = hostId;
     _model.selectedInstId = instId;
@@ -760,7 +760,8 @@ auto NodeListViewModel::data(const QModelIndex& index, int role) const
     if(role == NodeListViewModel::identifierRole) {
         result = {QString::number(index.internalId())};
     } else if(index.column() == hostItem) {
-        const auto hostId = index.internalId();
+        const auto hostId =
+          eagine::limit_cast<eagine::host_id_t>(index.internalId());
         if(role == NodeListViewModel::itemKindRole) {
             if(hostId) {
                 result = {"Host"};
@@ -779,7 +780,8 @@ auto NodeListViewModel::data(const QModelIndex& index, int role) const
             });
         }
     } else if(index.column() == instItem) {
-        const auto instId = index.internalId();
+        const auto instId =
+          eagine::limit_cast<eagine::process_instance_id_t>(index.internalId());
         if(role == NodeListViewModel::itemKindRole) {
             if(instId) {
                 result = {"Instance"};
@@ -798,7 +800,8 @@ auto NodeListViewModel::data(const QModelIndex& index, int role) const
             });
         }
     } else if(index.column() == nodeItem) {
-        const auto nodeId = index.internalId();
+        const auto nodeId =
+          eagine::limit_cast<eagine::identifier_t>(index.internalId());
         if(!_model.forNode(nodeId, [this, role, &result](auto& info) {
                auto& node = info.node;
                if(role == NodeListViewModel::itemKindRole) {

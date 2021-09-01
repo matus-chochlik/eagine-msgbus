@@ -27,7 +27,7 @@
 namespace eagine {
 namespace msgbus {
 //------------------------------------------------------------------------------
-class fibonacci_server : public actor<3> {
+class fibonacci_server final : public actor<3> {
 public:
     using this_class = fibonacci_server;
     using base = actor<3>;

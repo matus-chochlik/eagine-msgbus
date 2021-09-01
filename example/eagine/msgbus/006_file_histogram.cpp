@@ -47,7 +47,7 @@ public:
               for(const auto i : integer_range(std_size(256))) {
                   if(_byte_counts[i]) {
                       backend.add_float(
-                        byte_to_identifier(i),
+                        byte_to_identifier(byte(i)),
                         EAGINE_ID(Histogram),
                         float(0),
                         float(_byte_counts[i]),

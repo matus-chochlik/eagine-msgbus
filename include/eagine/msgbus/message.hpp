@@ -93,6 +93,7 @@ static inline auto operator<(
     return U(l) < U(r);
 }
 //------------------------------------------------------------------------------
+#if !EAGINE_CXX_REFLECTION
 template <typename Selector>
 constexpr auto enumerator_mapping(
   const type_identity<message_priority>,
@@ -104,6 +105,7 @@ constexpr auto enumerator_mapping(
        {"low", message_priority::low},
        {"idle", message_priority::idle}}};
 }
+#endif
 //------------------------------------------------------------------------------
 /// @brief Message cryptography-related flag bits enumeration.
 /// @ingroup msgbus
@@ -120,6 +122,7 @@ enum class message_crypto_flag : std::uint8_t {
 /// @ingroup msgbus
 using message_crypto_flags = bitfield<message_crypto_flag>;
 //------------------------------------------------------------------------------
+#if !EAGINE_CXX_REFLECTION
 template <typename Selector>
 constexpr auto enumerator_mapping(
   const type_identity<message_crypto_flag>,
@@ -129,6 +132,7 @@ constexpr auto enumerator_mapping(
        {"signed_header", message_crypto_flag::signed_header},
        {"signed_content", message_crypto_flag::signed_content}}};
 }
+#endif
 //------------------------------------------------------------------------------
 /// @brief Structure storing information about a sigle message bus message
 /// @ingroup msgbus

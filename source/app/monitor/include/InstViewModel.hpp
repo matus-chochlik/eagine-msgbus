@@ -70,7 +70,7 @@ signals:
 
 private slots:
     void onTrackerModelChanged();
-    void onInstIdChanged(eagine::identifier_t instId);
+    void onInstIdChanged(eagine::process_instance_id_t instId);
     void onInstInfoChanged(const remote_inst& inst);
 
 private:

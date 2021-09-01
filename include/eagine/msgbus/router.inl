@@ -733,23 +733,25 @@ auto router::_update_stats() -> work_done {
         _stats.message_age_us = avg_msg_age_us;
 
         const bool flow_info_changed =
-          _flow_info.avg_msg_age_ms != avg_msg_age_ms;
+          _flow_info.avg_msg_age_ms != limit_cast<std::int16_t>(avg_msg_age_ms);
         _flow_info.avg_msg_age_ms = limit_cast<std::int16_t>(avg_msg_age_ms);
 
         if(EAGINE_UNLIKELY(flow_info_changed)) {
-            auto send_info = [&](identifier_t remote_id, const auto& conn) {
-                auto buf{default_serialize_buffer_for(_flow_info)};
-                if(auto serialized{default_serialize(_flow_info, cover(buf))}) {
-                    message_view response{extract(serialized)};
-                    response.set_source_id(_id_base);
-                    response.set_target_id(remote_id);
-                    response.set_priority(message_priority::high);
-                    conn->send(EAGINE_MSGBUS_ID(msgFlowInf), response);
-                    something_done();
-                }
-            };
+            const auto send_info =
+              [&](const identifier_t remote_id, const auto& conn) {
+                  auto buf{default_serialize_buffer_for(_flow_info)};
+                  if(const auto serialized{
+                       default_serialize(_flow_info, cover(buf))}) {
+                      message_view response{extract(serialized)};
+                      response.set_source_id(_id_base);
+                      response.set_target_id(remote_id);
+                      response.set_priority(message_priority::high);
+                      conn->send(EAGINE_MSGBUS_ID(msgFlowInf), response);
+                      something_done();
+                  }
+              };
 
-            for(auto& [nd_id, nd] : this->_nodes) {
+            for(const auto& [nd_id, nd] : this->_nodes) {
                 send_info(nd_id, nd.the_connection);
             }
         }
@@ -853,7 +855,6 @@ auto router::_handle_special_common(
     } else if(msg_id.has_method(EAGINE_ID(statsQuery))) {
         return _handle_stats_query(message);
     } else if(
-      msg_id.has_method(EAGINE_ID(msgFlowInf)) ||
       msg_id.has_method(EAGINE_ID(topoRutrCn)) ||
       msg_id.has_method(EAGINE_ID(topoBrdgCn)) ||
       msg_id.has_method(EAGINE_ID(topoEndpt)) ||
@@ -862,7 +863,9 @@ auto router::_handle_special_common(
       msg_id.has_method(EAGINE_ID(statsEndpt)) ||
       msg_id.has_method(EAGINE_ID(statsConn))) {
         return should_be_forwarded;
-    } else if(msg_id.has_method(EAGINE_ID(annEndptId))) {
+    } else if(
+      msg_id.has_method(EAGINE_ID(msgFlowInf)) ||
+      msg_id.has_method(EAGINE_ID(annEndptId))) {
         return was_handled;
     } else {
         log_warning("unhandled special message ${message} from ${source}")

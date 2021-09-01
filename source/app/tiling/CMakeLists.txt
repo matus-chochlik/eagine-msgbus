@@ -33,6 +33,10 @@ add_executable(
 
 eagine_add_exe_analysis(eagine-msgbus-tiling)
 
+target_compile_options(
+	eagine-msgbus-tiling
+	PRIVATE $<$<BOOL:${EAGINE_CLANGXX_COMPILER}>:-Wno-extra-semi-stmt;-Wno-redundant-parens>
+)
 target_include_directories(
 	eagine-msgbus-tiling
 	PRIVATE

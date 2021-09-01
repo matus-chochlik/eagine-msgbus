@@ -102,8 +102,8 @@ void SelectedItemViewModel::onItemInfoChanged() {
 }
 //------------------------------------------------------------------------------
 void SelectedItemViewModel::onItemSelected(
-  eagine::identifier_t hostId,
-  eagine::identifier_t instId,
+  eagine::host_id_t hostId,
+  eagine::process_instance_id_t instId,
   eagine::identifier_t nodeId) {
     _itemSelected = true;
     emit hostChanged(hostId);

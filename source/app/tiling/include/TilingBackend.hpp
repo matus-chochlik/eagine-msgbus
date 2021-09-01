@@ -17,7 +17,7 @@
 
 class TilingModel;
 //------------------------------------------------------------------------------
-class TilingBackend
+class TilingBackend final
   : public QObject
   , public eagine::main_ctx_object {
     Q_OBJECT
