@@ -36,6 +36,7 @@ signals:
 
 private:
     void timerEvent(QTimerEvent*) final;
+    void addInterval();
 
     int _timerId{0};
     std::chrono::steady_clock::time_point _previousSolutionTime{

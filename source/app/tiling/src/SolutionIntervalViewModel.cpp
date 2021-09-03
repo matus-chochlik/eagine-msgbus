@@ -23,12 +23,7 @@ SolutionIntervalViewModel::~SolutionIntervalViewModel() {
     killTimer(_timerId);
 }
 //------------------------------------------------------------------------------
-void SolutionIntervalViewModel::tilingReset() {
-    _previousSolutionTime = std::chrono::steady_clock::now();
-    _maxInterval = std::chrono::duration<float>{1.F};
-}
-//------------------------------------------------------------------------------
-void SolutionIntervalViewModel::helperContributed(eagine::identifier_t) {
+void SolutionIntervalViewModel::addInterval() {
     const auto now = std::chrono::steady_clock::now();
     _intervals.assign(now - _previousSolutionTime);
     _previousSolutionTime = now;
@@ -39,6 +34,14 @@ void SolutionIntervalViewModel::helperContributed(eagine::identifier_t) {
         _intervalList.append(interval.count());
     }
     _intervalList.append(0.F);
+}
+//------------------------------------------------------------------------------
+void SolutionIntervalViewModel::tilingReset() {
+    addInterval();
+}
+//------------------------------------------------------------------------------
+void SolutionIntervalViewModel::helperContributed(eagine::identifier_t) {
+    addInterval();
     emit dataChanged();
 }
 //------------------------------------------------------------------------------

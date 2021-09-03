@@ -35,7 +35,7 @@ ChartView {
 
 	Behavior on axisYMax {
 		NumberAnimation {
-			duration: 2000
+			duration: 500
 			easing.type: Easing.InOutBack
 			easing.overshoot: 0
 		}
