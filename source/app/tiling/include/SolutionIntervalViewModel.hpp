@@ -24,20 +24,25 @@ class SolutionIntervalViewModel
     Q_PROPERTY(qreal maxInterval READ getMaxInterval NOTIFY dataChanged)
 public:
     SolutionIntervalViewModel(eagine::main_ctx_parent);
+    ~SolutionIntervalViewModel() final;
 
     void tilingReset();
     void helperContributed(eagine::identifier_t helperId);
 
-    auto getIntervals() const -> QVariantList;
+    auto getIntervals() const -> const QVariantList&;
     auto getMaxInterval() const -> qreal;
 signals:
     void dataChanged();
 
 private:
+    void timerEvent(QTimerEvent*) final;
+
+    int _timerId{0};
     std::chrono::steady_clock::time_point _previousSolutionTime{
       std::chrono::steady_clock::now()};
-    eagine::variable_with_history<std::chrono::duration<float>, 128> _intervals;
     std::chrono::duration<float> _maxInterval{1.F};
+    eagine::variable_with_history<std::chrono::duration<float>, 128> _intervals;
+    QVariantList _intervalList;
 };
 //------------------------------------------------------------------------------
 #endif
