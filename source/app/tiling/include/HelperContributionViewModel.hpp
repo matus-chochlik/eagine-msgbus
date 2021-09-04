@@ -16,7 +16,7 @@
 
 class TilingBackend;
 //------------------------------------------------------------------------------
-class HelperContributionViewModel
+class HelperContributionViewModel final
   : public QObject
   , public eagine::main_ctx_object {
     Q_OBJECT

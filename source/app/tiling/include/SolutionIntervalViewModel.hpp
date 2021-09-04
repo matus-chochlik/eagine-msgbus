@@ -15,7 +15,7 @@
 #include <tuple>
 
 //------------------------------------------------------------------------------
-class SolutionIntervalViewModel
+class SolutionIntervalViewModel final
   : public QObject
   , public eagine::main_ctx_object {
     Q_OBJECT
