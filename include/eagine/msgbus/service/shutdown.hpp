@@ -42,15 +42,16 @@ public:
 protected:
     using Base::Base;
 
-    void add_methods() {
+    void add_methods() noexcept {
         Base::add_methods();
         Base::add_method(
           this, EAGINE_MSG_MAP(Shutdown, shutdown, This, _handle_shutdown));
     }
 
 private:
-    auto _handle_shutdown(const message_context&, const stored_message& message)
-      -> bool {
+    auto _handle_shutdown(
+      const message_context&,
+      const stored_message& message) noexcept -> bool {
         typename shutdown_service_duration::rep count{0};
         if(default_deserialize(count, message.content())) {
             const shutdown_service_duration ticks{count};
@@ -78,7 +79,7 @@ class shutdown_invoker
 
 public:
     /// @brief Sends shutdown request to the specified target endpoint.
-    void shutdown_one(const identifier_t target_id) {
+    void shutdown_one(const identifier_t target_id) noexcept {
         std::array<byte, 32> temp{};
         const auto ts{this->now()};
         const auto ticks{std::chrono::duration_cast<shutdown_service_duration>(

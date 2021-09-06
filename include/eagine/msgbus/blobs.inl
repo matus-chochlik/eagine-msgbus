@@ -21,7 +21,7 @@ public:
         zero(cover(_buf));
     }
 
-    buffer_blob_io(memory::buffer buf, memory::const_block src)
+    buffer_blob_io(memory::buffer buf, memory::const_block src) noexcept
       : _buf{std::move(buf)} {
         copy(src, cover(_buf));
     }
@@ -308,7 +308,7 @@ EAGINE_LIB_FUNC
 auto blob_manipulator::_make_io(
   const message_id,
   const span_size_t total_size,
-  blob_manipulator&) -> std::unique_ptr<blob_io> {
+  blob_manipulator&) noexcept -> std::unique_ptr<blob_io> {
     return make_io(total_size);
 }
 //------------------------------------------------------------------------------

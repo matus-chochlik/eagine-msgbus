@@ -242,7 +242,7 @@ protected:
           EAGINE_THIS_MEM_FUNC_REF(_handle_stream_relay_reset));
     }
 
-    void add_methods() {
+    void add_methods() noexcept {
         base::add_methods();
 
         base::add_method(
@@ -298,7 +298,7 @@ private:
 
     auto _handle_start_send_data(
       const message_context&,
-      const stored_message& message) -> bool {
+      const stored_message& message) noexcept -> bool {
         identifier_t stream_id{0};
         if(default_deserialize(stream_id, message.content())) {
             const auto pos = _streams.find(stream_id);
@@ -313,7 +313,7 @@ private:
 
     auto _handle_stop_send_data(
       const message_context&,
-      const stored_message& message) -> bool {
+      const stored_message& message) noexcept -> bool {
         identifier_t stream_id{0};
         if(default_deserialize(stream_id, message.content())) {
             const auto pos = _streams.find(stream_id);
@@ -431,7 +431,7 @@ private:
 
     auto _handle_stream_appeared(
       const message_context&,
-      const stored_message& message) -> bool {
+      const stored_message& message) noexcept -> bool {
         stream_info info{};
         if(default_deserialize(info, message.content())) {
             stream_appeared(
@@ -442,7 +442,7 @@ private:
 
     auto _handle_stream_disappeared(
       const message_context&,
-      const stored_message& message) -> bool {
+      const stored_message& message) noexcept -> bool {
         stream_info info{};
         if(default_deserialize(info, message.content())) {
             stream_disappeared(
@@ -534,7 +534,7 @@ private:
 
     auto _handle_stream_announce(
       const message_context&,
-      const stored_message& message) -> bool {
+      const stored_message& message) noexcept -> bool {
         stream_info info{};
         if(default_deserialize(info, message.content())) {
             const stream_key_t key{message.source_id, info.id};
@@ -585,7 +585,7 @@ private:
 
     auto _handle_stream_retract(
       const message_context&,
-      const stored_message& message) -> bool {
+      const stored_message& message) noexcept -> bool {
         identifier_t stream_id{0};
         if(default_deserialize(stream_id, message.content())) {
             const auto pos = _streams.find({message.source_id, stream_id});
@@ -614,13 +614,15 @@ private:
         stream_retracted(provider_id, stream.info, verified);
     }
 
-    auto _handle_start_forward(const message_context&, const stored_message&)
-      -> bool {
+    auto _handle_start_forward(
+      const message_context&,
+      const stored_message&) noexcept -> bool {
         return true;
     }
 
-    auto _handle_stop_forward(const message_context&, const stored_message&)
-      -> bool {
+    auto _handle_stop_forward(
+      const message_context&,
+      const stored_message&) noexcept -> bool {
         return true;
     }
 

@@ -60,7 +60,7 @@ public:
 protected:
     using Base::Base;
 
-    void add_methods() {
+    void add_methods() noexcept {
         Base::add_methods();
         Base::add_method(
           this, EAGINE_MSG_MAP(eagiMsgBus, stillAlive, This, _handle_alive));
@@ -76,8 +76,9 @@ protected:
     }
 
 private:
-    auto _handle_alive(const message_context&, const stored_message& message)
-      -> bool {
+    auto _handle_alive(
+      const message_context&,
+      const stored_message& message) noexcept -> bool {
         subscriber_info info{};
         info.endpoint_id = message.source_id;
         info.instance_id = message.sequence_no;
@@ -88,7 +89,7 @@ private:
 
     auto _handle_subscribed(
       const message_context&,
-      const stored_message& message) -> bool {
+      const stored_message& message) noexcept -> bool {
         message_id sub_msg_id{};
         if(default_deserialize_message_type(sub_msg_id, message.content())) {
             subscriber_info info{};
@@ -102,7 +103,7 @@ private:
 
     auto _handle_unsubscribed(
       const message_context&,
-      const stored_message& message) -> bool {
+      const stored_message& message) noexcept -> bool {
         message_id sub_msg_id{};
         if(default_deserialize_message_type(sub_msg_id, message.content())) {
             subscriber_info info{};
@@ -116,7 +117,7 @@ private:
 
     auto _handle_not_subscribed(
       const message_context&,
-      const stored_message& message) -> bool {
+      const stored_message& message) noexcept -> bool {
         message_id sub_msg_id{};
         if(default_deserialize_message_type(sub_msg_id, message.content())) {
             subscriber_info info{};

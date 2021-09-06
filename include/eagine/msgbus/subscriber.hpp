@@ -80,7 +80,10 @@ public:
     auto operator=(const subscriber_base&) = delete;
 
 protected:
-    using method_handler = typename endpoint::method_handler;
+    using method_handler = basic_callable_ref<
+      bool(const message_context&, const stored_message&) noexcept,
+      true>;
+
     struct handler_entry {
         message_id msg_id{};
         method_handler handler{};
@@ -96,14 +99,16 @@ protected:
           const identifier_t ClassId,
           const identifier_t MethodId,
           typename Class,
-          bool (
-            Class::*HandlerFunc)(const message_context&, const stored_message&)>
+          bool (Class::*HandlerFunc)(
+            const message_context&,
+            const stored_message&) noexcept>
         handler_entry(
           Class* instance,
           static_message_handler_map<
             static_message_id<ClassId, MethodId>,
             member_function_constant<
-              bool (Class::*)(const message_context&, const stored_message&),
+              bool (
+                Class::*)(const message_context&, const stored_message&) noexcept,
               HandlerFunc>> msg_map) noexcept
           : msg_id{ClassId, MethodId}
           , handler{instance, msg_map.method()} {}
@@ -113,14 +118,15 @@ protected:
           const identifier_t MethodId,
           typename Class,
           bool (
-            Class::*HandlerFunc)(const message_context&, const stored_message&)>
+            Class::*HandlerFunc)(const message_context&, const stored_message&)
+            const noexcept>
         handler_entry(
-          Class* instance,
+          const Class* instance,
           static_message_handler_map<
             static_message_id<ClassId, MethodId>,
             member_function_constant<
               bool (Class::*)(const message_context&, const stored_message&)
-                const,
+                const noexcept,
               HandlerFunc>> msg_map) noexcept
           : msg_id{ClassId, MethodId}
           , handler{instance, msg_map.method()} {}
@@ -241,7 +247,9 @@ template <std::size_t N>
 class static_subscriber : public subscriber_base {
 public:
     /// @brief Alias for method/message handler callable reference.
-    using method_handler = typename endpoint::method_handler;
+    using method_handler = basic_callable_ref<
+      bool(const message_context&, const stored_message&) noexcept,
+      true>;
 
     using handler_entry = typename subscriber_base::handler_entry;
 
@@ -348,8 +356,9 @@ public:
     using handler_entry = subscriber_base::handler_entry;
 
     /// @brief Alias for method/message handler callable reference.
-    using method_handler =
-      callable_ref<bool(const message_context&, const stored_message&)>;
+    using method_handler = basic_callable_ref<
+      bool(const message_context&, const stored_message&) noexcept,
+      true>;
 
     /// @brief Construction from a reference to endpoint.
     subscriber(endpoint& bus) noexcept
@@ -358,24 +367,26 @@ public:
     /// @brief Adds a handler for messages with the specified message id.
     template <
       typename Class,
-      bool (Class::*Method)(const message_context&, const stored_message&)>
+      bool (
+        Class::*Method)(const message_context&, const stored_message&) noexcept>
     void add_method(
       Class* instance,
       const message_id msg_id,
       const member_function_constant<
-        bool (Class::*)(const message_context&, const stored_message&),
-        Method> method) {
+        bool (Class::*)(const message_context&, const stored_message&) noexcept,
+        Method> method) noexcept {
         _msg_handlers.emplace_back(msg_id, method_handler{instance, method});
     }
 
     /// @brief Adds a handler for messages with the specified message id.
     template <
       typename Class,
-      bool (Class::*Method)(const message_context&, const stored_message&)>
+      bool (
+        Class::*Method)(const message_context&, const stored_message&) noexcept>
     void add_method(
       Class* instance,
       message_handler_map<member_function_constant<
-        bool (Class::*)(const message_context&, const stored_message&),
+        bool (Class::*)(const message_context&, const stored_message&) noexcept,
         Method>> msg_map) noexcept {
         add_method(instance, msg_map.msg_id(), msg_map.method());
     }
@@ -383,12 +394,13 @@ public:
     /// @brief Adds a handler for messages with the specified message id.
     template <
       typename Class,
-      bool (Class::*Method)(const message_context&, const stored_message&)>
+      bool (
+        Class::*Method)(const message_context&, const stored_message&) noexcept>
     void add_method(
       std::tuple<
         Class*,
         message_handler_map<member_function_constant<
-          bool (Class::*)(const message_context&, const stored_message&),
+          bool (Class::*)(const message_context&, const stored_message&) noexcept,
           Method>>> imm) noexcept {
         add_method(
           std::get<0>(imm),
@@ -399,7 +411,8 @@ public:
     /// @brief Adds a handler for messages with the specified message id.
     template <
       typename Class,
-      bool (Class::*Method)(const message_context&, const stored_message&),
+      bool (
+        Class::*Method)(const message_context&, const stored_message&) noexcept,
       identifier_t ClassId,
       identifier_t MethodId>
     void add_method(
@@ -407,7 +420,7 @@ public:
       const static_message_handler_map<
         static_message_id<ClassId, MethodId>,
         member_function_constant<
-          bool (Class::*)(const message_context&, const stored_message&),
+          bool (Class::*)(const message_context&, const stored_message&) noexcept,
           Method>> msg_map) noexcept {
         add_method(instance, msg_map.msg_id(), msg_map.method());
     }
@@ -467,7 +480,7 @@ public:
     }
 
 protected:
-    void add_methods() {}
+    constexpr void add_methods() noexcept {}
 
     void init() {
         this->_setup_queues(cover(_msg_handlers));

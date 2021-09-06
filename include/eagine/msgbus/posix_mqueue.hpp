@@ -72,7 +72,7 @@ public:
 
     /// @brief Sets the unique name of the queue.
     /// @see get_name
-    auto set_name(std::string name) -> auto& {
+    auto set_name(std::string name) noexcept -> auto& {
         _s2cname = std::move(name);
         if(_s2cname.empty()) {
             _s2cname = "/eagine-msgbus";
@@ -89,7 +89,7 @@ public:
         return *this;
     }
 
-    static auto name_from(const identifier id) -> std::string {
+    static auto name_from(const identifier id) noexcept -> std::string {
         std::string result;
         result.reserve(std_size(identifier::max_size() + 1));
         id.name().str(result);
@@ -98,18 +98,18 @@ public:
 
     /// @brief Sets the unique name of the queue.
     /// @see get_name
-    auto set_name(const identifier id) -> auto& {
+    auto set_name(const identifier id) noexcept -> auto& {
         return set_name(name_from(id));
     }
 
     /// @brief Constructs the queue and sets the specified name.
     /// @see set_name
-    posix_mqueue(main_ctx_parent parent, std::string name)
+    posix_mqueue(main_ctx_parent parent, std::string name) noexcept
       : main_ctx_object{EAGINE_ID(PosixMQue), parent} {
         set_name(std::move(name));
     }
 
-    auto error_message(const int error_number) const -> std::string {
+    auto error_message(const int error_number) const noexcept -> std::string {
         if(error_number) {
             char buf[128] = {};
             const auto unused =
@@ -122,20 +122,20 @@ public:
 
     /// @brief Returns the error message of the last failed operation.
     /// @see had_error
-    auto error_message() const -> std::string {
+    auto error_message() const noexcept -> std::string {
         return error_message(_last_errno);
     }
 
     /// @brief Indicates if there a previous operation finished with an error.
     /// @see error_message
     /// @see needs_retry
-    auto had_error() const -> bool {
+    auto had_error() const noexcept -> bool {
         return _last_errno != 0;
     }
 
     /// @brief Indicates if a previous operation on the queue needs to be retried.
     /// @see had_error
-    auto needs_retry() const -> bool {
+    auto needs_retry() const noexcept -> bool {
         return (_last_errno == EAGAIN) || (_last_errno == ETIMEDOUT);
     }
 
@@ -156,7 +156,7 @@ public:
     /// @see create
     /// @see open
     /// @see close
-    auto unlink() -> auto& {
+    auto unlink() noexcept -> auto& {
         if(get_name()) {
             log_debug("unlinking message queue ${name}")
               .arg(EAGINE_ID(name), get_name());
@@ -173,7 +173,7 @@ public:
     /// @see unlink
     /// @see open
     /// @see close
-    auto create() -> auto& {
+    auto create() noexcept -> auto& {
         log_debug("creating new message queue ${name}")
           .arg(EAGINE_ID(name), get_name());
 
@@ -215,7 +215,7 @@ public:
     /// @see create
     /// @see unlink
     /// @see close
-    auto open() -> auto& {
+    auto open() noexcept -> auto& {
         log_debug("opening existing message queue ${name}")
           .arg(EAGINE_ID(name), get_name());
 
@@ -253,7 +253,7 @@ public:
     /// @see create
     /// @see open
     /// @see unlink
-    auto close() -> posix_mqueue& {
+    auto close() noexcept -> posix_mqueue& {
         if(is_open()) {
             log_debug("closing message queue ${name}")
               .arg(EAGINE_ID(name), get_name());
@@ -273,7 +273,7 @@ public:
 
     /// @brief Returns the absolute maximum block size that can be sent in a message.
     /// @see data_size
-    auto max_data_size() -> valid_if_positive<span_size_t> {
+    auto max_data_size() noexcept -> valid_if_positive<span_size_t> {
         if(is_open()) {
             struct ::mq_attr attr {};
             errno = 0;
@@ -290,7 +290,8 @@ public:
     }
 
     /// @brief Sends a block of data with the specified priority.
-    auto send(const unsigned priority, const span<const char> blk) -> auto& {
+    auto send(const unsigned priority, const span<const char> blk) noexcept
+      -> auto& {
         if(is_open()) {
             errno = 0;
             ::mq_send(_ohandle, blk.data(), std_size(blk.size()), priority);
@@ -307,10 +308,11 @@ public:
 
     /// @brief Alias for received message handler.
     /// @see receive
-    using receive_handler = callable_ref<void(unsigned, span<const char>)>;
+    using receive_handler =
+      callable_ref<void(unsigned, span<const char>) noexcept>;
 
     /// @brief Receives messages and calls the specified handler on them.
-    auto receive(memory::span<char> blk, const receive_handler handler)
+    auto receive(memory::span<char> blk, const receive_handler handler) noexcept
       -> bool {
         if(is_open()) {
             unsigned priority{0U};
@@ -361,15 +363,15 @@ class posix_mqueue_connection_info : public Base {
 public:
     using Base::Base;
 
-    auto kind() -> connection_kind final {
+    auto kind() noexcept -> connection_kind final {
         return connection_kind::local_interprocess;
     }
 
-    auto addr_kind() -> connection_addr_kind final {
+    auto addr_kind() noexcept -> connection_addr_kind final {
         return connection_addr_kind::filepath;
     }
 
-    auto type_id() -> identifier final {
+    auto type_id() noexcept -> identifier final {
         return EAGINE_ID(PosixMQue);
     }
 };
@@ -397,19 +399,19 @@ public:
     }
 
     /// @brief Opens the connection.
-    auto open(std::string name) -> bool {
+    auto open(std::string name) noexcept -> bool {
         return !_data_queue.set_name(std::move(name)).open().had_error();
     }
 
-    auto is_usable() -> bool final {
+    auto is_usable() noexcept -> bool final {
         return _data_queue.is_usable();
     }
 
-    auto max_data_size() -> valid_if_positive<span_size_t> final {
+    auto max_data_size() noexcept -> valid_if_positive<span_size_t> final {
         return {_buffer.size()};
     }
 
-    auto update() -> work_done override {
+    auto update() noexcept -> work_done override {
         std::unique_lock lock{_mutex};
         some_true something_done{};
         something_done(_receive());
@@ -417,7 +419,7 @@ public:
         return something_done;
     }
 
-    auto send(const message_id msg_id, const message_view& message)
+    auto send(const message_id msg_id, const message_view& message) noexcept
       -> bool final {
         if(EAGINE_LIKELY(is_usable())) {
             block_data_sink sink(cover(_buffer));
@@ -434,17 +436,18 @@ public:
         return false;
     }
 
-    auto fetch_messages(const fetch_handler handler) -> work_done final {
+    auto fetch_messages(const fetch_handler handler) noexcept
+      -> work_done final {
         std::unique_lock lock{_mutex};
         return _incoming.fetch_all(handler);
     }
 
-    auto query_statistics(connection_statistics&) -> bool final {
+    auto query_statistics(connection_statistics&) noexcept -> bool final {
         return false;
     }
 
 protected:
-    auto _checkup(posix_mqueue& connect_queue) -> work_done {
+    auto _checkup(posix_mqueue& connect_queue) noexcept -> work_done {
         some_true something_done{};
         if(connect_queue.is_usable()) {
             if(!_data_queue.is_usable()) {
@@ -488,7 +491,7 @@ protected:
         return something_done;
     }
 
-    auto _receive() -> work_done {
+    auto _receive() noexcept -> work_done {
         some_true something_done{};
         if(_data_queue.is_usable()) {
             while(_data_queue.receive(
@@ -501,7 +504,7 @@ protected:
         return something_done;
     }
 
-    auto _send() -> bool {
+    auto _send() noexcept -> bool {
         if(_data_queue.is_usable()) {
             return _outgoing.fetch_all(EAGINE_THIS_MEM_FUNC_REF(_handle_send));
         }
@@ -509,12 +512,15 @@ protected:
     }
 
 protected:
-    auto _handle_send(const message_timestamp, const memory::const_block data)
-      -> bool {
+    auto _handle_send(
+      const message_timestamp,
+      const memory::const_block data) noexcept -> bool {
         return !_data_queue.send(1, as_chars(data)).had_error();
     }
 
-    void _handle_receive(const unsigned, const memory::span<const char> data) {
+    void _handle_receive(
+      const unsigned,
+      const memory::span<const char> data) noexcept {
         _incoming.push_if(
           [data](
             message_id& msg_id, message_timestamp&, stored_message& message) {
@@ -570,7 +576,7 @@ public:
         _data_queue.unlink();
     }
 
-    auto update() -> work_done final {
+    auto update() noexcept -> work_done final {
         std::unique_lock lock{_mutex};
         some_true something_done{};
         something_done(_checkup());
@@ -580,7 +586,7 @@ public:
     }
 
 private:
-    auto _checkup() -> work_done {
+    auto _checkup() noexcept -> work_done {
         some_true something_done{};
         if(!_connect_queue.is_usable()) {
             if(_reconnect_timeout) {
@@ -625,7 +631,7 @@ public:
     posix_mqueue_acceptor(
       main_ctx_parent parent,
       const identifier id,
-      std::shared_ptr<posix_mqueue_shared_state> shared_state)
+      std::shared_ptr<posix_mqueue_shared_state> shared_state) noexcept
       : posix_mqueue_acceptor{
           parent,
           posix_mqueue::name_from(id),
@@ -640,14 +646,15 @@ public:
         _accept_queue.unlink();
     }
 
-    auto update() -> work_done final {
+    auto update() noexcept -> work_done final {
         some_true something_done{};
         something_done(_checkup());
         something_done(_receive());
         return something_done;
     }
 
-    auto process_accepted(const accept_handler handler) -> work_done final {
+    auto process_accepted(const accept_handler handler) noexcept
+      -> work_done final {
         auto fetch_handler = [this, &handler](
                                const message_id msg_id,
                                const message_age,
@@ -670,7 +677,7 @@ public:
     }
 
 private:
-    auto _checkup() -> work_done {
+    auto _checkup() noexcept -> work_done {
         some_true something_done{};
         if(!_accept_queue.is_usable()) {
             if(_reconnect_timeout) {
@@ -686,7 +693,7 @@ private:
         return something_done;
     }
 
-    auto _receive() -> work_done {
+    auto _receive() noexcept -> work_done {
         some_true something_done{};
         if(_accept_queue.is_usable()) {
             while(_accept_queue.receive(
@@ -698,7 +705,9 @@ private:
         return something_done;
     }
 
-    void _handle_receive(const unsigned, const memory::span<const char> data) {
+    void _handle_receive(
+      const unsigned,
+      const memory::span<const char> data) noexcept {
         _requests.push_if(
           [data](
             message_id& msg_id, message_timestamp&, stored_message& message) {
@@ -730,7 +739,7 @@ class posix_mqueue_connection_factory
   , public main_ctx_object {
 public:
     /// @brief Construction from parent main context object.
-    posix_mqueue_connection_factory(main_ctx_parent parent)
+    posix_mqueue_connection_factory(main_ctx_parent parent) noexcept
       : main_ctx_object{EAGINE_ID(MQueConnFc), parent} {
         _increase_res_limit();
     }
@@ -739,14 +748,14 @@ public:
     using connection_factory::make_connector;
 
     /// @brief Makes an connection acceptor listening at queue with the specified name.
-    auto make_acceptor(const string_view address)
+    auto make_acceptor(const string_view address) noexcept
       -> std::unique_ptr<acceptor> final {
         return std::make_unique<posix_mqueue_acceptor>(
           *this, to_string(address), _shared_state);
     }
 
     /// @brief Makes a connector connecting to queue with the specified name.
-    auto make_connector(const string_view address)
+    auto make_connector(const string_view address) noexcept
       -> std::unique_ptr<connection> final {
         return std::make_unique<posix_mqueue_connector>(
           *this, to_string(address), _shared_state);
@@ -756,7 +765,7 @@ private:
     std::shared_ptr<posix_mqueue_shared_state> _shared_state{
       std::make_shared<posix_mqueue_shared_state>()};
 
-    void _increase_res_limit() {
+    void _increase_res_limit() noexcept {
         struct rlimit rlim {};
         zero(as_bytes(cover_one(rlim)));
         rlim.rlim_cur = RLIM_INFINITY;

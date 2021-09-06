@@ -196,7 +196,8 @@ void router::add_ca_certificate_pem(const memory::const_block blk) {
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-auto router::add_acceptor(std::shared_ptr<acceptor> an_acceptor) -> bool {
+auto router::add_acceptor(std::shared_ptr<acceptor> an_acceptor) noexcept
+  -> bool {
     if(an_acceptor) {
         log_info("adding connection acceptor")
           .arg(EAGINE_ID(kind), an_acceptor->kind())
@@ -208,7 +209,8 @@ auto router::add_acceptor(std::shared_ptr<acceptor> an_acceptor) -> bool {
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-auto router::add_connection(std::unique_ptr<connection> a_connection) -> bool {
+auto router::add_connection(std::unique_ptr<connection> a_connection) noexcept
+  -> bool {
     if(a_connection) {
         log_info("assigning parent router connection")
           .arg(EAGINE_ID(kind), a_connection->kind())
@@ -493,7 +495,7 @@ EAGINE_LIB_FUNC
 auto router::_do_get_blob_io(
   const message_id msg_id,
   const span_size_t size,
-  blob_manipulator& blobs) -> std::unique_ptr<blob_io> {
+  blob_manipulator& blobs) noexcept -> std::unique_ptr<blob_io> {
     if(is_special_message(msg_id)) {
         if(msg_id.has_method(EAGINE_ID(eptCertPem))) {
             return blobs.make_io(size);
@@ -506,7 +508,7 @@ EAGINE_LIB_FUNC
 auto router::_handle_blob(
   const message_id msg_id,
   const message_age,
-  const message_view& message) -> bool {
+  const message_view& message) noexcept -> bool {
     // TODO: use message age
     if(is_special_message(msg_id)) {
         if(msg_id.has_method(EAGINE_ID(eptCertPem))) {

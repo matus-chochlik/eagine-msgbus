@@ -31,7 +31,7 @@ class build_info_provider : public Base {
 protected:
     using Base::Base;
 
-    void add_methods() {
+    void add_methods() noexcept {
         Base::add_methods();
 
         Base::add_method(_respond(
@@ -58,7 +58,7 @@ class build_info_consumer : public Base {
 public:
     /// @brief Queries endpoint's build version information.
     /// @see build_info_received
-    void query_build_info(const identifier_t endpoint_id) {
+    void query_build_info(const identifier_t endpoint_id) noexcept {
         _build.invoke_on(
           this->bus_node(), endpoint_id, EAGINE_MSG_ID(eagiBldInf, request));
     }
@@ -70,7 +70,7 @@ public:
 protected:
     using Base::Base;
 
-    void add_methods() {
+    void add_methods() noexcept {
         Base::add_methods();
 
         Base::add_method(

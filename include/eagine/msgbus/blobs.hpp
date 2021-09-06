@@ -153,12 +153,12 @@ public:
       const noexcept -> span_size_t;
 
     using io_getter = callable_ref<std::unique_ptr<
-      blob_io>(const message_id, const span_size_t, blob_manipulator&)>;
+      blob_io>(const message_id, const span_size_t, blob_manipulator&) noexcept>;
 
     auto make_io(const span_size_t total_size) -> std::unique_ptr<blob_io>;
 
     using send_handler =
-      callable_ref<bool(const message_id, const message_view&)>;
+      callable_ref<bool(const message_id, const message_view&) noexcept>;
 
     auto update(const send_handler do_send) -> work_done;
 
@@ -205,7 +205,7 @@ public:
     auto cancel_incoming(const identifier_t target_blob_id) -> bool;
 
     using fetch_handler = callable_ref<
-      bool(const message_id, const message_age, const message_view&)>;
+      bool(const message_id, const message_age, const message_view&) noexcept>;
 
     auto handle_complete() -> span_size_t;
     auto fetch_all(const fetch_handler) -> span_size_t;
@@ -229,7 +229,7 @@ private:
     auto _make_io(
       const message_id,
       const span_size_t total_size,
-      blob_manipulator&) -> std::unique_ptr<blob_io>;
+      blob_manipulator&) noexcept -> std::unique_ptr<blob_io>;
 
     auto _scratch_block(const span_size_t size) -> memory::block;
 };

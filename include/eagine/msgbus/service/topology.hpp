@@ -77,7 +77,7 @@ public:
 protected:
     using Base::Base;
 
-    void add_methods() {
+    void add_methods() noexcept {
         Base::add_methods();
         Base::add_method(
           this, EAGINE_MSG_MAP(eagiMsgBus, topoRutrCn, This, _handle_router));
@@ -97,8 +97,9 @@ protected:
     }
 
 private:
-    auto _handle_router(const message_context&, const stored_message& message)
-      -> bool {
+    auto _handle_router(
+      const message_context&,
+      const stored_message& message) noexcept -> bool {
         router_topology_info info{};
         if(default_deserialize(info, message.content())) {
             router_appeared(info);
@@ -106,8 +107,9 @@ private:
         return true;
     }
 
-    auto _handle_bridge(const message_context&, const stored_message& message)
-      -> bool {
+    auto _handle_bridge(
+      const message_context&,
+      const stored_message& message) noexcept -> bool {
         bridge_topology_info info{};
         if(default_deserialize(info, message.content())) {
             bridge_appeared(info);
@@ -115,8 +117,9 @@ private:
         return true;
     }
 
-    auto _handle_endpoint(const message_context&, const stored_message& message)
-      -> bool {
+    auto _handle_endpoint(
+      const message_context&,
+      const stored_message& message) noexcept -> bool {
         endpoint_topology_info info{};
         if(default_deserialize(info, message.content())) {
             endpoint_appeared(info);
@@ -126,21 +129,21 @@ private:
 
     auto _handle_router_bye(
       const message_context&,
-      const stored_message& message) -> bool {
+      const stored_message& message) noexcept -> bool {
         router_disappeared(message.source_id);
         return true;
     }
 
     auto _handle_bridge_bye(
       const message_context&,
-      const stored_message& message) -> bool {
+      const stored_message& message) noexcept -> bool {
         bridge_disappeared(message.source_id);
         return true;
     }
 
     auto _handle_endpoint_bye(
       const message_context&,
-      const stored_message& message) -> bool {
+      const stored_message& message) noexcept -> bool {
         endpoint_disappeared(message.source_id);
         return true;
     }

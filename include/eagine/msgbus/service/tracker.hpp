@@ -367,7 +367,7 @@ protected:
         this->ping_timeouted.connect(on_ping_timeout());
     }
 
-    void add_methods() {
+    void add_methods() noexcept {
         base::add_methods();
     }
 

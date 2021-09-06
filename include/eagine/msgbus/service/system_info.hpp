@@ -30,7 +30,7 @@ class system_info_provider : public Base {
 protected:
     using Base::Base;
 
-    void add_methods() {
+    void add_methods() noexcept {
         Base::add_methods();
 
         Base::add_method(_uptime(
@@ -159,7 +159,7 @@ private:
 
     auto _handle_stats_query(
       const message_context& msg_ctx,
-      const stored_message& message) -> bool {
+      const stored_message& message) noexcept -> bool {
         _cpu_concurrent_threads.invoke_by(msg_ctx, message);
         _memory_page_size.invoke_by(msg_ctx, message);
         _total_ram_size.invoke_by(msg_ctx, message);
@@ -169,7 +169,7 @@ private:
 
     auto _handle_sensor_query(
       const message_context& msg_ctx,
-      const stored_message& message) -> bool {
+      const stored_message& message) noexcept -> bool {
         _short_average_load.invoke_by(msg_ctx, message);
         _long_average_load.invoke_by(msg_ctx, message);
         _free_ram_size.invoke_by(msg_ctx, message);

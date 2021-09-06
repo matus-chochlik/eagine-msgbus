@@ -113,8 +113,8 @@ public:
     void add_certificate_pem(const memory::const_block blk);
     void add_ca_certificate_pem(const memory::const_block blk);
 
-    auto add_acceptor(std::shared_ptr<acceptor>) -> bool final;
-    auto add_connection(std::unique_ptr<connection>) -> bool final;
+    auto add_acceptor(std::shared_ptr<acceptor>) noexcept -> bool final;
+    auto add_connection(std::unique_ptr<connection>) noexcept -> bool final;
 
     auto do_maintenance() -> work_done;
     auto do_work() -> work_done;
@@ -169,13 +169,17 @@ private:
     void _handle_connection(std::unique_ptr<connection> conn);
 
     auto _process_blobs() -> work_done;
-    auto _do_get_blob_io(const message_id, const span_size_t, blob_manipulator&)
-      -> std::unique_ptr<blob_io>;
+    auto _do_get_blob_io(
+      const message_id,
+      const span_size_t,
+      blob_manipulator&) noexcept -> std::unique_ptr<blob_io>;
 
     enum message_handling_result { should_be_forwarded, was_handled };
 
-    auto _handle_blob(const message_id, const message_age, const message_view&)
-      -> bool;
+    auto _handle_blob(
+      const message_id,
+      const message_age,
+      const message_view&) noexcept -> bool;
 
     auto _update_endpoint_info(
       const identifier_t incoming_id,

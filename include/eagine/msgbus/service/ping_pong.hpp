@@ -40,15 +40,16 @@ public:
 protected:
     using Base::Base;
 
-    void add_methods() {
+    void add_methods() noexcept {
         Base::add_methods();
         Base::add_method(
           this, EAGINE_MSG_MAP(eagiMsgBus, ping, This, _handle_ping));
     }
 
 private:
-    auto _handle_ping(const message_context&, const stored_message& message)
-      -> bool {
+    auto _handle_ping(
+      const message_context&,
+      const stored_message& message) noexcept -> bool {
         if(respond_to_ping(
              message.source_id,
              message.sequence_no,
@@ -174,8 +175,9 @@ protected:
     }
 
 private:
-    auto _handle_pong(const message_context&, const stored_message& message)
-      -> bool {
+    auto _handle_pong(
+      const message_context&,
+      const stored_message& message) noexcept -> bool {
         _pending.erase(
           std::remove_if(
             _pending.begin(),

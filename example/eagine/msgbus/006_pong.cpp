@@ -39,7 +39,8 @@ public:
           address);
     }
 
-    auto ping(const message_context&, const stored_message& msg_in) -> bool {
+    auto ping(const message_context&, const stored_message& msg_in) noexcept
+      -> bool {
         bus_node().respond_to(msg_in, EAGINE_MSG_ID(PingPong, Pong));
         if(++_sent % _lmod == 0) {
             bus_node()
@@ -50,13 +51,14 @@ public:
         return true;
     }
 
-    auto shutdown(const message_context&, const stored_message&) -> bool {
+    auto shutdown(const message_context&, const stored_message&) noexcept
+      -> bool {
         _done = true;
         bus_node().log_info("received shutdown message");
         return true;
     }
 
-    void update() {
+    void update() noexcept {
         if(!_sent && _ready_timeout) {
             bus_node().broadcast(EAGINE_MSG_ID(PingPong, Ready));
             _ready_timeout.reset();

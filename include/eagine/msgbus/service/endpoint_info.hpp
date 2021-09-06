@@ -36,7 +36,7 @@ public:
 protected:
     using Base::Base;
 
-    void add_methods() {
+    void add_methods() noexcept {
         Base::add_methods();
 
         Base::add_method(_respond(
@@ -46,11 +46,11 @@ protected:
     }
 
 private:
-    auto _get_endpoint_info() -> const endpoint_info& {
+    auto _get_endpoint_info() noexcept -> const endpoint_info& {
         return _info;
     }
 
-    default_function_skeleton<const endpoint_info&(), 1024> _respond;
+    default_function_skeleton<const endpoint_info&() noexcept, 1024> _respond;
     endpoint_info _info;
 };
 //------------------------------------------------------------------------------
@@ -78,7 +78,7 @@ public:
 protected:
     using Base::Base;
 
-    void add_methods() {
+    void add_methods() noexcept {
         Base::add_methods();
 
         Base::add_method(

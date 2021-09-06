@@ -225,7 +225,7 @@ void bridge::add_ca_certificate_pem(const memory::const_block blk) {
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-auto bridge::add_connection(std::unique_ptr<connection> conn) -> bool {
+auto bridge::add_connection(std::unique_ptr<connection> conn) noexcept -> bool {
     _connection = std::move(conn);
     return true;
 }

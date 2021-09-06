@@ -72,7 +72,7 @@ public:
 protected:
     using Base::Base;
 
-    void add_methods() {
+    void add_methods() noexcept {
         Base::add_methods();
         Base::add_method(
           this, EAGINE_MSG_MAP(eagiMsgBus, statsRutr, This, _handle_router));
@@ -83,8 +83,9 @@ protected:
     }
 
 private:
-    auto _handle_router(const message_context&, const stored_message& message)
-      -> bool {
+    auto _handle_router(
+      const message_context&,
+      const stored_message& message) noexcept -> bool {
         router_statistics stats{};
         if(default_deserialize(stats, message.content())) {
             router_stats_received(message.source_id, stats);
@@ -92,8 +93,9 @@ private:
         return true;
     }
 
-    auto _handle_bridge(const message_context&, const stored_message& message)
-      -> bool {
+    auto _handle_bridge(
+      const message_context&,
+      const stored_message& message) noexcept -> bool {
         bridge_statistics stats{};
         if(default_deserialize(stats, message.content())) {
             bridge_stats_received(message.source_id, stats);
@@ -101,8 +103,9 @@ private:
         return true;
     }
 
-    auto _handle_endpoint(const message_context&, const stored_message& message)
-      -> bool {
+    auto _handle_endpoint(
+      const message_context&,
+      const stored_message& message) noexcept -> bool {
         endpoint_statistics stats{};
         if(default_deserialize(stats, message.content())) {
             endpoint_stats_received(message.source_id, stats);
@@ -112,7 +115,7 @@ private:
 
     auto _handle_connection(
       const message_context&,
-      const stored_message& message) -> bool {
+      const stored_message& message) noexcept -> bool {
         connection_statistics stats{};
         if(default_deserialize(stats, message.content())) {
             connection_stats_received(stats);

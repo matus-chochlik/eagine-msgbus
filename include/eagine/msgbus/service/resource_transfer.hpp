@@ -150,7 +150,7 @@ public:
 protected:
     using Base::Base;
 
-    void add_methods() {
+    void add_methods() noexcept {
         Base::add_methods();
 
         Base::add_method(
@@ -298,7 +298,7 @@ private:
 
     auto _handle_has_resource_query(
       const message_context& ctx,
-      const stored_message& message) -> bool {
+      const stored_message& message) noexcept -> bool {
         std::string url_str;
         if(EAGINE_LIKELY(default_deserialize(url_str, message.content()))) {
             const url locator{std::move(url_str)};
@@ -319,7 +319,7 @@ private:
 
     auto _handle_resource_content_request(
       const message_context& ctx,
-      const stored_message& message) -> bool {
+      const stored_message& message) noexcept -> bool {
         std::string url_str;
         if(EAGINE_LIKELY(default_deserialize(url_str, message.content()))) {
             const url locator{std::move(url_str)};
@@ -357,7 +357,7 @@ private:
 
     auto _handle_resource_resend_request(
       const message_context&,
-      const stored_message& message) -> bool {
+      const stored_message& message) noexcept -> bool {
         _blobs.process_resend(message);
         return true;
     }
@@ -629,7 +629,7 @@ private:
 
     auto _handle_has_resource(
       const message_context&,
-      const stored_message& message) -> bool {
+      const stored_message& message) noexcept -> bool {
         std::string url_str;
         if(EAGINE_LIKELY(default_deserialize(url_str, message.content()))) {
             server_has_resource(message.source_id, url{std::move(url_str)});
@@ -639,7 +639,7 @@ private:
 
     auto _handle_has_not_resource(
       const message_context&,
-      const stored_message& message) -> bool {
+      const stored_message& message) noexcept -> bool {
         std::string url_str;
         if(EAGINE_LIKELY(default_deserialize(url_str, message.content()))) {
             server_has_not_resource(message.source_id, url{std::move(url_str)});
@@ -649,7 +649,7 @@ private:
 
     auto _handle_resource_fragment(
       const message_context& ctx,
-      const stored_message& message) -> bool {
+      const stored_message& message) noexcept -> bool {
         EAGINE_MAYBE_UNUSED(ctx);
         _blobs.process_incoming(message);
         return true;
@@ -657,14 +657,14 @@ private:
 
     auto _handle_resource_not_found(
       const message_context&,
-      const stored_message& message) -> bool {
+      const stored_message& message) noexcept -> bool {
         _blobs.cancel_incoming(message.sequence_no);
         return true;
     }
 
     auto _handle_resource_resend_request(
       const message_context&,
-      const stored_message& message) -> bool {
+      const stored_message& message) noexcept -> bool {
         _blobs.process_resend(message);
         return true;
     }

@@ -15,14 +15,14 @@ auto stored_message::store_and_sign(
   const memory::const_block data,
   const span_size_t max_size,
   context& ctx,
-  main_ctx_object& user) -> bool {
+  main_ctx_object& user) noexcept -> bool {
 
-    if(ok md_type{ctx.default_message_digest()}) {
+    if(const ok md_type{ctx.default_message_digest()}) {
         auto& ssl = ctx.ssl();
         _buffer.resize(max_size);
-        if(auto used{store_data_with_size(data, storage())}) {
+        if(const auto used{store_data_with_size(data, storage())}) {
             if(ok md_ctx{ssl.new_message_digest()}) {
-                auto cleanup{ssl.delete_message_digest.raii(md_ctx)};
+                const auto cleanup{ssl.delete_message_digest.raii(md_ctx)};
 
                 if(EAGINE_LIKELY(
                      ctx.message_digest_sign_init(md_ctx, md_type))) {
@@ -30,7 +30,7 @@ auto stored_message::store_and_sign(
                          ssl.message_digest_sign_update(md_ctx, data))) {
 
                         auto free{skip(storage(), used.size())};
-                        if(ok sig{
+                        if(const ok sig{
                              ssl.message_digest_sign_final(md_ctx, free)}) {
                             crypto_flags |= message_crypto_flag::asymmetric;
                             crypto_flags |= message_crypto_flag::signed_content;
@@ -72,7 +72,7 @@ auto stored_message::verify_bits(context& ctx, main_ctx_object&) const noexcept
 // message_storage
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-auto message_storage::fetch_all(const fetch_handler handler) -> bool {
+auto message_storage::fetch_all(const fetch_handler handler) noexcept -> bool {
     bool fetched_some = false;
     bool keep_some = false;
     for(auto& [msg_id, message, insert_time] : _messages) {
@@ -99,7 +99,7 @@ auto message_storage::fetch_all(const fetch_handler handler) -> bool {
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-void message_storage::cleanup(const cleanup_predicate predicate) {
+void message_storage::cleanup(const cleanup_predicate predicate) noexcept {
     _messages.erase(
       std::remove_if(
         _messages.begin(),
@@ -114,7 +114,7 @@ void message_storage::cleanup(const cleanup_predicate predicate) {
 // serialized_message_storage
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-auto serialized_message_storage::fetch_all(const fetch_handler handler)
+auto serialized_message_storage::fetch_all(const fetch_handler handler) noexcept
   -> bool {
     bool fetched_some = false;
     bool keep_some = false;
@@ -179,7 +179,7 @@ private:
 };
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-auto serialized_message_storage::pack_into(memory::block dest)
+auto serialized_message_storage::pack_into(memory::block dest) noexcept
   -> message_pack_info {
     message_packing_context packing{dest};
 
@@ -188,7 +188,8 @@ auto serialized_message_storage::pack_into(memory::block dest)
         if(packing.is_full()) {
             break;
         }
-        if(auto packed{store_data_with_size(view(message), packing.dest())}) {
+        if(const auto packed{
+             store_data_with_size(view(message), packing.dest())}) {
             packing.add(packed.size());
         }
         packing.next();
@@ -199,7 +200,8 @@ auto serialized_message_storage::pack_into(memory::block dest)
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-void serialized_message_storage::cleanup(const message_pack_info& packed) {
+void serialized_message_storage::cleanup(
+  const message_pack_info& packed) noexcept {
     auto to_be_removed = packed.bits();
     span_size_t i = 0;
 
@@ -226,11 +228,11 @@ auto connection_outgoing_messages::enqueue(
   main_ctx_object& user,
   const message_id msg_id,
   const message_view& message,
-  memory::block temp) -> bool {
+  memory::block temp) noexcept -> bool {
 
     block_data_sink sink(temp);
     default_serializer_backend backend(sink);
-    auto errors = serialize_message(msg_id, message, backend);
+    const auto errors = serialize_message(msg_id, message, backend);
     if(!errors) {
         user.log_trace("enqueuing message ${message} to be sent")
           .arg(EAGINE_ID(message), msg_id);
@@ -247,7 +249,7 @@ auto connection_outgoing_messages::enqueue(
 EAGINE_LIB_FUNC
 auto connection_incoming_messages::fetch_messages(
   main_ctx_object& user,
-  const fetch_handler handler) -> bool {
+  const fetch_handler handler) noexcept -> bool {
     _unpacked.fetch_all(handler);
     auto unpacker = [this, &user, &handler](
                       message_timestamp data_ts, memory::const_block data) {

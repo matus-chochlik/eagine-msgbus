@@ -58,12 +58,13 @@ public:
     }
 
     /// @brief Adds a connection to the associated endpoint.
-    auto add_connection(std::unique_ptr<connection> conn) -> bool final {
+    auto add_connection(std::unique_ptr<connection> conn) noexcept
+      -> bool final {
         return this->bus_node().add_connection(std::move(conn));
     }
 
     /// @brief Updates the associated endpoint and processes all incoming messages.
-    auto update_and_process_all() -> work_done final {
+    auto update_and_process_all() noexcept -> work_done final {
         some_true something_done{};
         something_done(this->update());
         something_done(this->process_all());
@@ -82,14 +83,16 @@ protected:
     }
 
 private:
-    auto _handle_sup_query(const message_context&, const stored_message& message)
-      -> bool {
+    auto _handle_sup_query(
+      const message_context&,
+      const stored_message& message) noexcept -> bool {
         this->respond_to_subscription_query(message.source_id);
         return true;
     }
 
-    auto _handle_sub_query(const message_context&, const stored_message& message)
-      -> bool {
+    auto _handle_sub_query(
+      const message_context&,
+      const stored_message& message) noexcept -> bool {
         message_id sub_msg_id{};
         if(default_deserialize_message_type(sub_msg_id, message.content())) {
             this->respond_to_subscription_query(message.source_id, sub_msg_id);

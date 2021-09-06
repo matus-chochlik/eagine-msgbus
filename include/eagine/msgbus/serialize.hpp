@@ -43,7 +43,7 @@ using default_deserializer_backend = portable_deserializer_backend;
 /// @brief Returns count of bytes required for serialization of the specified object.
 /// @ingroup msgbus
 template <typename T>
-inline auto default_serialize_buffer_size_for(const T& inst) {
+inline auto default_serialize_buffer_size_for(const T& inst) noexcept {
     return serialize_buffer_size_for<default_serializer_backend::id_value>(
       inst, default_selector_t{});
 }
@@ -51,7 +51,7 @@ inline auto default_serialize_buffer_size_for(const T& inst) {
 /// @brief Returns a vector for the serialization of the specified object.
 /// @ingroup msgbus
 template <typename T>
-inline auto default_serialize_vector_for(const T& inst) {
+inline auto default_serialize_vector_for(const T& inst) noexcept {
     return get_serialize_vector_for<default_serializer_backend::id_value>(
       inst, default_selector_t{});
 }
@@ -59,7 +59,7 @@ inline auto default_serialize_vector_for(const T& inst) {
 /// @brief Returns a suitable buffer for the serialization of the specified object.
 /// @ingroup msgbus
 template <typename T>
-inline auto default_serialize_buffer_for(const T& inst) {
+inline auto default_serialize_buffer_for(const T& inst) noexcept {
     return serialize_buffer_for<default_serializer_backend::id_value>(inst);
 }
 //------------------------------------------------------------------------------
@@ -71,7 +71,7 @@ template <typename Backend>
 auto serialize_message_header(
   const message_id msg_id,
   const message_view& msg,
-  Backend& backend)
+  Backend& backend) noexcept
   -> std::enable_if_t<
     std::is_base_of_v<serializer_backend, Backend>,
     serialization_errors> {
@@ -99,7 +99,7 @@ template <typename Backend>
 auto serialize_message(
   const message_id msg_id,
   const message_view& msg,
-  Backend& backend)
+  Backend& backend) noexcept
   -> std::enable_if_t<
     std::is_base_of_v<serializer_backend, Backend>,
     serialization_errors> {
@@ -126,7 +126,7 @@ auto deserialize_message_header(
   identifier& class_id,
   identifier& method_id,
   stored_message& msg,
-  Backend& backend)
+  Backend& backend) noexcept
   -> std::enable_if_t<
     std::is_base_of_v<deserializer_backend, Backend>,
     deserialization_errors> {
@@ -155,7 +155,7 @@ auto deserialize_message(
   identifier& class_id,
   identifier& method_id,
   stored_message& msg,
-  Backend& backend)
+  Backend& backend) noexcept
   -> std::enable_if_t<
     std::is_base_of_v<deserializer_backend, Backend>,
     deserialization_errors> {
@@ -181,7 +181,7 @@ template <typename Backend>
 auto deserialize_message(
   message_id& msg_id,
   stored_message& msg,
-  Backend& backend)
+  Backend& backend) noexcept
   -> std::enable_if_t<
     std::is_base_of_v<deserializer_backend, Backend>,
     deserialization_errors> {
@@ -204,7 +204,7 @@ auto deserialize_message(
 /// @see default_deserialize
 /// @see serialize
 template <typename T>
-inline auto default_serialize(const T& value, memory::block blk)
+inline auto default_serialize(const T& value, memory::block blk) noexcept
   -> serialization_result<memory::const_block> {
     block_data_sink sink(blk);
     default_serializer_backend backend(sink);
@@ -222,7 +222,8 @@ template <typename T>
 inline auto default_serialize_packed(
   T& value,
   memory::block blk,
-  data_compressor compressor) -> serialization_result<memory::const_block> {
+  data_compressor compressor) noexcept
+  -> serialization_result<memory::const_block> {
     packed_block_data_sink sink(std::move(compressor), blk);
     default_serializer_backend backend(sink);
     auto errors = serialize(value, backend);
@@ -236,7 +237,7 @@ inline auto default_serialize_packed(
 /// @see message_id
 inline auto default_serialize_message_type(
   const message_id msg_id,
-  memory::block blk) {
+  memory::block blk) noexcept {
     const auto value{msg_id.id_tuple()};
     return default_serialize(value, blk);
 }
@@ -249,7 +250,7 @@ inline auto default_serialize_message_type(
 /// @see default_serialize
 /// @see deserialize
 template <typename T>
-inline auto default_deserialize(T& value, const memory::const_block blk)
+inline auto default_deserialize(T& value, const memory::const_block blk) noexcept
   -> deserialization_result<memory::const_block> {
     block_data_source source(blk);
     default_deserializer_backend backend(source);
@@ -267,7 +268,8 @@ template <typename T>
 inline auto default_deserialize_packed(
   T& value,
   const memory::const_block blk,
-  data_compressor compressor) -> deserialization_result<memory::const_block> {
+  data_compressor compressor) noexcept
+  -> deserialization_result<memory::const_block> {
     packed_block_data_source source(std::move(compressor), blk);
     default_deserializer_backend backend(source);
     auto errors = deserialize(value, backend);
@@ -281,7 +283,7 @@ inline auto default_deserialize_packed(
 /// @see message_id
 inline auto default_deserialize_message_type(
   message_id& msg_id,
-  const memory::const_block blk) {
+  const memory::const_block blk) noexcept {
     std::tuple<identifier, identifier> value{};
     auto result = default_deserialize(value, blk);
     if(result) {
@@ -293,7 +295,7 @@ inline auto default_deserialize_message_type(
 template <typename Backend, typename Value>
 inline auto stored_message::do_store_value(
   const Value& value,
-  const span_size_t max_size) -> bool {
+  const span_size_t max_size) noexcept -> bool {
     _buffer.resize(max_size);
     block_data_sink sink(cover(_buffer));
     Backend backend(sink);
@@ -309,12 +311,12 @@ inline auto stored_message::do_store_value(
 template <typename Value>
 inline auto stored_message::store_value(
   const Value& value,
-  const span_size_t max_size) -> bool {
+  const span_size_t max_size) noexcept -> bool {
     return do_store_value<default_serializer_backend>(value, max_size);
 }
 //------------------------------------------------------------------------------
 template <typename Backend, typename Value>
-inline auto stored_message::do_fetch_value(Value& value) -> bool {
+inline auto stored_message::do_fetch_value(Value& value) noexcept -> bool {
     block_data_source source(view(_buffer));
     Backend backend(source);
     auto errors = deserialize(value, backend);
@@ -322,7 +324,7 @@ inline auto stored_message::do_fetch_value(Value& value) -> bool {
 }
 //------------------------------------------------------------------------------
 template <typename Value>
-inline auto stored_message::fetch_value(Value& value) -> bool {
+inline auto stored_message::fetch_value(Value& value) noexcept -> bool {
     return do_fetch_value<default_deserializer_backend>(value);
 }
 //------------------------------------------------------------------------------

@@ -43,7 +43,7 @@ public:
           address);
     }
 
-    auto pong(const message_context&, const stored_message&) -> bool {
+    auto pong(const message_context&, const stored_message&) noexcept -> bool {
         if(++_rcvd % _lmod == 0) {
             bus_node()
               .log_info("received ${count} pongs")
@@ -55,18 +55,18 @@ public:
         return true;
     }
 
-    auto ready(const message_context&, const stored_message&) -> bool {
+    auto ready(const message_context&, const stored_message&) noexcept -> bool {
         _ready = true;
         bus_node().log_info("received pong ready message");
         return true;
     }
 
-    void shutdown() {
+    void shutdown() noexcept {
         bus_node().broadcast(EAGINE_MSG_ID(PingPong, Shutdown));
         bus_node().log_info("sent shutdown message");
     }
 
-    void update() {
+    void update() noexcept {
         if(_ready && (_sent <= _max * 2) && (_sent < _rcvd + _lmod)) {
             bus_node().broadcast(EAGINE_MSG_ID(PingPong, Ping));
             if(++_sent % _lmod == 0) {

@@ -29,7 +29,8 @@ struct str_utils_server
           this,
           EAGINE_MSG_MAP(StrUtilReq, Reverse, this_class, reverse)) {}
 
-    auto reverse(const message_context&, const stored_message& msg) -> bool {
+    auto reverse(const message_context&, const stored_message& msg) noexcept
+      -> bool {
         auto str = as_chars(copy(msg.content(), _buf));
         log_trace("received request: ${content}").arg(EAGINE_ID(content), str);
         memory::reverse(str);
@@ -58,7 +59,8 @@ struct str_utils_client
         bus_node().post(EAGINE_MSG_ID(StrUtilReq, Reverse), as_bytes(str));
     }
 
-    auto print(const message_context&, const stored_message& msg) -> bool {
+    auto print(const message_context&, const stored_message& msg) noexcept
+      -> bool {
         log_info("received response: ${content}")
           .arg(EAGINE_ID(content), msg.text_content());
         --_remaining;
