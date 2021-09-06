@@ -36,7 +36,7 @@ public:
     signal<void(
       const std::chrono::milliseconds age,
       const identifier_t source_id,
-      const verification_bits verified)>
+      const verification_bits verified) noexcept>
       shutdown_requested;
 
 protected:

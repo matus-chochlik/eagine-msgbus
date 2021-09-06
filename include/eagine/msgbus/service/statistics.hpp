@@ -44,7 +44,7 @@ public:
     /// @see bridge_stats_received
     /// @see endpoint_stats_received
     /// @see connection_stats_received
-    signal<void(const identifier_t, const router_statistics&)>
+    signal<void(const identifier_t, const router_statistics&) noexcept>
       router_stats_received;
 
     /// @brief Triggered on receipt of bridge node statistics information.
@@ -52,7 +52,7 @@ public:
     /// @see router_stats_received
     /// @see endpoint_stats_received
     /// @see connection_stats_received
-    signal<void(const identifier_t, const bridge_statistics&)>
+    signal<void(const identifier_t, const bridge_statistics&) noexcept>
       bridge_stats_received;
 
     /// @brief Triggered on receipt of endpoint node statistics information.
@@ -60,14 +60,15 @@ public:
     /// @see router_stats_received
     /// @see bridge_stats_received
     /// @see connection_stats_received
-    signal<void(const identifier_t, const endpoint_statistics&)>
+    signal<void(const identifier_t, const endpoint_statistics&) noexcept>
       endpoint_stats_received;
 
     /// @brief Triggered on receipt of connection statistics information.
     /// @see router_stats_received
     /// @see bridge_stats_received
     /// @see endpoint_stats_received
-    signal<void(const connection_statistics&)> connection_stats_received;
+    signal<void(const connection_statistics&) noexcept>
+      connection_stats_received;
 
 protected:
     using Base::Base;

@@ -52,17 +52,17 @@ signals:
 private:
     void handleHostChanged(
       eagine::msgbus::remote_host&,
-      eagine::msgbus::remote_host_changes);
+      eagine::msgbus::remote_host_changes) noexcept;
 
     void handleInstanceChanged(
       eagine::msgbus::remote_instance&,
-      eagine::msgbus::remote_instance_changes);
+      eagine::msgbus::remote_instance_changes) noexcept;
 
     void handleNodeChanged(
       eagine::msgbus::remote_node&,
-      eagine::msgbus::remote_node_changes);
+      eagine::msgbus::remote_node_changes) noexcept;
 
-    void handleNodeDisappeared(eagine::identifier_t);
+    void handleNodeDisappeared(eagine::identifier_t) noexcept;
 
     MonitorBackend& _backend;
     eagine::msgbus::endpoint _bus;

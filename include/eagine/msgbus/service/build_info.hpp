@@ -65,7 +65,8 @@ public:
 
     /// @brief Triggered on receipt of endpoint's build version information.
     /// @see query_build_info
-    signal<void(const result_context&, const build_info&)> build_info_received;
+    signal<void(const result_context&, const build_info&) noexcept>
+      build_info_received;
 
 protected:
     using Base::Base;
@@ -78,7 +79,7 @@ protected:
     }
 
 private:
-    default_callback_invoker<build_info(), 32> _build;
+    default_callback_invoker<build_info() noexcept, 32> _build;
 };
 //------------------------------------------------------------------------------
 } // namespace eagine::msgbus

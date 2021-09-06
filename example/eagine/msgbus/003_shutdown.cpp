@@ -37,7 +37,9 @@ public:
         not_subscribed.connect(EAGINE_THIS_MEM_FUNC_REF(on_not_subscribed));
     }
 
-    void on_subscribed(const subscriber_info& info, const message_id sub_msg) {
+    void on_subscribed(
+      const subscriber_info& info,
+      const message_id sub_msg) noexcept {
         if(sub_msg == EAGINE_MSG_ID(Shutdown, shutdown)) {
             log_info("target ${id} appeared")
               .arg(EAGINE_ID(id), info.endpoint_id);
@@ -46,7 +48,9 @@ public:
         }
     }
 
-    void on_unsubscribed(const subscriber_info& info, const message_id sub_msg) {
+    void on_unsubscribed(
+      const subscriber_info& info,
+      const message_id sub_msg) noexcept {
         if(sub_msg == EAGINE_MSG_ID(Shutdown, shutdown)) {
             log_info("target ${id} disappeared")
               .arg(EAGINE_ID(id), info.endpoint_id);
@@ -56,7 +60,7 @@ public:
 
     void on_not_subscribed(
       const subscriber_info& info,
-      const message_id sub_msg) {
+      const message_id sub_msg) noexcept {
         if(sub_msg == EAGINE_MSG_ID(Shutdown, shutdown)) {
             log_info("target ${id} does not support shutdown")
               .arg(EAGINE_ID(id), info.endpoint_id);

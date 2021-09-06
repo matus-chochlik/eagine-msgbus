@@ -65,12 +65,12 @@ protected:
     }
 
 private:
-    void _handle_relay_assigned(const identifier_t relay_id) {
+    void _handle_relay_assigned(const identifier_t relay_id) noexcept {
         log_info("stream relay ${relay} assigned")
           .arg(EAGINE_ID(relay), relay_id);
     }
 
-    void _handle_relay_reset() {
+    void _handle_relay_reset() noexcept {
         log_info("stream relay reset");
     }
 
@@ -101,7 +101,7 @@ public:
     }
 
 private:
-    void _handle_relay_assigned(const identifier_t relay_id) {
+    void _handle_relay_assigned(const identifier_t relay_id) noexcept {
         log_info("stream relay ${relay} assigned")
           .arg(EAGINE_ID(relay), relay_id);
     }
@@ -109,7 +109,7 @@ private:
     void _handle_stream_appeared(
       const identifier_t provider_id,
       const stream_info& info,
-      const msgbus::verification_bits) {
+      const msgbus::verification_bits) noexcept {
         log_info("stream ${stream} appeared at ${provider}")
           .arg(EAGINE_ID(provider), provider_id)
           .arg(EAGINE_ID(stream), info.id)
@@ -121,7 +121,7 @@ private:
     void _handle_stream_disappeared(
       const identifier_t provider_id,
       const stream_info& info,
-      const msgbus::verification_bits) {
+      const msgbus::verification_bits) noexcept {
         log_info("stream ${stream} disappeared from ${provider}")
           .arg(EAGINE_ID(provider), provider_id)
           .arg(EAGINE_ID(stream), info.id)
@@ -147,7 +147,7 @@ auto main(main_ctx& ctx) -> int {
     const auto on_stream_announced = [&ctx](
                                        identifier_t provider_id,
                                        const msgbus::stream_info& info,
-                                       msgbus::verification_bits) {
+                                       msgbus::verification_bits) noexcept {
         ctx.log()
           .info("stream ${stream} announced by ${provider}")
           .arg(EAGINE_ID(provider), provider_id)

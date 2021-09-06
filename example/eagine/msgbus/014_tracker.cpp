@@ -37,7 +37,9 @@ public:
         this->node_changed.connect(EAGINE_THIS_MEM_FUNC_REF(on_node_change));
     }
 
-    void on_node_change(remote_node& node, const remote_node_changes changes) {
+    void on_node_change(
+      remote_node& node,
+      const remote_node_changes changes) noexcept {
         log_info("node change ${nodeId}")
           .arg(EAGINE_ID(changes), changes)
           .arg(EAGINE_ID(nodeId), extract(node.id()));

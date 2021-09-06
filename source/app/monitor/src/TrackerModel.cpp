@@ -62,7 +62,7 @@ auto TrackerModel::nodeParameters(eagine::identifier_t nodeId) noexcept
 //------------------------------------------------------------------------------
 void TrackerModel::handleHostChanged(
   eagine::msgbus::remote_host& host,
-  eagine::msgbus::remote_host_changes changes) {
+  eagine::msgbus::remote_host_changes changes) noexcept {
     using eagine::msgbus::remote_host_change;
 
     if(changes) {
@@ -91,7 +91,7 @@ void TrackerModel::handleHostChanged(
 //------------------------------------------------------------------------------
 void TrackerModel::handleInstanceChanged(
   eagine::msgbus::remote_instance& instance,
-  eagine::msgbus::remote_instance_changes changes) {
+  eagine::msgbus::remote_instance_changes changes) noexcept {
     using eagine::msgbus::remote_instance_change;
 
     if(changes.has(remote_instance_change::host_id)) {
@@ -110,7 +110,7 @@ void TrackerModel::handleInstanceChanged(
 //------------------------------------------------------------------------------
 void TrackerModel::handleNodeChanged(
   eagine::msgbus::remote_node& node,
-  eagine::msgbus::remote_node_changes changes) {
+  eagine::msgbus::remote_node_changes changes) noexcept {
     using eagine::msgbus::remote_node_change;
 
     if(changes.has(remote_node_change::response_rate)) {
@@ -156,7 +156,7 @@ void TrackerModel::handleNodeChanged(
     }
 }
 //------------------------------------------------------------------------------
-void TrackerModel::handleNodeDisappeared(eagine::identifier_t nodeId) {
+void TrackerModel::handleNodeDisappeared(eagine::identifier_t nodeId) noexcept {
     emit nodeDisappeared(nodeId);
 }
 //------------------------------------------------------------------------------

@@ -46,16 +46,17 @@ class subscriber_discovery : public Base {
 
 public:
     /// @brief Triggered on receipt of notification that an endpoint is alive.
-    signal<void(const subscriber_info&)> reported_alive;
+    signal<void(const subscriber_info&) noexcept> reported_alive;
 
     /// @brief Triggered on receipt of info that endpoint subscribes to message.
-    signal<void(const subscriber_info&, const message_id)> subscribed;
+    signal<void(const subscriber_info&, const message_id) noexcept> subscribed;
 
     /// @brief Triggered on receipt of info that endpoint unsubscribes from message.
-    signal<void(const subscriber_info&, const message_id)> unsubscribed;
+    signal<void(const subscriber_info&, const message_id) noexcept> unsubscribed;
 
     /// @brief Triggered on receipt of info that endpoint doesn't handle message type.
-    signal<void(const subscriber_info&, const message_id)> not_subscribed;
+    signal<void(const subscriber_info&, const message_id) noexcept>
+      not_subscribed;
 
 protected:
     using Base::Base;

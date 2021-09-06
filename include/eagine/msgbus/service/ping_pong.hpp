@@ -152,7 +152,7 @@ public:
       const identifier_t pingable_id,
       const message_sequence_t sequence_no,
       const std::chrono::microseconds age,
-      const verification_bits)>
+      const verification_bits) noexcept>
       ping_responded;
 
     /// @brief Triggered on timeout of ping response.
@@ -162,7 +162,7 @@ public:
     signal<void(
       const identifier_t pingable_id,
       const message_sequence_t sequence_no,
-      const std::chrono::microseconds age)>
+      const std::chrono::microseconds age) noexcept>
       ping_timeouted;
 
 protected:

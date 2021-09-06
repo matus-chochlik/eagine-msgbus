@@ -25,7 +25,7 @@ class signal_binding;
 /// @ingroup msgbus
 /// @see signal_binding
 template <typename... Params>
-class signal<void(Params...)> {
+class signal<void(Params...) noexcept> {
 public:
     /// @brief Type of key that can be used to remove connected slot.
     using binding_key = signal_binding_key;
@@ -33,8 +33,9 @@ public:
     /// @brief Connects the specified callable, returns a key for removal.
     /// @see bind
     /// @see disconnect
-    auto connect(const callable_ref<void(Params...)> slot) -> binding_key {
-        auto get_key = [](auto& entry) {
+    auto connect(const callable_ref<void(Params...) noexcept> slot)
+      -> binding_key {
+        const auto get_key = [](const auto& entry) {
             return std::get<0>(entry);
         };
         auto key = 1U;
@@ -63,7 +64,7 @@ public:
     /// @brief Connects the specified callable, returns a binding object.
     /// @see connect
     /// @see signal_binding
-    [[nodiscard]] auto bind(const callable_ref<void(Params...)> slot)
+    [[nodiscard]] auto bind(const callable_ref<void(Params...) noexcept> slot)
       -> signal_binding;
 
     /// @brief Disconnects the callable by specifying the connection key.
@@ -84,23 +85,23 @@ public:
 
     /// @brief Implicit conversion to a compatible callable_ref.
     template <typename... P>
-    operator callable_ref<void(P...)>() const noexcept {
+    operator callable_ref<void(P...) noexcept>() const noexcept {
         return {
           this,
           member_function_constant<
-            void (signal::*)(P...) const,
+            void (signal::*)(P...) const noexcept,
             &signal::_call>{}};
     }
 
 private:
     template <typename... P>
-    void _call(P... args) const {
+    void _call(P... args) const noexcept {
         for(const auto& entry : _slots) {
             std::get<1>(entry)(args...);
         }
     }
 
-    flat_map<unsigned, callable_ref<void(Params...)>> _slots;
+    flat_map<unsigned, callable_ref<void(Params...) noexcept>> _slots;
 };
 //------------------------------------------------------------------------------
 /// @brief Class that keeps a signam binding key and disconnects it when destroyed.
@@ -153,8 +154,8 @@ private:
 };
 //------------------------------------------------------------------------------
 template <typename... Params>
-[[nodiscard]] auto signal<void(Params...)>::bind(
-  callable_ref<void(Params...)> slot) -> signal_binding {
+[[nodiscard]] auto signal<void(Params...) noexcept>::bind(
+  callable_ref<void(Params...) noexcept> slot) -> signal_binding {
     return {connect(slot), this};
 }
 //------------------------------------------------------------------------------

@@ -52,14 +52,14 @@ class node_tracker : public node_tracker_base<Base> {
 
 public:
     /// @brief Triggered when message bus host information changes.
-    signal<void(remote_host&, const remote_host_changes)> host_changed;
+    signal<void(remote_host&, const remote_host_changes) noexcept> host_changed;
 
     /// @brief Triggered when message bus instance information changes.
-    signal<void(remote_instance&, const remote_instance_changes)>
+    signal<void(remote_instance&, const remote_instance_changes) noexcept>
       instance_changed;
 
     /// @brief Triggered when message bus node information changes.
-    signal<void(remote_node&, const remote_node_changes)> node_changed;
+    signal<void(remote_node&, const remote_node_changes) noexcept> node_changed;
 
     /// @brief Returns handler for the node alive message.
     auto on_alive() noexcept {
@@ -422,33 +422,33 @@ private:
         }
     }
 
-    void _handle_alive(const subscriber_info& info) {
+    void _handle_alive(const subscriber_info& info) noexcept {
         _tracker.notice_instance(info.endpoint_id, info.instance_id)
           .assign(node_kind::endpoint);
     }
 
     void _handle_subscribed(
       const subscriber_info& info,
-      const message_id msg_id) {
+      const message_id msg_id) noexcept {
         _tracker.notice_instance(info.endpoint_id, info.instance_id)
           .add_subscription(msg_id);
     }
 
     void _handle_unsubscribed(
       const subscriber_info& info,
-      const message_id msg_id) {
+      const message_id msg_id) noexcept {
         _tracker.notice_instance(info.endpoint_id, info.instance_id)
           .remove_subscription(msg_id);
     }
 
     void _handle_not_subscribed(
       const subscriber_info& info,
-      const message_id msg_id) {
+      const message_id msg_id) noexcept {
         _tracker.notice_instance(info.endpoint_id, info.instance_id)
           .remove_subscription(msg_id);
     }
 
-    void _handle_router_appeared(const router_topology_info& info) {
+    void _handle_router_appeared(const router_topology_info& info) noexcept {
         _tracker.notice_instance(info.router_id, info.instance_id)
           .assign(node_kind::router);
         if(info.remote_id) {
@@ -457,7 +457,7 @@ private:
         }
     }
 
-    void _handle_bridge_appeared(const bridge_topology_info& info) {
+    void _handle_bridge_appeared(const bridge_topology_info& info) noexcept {
         _tracker.notice_instance(info.bridge_id, info.instance_id)
           .assign(node_kind::bridge);
         if(info.opposite_id) {
@@ -466,48 +466,49 @@ private:
         }
     }
 
-    void _handle_endpoint_appeared(const endpoint_topology_info& info) {
+    void _handle_endpoint_appeared(const endpoint_topology_info& info) noexcept {
         _tracker.notice_instance(info.endpoint_id, info.instance_id)
           .assign(node_kind::endpoint);
     }
 
-    void _handle_router_disappeared(const identifier_t router_id) {
+    void _handle_router_disappeared(const identifier_t router_id) noexcept {
         _tracker.remove_node(router_id);
     }
 
-    void _handle_bridge_disappeared(const identifier_t bridge_id) {
+    void _handle_bridge_disappeared(const identifier_t bridge_id) noexcept {
         _tracker.remove_node(bridge_id);
     }
 
-    void _handle_endpoint_disappeared(const identifier_t endpoint_id) {
+    void _handle_endpoint_disappeared(const identifier_t endpoint_id) noexcept {
         _tracker.remove_node(endpoint_id);
     }
 
     void _handle_router_stats_received(
       const identifier_t router_id,
-      const router_statistics& stats) {
+      const router_statistics& stats) noexcept {
         _get_node(router_id).assign(stats).notice_alive();
     }
 
     void _handle_bridge_stats_received(
       const identifier_t bridge_id,
-      const bridge_statistics& stats) {
+      const bridge_statistics& stats) noexcept {
         _get_node(bridge_id).assign(stats).notice_alive();
     }
 
     void _handle_endpoint_stats_received(
       const identifier_t endpoint_id,
-      const endpoint_statistics& stats) {
+      const endpoint_statistics& stats) noexcept {
         _get_node(endpoint_id).assign(stats).notice_alive();
     }
 
-    void _handle_connection_stats_received(const connection_statistics& stats) {
+    void _handle_connection_stats_received(
+      const connection_statistics& stats) noexcept {
         _get_connection(stats.local_id, stats.remote_id);
     }
 
     void _handle_application_name_received(
       const result_context& ctx,
-      const valid_if_not_empty<std::string>& app_name) {
+      const valid_if_not_empty<std::string>& app_name) noexcept {
         if(app_name) {
             auto& node = _get_node(ctx.source_id());
             if(auto inst_id{node.instance_id()}) {
@@ -524,13 +525,13 @@ private:
 
     void _handle_endpoint_info_received(
       const result_context& ctx,
-      const endpoint_info& info) {
+      const endpoint_info& info) noexcept {
         _get_node(ctx.source_id()).assign(info).notice_alive();
     }
 
     void _handle_host_id_received(
       const result_context& ctx,
-      const valid_if_positive<host_id_t>& host_id) {
+      const valid_if_positive<host_id_t>& host_id) noexcept {
         if(host_id) {
             _get_node(ctx.source_id())
               .set_host_id(extract(host_id))
@@ -540,7 +541,7 @@ private:
 
     void _handle_hostname_received(
       const result_context& ctx,
-      const valid_if_not_empty<std::string>& hostname) {
+      const valid_if_not_empty<std::string>& hostname) noexcept {
         if(hostname) {
             auto& node = _get_node(ctx.source_id());
             if(auto host_id{node.host_id()}) {
@@ -556,7 +557,7 @@ private:
 
     void _handle_compiler_info_received(
       const result_context& ctx,
-      const compiler_info& info) {
+      const compiler_info& info) noexcept {
         auto& node = _get_node(ctx.source_id()).notice_alive();
         if(auto inst_id{node.instance_id()}) {
             auto& inst = _get_instance(extract(inst_id));
@@ -570,7 +571,7 @@ private:
 
     void _handle_build_info_received(
       const result_context& ctx,
-      const build_info& info) {
+      const build_info& info) noexcept {
         auto& node = _get_node(ctx.source_id()).notice_alive();
         if(auto inst_id{node.instance_id()}) {
             auto& inst = _get_instance(extract(inst_id));
@@ -584,7 +585,7 @@ private:
 
     void _handle_cpu_concurrent_threads_received(
       const result_context& ctx,
-      const valid_if_positive<span_size_t>& opt_value) {
+      const valid_if_positive<span_size_t>& opt_value) noexcept {
         if(opt_value) {
             auto& node = _get_node(ctx.source_id()).notice_alive();
             if(auto host_id{node.host_id()}) {
@@ -600,7 +601,7 @@ private:
 
     void _handle_short_average_load_received(
       const result_context& ctx,
-      const valid_if_nonnegative<float>& opt_value) {
+      const valid_if_nonnegative<float>& opt_value) noexcept {
         if(opt_value) {
             auto& node = _get_node(ctx.source_id()).notice_alive();
             if(auto host_id{node.host_id()}) {
@@ -616,7 +617,7 @@ private:
 
     void _handle_long_average_load_received(
       const result_context& ctx,
-      const valid_if_nonnegative<float>& opt_value) {
+      const valid_if_nonnegative<float>& opt_value) noexcept {
         if(opt_value) {
             auto& node = _get_node(ctx.source_id()).notice_alive();
             if(auto host_id{node.host_id()}) {
@@ -632,7 +633,7 @@ private:
 
     void _handle_free_ram_size_received(
       const result_context& ctx,
-      const valid_if_positive<span_size_t>& opt_value) {
+      const valid_if_positive<span_size_t>& opt_value) noexcept {
         if(opt_value) {
             auto& node = _get_node(ctx.source_id()).notice_alive();
             if(auto host_id{node.host_id()}) {
@@ -648,7 +649,7 @@ private:
 
     void _handle_total_ram_size_received(
       const result_context& ctx,
-      const valid_if_positive<span_size_t>& opt_value) {
+      const valid_if_positive<span_size_t>& opt_value) noexcept {
         if(opt_value) {
             auto& node = _get_node(ctx.source_id()).notice_alive();
             if(auto host_id{node.host_id()}) {
@@ -664,7 +665,7 @@ private:
 
     void _handle_free_swap_size_received(
       const result_context& ctx,
-      const valid_if_nonnegative<span_size_t>& opt_value) {
+      const valid_if_nonnegative<span_size_t>& opt_value) noexcept {
         if(opt_value) {
             auto& node = _get_node(ctx.source_id()).notice_alive();
             if(auto host_id{node.host_id()}) {
@@ -680,7 +681,7 @@ private:
 
     void _handle_total_swap_size_received(
       const result_context& ctx,
-      const valid_if_nonnegative<span_size_t>& opt_value) {
+      const valid_if_nonnegative<span_size_t>& opt_value) noexcept {
         if(opt_value) {
             auto& node = _get_node(ctx.source_id()).notice_alive();
             if(auto host_id{node.host_id()}) {
@@ -698,7 +699,7 @@ private:
       const result_context& ctx,
       const std::tuple<
         valid_if_positive<kelvins_t<float>>,
-        valid_if_positive<kelvins_t<float>>>& value) {
+        valid_if_positive<kelvins_t<float>>>& value) noexcept {
         const auto& [min, max] = value;
         if(min && max) {
             auto& node = _get_node(ctx.source_id()).notice_alive();
@@ -715,7 +716,7 @@ private:
 
     void _handle_power_supply_kind_received(
       const result_context& ctx,
-      const power_supply_kind value) {
+      const power_supply_kind value) noexcept {
         auto& node = _get_node(ctx.source_id()).notice_alive();
         if(auto host_id{node.host_id()}) {
             auto& host = _get_host(extract(host_id)).notice_alive();
@@ -731,14 +732,14 @@ private:
       const identifier_t node_id,
       const message_sequence_t sequence_no,
       const std::chrono::microseconds age,
-      const verification_bits) {
+      const verification_bits) noexcept {
         _get_node(node_id).ping_response(sequence_no, age);
     }
 
     void _handle_ping_timeout(
       const identifier_t node_id,
       const message_sequence_t sequence_no,
-      const std::chrono::microseconds age) {
+      const std::chrono::microseconds age) noexcept {
         _get_node(node_id).ping_timeout(sequence_no, age);
     }
 };

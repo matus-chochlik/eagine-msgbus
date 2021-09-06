@@ -49,13 +49,13 @@ public:
     using fetch_handler = connection::fetch_handler;
 
     /// @brief Triggered when the id is confirmed or assigned to this endpoint.
-    signal<void(const identifier_t)> id_assigned;
+    signal<void(const identifier_t) noexcept> id_assigned;
 
     /// @brief Triggered when this endpoint's connection is established.
-    signal<void(const bool)> connection_established;
+    signal<void(const bool) noexcept> connection_established;
 
     /// @brief Triggered when this endpoint's connection is lost.
-    signal<void()> connection_lost;
+    signal<void() noexcept> connection_lost;
 
     /// @brief Construction with a reference to parent main context object.
     endpoint(main_ctx_object obj) noexcept

@@ -47,11 +47,12 @@ signals:
 private:
     TilingBackend& _backend;
 
-    void onHelperAppeared(eagine::identifier_t);
+    void onHelperAppeared(eagine::identifier_t) noexcept;
+
     void onFragmentAdded(
       eagine::identifier_t,
       const eagine::msgbus::sudoku_tiles<4>&,
-      const std::tuple<int, int>&);
+      const std::tuple<int, int>&) noexcept;
 
     eagine::msgbus::endpoint _bus;
 

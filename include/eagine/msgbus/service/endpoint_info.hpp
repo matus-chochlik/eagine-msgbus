@@ -72,7 +72,7 @@ public:
 
     /// @brief Triggered on receipt of basic endpoint information.
     /// @see query_endpoint_info
-    signal<void(const result_context&, const endpoint_info&)>
+    signal<void(const result_context&, const endpoint_info&) noexcept>
       endpoint_info_received;
 
 protected:
@@ -86,7 +86,7 @@ protected:
     }
 
 private:
-    default_callback_invoker<endpoint_info(), 1024> _info;
+    default_callback_invoker<endpoint_info() noexcept, 1024> _info;
 };
 //------------------------------------------------------------------------------
 } // namespace eagine::msgbus

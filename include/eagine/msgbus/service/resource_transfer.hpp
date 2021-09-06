@@ -384,17 +384,18 @@ class resource_manipulator
 public:
     /// @brief Triggered when a server responds that is has a resource.
     /// @see search_resource
-    signal<void(const identifier_t, const url&)> server_has_resource;
+    signal<void(const identifier_t, const url&) noexcept> server_has_resource;
 
     /// @brief Triggered when a server responds that is has not a resource.
     /// @see search_resource
-    signal<void(const identifier_t, const url&)> server_has_not_resource;
+    signal<void(const identifier_t, const url&) noexcept>
+      server_has_not_resource;
 
     /// @brief Triggered when a resource server appears on the bus.
-    signal<void(const identifier_t)> resource_server_appeared;
+    signal<void(const identifier_t) noexcept> resource_server_appeared;
 
     /// @brief Triggered when a resource server dissapears from the bus.
-    signal<void(const identifier_t)> resource_server_lost;
+    signal<void(const identifier_t) noexcept> resource_server_lost;
 
     /// @brief Returns the best-guess of server endpoint id for a URL.
     /// @see query_resource_content
@@ -555,7 +556,7 @@ protected:
     }
 
 private:
-    void _handle_alive(const subscriber_info& sub_info) {
+    void _handle_alive(const subscriber_info& sub_info) noexcept {
         const auto pos = _server_endpoints.find(sub_info.endpoint_id);
         if(pos != _server_endpoints.end()) {
             auto& svr_info = std::get<1>(*pos);
@@ -565,7 +566,7 @@ private:
 
     void _handle_subscribed(
       const subscriber_info& sub_info,
-      const message_id msg_id) {
+      const message_id msg_id) noexcept {
         if(msg_id == EAGINE_MSG_ID(eagiRsrces, getContent)) {
             auto spos = _server_endpoints.find(sub_info.endpoint_id);
             if(spos == _server_endpoints.end()) {
@@ -577,7 +578,7 @@ private:
         }
     }
 
-    void _remove_server(const identifier_t endpoint_id) {
+    void _remove_server(const identifier_t endpoint_id) noexcept {
         const auto spos = _server_endpoints.find(endpoint_id);
         if(spos != _server_endpoints.end()) {
             resource_server_lost(endpoint_id);
@@ -605,7 +606,7 @@ private:
 
     void _handle_unsubscribed(
       const subscriber_info& sub_info,
-      const message_id msg_id) {
+      const message_id msg_id) noexcept {
         if(msg_id == EAGINE_MSG_ID(eagiRsrces, getContent)) {
             _remove_server(sub_info.endpoint_id);
         }
@@ -613,7 +614,7 @@ private:
 
     void _handle_host_id_received(
       const result_context& ctx,
-      const valid_if_positive<host_id_t>& host_id) {
+      const valid_if_positive<host_id_t>& host_id) noexcept {
         if(host_id) {
             _host_id_to_endpoint[extract(host_id)].insert(ctx.source_id());
         }
@@ -621,7 +622,7 @@ private:
 
     void _handle_hostname_received(
       const result_context& ctx,
-      const valid_if_not_empty<std::string>& hostname) {
+      const valid_if_not_empty<std::string>& hostname) noexcept {
         if(hostname) {
             _hostname_to_endpoint[extract(hostname)].insert(ctx.source_id());
         }
