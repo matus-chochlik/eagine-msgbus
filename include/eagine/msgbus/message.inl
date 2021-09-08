@@ -232,15 +232,17 @@ auto connection_outgoing_messages::enqueue(
 
     block_data_sink sink(temp);
     default_serializer_backend backend(sink);
-    const auto errors = serialize_message(msg_id, message, backend);
-    if(!errors) {
+    const auto errors{serialize_message(msg_id, message, backend)};
+    if(EAGINE_LIKELY(!errors)) {
         user.log_trace("enqueuing message ${message} to be sent")
           .arg(EAGINE_ID(message), msg_id);
         _serialized.push(sink.done());
         return true;
     }
     user.log_error("failed to serialize message ${message}")
-      .arg(EAGINE_ID(message), msg_id);
+      .arg(EAGINE_ID(message), msg_id)
+      .arg(EAGINE_ID(errors), errors)
+      .arg(EAGINE_ID(content), message.content());
     return false;
 }
 //------------------------------------------------------------------------------
