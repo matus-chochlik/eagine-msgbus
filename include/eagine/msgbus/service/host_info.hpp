@@ -31,7 +31,7 @@ class host_info_provider : public Base {
 protected:
     using Base::Base;
 
-    void add_methods() {
+    void add_methods() noexcept {
         Base::add_methods();
 
         Base::add_method(_host_id(
@@ -75,7 +75,8 @@ public:
 
     /// @brief Triggered on receipt of endpoint's host identifier.
     /// @see query_host_id
-    signal<void(const result_context&, const valid_if_positive<host_id_t>&)>
+    signal<
+      void(const result_context&, const valid_if_positive<host_id_t>&) noexcept>
       host_id_received;
 
     /// @brief Queries the endpoint's host name.
@@ -88,7 +89,9 @@ public:
 
     /// @brief Triggered on receipt of endpoint's host name.
     /// @see query_hostname
-    signal<void(const result_context&, const valid_if_not_empty<std::string>&)>
+    signal<void(
+      const result_context&,
+      const valid_if_not_empty<std::string>&) noexcept>
       hostname_received;
 
 protected:
@@ -105,9 +108,11 @@ protected:
     }
 
 private:
-    default_callback_invoker<valid_if_positive<host_id_t>(), 32> _host_id;
+    default_callback_invoker<valid_if_positive<host_id_t>() noexcept, 32>
+      _host_id;
 
-    default_callback_invoker<valid_if_not_empty<std::string>(), 1024> _hostname;
+    default_callback_invoker<valid_if_not_empty<std::string>() noexcept, 1024>
+      _hostname;
 };
 //------------------------------------------------------------------------------
 } // namespace eagine::msgbus

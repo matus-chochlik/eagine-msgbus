@@ -20,7 +20,7 @@ namespace eagine::msgbus {
 struct service_interface : interface<service_interface> {
 
     /// @brief Does an iteration update and processes all received messages.
-    virtual auto update_and_process_all() -> work_done = 0;
+    virtual auto update_and_process_all() noexcept -> work_done = 0;
 };
 //------------------------------------------------------------------------------
 } // namespace eagine::msgbus

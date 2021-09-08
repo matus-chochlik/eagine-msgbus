@@ -30,7 +30,7 @@ class system_info_provider : public Base {
 protected:
     using Base::Base;
 
-    void add_methods() {
+    void add_methods() noexcept {
         Base::add_methods();
 
         Base::add_method(_uptime(
@@ -159,7 +159,7 @@ private:
 
     auto _handle_stats_query(
       const message_context& msg_ctx,
-      const stored_message& message) -> bool {
+      const stored_message& message) noexcept -> bool {
         _cpu_concurrent_threads.invoke_by(msg_ctx, message);
         _memory_page_size.invoke_by(msg_ctx, message);
         _total_ram_size.invoke_by(msg_ctx, message);
@@ -169,7 +169,7 @@ private:
 
     auto _handle_sensor_query(
       const message_context& msg_ctx,
-      const stored_message& message) -> bool {
+      const stored_message& message) noexcept -> bool {
         _short_average_load.invoke_by(msg_ctx, message);
         _long_average_load.invoke_by(msg_ctx, message);
         _free_ram_size.invoke_by(msg_ctx, message);
@@ -198,7 +198,8 @@ public:
 
     /// @brief Triggered on receipt of endpoint's system uptime.
     /// @see query_uptime
-    signal<void(const result_context&, const std::chrono::duration<float>&)>
+    signal<
+      void(const result_context&, const std::chrono::duration<float>&) noexcept>
       uptime_received;
 
     /// @brief Queries the endpoint's host CPU's supported concurrent thread count.
@@ -210,7 +211,9 @@ public:
 
     /// @brief Triggered on receipt of CPU's supported concurrent thread count.
     /// @see query_cpu_concurrent_threads
-    signal<void(const result_context&, const valid_if_positive<span_size_t>&)>
+    signal<void(
+      const result_context&,
+      const valid_if_positive<span_size_t>&) noexcept>
       cpu_concurrent_threads_received;
 
     /// @brief Queries the endpoint's host system short average load (0.0 - 1.0).
@@ -222,7 +225,8 @@ public:
 
     /// @brief Triggered on receipt of endpoint's host short average load.
     /// @see query_short_average_load
-    signal<void(const result_context&, const valid_if_nonnegative<float>&)>
+    signal<
+      void(const result_context&, const valid_if_nonnegative<float>&) noexcept>
       short_average_load_received;
 
     /// @brief Queries the endpoint's host system long average load (0.0 - 1.0).
@@ -234,7 +238,8 @@ public:
 
     /// @brief Triggered on receipt of endpoint's host long average load.
     /// @see query_long_average_load
-    signal<void(const result_context&, const valid_if_nonnegative<float>&)>
+    signal<
+      void(const result_context&, const valid_if_nonnegative<float>&) noexcept>
       long_average_load_received;
 
     /// @brief Queries the endpoint's host system memory page size in bytes.
@@ -246,7 +251,9 @@ public:
 
     /// @brief Triggered on receipt of endpoint's host system memory page size.
     /// @see query_memory_page_size
-    signal<void(const result_context&, const valid_if_positive<span_size_t>&)>
+    signal<void(
+      const result_context&,
+      const valid_if_positive<span_size_t>&) noexcept>
       memory_page_size_received;
 
     /// @brief Queries the endpoint's host system free RAM size in bytes.
@@ -259,7 +266,9 @@ public:
 
     /// @brief Triggered on receipt of endpoint's host system free RAM size.
     /// @see query_free_ram_size
-    signal<void(const result_context&, const valid_if_positive<span_size_t>&)>
+    signal<void(
+      const result_context&,
+      const valid_if_positive<span_size_t>&) noexcept>
       free_ram_size_received;
 
     /// @brief Queries the endpoint's host system total RAM size in bytes.
@@ -272,7 +281,9 @@ public:
 
     /// @brief Triggered on receipt of endpoint's host system total RAM size.
     /// @see query_total_ram_size
-    signal<void(const result_context&, const valid_if_positive<span_size_t>&)>
+    signal<void(
+      const result_context&,
+      const valid_if_positive<span_size_t>&) noexcept>
       total_ram_size_received;
 
     /// @brief Queries the endpoint's host system free swap size in bytes.
@@ -285,7 +296,9 @@ public:
 
     /// @brief Triggered on receipt of endpoint's host system free swap size.
     /// @see query_free_swap_size
-    signal<void(const result_context&, const valid_if_nonnegative<span_size_t>&)>
+    signal<void(
+      const result_context&,
+      const valid_if_nonnegative<span_size_t>&) noexcept>
       free_swap_size_received;
 
     /// @brief Queries the endpoint's host system total swap size in bytes.
@@ -298,7 +311,9 @@ public:
 
     /// @brief Triggered on receipt of endpoint's host system total swap size.
     /// @see query_total_swap_size
-    signal<void(const result_context&, const valid_if_nonnegative<span_size_t>&)>
+    signal<void(
+      const result_context&,
+      const valid_if_nonnegative<span_size_t>&) noexcept>
       total_swap_size_received;
 
     /// @brief Queries the endpoint's host system minimum and maximum temperature.
@@ -313,7 +328,7 @@ public:
       const result_context&,
       const std::tuple<
         valid_if_positive<kelvins_t<float>>,
-        valid_if_positive<kelvins_t<float>>>&)>
+        valid_if_positive<kelvins_t<float>>>&) noexcept>
       temperature_min_max_received;
 
     /// @brief Queries the endpoint's host system power supply kind information.
@@ -324,7 +339,7 @@ public:
 
     /// @brief Triggered on receipt of endpoint's host system power supply kind.
     /// @see query_power_supply_kind
-    signal<void(const result_context&, power_supply_kind)>
+    signal<void(const result_context&, power_supply_kind) noexcept>
       power_supply_kind_received;
 
     /// @brief Queries all endpoint's system stats information.
@@ -353,40 +368,42 @@ public:
     }
 
 private:
-    default_callback_invoker<std::chrono::duration<float>(), 32> _uptime;
+    default_callback_invoker<std::chrono::duration<float>() noexcept, 32>
+      _uptime;
 
-    default_callback_invoker<valid_if_positive<span_size_t>(), 32>
+    default_callback_invoker<valid_if_positive<span_size_t>() noexcept, 32>
       _cpu_concurrent_threads;
 
-    default_callback_invoker<valid_if_nonnegative<float>(), 32>
+    default_callback_invoker<valid_if_nonnegative<float>() noexcept, 32>
       _short_average_load;
 
-    default_callback_invoker<valid_if_nonnegative<float>(), 32>
+    default_callback_invoker<valid_if_nonnegative<float>() noexcept, 32>
       _long_average_load;
 
-    default_callback_invoker<valid_if_positive<span_size_t>(), 32>
+    default_callback_invoker<valid_if_positive<span_size_t>() noexcept, 32>
       _memory_page_size;
 
-    default_callback_invoker<valid_if_positive<span_size_t>(), 32>
+    default_callback_invoker<valid_if_positive<span_size_t>() noexcept, 32>
       _free_ram_size;
 
-    default_callback_invoker<valid_if_positive<span_size_t>(), 32>
+    default_callback_invoker<valid_if_positive<span_size_t>() noexcept, 32>
       _total_ram_size;
 
-    default_callback_invoker<valid_if_nonnegative<span_size_t>(), 32>
+    default_callback_invoker<valid_if_nonnegative<span_size_t>() noexcept, 32>
       _free_swap_size;
 
-    default_callback_invoker<valid_if_nonnegative<span_size_t>(), 32>
+    default_callback_invoker<valid_if_nonnegative<span_size_t>() noexcept, 32>
       _total_swap_size;
 
     default_callback_invoker<
       std::tuple<
         valid_if_positive<kelvins_t<float>>,
-        valid_if_positive<kelvins_t<float>>>(),
+        valid_if_positive<kelvins_t<float>>>() noexcept,
       64>
       _temperature_min_max;
 
-    default_callback_invoker<power_supply_kind(), 32> _power_supply_kind;
+    default_callback_invoker<power_supply_kind() noexcept, 32>
+      _power_supply_kind;
 
 protected:
     using Base::Base;

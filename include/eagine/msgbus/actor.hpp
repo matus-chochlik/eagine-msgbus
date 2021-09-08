@@ -47,24 +47,25 @@ public:
     }
 
     /// @brief Adds a connection to the associated endpoint.
-    auto add_connection(std::unique_ptr<connection> conn) -> bool final {
+    auto add_connection(std::unique_ptr<connection> conn) noexcept
+      -> bool final {
         return _endpoint.add_connection(std::move(conn));
     }
 
-    void allow_subscriptions() {
+    void allow_subscriptions() noexcept {
         _subscriber.allow_subscriptions();
     }
 
     /// @brief Processes a single enqueued message for which there is a handler.
     /// @see process_all
-    auto process_one() {
+    auto process_one() noexcept {
         _endpoint.update();
         return _subscriber.process_one();
     }
 
     /// @brief Processes all enqueued messages for which there are handlers.
     /// @see process_one
-    auto process_all() {
+    auto process_all() noexcept {
         _endpoint.update();
         return _subscriber.process_all();
     }
@@ -73,7 +74,7 @@ protected:
     auto _process_message(
       const message_id msg_id,
       const message_age,
-      const message_view& message) -> bool {
+      const message_view& message) noexcept -> bool {
         // TODO: use message age
         if(!_accept_message(_endpoint, msg_id, message)) {
             if(!is_special_message(msg_id)) {
@@ -91,7 +92,7 @@ protected:
     actor(
       main_ctx_object obj, // NOLINT(performance-unnecessary-value-param)
       Class* instance,
-      MsgMaps... msg_maps)
+      MsgMaps... msg_maps) noexcept
       : _endpoint{_make_endpoint(
           std::move(obj),
           EAGINE_THIS_MEM_FUNC_REF(_process_message))}

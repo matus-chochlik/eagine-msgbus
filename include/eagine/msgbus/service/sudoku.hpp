@@ -210,7 +210,7 @@ public:
 protected:
     using Base::Base;
 
-    void add_methods() {
+    void add_methods() noexcept {
         Base::add_methods();
 
         sudoku_rank_tuple<unsigned_constant> ranks;
@@ -226,8 +226,9 @@ protected:
 
 private:
     template <unsigned S>
-    auto _handle_search(const message_context&, const stored_message& message)
-      -> bool {
+    auto _handle_search(
+      const message_context&,
+      const stored_message& message) noexcept -> bool {
         _infos.get(unsigned_constant<S>{}).on_search(message.source_id);
         mark_activity();
         return true;
@@ -237,13 +238,14 @@ private:
     static constexpr auto _bind_handle_search(
       const unsigned_constant<S> rank) noexcept {
         return message_handler_map<member_function_constant<
-          bool (This::*)(const message_context&, const stored_message&),
+          bool (This::*)(const message_context&, const stored_message&) noexcept,
           &This::_handle_search<S>>>{sudoku_search_msg(rank)};
     }
 
     template <unsigned S>
-    auto _handle_board(const message_context&, const stored_message& message)
-      -> bool {
+    auto _handle_board(
+      const message_context&,
+      const stored_message& message) noexcept -> bool {
         const unsigned_constant<S> rank{};
         auto& info = _infos.get(rank);
         basic_sudoku_board<S> board{info.traits};
@@ -268,7 +270,7 @@ private:
     static constexpr auto _bind_handle_board(
       const unsigned_constant<S> rank) noexcept {
         return message_handler_map<member_function_constant<
-          bool (This::*)(const message_context&, const stored_message&),
+          bool (This::*)(const message_context&, const stored_message&) noexcept,
           &This::_handle_board<S>>>{sudoku_query_msg(rank)};
     }
 
@@ -424,21 +426,21 @@ public:
         }
     }
 
-    void on_id_assigned(const identifier_t) {
+    void on_id_assigned(const identifier_t) noexcept {
         _can_work = true;
     }
 
-    void on_connection_established(const bool usable) {
+    void on_connection_established(const bool usable) noexcept {
         _can_work = usable;
         this->bus_node().log_info("connection established");
     }
 
-    void on_connection_lost() {
+    void on_connection_lost() noexcept {
         _can_work = false;
         this->bus_node().log_warning("connection lost");
     }
 
-    auto update() -> work_done {
+    auto update() noexcept -> work_done {
         some_true something_done{};
         something_done(Base::update());
 
@@ -561,19 +563,19 @@ public:
     }
 
     /// @brief Triggered when a helper service appears.
-    signal<void(const identifier_t)> helper_appeared;
+    signal<void(const identifier_t) noexcept> helper_appeared;
 
     /// @brief Triggered when the board with the specified key is solved.
-    signal<void(const identifier_t, const Key&, basic_sudoku_board<3>&)>
+    signal<void(const identifier_t, const Key&, basic_sudoku_board<3>&) noexcept>
       solved_3;
     /// @brief Triggered when the board with the specified key is solved.
-    signal<void(const identifier_t, const Key&, basic_sudoku_board<4>&)>
+    signal<void(const identifier_t, const Key&, basic_sudoku_board<4>&) noexcept>
       solved_4;
     /// @brief Triggered when the board with the specified key is solved.
-    signal<void(const identifier_t, const Key&, basic_sudoku_board<5>&)>
+    signal<void(const identifier_t, const Key&, basic_sudoku_board<5>&) noexcept>
       solved_5;
     /// @brief Triggered when the board with the specified key is solved.
-    signal<void(const identifier_t, const Key&, basic_sudoku_board<6>&)>
+    signal<void(const identifier_t, const Key&, basic_sudoku_board<6>&) noexcept>
       solved_6;
 
     /// @brief Returns a reference to the solved_3 signal.
@@ -913,8 +915,9 @@ private:
     bool _can_work{false};
 
     template <unsigned S>
-    auto _handle_alive(const message_context&, const stored_message& message)
-      -> bool {
+    auto _handle_alive(
+      const message_context&,
+      const stored_message& message) noexcept -> bool {
         _infos.get(unsigned_constant<S>{})
           .helper_alive(*this, message.source_id);
         return true;
@@ -924,14 +927,14 @@ private:
     static constexpr auto _bind_handle_alive(
       const unsigned_constant<S> rank) noexcept {
         return message_handler_map<member_function_constant<
-          bool (This::*)(const message_context&, const stored_message&),
+          bool (This::*)(const message_context&, const stored_message&) noexcept,
           &This::_handle_alive<S>>>{sudoku_alive_msg(rank)};
     }
 
     template <unsigned S>
     auto _handle_board(
       const message_context& msg_ctx,
-      const stored_message& message) -> bool {
+      const stored_message& message) noexcept -> bool {
 
         _infos.get(unsigned_constant<S>{})
           .handle_response(*this, msg_ctx.msg_id(), message);
@@ -942,7 +945,7 @@ private:
     static constexpr auto _bind_handle_candidate(
       const unsigned_constant<S> rank) noexcept {
         return message_handler_map<member_function_constant<
-          bool (This::*)(const message_context&, const stored_message&),
+          bool (This::*)(const message_context&, const stored_message&) noexcept,
           &This::_handle_board<S>>>{sudoku_candidate_msg(rank)};
     }
 
@@ -950,13 +953,14 @@ private:
     static constexpr auto _bind_handle_solved(
       const unsigned_constant<S> rank) noexcept {
         return message_handler_map<member_function_constant<
-          bool (This::*)(const message_context&, const stored_message&),
+          bool (This::*)(const message_context&, const stored_message&) noexcept,
           &This::_handle_board<S>>>{sudoku_solved_msg(rank)};
     }
 
     template <unsigned S>
-    auto _handle_done(const message_context&, const stored_message& message)
-      -> bool {
+    auto _handle_done(
+      const message_context&,
+      const stored_message& message) noexcept -> bool {
         _infos.get(unsigned_constant<S>{}).pending_done(message.sequence_no);
         return true;
     }
@@ -965,7 +969,7 @@ private:
     static constexpr auto _bind_handle_done(
       const unsigned_constant<S> rank) noexcept {
         return message_handler_map<member_function_constant<
-          bool (This::*)(const message_context&, const stored_message&),
+          bool (This::*)(const message_context&, const stored_message&) noexcept,
           &This::_handle_done<S>>>{sudoku_done_msg(rank)};
     }
 };
@@ -1297,16 +1301,20 @@ public:
     }
 
     /// @brief Triggered then all tiles with rank 3 are generated.
-    signal<void(const identifier_t, const sudoku_tiles<3>&, const Coord&)>
+    signal<
+      void(const identifier_t, const sudoku_tiles<3>&, const Coord&) noexcept>
       tiles_generated_3;
     /// @brief Triggered then all tiles with rank 4 are generated.
-    signal<void(const identifier_t, const sudoku_tiles<4>&, const Coord&)>
+    signal<
+      void(const identifier_t, const sudoku_tiles<4>&, const Coord&) noexcept>
       tiles_generated_4;
     /// @brief Triggered then all tiles with rank 5 are generated.
-    signal<void(const identifier_t, const sudoku_tiles<5>&, const Coord&)>
+    signal<
+      void(const identifier_t, const sudoku_tiles<5>&, const Coord&) noexcept>
       tiles_generated_5;
     /// @brief Triggered then all tiles with rank 6 are generated.
-    signal<void(const identifier_t, const sudoku_tiles<6>&, const Coord&)>
+    signal<
+      void(const identifier_t, const sudoku_tiles<6>&, const Coord&) noexcept>
       tiles_generated_6;
 
     /// @brief Returns a reference to the tiles_generated_3 signal.
@@ -1575,7 +1583,7 @@ private:
     void _handle_solved(
       const identifier_t helper_id,
       const Coord& coord,
-      basic_sudoku_board<S>& board) {
+      basic_sudoku_board<S>& board) noexcept {
         auto& info = _infos.get(unsigned_constant<S>{});
         info.handle_solved(*this, helper_id, coord, std::move(board));
     }

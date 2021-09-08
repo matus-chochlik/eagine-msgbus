@@ -58,7 +58,7 @@ public:
     void on_shutdown(
       const std::chrono::milliseconds age,
       const identifier_t source_id,
-      const verification_bits verified) {
+      const verification_bits verified) noexcept {
         log_info("received shutdown request from ${source}")
           .arg(EAGINE_ID(age), age)
           .arg(EAGINE_ID(source), source_id)

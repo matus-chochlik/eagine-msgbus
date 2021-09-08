@@ -14,14 +14,14 @@ namespace eagine::msgbus {
 // endpoint
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-auto endpoint::_uptime_seconds() -> std::int64_t {
+auto endpoint::_uptime_seconds() noexcept -> std::int64_t {
     return std::chrono::duration_cast<std::chrono::seconds>(
              std::chrono::steady_clock::now() - _startup_time)
       .count();
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-auto endpoint::_process_blobs() -> work_done {
+auto endpoint::_process_blobs() noexcept -> work_done {
     some_true something_done;
     something_done(_blobs.update(EAGINE_THIS_MEM_FUNC_REF(post)));
     const auto opt_max_size = max_data_size();
@@ -33,7 +33,8 @@ auto endpoint::_process_blobs() -> work_done {
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-auto endpoint::_do_send(const message_id msg_id, message_view message) -> bool {
+auto endpoint::_do_send(const message_id msg_id, message_view message) noexcept
+  -> bool {
     EAGINE_ASSERT(has_id());
     message.set_source_id(_endpoint_id);
     if(EAGINE_LIKELY(_connection && _connection->send(msg_id, message))) {
@@ -304,7 +305,7 @@ EAGINE_LIB_FUNC
 auto endpoint::_store_message(
   const message_id msg_id,
   const message_age msg_age,
-  const message_view& message) -> bool {
+  const message_view& message) noexcept -> bool {
     ++_stats.received_messages;
     if(_handle_special(msg_id, message) == should_be_stored) {
         if((message.target_id == _endpoint_id) || !is_valid_id(message.target_id)) {
@@ -334,7 +335,7 @@ auto endpoint::_store_message(
 EAGINE_LIB_FUNC
 auto endpoint::_accept_message(
   const message_id msg_id,
-  const message_view& message) -> bool {
+  const message_view& message) noexcept -> bool {
     if(_handle_special(msg_id, message) == was_handled) {
         return true;
     }
@@ -350,7 +351,7 @@ auto endpoint::_accept_message(
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-void endpoint::add_certificate_pem(const memory::const_block blk) {
+void endpoint::add_certificate_pem(const memory::const_block blk) noexcept {
     EAGINE_ASSERT(_context);
     if(_context) {
         if(_context->add_own_certificate_pem(blk)) {
@@ -360,7 +361,7 @@ void endpoint::add_certificate_pem(const memory::const_block blk) {
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-void endpoint::add_ca_certificate_pem(const memory::const_block blk) {
+void endpoint::add_ca_certificate_pem(const memory::const_block blk) noexcept {
     EAGINE_ASSERT(_context);
     if(_context) {
         if(_context->add_ca_certificate_pem(blk)) {
@@ -370,7 +371,8 @@ void endpoint::add_ca_certificate_pem(const memory::const_block blk) {
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-auto endpoint::add_connection(std::unique_ptr<connection> conn) -> bool {
+auto endpoint::add_connection(std::unique_ptr<connection> conn) noexcept
+  -> bool {
     if(EAGINE_LIKELY(conn)) {
         if(_connection) {
             log_debug("replacing connection type ${oldType} with ${newType}")
@@ -389,7 +391,7 @@ auto endpoint::add_connection(std::unique_ptr<connection> conn) -> bool {
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-auto endpoint::is_usable() const -> bool {
+auto endpoint::is_usable() const noexcept -> bool {
     if(EAGINE_LIKELY(_connection)) {
         if(_connection->is_usable()) {
             return true;
@@ -399,7 +401,8 @@ auto endpoint::is_usable() const -> bool {
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-auto endpoint::max_data_size() const -> valid_if_positive<span_size_t> {
+auto endpoint::max_data_size() const noexcept
+  -> valid_if_positive<span_size_t> {
     span_size_t result{0};
     if(EAGINE_LIKELY(_connection)) {
         if(_connection->is_usable()) {
@@ -419,7 +422,7 @@ auto endpoint::max_data_size() const -> valid_if_positive<span_size_t> {
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-void endpoint::flush_outbox() {
+void endpoint::flush_outbox() noexcept {
     if(has_id()) {
         log_debug("flushing outbox (size: ${count})")
           .arg(EAGINE_ID(count), _outgoing.count());
@@ -436,15 +439,16 @@ void endpoint::flush_outbox() {
 EAGINE_LIB_FUNC
 auto endpoint::set_next_sequence_id(
   const message_id msg_id,
-  message_info& message) -> bool {
+  message_info& message) noexcept -> bool {
     EAGINE_ASSERT(_context);
     message.set_sequence_no(_context->next_sequence_no(msg_id));
     return true;
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-auto endpoint::post_signed(const message_id msg_id, const message_view msg_view)
-  -> bool {
+auto endpoint::post_signed(
+  const message_id msg_id,
+  const message_view msg_view) noexcept -> bool {
     if(const auto opt_size = max_data_size()) {
         const auto max_size = extract(opt_size);
         return _outgoing.push_if(
@@ -466,7 +470,7 @@ auto endpoint::post_signed(const message_id msg_id, const message_view msg_view)
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-auto endpoint::update() -> work_done {
+auto endpoint::update() noexcept -> work_done {
     some_true something_done{};
 
     something_done(_process_blobs());
@@ -537,7 +541,7 @@ auto endpoint::update() -> work_done {
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-void endpoint::subscribe(const message_id msg_id) {
+void endpoint::subscribe(const message_id msg_id) noexcept {
     auto& state = _ensure_incoming(msg_id);
     if(!state.subscription_count) {
         log_debug("subscribing to message ${message}")
@@ -547,7 +551,7 @@ void endpoint::subscribe(const message_id msg_id) {
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-void endpoint::unsubscribe(const message_id msg_id) {
+void endpoint::unsubscribe(const message_id msg_id) noexcept {
     auto pos = _incoming.find(msg_id);
     if(pos != _incoming.end()) {
         EAGINE_ASSERT(pos->second);
@@ -560,13 +564,13 @@ void endpoint::unsubscribe(const message_id msg_id) {
     }
 }
 //------------------------------------------------------------------------------
-auto endpoint::say_not_a_router() -> bool {
+auto endpoint::say_not_a_router() noexcept -> bool {
     log_debug("saying not a router");
     return post(EAGINE_MSGBUS_ID(notARouter), {});
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-auto endpoint::say_still_alive() -> bool {
+auto endpoint::say_still_alive() noexcept -> bool {
     log_trace("saying still alive");
     message_view msg{};
     msg.set_sequence_no(_instance_id);
@@ -574,7 +578,7 @@ auto endpoint::say_still_alive() -> bool {
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-auto endpoint::say_bye() -> bool {
+auto endpoint::say_bye() noexcept -> bool {
     log_debug("saying bye-bye");
     return post(EAGINE_MSGBUS_ID(byeByeEndp), {});
 }
@@ -582,7 +586,7 @@ auto endpoint::say_bye() -> bool {
 EAGINE_LIB_FUNC
 void endpoint::post_meta_message(
   const message_id meta_msg_id,
-  const message_id msg_id) {
+  const message_id msg_id) noexcept {
     auto temp{default_serialize_buffer_for(msg_id)};
     if(auto serialized{default_serialize_message_type(msg_id, cover(temp))}) {
         message_view meta_msg{extract(serialized)};
@@ -599,7 +603,7 @@ EAGINE_LIB_FUNC
 void endpoint::post_meta_message_to(
   const identifier_t target_id,
   const message_id meta_msg_id,
-  const message_id msg_id) {
+  const message_id msg_id) noexcept {
     auto temp{default_serialize_buffer_for(msg_id)};
     if(auto serialized{default_serialize_message_type(msg_id, cover(temp))}) {
         message_view meta_msg{extract(serialized)};
@@ -615,7 +619,7 @@ void endpoint::post_meta_message_to(
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-void endpoint::say_subscribes_to(const message_id msg_id) {
+void endpoint::say_subscribes_to(const message_id msg_id) noexcept {
     log_debug("announces subscription to message ${message}")
       .arg(EAGINE_ID(message), msg_id);
     post_meta_message(EAGINE_MSGBUS_ID(subscribTo), msg_id);
@@ -624,7 +628,7 @@ void endpoint::say_subscribes_to(const message_id msg_id) {
 EAGINE_LIB_FUNC
 void endpoint::say_subscribes_to(
   const identifier_t target_id,
-  const message_id msg_id) {
+  const message_id msg_id) noexcept {
     log_debug("announces subscription to message ${message}")
       .arg(EAGINE_ID(target), target_id)
       .arg(EAGINE_ID(message), msg_id);
@@ -634,7 +638,7 @@ void endpoint::say_subscribes_to(
 EAGINE_LIB_FUNC
 void endpoint::say_not_subscribed_to(
   const identifier_t target_id,
-  const message_id msg_id) {
+  const message_id msg_id) noexcept {
     log_debug("denies subscription to message ${message}")
       .arg(EAGINE_ID(target), target_id)
       .arg(EAGINE_ID(message), msg_id);
@@ -642,14 +646,14 @@ void endpoint::say_not_subscribed_to(
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-void endpoint::say_unsubscribes_from(const message_id msg_id) {
+void endpoint::say_unsubscribes_from(const message_id msg_id) noexcept {
     log_debug("retracting subscription to message ${message}")
       .arg(EAGINE_ID(message), msg_id);
     post_meta_message(EAGINE_MSGBUS_ID(unsubFrom), msg_id);
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-void endpoint::query_subscriptions_of(const identifier_t target_id) {
+void endpoint::query_subscriptions_of(const identifier_t target_id) noexcept {
     log_debug("querying subscribed messages of endpoint ${target}")
       .arg(EAGINE_ID(target), target_id);
     message_view msg{};
@@ -658,32 +662,32 @@ void endpoint::query_subscriptions_of(const identifier_t target_id) {
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-void endpoint::query_subscribers_of(const message_id msg_id) {
+void endpoint::query_subscribers_of(const message_id msg_id) noexcept {
     log_debug("querying subscribers of message ${message}")
       .arg(EAGINE_ID(message), msg_id);
     post_meta_message(EAGINE_MSGBUS_ID(qrySubscrb), msg_id);
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-void endpoint::clear_block_list() {
+void endpoint::clear_block_list() noexcept {
     log_debug("sending clear block list");
     post(EAGINE_MSGBUS_ID(clrBlkList), {});
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-void endpoint::block_message_type(const message_id msg_id) {
+void endpoint::block_message_type(const message_id msg_id) noexcept {
     log_debug("blocking message ${message}").arg(EAGINE_ID(message), msg_id);
     post_meta_message(EAGINE_MSGBUS_ID(msgBlkList), msg_id);
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-void endpoint::clear_allow_list() {
+void endpoint::clear_allow_list() noexcept {
     log_debug("sending clear allow list");
     post(EAGINE_MSGBUS_ID(clrAlwList), {});
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-void endpoint::allow_message_type(const message_id msg_id) {
+void endpoint::allow_message_type(const message_id msg_id) noexcept {
     log_debug("allowing message ${message}").arg(EAGINE_ID(message), msg_id);
     post_meta_message(EAGINE_MSGBUS_ID(msgAlwList), msg_id);
 }
@@ -691,7 +695,7 @@ void endpoint::allow_message_type(const message_id msg_id) {
 EAGINE_LIB_FUNC
 auto endpoint::post_certificate(
   const identifier_t target_id,
-  const blob_id_t target_blob_id) -> bool {
+  const blob_id_t target_blob_id) noexcept -> bool {
     EAGINE_ASSERT(_context);
     if(auto cert_pem{_context->get_own_certificate_pem()}) {
         return post_blob(
@@ -707,7 +711,7 @@ auto endpoint::post_certificate(
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-auto endpoint::broadcast_certificate() -> bool {
+auto endpoint::broadcast_certificate() noexcept -> bool {
     EAGINE_ASSERT(_context);
     if(auto cert_pem{_context->get_own_certificate_pem()}) {
         return broadcast_blob(
@@ -721,7 +725,7 @@ auto endpoint::broadcast_certificate() -> bool {
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-void endpoint::query_certificate_of(const identifier_t endpoint_id) {
+void endpoint::query_certificate_of(const identifier_t endpoint_id) noexcept {
     log_debug("querying certificate of endpoint ${endpoint}")
       .arg(EAGINE_ID(endpoint), endpoint_id);
     message_view msg{};
@@ -730,8 +734,9 @@ void endpoint::query_certificate_of(const identifier_t endpoint_id) {
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-auto endpoint::process_one(const message_id msg_id, const method_handler handler)
-  -> bool {
+auto endpoint::process_one(
+  const message_id msg_id,
+  const method_handler handler) noexcept -> bool {
     if(const auto found{_find_incoming(msg_id)}) {
         const message_context msg_ctx{*this, msg_id};
         return extract(found).queue.process_one(msg_ctx, handler);
@@ -740,8 +745,9 @@ auto endpoint::process_one(const message_id msg_id, const method_handler handler
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-auto endpoint::process_all(const message_id msg_id, const method_handler handler)
-  -> span_size_t {
+auto endpoint::process_all(
+  const message_id msg_id,
+  const method_handler handler) noexcept -> span_size_t {
     if(const auto found{_find_incoming(msg_id)}) {
         const message_context msg_ctx{*this, msg_id};
         return extract(found).queue.process_all(msg_ctx, handler);
@@ -750,7 +756,8 @@ auto endpoint::process_all(const message_id msg_id, const method_handler handler
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-auto endpoint::process_everything(const method_handler handler) -> span_size_t {
+auto endpoint::process_everything(const method_handler handler) noexcept
+  -> span_size_t {
     span_size_t result = 0;
 
     for(auto& [msg_id, state] : _incoming) {

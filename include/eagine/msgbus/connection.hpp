@@ -122,40 +122,42 @@ struct connection : connection_info {
 
     /// @brief Alias for fetch handler callable reference type.
     using fetch_handler = callable_ref<
-      bool(const message_id, const message_age, const message_view&)>;
+      bool(const message_id, const message_age, const message_view&) noexcept>;
 
     /// @brief Updates the internal state of the connection (called repeatedly).
     /// @see send
     /// @see fetch_messages
-    virtual auto update() -> work_done {
+    virtual auto update() noexcept -> work_done {
         return {};
     }
 
     /// @brief Cleans up the connection before destroying it.
-    virtual void cleanup() {}
+    virtual void cleanup() noexcept {}
 
     /// @brief Checks if the connection is in usable state.
-    virtual auto is_usable() -> bool {
+    virtual auto is_usable() noexcept -> bool {
         return true;
     }
 
     /// @brief Returns the maximum data block size in bytes that can be sent.
-    virtual auto max_data_size() -> valid_if_positive<span_size_t> {
+    virtual auto max_data_size() noexcept -> valid_if_positive<span_size_t> {
         return {0};
     }
 
     /// @brief Sent a message with the specified id.
     /// @see fetch_messages
     /// @see update
-    virtual auto send(const message_id msg_id, const message_view&) -> bool = 0;
+    virtual auto send(const message_id msg_id, const message_view&) noexcept
+      -> bool = 0;
 
     /// @brief Fetch all enqueued messages that have been received since last fetch.
     /// @see send
     /// @see update
-    virtual auto fetch_messages(const fetch_handler handler) -> work_done = 0;
+    virtual auto fetch_messages(const fetch_handler handler) noexcept
+      -> work_done = 0;
 
     /// @brief Fill in the available statistics information for this connection.
-    virtual auto query_statistics(connection_statistics&) -> bool = 0;
+    virtual auto query_statistics(connection_statistics&) noexcept -> bool = 0;
 };
 //------------------------------------------------------------------------------
 /// @brief Interface for classes that can use message bus connections.
@@ -166,7 +168,8 @@ struct connection_user : interface<connection_user> {
 
     /// @brief Adds the specified message bus connection.
     /// Result indicates if the connection was used or discarded.
-    virtual auto add_connection(std::unique_ptr<connection>) -> bool = 0;
+    virtual auto add_connection(std::unique_ptr<connection>) noexcept
+      -> bool = 0;
 };
 //------------------------------------------------------------------------------
 } // namespace eagine::msgbus

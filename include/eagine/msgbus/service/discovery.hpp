@@ -46,21 +46,22 @@ class subscriber_discovery : public Base {
 
 public:
     /// @brief Triggered on receipt of notification that an endpoint is alive.
-    signal<void(const subscriber_info&)> reported_alive;
+    signal<void(const subscriber_info&) noexcept> reported_alive;
 
     /// @brief Triggered on receipt of info that endpoint subscribes to message.
-    signal<void(const subscriber_info&, const message_id)> subscribed;
+    signal<void(const subscriber_info&, const message_id) noexcept> subscribed;
 
     /// @brief Triggered on receipt of info that endpoint unsubscribes from message.
-    signal<void(const subscriber_info&, const message_id)> unsubscribed;
+    signal<void(const subscriber_info&, const message_id) noexcept> unsubscribed;
 
     /// @brief Triggered on receipt of info that endpoint doesn't handle message type.
-    signal<void(const subscriber_info&, const message_id)> not_subscribed;
+    signal<void(const subscriber_info&, const message_id) noexcept>
+      not_subscribed;
 
 protected:
     using Base::Base;
 
-    void add_methods() {
+    void add_methods() noexcept {
         Base::add_methods();
         Base::add_method(
           this, EAGINE_MSG_MAP(eagiMsgBus, stillAlive, This, _handle_alive));
@@ -76,8 +77,9 @@ protected:
     }
 
 private:
-    auto _handle_alive(const message_context&, const stored_message& message)
-      -> bool {
+    auto _handle_alive(
+      const message_context&,
+      const stored_message& message) noexcept -> bool {
         subscriber_info info{};
         info.endpoint_id = message.source_id;
         info.instance_id = message.sequence_no;
@@ -88,7 +90,7 @@ private:
 
     auto _handle_subscribed(
       const message_context&,
-      const stored_message& message) -> bool {
+      const stored_message& message) noexcept -> bool {
         message_id sub_msg_id{};
         if(default_deserialize_message_type(sub_msg_id, message.content())) {
             subscriber_info info{};
@@ -102,7 +104,7 @@ private:
 
     auto _handle_unsubscribed(
       const message_context&,
-      const stored_message& message) -> bool {
+      const stored_message& message) noexcept -> bool {
         message_id sub_msg_id{};
         if(default_deserialize_message_type(sub_msg_id, message.content())) {
             subscriber_info info{};
@@ -116,7 +118,7 @@ private:
 
     auto _handle_not_subscribed(
       const message_context&,
-      const stored_message& message) -> bool {
+      const stored_message& message) noexcept -> bool {
         message_id sub_msg_id{};
         if(default_deserialize_message_type(sub_msg_id, message.content())) {
             subscriber_info info{};

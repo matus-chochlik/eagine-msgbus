@@ -44,7 +44,7 @@ public:
     /// @see bridge_stats_received
     /// @see endpoint_stats_received
     /// @see connection_stats_received
-    signal<void(const identifier_t, const router_statistics&)>
+    signal<void(const identifier_t, const router_statistics&) noexcept>
       router_stats_received;
 
     /// @brief Triggered on receipt of bridge node statistics information.
@@ -52,7 +52,7 @@ public:
     /// @see router_stats_received
     /// @see endpoint_stats_received
     /// @see connection_stats_received
-    signal<void(const identifier_t, const bridge_statistics&)>
+    signal<void(const identifier_t, const bridge_statistics&) noexcept>
       bridge_stats_received;
 
     /// @brief Triggered on receipt of endpoint node statistics information.
@@ -60,19 +60,20 @@ public:
     /// @see router_stats_received
     /// @see bridge_stats_received
     /// @see connection_stats_received
-    signal<void(const identifier_t, const endpoint_statistics&)>
+    signal<void(const identifier_t, const endpoint_statistics&) noexcept>
       endpoint_stats_received;
 
     /// @brief Triggered on receipt of connection statistics information.
     /// @see router_stats_received
     /// @see bridge_stats_received
     /// @see endpoint_stats_received
-    signal<void(const connection_statistics&)> connection_stats_received;
+    signal<void(const connection_statistics&) noexcept>
+      connection_stats_received;
 
 protected:
     using Base::Base;
 
-    void add_methods() {
+    void add_methods() noexcept {
         Base::add_methods();
         Base::add_method(
           this, EAGINE_MSG_MAP(eagiMsgBus, statsRutr, This, _handle_router));
@@ -83,8 +84,9 @@ protected:
     }
 
 private:
-    auto _handle_router(const message_context&, const stored_message& message)
-      -> bool {
+    auto _handle_router(
+      const message_context&,
+      const stored_message& message) noexcept -> bool {
         router_statistics stats{};
         if(default_deserialize(stats, message.content())) {
             router_stats_received(message.source_id, stats);
@@ -92,8 +94,9 @@ private:
         return true;
     }
 
-    auto _handle_bridge(const message_context&, const stored_message& message)
-      -> bool {
+    auto _handle_bridge(
+      const message_context&,
+      const stored_message& message) noexcept -> bool {
         bridge_statistics stats{};
         if(default_deserialize(stats, message.content())) {
             bridge_stats_received(message.source_id, stats);
@@ -101,8 +104,9 @@ private:
         return true;
     }
 
-    auto _handle_endpoint(const message_context&, const stored_message& message)
-      -> bool {
+    auto _handle_endpoint(
+      const message_context&,
+      const stored_message& message) noexcept -> bool {
         endpoint_statistics stats{};
         if(default_deserialize(stats, message.content())) {
             endpoint_stats_received(message.source_id, stats);
@@ -112,7 +116,7 @@ private:
 
     auto _handle_connection(
       const message_context&,
-      const stored_message& message) -> bool {
+      const stored_message& message) noexcept -> bool {
         connection_statistics stats{};
         if(default_deserialize(stats, message.content())) {
             connection_stats_received(stats);

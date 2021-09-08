@@ -380,7 +380,7 @@ private:
 class stored_message : public message_info {
 public:
     /// @brief Default constructor.
-    stored_message() = default;
+    stored_message() noexcept = default;
 
     /// @brief Construction from a message view and storage buffer.
     /// Adopts the buffer and copies the content from the message view into it.
@@ -397,29 +397,30 @@ public:
 
     /// @brief Copies the remaining data from the specified serialization source.
     template <typename Source>
-    void fetch_all_from(Source& source) {
+    void fetch_all_from(Source& source) noexcept {
         _buffer.clear();
         source.fetch_all(_buffer);
     }
 
     /// @brief Copies the content from the given block into the internal buffer.
-    void store_content(memory::const_block blk) {
+    void store_content(memory::const_block blk) noexcept {
         memory::copy_into(blk, _buffer);
     }
 
     template <typename Backend, typename Value>
-    auto do_store_value(const Value& value, span_size_t max_size) -> bool;
+    auto do_store_value(const Value& value, span_size_t max_size) noexcept
+      -> bool;
 
     /// @brief Serializes and stores the specified value (up to max_size).
     template <typename Value>
-    auto store_value(const Value& value, span_size_t max_size) -> bool;
+    auto store_value(const Value& value, span_size_t max_size) noexcept -> bool;
 
     template <typename Backend, typename Value>
-    auto do_fetch_value(Value& value) -> bool;
+    auto do_fetch_value(Value& value) noexcept -> bool;
 
     /// @brief Deserializes the stored content into the specified value.
     template <typename Value>
-    auto fetch_value(Value& value) -> bool;
+    auto fetch_value(Value& value) noexcept -> bool;
 
     /// @brief Returns a mutable view of the storage buffer.
     auto storage() noexcept -> memory::block {
@@ -511,7 +512,7 @@ public:
       const memory::const_block data,
       const span_size_t max_size,
       context&,
-      main_ctx_object&) -> bool;
+      main_ctx_object&) noexcept -> bool;
 
     /// @brief Verifies the signatures of this message.
     auto verify_bits(context&, main_ctx_object&) const noexcept
@@ -542,7 +543,7 @@ public:
     }
 
     /// @brief Pushes a message into this storage.
-    void push(const message_id msg_id, const message_view& message) {
+    void push(const message_id msg_id, const message_view& message) noexcept {
         _messages.emplace_back(
           msg_id,
           stored_message{message, _buffers.get(message.data().size())},
@@ -553,7 +554,8 @@ public:
     ///
     /// The function's Boolean return value indicates if the message should be kept.
     template <typename Function>
-    auto push_if(Function function, const span_size_t req_size = 0) -> bool {
+    auto push_if(Function function, const span_size_t req_size = 0) noexcept
+      -> bool {
         _messages.emplace_back(
           message_id{},
           stored_message{{}, _buffers.get(req_size)},
@@ -582,19 +584,19 @@ public:
     /// The return value indicates if the message is considered handled
     /// and should be removed.
     using fetch_handler = callable_ref<
-      bool(const message_id, const message_age, const message_view&)>;
+      bool(const message_id, const message_age, const message_view&) noexcept>;
 
     /// @brief Fetches all currently stored messages and calls handler on them.
-    auto fetch_all(const fetch_handler handler) -> bool;
+    auto fetch_all(const fetch_handler handler) noexcept -> bool;
 
     /// @brief Alias for message cleanup callable predicate.
     /// @see cleanup
     ///
     /// The return value indicates if a message should be removed.
-    using cleanup_predicate = callable_ref<bool(const message_age)>;
+    using cleanup_predicate = callable_ref<bool(const message_age) noexcept>;
 
     /// @brief Removes messages based on the result of the specified predicate.
-    void cleanup(const cleanup_predicate predicate);
+    void cleanup(const cleanup_predicate predicate) noexcept;
 
 private:
     using _clock_t = std::chrono::steady_clock;
@@ -659,10 +661,10 @@ class serialized_message_storage {
 public:
     /// The return value indicates if the message is considered handled
     /// and should be removed.
-    using fetch_handler =
-      callable_ref<bool(const message_timestamp, const memory::const_block)>;
+    using fetch_handler = callable_ref<
+      bool(const message_timestamp, const memory::const_block) noexcept>;
 
-    serialized_message_storage() {
+    serialized_message_storage() noexcept {
         _messages.reserve(32);
     }
 
@@ -687,18 +689,18 @@ public:
         _messages.erase(_messages.begin());
     }
 
-    void push(const memory::const_block message) {
+    void push(const memory::const_block message) noexcept {
         EAGINE_ASSERT(!message.empty());
         auto buf = _buffers.get(message.size());
         memory::copy_into(message, buf);
         _messages.emplace_back(std::move(buf), _clock_t::now());
     }
 
-    auto fetch_all(const fetch_handler handler) -> bool;
+    auto fetch_all(const fetch_handler handler) noexcept -> bool;
 
-    auto pack_into(memory::block dest) -> message_pack_info;
+    auto pack_into(memory::block dest) noexcept -> message_pack_info;
 
-    void cleanup(const message_pack_info& to_be_removed);
+    void cleanup(const message_pack_info& to_be_removed) noexcept;
 
 private:
     using _clock_t = std::chrono::steady_clock;
@@ -738,9 +740,9 @@ private:
 class message_priority_queue {
 public:
     using handler_type =
-      callable_ref<bool(const message_context&, const stored_message&)>;
+      callable_ref<bool(const message_context&, const stored_message&) noexcept>;
 
-    message_priority_queue() {
+    message_priority_queue() noexcept {
         _messages.reserve(128);
     }
 
@@ -748,8 +750,8 @@ public:
         return _messages.size();
     }
 
-    auto push(const message_view& message) -> stored_message& {
-        auto pos = std::lower_bound(
+    auto push(const message_view& message) noexcept -> stored_message& {
+        const auto pos = std::lower_bound(
           _messages.begin(),
           _messages.end(),
           message.priority,
@@ -759,8 +761,9 @@ public:
           pos, message, _buffers.get(message.data().size()));
     }
 
-    auto process_one(const message_context& msg_ctx, const handler_type handler)
-      -> bool {
+    auto process_one(
+      const message_context& msg_ctx,
+      const handler_type handler) noexcept -> bool {
         if(!_messages.empty()) {
             if(handler(msg_ctx, _messages.back())) {
                 _buffers.eat(_messages.back().release_buffer());
@@ -771,8 +774,9 @@ public:
         return false;
     }
 
-    auto process_all(const message_context& msg_ctx, const handler_type handler)
-      -> span_size_t {
+    auto process_all(
+      const message_context& msg_ctx,
+      const handler_type handler) noexcept -> span_size_t {
         span_size_t count{0};
         std::size_t pos = 0;
         while(pos < _messages.size()) {
@@ -806,13 +810,13 @@ public:
       main_ctx_object& user,
       const message_id,
       const message_view&,
-      memory::block) -> bool;
+      memory::block) noexcept -> bool;
 
-    auto pack_into(memory::block dest) -> message_pack_info {
+    auto pack_into(memory::block dest) noexcept -> message_pack_info {
         return _serialized.pack_into(dest);
     }
 
-    void cleanup(const message_pack_info& packed) {
+    void cleanup(const message_pack_info& packed) noexcept {
         _serialized.cleanup(packed);
     }
 
@@ -823,7 +827,7 @@ private:
 class connection_incoming_messages {
 public:
     using fetch_handler = callable_ref<
-      bool(const message_id, const message_age, const message_view&)>;
+      bool(const message_id, const message_age, const message_view&) noexcept>;
 
     auto empty() const noexcept -> bool {
         return _packed.empty();
@@ -833,12 +837,13 @@ public:
         return _packed.count();
     }
 
-    void push(const memory::const_block data) {
+    void push(const memory::const_block data) noexcept {
         _packed.push(data);
     }
 
-    auto fetch_messages(main_ctx_object& user, const fetch_handler handler)
-      -> bool;
+    auto fetch_messages(
+      main_ctx_object& user,
+      const fetch_handler handler) noexcept -> bool;
 
 private:
     serialized_message_storage _packed{};

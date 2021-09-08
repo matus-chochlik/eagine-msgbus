@@ -118,19 +118,18 @@ template <
 class function_skeleton
   : public skeleton<Signature, Serializer, Deserializer, Sink, Source, MaxDataSize> {
 
-    using _function_t = callable_ref<Signature>;
+    using _function_t = basic_callable_ref<Signature, true>;
 
 public:
     function_skeleton() noexcept = default;
 
-    function_skeleton(
-      message_id response_id,
-      callable_ref<Signature> function) noexcept
+    function_skeleton(message_id response_id, _function_t function) noexcept
       : _response_id{std::move(response_id)}
       , _function{std::move(function)} {}
 
-    auto operator()(const message_id response_id, const _function_t function)
-      -> function_skeleton& {
+    auto operator()(
+      const message_id response_id,
+      const _function_t function) noexcept -> function_skeleton& {
         _response_id = response_id;
         _function = function;
         return *this;
@@ -140,7 +139,8 @@ public:
     auto operator()(
       const message_id response_id,
       Class* that,
-      const member_function_constant<MfcT, Mfc> func) -> function_skeleton& {
+      const member_function_constant<MfcT, Mfc> func) noexcept
+      -> function_skeleton& {
         _response_id = response_id;
         _function = _function_t{that, func};
         return *this;
@@ -150,14 +150,16 @@ public:
     auto operator()(
       const message_id response_id,
       const Class* that,
-      const member_function_constant<MfcT, Mfc> func) -> function_skeleton& {
+      const member_function_constant<MfcT, Mfc> func) noexcept
+      -> function_skeleton& {
         _response_id = response_id;
         _function = _function_t{that, func};
         return *this;
     }
 
-    auto invoke_by(const message_context& msg_ctx, const stored_message& request)
-      -> bool {
+    auto invoke_by(
+      const message_context& msg_ctx,
+      const stored_message& request) noexcept -> bool {
         return this->call(msg_ctx.bus_node(), request, _response_id, _function);
     }
 

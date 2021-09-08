@@ -42,12 +42,13 @@ public:
           EAGINE_MSG_MAP(Fibonacci, Calculate, this_class, calculate),
           EAGINE_MSG_MAP(Fibonacci, Shutdown, this_class, shutdown)) {}
 
-    auto shutdown(const message_context&, const stored_message&) -> bool {
+    auto shutdown(const message_context&, const stored_message&) noexcept
+      -> bool {
         _done = true;
         return true;
     }
 
-    auto is_ready(const message_context&, const stored_message& msg_in)
+    auto is_ready(const message_context&, const stored_message& msg_in) noexcept
       -> bool {
         bus_node().respond_to(msg_in, EAGINE_MSG_ID(Fibonacci, IsReady));
         return true;
@@ -57,7 +58,7 @@ public:
         return arg <= 2 ? 1 : fib(arg - 2) + fib(arg - 1);
     }
 
-    auto calculate(const message_context&, const stored_message& msg_in)
+    auto calculate(const message_context&, const stored_message& msg_in) noexcept
       -> bool {
         std::int64_t arg{0};
         std::int64_t result{0};
@@ -117,7 +118,7 @@ public:
         }
     }
 
-    auto dispatch(const message_context&, const stored_message& msg_in)
+    auto dispatch(const message_context&, const stored_message& msg_in) noexcept
       -> bool {
         if(!_remaining.empty()) {
             auto arg = _remaining.front();
@@ -136,7 +137,8 @@ public:
         return true;
     }
 
-    auto print(const message_context&, const stored_message& msg_in) -> bool {
+    auto print(const message_context&, const stored_message& msg_in) noexcept
+      -> bool {
         std::int64_t arg{0};
         std::int64_t result{0};
         auto tup = std::tie(arg, result);

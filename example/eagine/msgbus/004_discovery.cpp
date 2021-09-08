@@ -37,19 +37,23 @@ public:
         shutdown_requested.connect(EAGINE_THIS_MEM_FUNC_REF(on_shutdown));
     }
 
-    void is_alive(const subscriber_info& info) {
+    void is_alive(const subscriber_info& info) noexcept {
         log_info("endpoint ${subscrbr} is alive")
           .arg(EAGINE_ID(subscrbr), info.endpoint_id);
     }
 
-    void on_subscribed(const subscriber_info& info, const message_id sub_msg) {
+    void on_subscribed(
+      const subscriber_info& info,
+      const message_id sub_msg) noexcept {
         log_info("endpoint ${subscrbr} subscribed to ${message}")
           .arg(EAGINE_ID(subscrbr), info.endpoint_id)
           .arg(EAGINE_ID(message), sub_msg);
         this->bus_node().query_certificate_of(info.endpoint_id);
     }
 
-    void on_unsubscribed(const subscriber_info& info, const message_id sub_msg) {
+    void on_unsubscribed(
+      const subscriber_info& info,
+      const message_id sub_msg) noexcept {
         log_info("endpoint ${subscrbr} unsubscribed from ${message}")
           .arg(EAGINE_ID(subscrbr), info.endpoint_id)
           .arg(EAGINE_ID(message), sub_msg);
@@ -58,7 +62,7 @@ public:
     void on_shutdown(
       const std::chrono::milliseconds age,
       const identifier_t subscriber_id,
-      const verification_bits verified) {
+      const verification_bits verified) noexcept {
         log_info("received ${age} old shutdown request from ${subscrbr}")
           .arg(EAGINE_ID(age), age)
           .arg(EAGINE_ID(subscrbr), subscriber_id)

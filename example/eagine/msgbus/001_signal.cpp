@@ -10,8 +10,8 @@
 #include <iostream>
 
 auto main() -> int {
-    eagine::msgbus::signal<void(const int)> sig;
-    eagine::callable_ref<void(const int)> f = sig;
+    eagine::msgbus::signal<void(const int) noexcept> sig;
+    eagine::callable_ref<void(const int) noexcept> f = sig;
 
     const auto fa = [](const int i) {
         std::cout << "A: " << i << std::endl;

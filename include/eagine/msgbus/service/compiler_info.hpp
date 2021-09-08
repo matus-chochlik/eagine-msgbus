@@ -31,7 +31,7 @@ class compiler_info_provider : public Base {
 protected:
     using Base::Base;
 
-    void add_methods() {
+    void add_methods() noexcept {
         Base::add_methods();
 
         Base::add_method(_respond(
@@ -65,7 +65,7 @@ public:
 
     /// @brief Triggered on receipt of endpoints compiler information.
     /// @see query_compiler_info
-    signal<void(const result_context&, const compiler_info&)>
+    signal<void(const result_context&, const compiler_info&) noexcept>
       compiler_info_received;
 
 protected:
@@ -79,7 +79,7 @@ protected:
     }
 
 private:
-    default_callback_invoker<compiler_info(), 32> _compiler;
+    default_callback_invoker<compiler_info() noexcept, 32> _compiler;
 };
 //------------------------------------------------------------------------------
 } // namespace eagine::msgbus

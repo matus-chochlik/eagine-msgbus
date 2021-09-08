@@ -33,7 +33,7 @@ public:
     void add_certificate_pem(const memory::const_block blk);
     void add_ca_certificate_pem(const memory::const_block blk);
 
-    auto add_connection(std::unique_ptr<connection>) -> bool final;
+    auto add_connection(std::unique_ptr<connection>) noexcept -> bool final;
 
     auto has_id() const noexcept -> bool {
         return is_valid_endpoint_id(_id);

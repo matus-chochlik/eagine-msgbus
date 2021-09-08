@@ -28,28 +28,31 @@ namespace eagine::msgbus {
 class direct_connection_state final : public main_ctx_object {
 public:
     /// @brief Construction from a parent main context object.
-    direct_connection_state(main_ctx_parent parent)
+    direct_connection_state(main_ctx_parent parent) noexcept
       : main_ctx_object{EAGINE_ID(DrctConnSt), parent} {}
 
     /// @brief Says that the client has connected.
-    auto client_connect() {
+    auto client_connect() noexcept {
         _client_connected = true;
     }
 
     /// @brief Says that the client has disconnected.
-    auto client_disconnect() {
+    auto client_disconnect() noexcept {
         _client_connected = false;
     }
 
     /// @brief Sends a message to the server counterpart.
-    void send_to_server(const message_id msg_id, const message_view& message) {
+    void send_to_server(
+      const message_id msg_id,
+      const message_view& message) noexcept {
         std::unique_lock lock{_mutex};
         _client_to_server.back().push(msg_id, message);
     }
 
     /// @brief Sends a message to the client counterpart.
-    auto send_to_client(const message_id msg_id, const message_view& message)
-      -> bool {
+    auto send_to_client(
+      const message_id msg_id,
+      const message_view& message) noexcept -> bool {
         if(_client_connected) {
             std::unique_lock lock{_mutex};
             _server_to_client.back().push(msg_id, message);
@@ -109,7 +112,7 @@ public:
 
     /// @brief Creates and returns the shared state for a new client connection.
     /// @see process_all
-    auto connect() -> shared_state {
+    auto connect() noexcept -> shared_state {
         auto state{std::make_shared<direct_connection_state>(*this)};
         _pending.push_back(state);
         return state;
@@ -117,7 +120,7 @@ public:
 
     /// @brief Handles the pending server counterparts for created client connections.
     /// @see connect
-    auto process_all(const process_handler handler) -> work_done {
+    auto process_all(const process_handler handler) noexcept -> work_done {
         some_true something_done{};
         for(auto& state : _pending) {
             handler(state);
@@ -140,15 +143,15 @@ class direct_connection_info : public Base {
 public:
     using Base::Base;
 
-    auto kind() -> connection_kind final {
+    auto kind() noexcept -> connection_kind final {
         return connection_kind::in_process;
     }
 
-    auto addr_kind() -> connection_addr_kind final {
+    auto addr_kind() noexcept -> connection_addr_kind final {
         return connection_addr_kind::none;
     }
 
-    auto type_id() -> identifier final {
+    auto type_id() noexcept -> identifier final {
         return EAGINE_ID(Direct);
     }
 };
@@ -181,12 +184,12 @@ public:
         }
     }
 
-    auto is_usable() -> bool final {
+    auto is_usable() noexcept -> bool final {
         _checkup();
         return bool(_state);
     }
 
-    auto send(const message_id msg_id, const message_view& message)
+    auto send(const message_id msg_id, const message_view& message) noexcept
       -> bool final {
         _checkup();
         if(EAGINE_LIKELY(_state)) {
@@ -196,7 +199,7 @@ public:
         return false;
     }
 
-    auto fetch_messages(const connection::fetch_handler handler)
+    auto fetch_messages(const connection::fetch_handler handler) noexcept
       -> work_done final {
         some_true something_done{_checkup()};
         if(EAGINE_LIKELY(_state)) {
@@ -205,12 +208,12 @@ public:
         return something_done;
     }
 
-    auto query_statistics(connection_statistics& stats) -> bool final {
+    auto query_statistics(connection_statistics& stats) noexcept -> bool final {
         stats.block_usage_ratio = 1.F;
         return true;
     }
 
-    void cleanup() final {}
+    void cleanup() noexcept final {}
 
 private:
     std::weak_ptr<direct_connection_address> _weak_address;
@@ -235,10 +238,11 @@ private:
 /// @see direct_connection_factory
 class direct_server_connection : public direct_connection_info<connection> {
 public:
-    direct_server_connection(std::shared_ptr<direct_connection_state>& state)
+    direct_server_connection(
+      std::shared_ptr<direct_connection_state>& state) noexcept
       : _state{state} {}
 
-    auto is_usable() -> bool final {
+    auto is_usable() noexcept -> bool final {
         if(EAGINE_LIKELY(_state)) {
             if(EAGINE_LIKELY(_is_usable)) {
                 return true;
@@ -248,7 +252,7 @@ public:
         return false;
     }
 
-    auto send(const message_id msg_id, const message_view& message)
+    auto send(const message_id msg_id, const message_view& message) noexcept
       -> bool final {
         if(EAGINE_LIKELY(_state)) {
             return _state->send_to_client(msg_id, message);
@@ -256,7 +260,7 @@ public:
         return false;
     }
 
-    auto fetch_messages(const connection::fetch_handler handler)
+    auto fetch_messages(const connection::fetch_handler handler) noexcept
       -> work_done final {
         bool result = false;
         if(EAGINE_LIKELY(_state)) {
@@ -265,7 +269,7 @@ public:
         return result;
     }
 
-    auto query_statistics(connection_statistics&) -> bool final {
+    auto query_statistics(connection_statistics&) noexcept -> bool final {
         return false;
     }
 
@@ -291,11 +295,12 @@ public:
       , _address{std::move(address)} {}
 
     /// @brief Construction from a parent main context object with implicit address.
-    direct_acceptor(main_ctx_parent parent)
+    direct_acceptor(main_ctx_parent parent) noexcept
       : main_ctx_object{EAGINE_ID(DrctAccptr), parent}
       , _address{std::make_shared<direct_connection_address>(*this)} {}
 
-    auto process_accepted(const accept_handler handler) -> work_done final {
+    auto process_accepted(const accept_handler handler) noexcept
+      -> work_done final {
         some_true something_done{};
         if(_address) {
             auto wrapped_handler = [&handler](shared_state& state) {
@@ -309,7 +314,7 @@ public:
     }
 
     /// @brief Makes a new client-side direct connection.
-    auto make_connection() -> std::unique_ptr<connection> {
+    auto make_connection() noexcept -> std::unique_ptr<connection> {
         if(_address) {
             return std::unique_ptr<connection>{
               std::make_unique<direct_client_connection>(_address)};
@@ -332,11 +337,11 @@ public:
     using connection_factory::make_connector;
 
     /// @brief Construction from a parent main context object with implicit address.
-    direct_connection_factory(main_ctx_parent parent)
+    direct_connection_factory(main_ctx_parent parent) noexcept
       : main_ctx_object{EAGINE_ID(DrctConnFc), parent}
       , _default_addr{_make_addr()} {}
 
-    auto make_acceptor(const string_view addr_str)
+    auto make_acceptor(const string_view addr_str) noexcept
       -> std::unique_ptr<acceptor> final {
         if(addr_str) {
             return std::make_unique<direct_acceptor>(*this, _get(addr_str));
@@ -344,7 +349,7 @@ public:
         return std::make_unique<direct_acceptor>(*this, _default_addr);
     }
 
-    auto make_connector(const string_view addr_str)
+    auto make_connector(const string_view addr_str) noexcept
       -> std::unique_ptr<connection> final {
         if(addr_str) {
             return std::make_unique<direct_client_connection>(_get(addr_str));
@@ -360,11 +365,11 @@ private:
       basic_str_view_less<std::string, string_view>>
       _addrs;
 
-    auto _make_addr() -> std::shared_ptr<direct_connection_address> {
+    auto _make_addr() noexcept -> std::shared_ptr<direct_connection_address> {
         return std::make_shared<direct_connection_address>(*this);
     }
 
-    auto _get(const string_view addr_str)
+    auto _get(const string_view addr_str) noexcept
       -> std::shared_ptr<direct_connection_address>& {
         auto pos = _addrs.find(addr_str);
         if(pos == _addrs.end()) {

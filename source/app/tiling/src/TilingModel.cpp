@@ -104,14 +104,14 @@ auto TilingModel::getCell(int row, int column) const noexcept -> QVariant {
     return {};
 }
 //------------------------------------------------------------------------------
-void TilingModel::onHelperAppeared(eagine::identifier_t helperId) {
+void TilingModel::onHelperAppeared(eagine::identifier_t helperId) noexcept {
     _backend.onHelperAppeared(helperId);
 }
 //------------------------------------------------------------------------------
 void TilingModel::onFragmentAdded(
   eagine::identifier_t helperId,
   const eagine::msgbus::sudoku_tiles<4>& tiles,
-  const std::tuple<int, int>& fragCoord) {
+  const std::tuple<int, int>& fragCoord) noexcept {
     _backend.onHelperContributed(helperId);
 
     const auto fragment = tiles.get_fragment(fragCoord);

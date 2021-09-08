@@ -95,7 +95,7 @@ Pane {
 
 			Behavior on axisYMax {
 				NumberAnimation {
-					duration: 1000
+					duration: 2000
 					easing.type: Easing.InOutBack
 					easing.overshoot: 0
 				}

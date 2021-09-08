@@ -29,7 +29,7 @@ public:
 protected:
     using Base::Base;
 
-    void add_methods() {
+    void add_methods() noexcept {
         Base::add_methods();
         Base::add_method(
           this, EAGINE_MSG_MAP(Ability, query, This, _handle_query));
@@ -38,7 +38,7 @@ protected:
 private:
     auto _handle_query(
       const message_context& msg_ctx,
-      const stored_message& message) -> bool {
+      const stored_message& message) noexcept -> bool {
         message_id msg_id{};
         if(default_deserialize_message_type(msg_id, message.content())) {
             if(can_handle(msg_id)) {
@@ -64,7 +64,7 @@ class ability_tester : public Base {
 public:
     /// @brief Sends a query to endpoints if they handle the specified message type.
     /// @see handler_found
-    void find_handler(const message_id msg_id) {
+    void find_handler(const message_id msg_id) noexcept {
         std::array<byte, 32> temp{};
         auto serialized{default_serialize(msg_id, cover(temp))};
         EAGINE_ASSERT(serialized);
@@ -75,20 +75,22 @@ public:
 
     /// @brief Triggered on receipt of response about message handling by endpoint.
     /// @see find_handler
-    signal<void(const identifier_t target_id, const message_id)> handler_found;
+    signal<void(const identifier_t target_id, const message_id) noexcept>
+      handler_found;
 
 protected:
     using Base::Base;
 
-    void add_methods() {
+    void add_methods() noexcept {
         Base::add_methods();
         Base::add_method(
           this, EAGINE_MSG_MAP(Ability, response, This, _handle_response));
     }
 
 private:
-    auto _handle_response(const message_context&, const stored_message& message)
-      -> bool {
+    auto _handle_response(
+      const message_context&,
+      const stored_message& message) noexcept -> bool {
         message_id msg_id{};
         if(default_deserialize_message_type(msg_id, message.content())) {
             handler_found(message.source_id, msg_id);

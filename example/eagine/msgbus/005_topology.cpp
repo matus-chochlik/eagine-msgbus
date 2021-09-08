@@ -76,7 +76,7 @@ public:
         std::cout << "}\n";
     }
 
-    void on_router_appeared(const router_topology_info& info) {
+    void on_router_appeared(const router_topology_info& info) noexcept {
         log_info("found router connection ${router} - ${remote}")
           .arg(EAGINE_ID(remote), info.remote_id)
           .arg(EAGINE_ID(router), info.router_id);
@@ -85,7 +85,7 @@ public:
         _connections.emplace(info.router_id, info.remote_id);
     }
 
-    void on_bridge_appeared(const bridge_topology_info& info) {
+    void on_bridge_appeared(const bridge_topology_info& info) noexcept {
         if(info.opposite_id) {
             log_info("found bridge connection ${bridge} - ${remote}")
               .arg(EAGINE_ID(remote), info.opposite_id)
@@ -101,7 +101,7 @@ public:
         _bridges.emplace(info.bridge_id);
     }
 
-    void on_endpoint_appeared(const endpoint_topology_info& info) {
+    void on_endpoint_appeared(const endpoint_topology_info& info) noexcept {
         log_info("found endpoint ${endpoint}")
           .arg(EAGINE_ID(endpoint), info.endpoint_id);
 
@@ -111,7 +111,7 @@ public:
     void on_shutdown(
       const std::chrono::milliseconds age,
       const identifier_t subscriber_id,
-      const verification_bits verified) {
+      const verification_bits verified) noexcept {
         _log.info("received ${age} old shutdown request from ${subscrbr}")
           .arg(EAGINE_ID(age), age)
           .arg(EAGINE_ID(subscrbr), subscriber_id)

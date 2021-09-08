@@ -98,10 +98,10 @@ public:
     }
 
     /// @brief Triggered when a new relay has been assigned.
-    signal<void(const identifier_t relay_id)> stream_relay_assigned;
+    signal<void(const identifier_t relay_id) noexcept> stream_relay_assigned;
 
     /// @brief Triggered when the current relay has been reset.
-    signal<void()> stream_relay_reset;
+    signal<void() noexcept> stream_relay_reset;
 
 protected:
     using base::base;
@@ -137,7 +137,7 @@ protected:
     }
 
 private:
-    void _handle_stream_relay_alive(const subscriber_info& sub_info) {
+    void _handle_stream_relay_alive(const subscriber_info& sub_info) noexcept {
         if(sub_info.endpoint_id == _stream_relay_id) {
             _stream_relay_timeout.reset();
         }
@@ -145,7 +145,7 @@ private:
 
     void _handle_stream_relay_subscribed(
       const subscriber_info& sub_info,
-      const message_id msg_id) {
+      const message_id msg_id) noexcept {
         if(msg_id == EAGINE_MSG_ID(eagiStream, startFrwrd)) {
             if(!has_stream_relay() || (_stream_relay_hops > sub_info.hop_count)) {
                 set_stream_relay(sub_info.endpoint_id, sub_info.hop_count);
@@ -155,7 +155,7 @@ private:
 
     void _handle_stream_relay_unsubscribed(
       const subscriber_info& sub_info,
-      const message_id msg_id) {
+      const message_id msg_id) noexcept {
         if(msg_id == EAGINE_MSG_ID(eagiStream, startFrwrd)) {
             if(_stream_relay_id == sub_info.endpoint_id) {
                 reset_stream_relay();
@@ -242,7 +242,7 @@ protected:
           EAGINE_THIS_MEM_FUNC_REF(_handle_stream_relay_reset));
     }
 
-    void add_methods() {
+    void add_methods() noexcept {
         base::add_methods();
 
         base::add_method(
@@ -280,7 +280,7 @@ private:
         this->bus_node().post(msg_id, message);
     }
 
-    void _handle_stream_relay_assigned(const identifier_t relay_id) {
+    void _handle_stream_relay_assigned(const identifier_t relay_id) noexcept {
         for(const auto& [stream_id, stream] : _streams) {
             EAGINE_ASSERT(stream_id == stream.info.id);
             EAGINE_MAYBE_UNUSED(stream_id);
@@ -288,7 +288,7 @@ private:
         }
     }
 
-    void _handle_stream_relay_reset() {
+    void _handle_stream_relay_reset() noexcept {
         for(auto& [stream_id, stream] : _streams) {
             EAGINE_ASSERT(stream_id == stream.info.id);
             EAGINE_MAYBE_UNUSED(stream_id);
@@ -298,7 +298,7 @@ private:
 
     auto _handle_start_send_data(
       const message_context&,
-      const stored_message& message) -> bool {
+      const stored_message& message) noexcept -> bool {
         identifier_t stream_id{0};
         if(default_deserialize(stream_id, message.content())) {
             const auto pos = _streams.find(stream_id);
@@ -313,7 +313,7 @@ private:
 
     auto _handle_stop_send_data(
       const message_context&,
-      const stored_message& message) -> bool {
+      const stored_message& message) noexcept -> bool {
         identifier_t stream_id{0};
         if(default_deserialize(stream_id, message.content())) {
             const auto pos = _streams.find(stream_id);
@@ -351,7 +351,7 @@ public:
     signal<void(
       const identifier_t provider_id,
       const stream_info&,
-      const verification_bits verified)>
+      const verification_bits verified) noexcept>
       stream_appeared;
 
     /// @brief Triggered when a data stream has been lost at the given provider.
@@ -359,7 +359,7 @@ public:
     signal<void(
       const identifier_t provider_id,
       const stream_info&,
-      const verification_bits verified)>
+      const verification_bits verified) noexcept>
       stream_disappeared;
 
     /// @brief Subscribes to the data from the specified stream.
@@ -431,7 +431,7 @@ private:
 
     auto _handle_stream_appeared(
       const message_context&,
-      const stored_message& message) -> bool {
+      const stored_message& message) noexcept -> bool {
         stream_info info{};
         if(default_deserialize(info, message.content())) {
             stream_appeared(
@@ -442,7 +442,7 @@ private:
 
     auto _handle_stream_disappeared(
       const message_context&,
-      const stored_message& message) -> bool {
+      const stored_message& message) noexcept -> bool {
         stream_info info{};
         if(default_deserialize(info, message.content())) {
             stream_disappeared(
@@ -476,7 +476,7 @@ public:
     signal<void(
       const identifier_t provider_id,
       const stream_info&,
-      const verification_bits verified)>
+      const verification_bits verified) noexcept>
       stream_announced;
 
     /// @brief Triggered when a data stream was retracted by the given provider.
@@ -484,7 +484,7 @@ public:
     signal<void(
       const identifier_t provider_id,
       const stream_info&,
-      const verification_bits verified)>
+      const verification_bits verified) noexcept>
       stream_retracted;
 
 protected:
@@ -534,7 +534,7 @@ private:
 
     auto _handle_stream_announce(
       const message_context&,
-      const stored_message& message) -> bool {
+      const stored_message& message) noexcept -> bool {
         stream_info info{};
         if(default_deserialize(info, message.content())) {
             const stream_key_t key{message.source_id, info.id};
@@ -585,7 +585,7 @@ private:
 
     auto _handle_stream_retract(
       const message_context&,
-      const stored_message& message) -> bool {
+      const stored_message& message) noexcept -> bool {
         identifier_t stream_id{0};
         if(default_deserialize(stream_id, message.content())) {
             const auto pos = _streams.find({message.source_id, stream_id});
@@ -614,13 +614,15 @@ private:
         stream_retracted(provider_id, stream.info, verified);
     }
 
-    auto _handle_start_forward(const message_context&, const stored_message&)
-      -> bool {
+    auto _handle_start_forward(
+      const message_context&,
+      const stored_message&) noexcept -> bool {
         return true;
     }
 
-    auto _handle_stop_forward(const message_context&, const stored_message&)
-      -> bool {
+    auto _handle_stop_forward(
+      const message_context&,
+      const stored_message&) noexcept -> bool {
         return true;
     }
 

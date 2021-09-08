@@ -23,12 +23,12 @@ struct acceptor : connection_info {
     using accept_handler = callable_ref<void(std::unique_ptr<connection>)>;
 
     /// @brief Updates the internal state of the acceptor (called repeatedly).
-    virtual auto update() -> work_done {
+    virtual auto update() noexcept -> work_done {
         return {};
     }
 
     /// @brief Lets the handler process the pending accepted connections.
-    virtual auto process_accepted(const accept_handler handler)
+    virtual auto process_accepted(const accept_handler handler) noexcept
       -> work_done = 0;
 };
 //------------------------------------------------------------------------------
@@ -40,7 +40,7 @@ struct acceptor_user : interface<acceptor_user> {
 
     /// @brief Adds the specified message bus connection acceptor.
     /// Result indicates if the acceptor was used or discarded.
-    virtual auto add_acceptor(std::shared_ptr<acceptor> an_acceptor)
+    virtual auto add_acceptor(std::shared_ptr<acceptor> an_acceptor) noexcept
       -> bool = 0;
 };
 //------------------------------------------------------------------------------

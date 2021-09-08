@@ -16,7 +16,7 @@
 
 class TilingBackend;
 //------------------------------------------------------------------------------
-class HelperContributionViewModel
+class HelperContributionViewModel final
   : public QObject
   , public eagine::main_ctx_object {
     Q_OBJECT
@@ -28,6 +28,7 @@ class HelperContributionViewModel
     Q_PROPERTY(qreal maxSolvedCount READ getMaxSolvedCount NOTIFY solved)
 public:
     HelperContributionViewModel(TilingBackend&);
+    ~HelperContributionViewModel() final;
 
     void helperAppeared(eagine::identifier_t helperId);
     void helperContributed(eagine::identifier_t helperId);
@@ -44,8 +45,10 @@ signals:
 private:
     void _cacheHelpers();
     void _cacheCounts();
+    void timerEvent(QTimerEvent*) final;
 
     TilingBackend& _backend;
+    int _timerId{0};
     eagine::flat_set<eagine::identifier_t> _helpers;
     QStringList _helperIds;
     QVariantList _updatedCounts;
