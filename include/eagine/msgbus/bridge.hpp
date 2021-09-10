@@ -30,8 +30,8 @@ public:
         _setup_from_config();
     }
 
-    void add_certificate_pem(const memory::const_block blk);
-    void add_ca_certificate_pem(const memory::const_block blk);
+    void add_certificate_pem(const memory::const_block blk) noexcept;
+    void add_ca_certificate_pem(const memory::const_block blk) noexcept;
 
     auto add_connection(std::unique_ptr<connection>) noexcept -> bool final;
 
@@ -39,46 +39,50 @@ public:
         return is_valid_endpoint_id(_id);
     }
 
-    auto update() -> work_done;
+    auto update() noexcept -> work_done;
     auto is_done() const noexcept -> bool;
-    void say_bye();
-    void cleanup();
-    void finish();
+    void say_bye() noexcept;
+    void cleanup() noexcept;
+    void finish() noexcept;
 
     auto no_connection_timeout() const noexcept -> auto& {
         return _no_connection_timeout;
     }
 
 private:
-    auto _uptime_seconds() -> std::int64_t;
+    auto _uptime_seconds() noexcept -> std::int64_t;
     void _setup_from_config();
 
     auto _recoverable_state() const noexcept -> bool;
-    auto _check_state() -> work_done;
-    auto _update_connections() -> work_done;
+    auto _check_state() noexcept -> work_done;
+    auto _update_connections() noexcept -> work_done;
 
-    auto _do_send(const message_id, message_view&) -> bool;
-    auto _send(const message_id, message_view&) -> bool;
+    auto _do_send(const message_id, message_view&) noexcept -> bool;
+    auto _send(const message_id, message_view&) noexcept -> bool;
 
     enum message_handling_result { should_be_forwarded, was_handled };
 
-    auto _handle_id_assigned(const message_view&) -> message_handling_result;
-    auto _handle_id_confirmed(const message_view&) -> message_handling_result;
-    auto _handle_ping(const message_view&, const bool)
+    auto _handle_id_assigned(const message_view&) noexcept
+      -> message_handling_result;
+    auto _handle_id_confirmed(const message_view&) noexcept
+      -> message_handling_result;
+    auto _handle_ping(const message_view&, const bool) noexcept
       -> message_handling_result;
 
-    auto _handle_topo_bridge_conn(const message_view&, const bool)
+    auto _handle_topo_bridge_conn(const message_view&, const bool) noexcept
       -> message_handling_result;
-    auto _handle_topology_query(const message_view&, const bool)
+    auto _handle_topology_query(const message_view&, const bool) noexcept
       -> message_handling_result;
-    auto _handle_stats_query(const message_view&, const bool)
-      -> message_handling_result;
-
-    auto _handle_special(const message_id, const message_view&, const bool)
+    auto _handle_stats_query(const message_view&, const bool) noexcept
       -> message_handling_result;
 
-    auto _do_push(const message_id, message_view&) -> bool;
-    auto _forward_messages() -> work_done;
+    auto _handle_special(
+      const message_id,
+      const message_view&,
+      const bool) noexcept -> message_handling_result;
+
+    auto _do_push(const message_id, message_view&) noexcept -> bool;
+    auto _forward_messages() noexcept -> work_done;
 
     shared_context _context{};
 
