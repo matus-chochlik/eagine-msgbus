@@ -33,17 +33,17 @@
 
 namespace eagine::msgbus {
 //------------------------------------------------------------------------------
-class single_byte_blob_io : public blob_io {
+class single_byte_blob_io final : public blob_io {
 public:
     single_byte_blob_io(const span_size_t size, const byte value) noexcept
       : _size{size}
       , _value{value} {}
 
-    auto total_size() -> span_size_t final {
+    auto total_size() noexcept -> span_size_t final {
         return _size;
     }
 
-    auto fetch_fragment(const span_size_t offs, memory::block dst)
+    auto fetch_fragment(const span_size_t offs, memory::block dst) noexcept
       -> span_size_t final {
         return fill(head(dst, _size - offs), _value).size();
     }
@@ -53,17 +53,17 @@ private:
     byte _value;
 };
 //------------------------------------------------------------------------------
-class random_byte_blob_io : public blob_io {
+class random_byte_blob_io final : public blob_io {
 public:
     random_byte_blob_io(span_size_t size) noexcept
       : _size{size}
       , _re{std::random_device{}()} {}
 
-    auto total_size() -> span_size_t final {
+    auto total_size() noexcept -> span_size_t final {
         return _size;
     }
 
-    auto fetch_fragment(const span_size_t offs, memory::block dst)
+    auto fetch_fragment(const span_size_t offs, memory::block dst) noexcept
       -> span_size_t final {
         return fill_with_random_bytes(
                  head(dst, _size - offs), any_random_engine(_re))
@@ -75,12 +75,12 @@ private:
     std::default_random_engine _re;
 };
 //------------------------------------------------------------------------------
-class file_blob_io : public blob_io {
+class file_blob_io final : public blob_io {
 public:
     file_blob_io(
       std::fstream file,
       optionally_valid<span_size_t> offs,
-      optionally_valid<span_size_t> size)
+      optionally_valid<span_size_t> size) noexcept
       : _file{std::move(file)} {
         _file.seekg(0, std::ios::end);
         _size = limit_cast<span_size_t>(_file.tellg());
@@ -92,39 +92,40 @@ public:
         }
     }
 
-    auto is_at_eod(const span_size_t offs) -> bool final {
+    auto is_at_eod(const span_size_t offs) noexcept -> bool final {
         return offs >= total_size();
     }
 
-    auto total_size() -> span_size_t final {
+    auto total_size() noexcept -> span_size_t final {
         return _size - _offs;
     }
 
-    auto fetch_fragment(const span_size_t offs, memory::block dst)
+    auto fetch_fragment(const span_size_t offs, memory::block dst) noexcept
       -> span_size_t final {
         _file.seekg(_offs + offs, std::ios::beg);
         return limit_cast<span_size_t>(
           read_from_stream(_file, head(dst, _size - _offs - offs)).gcount());
     }
 
-    auto store_fragment(const span_size_t offs, memory::const_block src)
+    auto store_fragment(const span_size_t offs, memory::const_block src) noexcept
       -> bool final {
         _file.seekg(_offs + offs, std::ios::beg);
         return write_to_stream(_file, head(src, _size - _offs - offs)).good();
     }
 
-    auto check_stored(const span_size_t, memory::const_block) -> bool final {
+    auto check_stored(const span_size_t, memory::const_block) noexcept
+      -> bool final {
         return true;
     }
 
     void handle_finished(
       const message_id,
       const message_age,
-      const message_info&) final {
+      const message_info&) noexcept final {
         _file.close();
     }
 
-    void handle_cancelled() final {
+    void handle_cancelled() noexcept final {
         _file.close();
     }
 

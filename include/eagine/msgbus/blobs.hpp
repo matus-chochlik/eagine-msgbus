@@ -27,30 +27,33 @@ namespace eagine::msgbus {
 //------------------------------------------------------------------------------
 struct blob_io : interface<blob_io> {
 
-    virtual auto is_at_eod(const span_size_t offs) -> bool {
+    virtual auto is_at_eod(const span_size_t offs) noexcept -> bool {
         return offs >= total_size();
     }
 
-    virtual auto total_size() -> span_size_t {
+    virtual auto total_size() noexcept -> span_size_t {
         return 0;
     }
 
-    virtual auto fetch_fragment(const span_size_t offs, memory::block dst)
-      -> span_size_t {
+    virtual auto fetch_fragment(
+      const span_size_t offs,
+      memory::block dst) noexcept -> span_size_t {
         EAGINE_MAYBE_UNUSED(offs);
         EAGINE_MAYBE_UNUSED(dst);
         return 0;
     }
 
-    virtual auto store_fragment(const span_size_t offs, memory::const_block src)
-      -> bool {
+    virtual auto store_fragment(
+      const span_size_t offs,
+      memory::const_block src) noexcept -> bool {
         EAGINE_MAYBE_UNUSED(offs);
         EAGINE_MAYBE_UNUSED(src);
         return false;
     }
 
-    virtual auto check_stored(const span_size_t offs, memory::const_block src)
-      -> bool {
+    virtual auto check_stored(
+      const span_size_t offs,
+      memory::const_block src) noexcept -> bool {
         EAGINE_MAYBE_UNUSED(offs);
         EAGINE_MAYBE_UNUSED(src);
         return true;
@@ -59,13 +62,13 @@ struct blob_io : interface<blob_io> {
     virtual void handle_finished(
       const message_id msg_id,
       const message_age msg_age,
-      const message_info& message) {
+      const message_info& message) noexcept {
         EAGINE_MAYBE_UNUSED(msg_id);
         EAGINE_MAYBE_UNUSED(msg_age);
         EAGINE_MAYBE_UNUSED(message);
     }
 
-    virtual void handle_cancelled() {}
+    virtual void handle_cancelled() noexcept {}
 };
 //------------------------------------------------------------------------------
 class buffer_blob_io;
@@ -111,17 +114,17 @@ struct pending_blob : overwrite_guard<> {
     auto sent_everything() const noexcept -> bool;
     auto received_everything() const noexcept -> bool;
 
-    auto fetch(const span_size_t offs, memory::block dst) {
+    auto fetch(const span_size_t offs, memory::block dst) noexcept {
         EAGINE_ASSERT(io);
         return io->fetch_fragment(offs, dst);
     }
 
-    auto store(const span_size_t offs, const memory::const_block src) {
+    auto store(const span_size_t offs, const memory::const_block src) noexcept {
         EAGINE_ASSERT(io);
         return io->store_fragment(offs, src);
     }
 
-    auto check(const span_size_t offs, const memory::const_block blk) {
+    auto check(const span_size_t offs, const memory::const_block blk) noexcept {
         EAGINE_ASSERT(io);
         return io->check_stored(offs, blk);
     }
@@ -130,9 +133,10 @@ struct pending_blob : overwrite_guard<> {
         return std::chrono::duration_cast<message_age>(max_time.elapsed_time());
     }
 
-    auto merge_fragment(const span_size_t bgn, const memory::const_block)
-      -> bool;
-    void merge_resend_request(const span_size_t bgn, span_size_t end);
+    auto merge_fragment(
+      const span_size_t bgn,
+      const memory::const_block) noexcept -> bool;
+    void merge_resend_request(const span_size_t bgn, span_size_t end) noexcept;
 };
 //------------------------------------------------------------------------------
 class blob_manipulator : main_ctx_object {
@@ -140,7 +144,7 @@ public:
     blob_manipulator(
       main_ctx_parent parent,
       message_id fragment_msg_id,
-      message_id resend_msg_id)
+      message_id resend_msg_id) noexcept
       : main_ctx_object{EAGINE_ID(BlobManipl), parent}
       , _fragment_msg_id{std::move(fragment_msg_id)}
       , _resend_msg_id{std::move(resend_msg_id)} {}
@@ -155,12 +159,13 @@ public:
     using io_getter = callable_ref<std::unique_ptr<
       blob_io>(const message_id, const span_size_t, blob_manipulator&) noexcept>;
 
-    auto make_io(const span_size_t total_size) -> std::unique_ptr<blob_io>;
+    auto make_io(const span_size_t total_size) noexcept
+      -> std::unique_ptr<blob_io>;
 
     using send_handler =
       callable_ref<bool(const message_id, const message_view&) noexcept>;
 
-    auto update(const send_handler do_send) -> work_done;
+    auto update(const send_handler do_send) noexcept -> work_done;
 
     auto push_outgoing(
       const message_id msg_id,
@@ -169,7 +174,7 @@ public:
       const blob_id_t target_blob_id,
       std::shared_ptr<blob_io> io,
       const std::chrono::seconds max_time,
-      const message_priority priority) -> blob_id_t;
+      const message_priority priority) noexcept -> blob_id_t;
 
     auto push_outgoing(
       const message_id msg_id,
@@ -178,14 +183,14 @@ public:
       const blob_id_t target_blob_id,
       const memory::const_block src,
       const std::chrono::seconds max_time,
-      const message_priority priority) -> blob_id_t;
+      const message_priority priority) noexcept -> blob_id_t;
 
     auto expect_incoming(
       const message_id msg_id,
       const identifier_t source_id,
       const blob_id_t target_blob_id,
       std::shared_ptr<blob_io> io,
-      const std::chrono::seconds max_time) -> bool;
+      const std::chrono::seconds max_time) noexcept -> bool;
 
     auto push_incoming_fragment(
       const message_id msg_id,
@@ -196,25 +201,27 @@ public:
       const std::int64_t total,
       io_getter get_io,
       const memory::const_block fragment,
-      const message_priority priority) -> bool;
+      const message_priority priority) noexcept -> bool;
 
-    auto process_incoming(const message_view& message) -> bool;
-    auto process_incoming(io_getter, const message_view& message) -> bool;
-    auto process_resend(const message_view& message) -> bool;
+    auto process_incoming(const message_view& message) noexcept -> bool;
+    auto process_incoming(io_getter, const message_view& message) noexcept
+      -> bool;
+    auto process_resend(const message_view& message) noexcept -> bool;
 
-    auto cancel_incoming(const identifier_t target_blob_id) -> bool;
+    auto cancel_incoming(const identifier_t target_blob_id) noexcept -> bool;
 
     using fetch_handler = callable_ref<
       bool(const message_id, const message_age, const message_view&) noexcept>;
 
-    auto handle_complete() -> span_size_t;
-    auto fetch_all(const fetch_handler) -> span_size_t;
+    auto handle_complete() noexcept -> span_size_t;
+    auto fetch_all(const fetch_handler) noexcept -> span_size_t;
 
     auto has_outgoing() const noexcept -> bool {
         return !_outgoing.empty();
     }
-    auto process_outgoing(const send_handler, const span_size_t max_data_size)
-      -> work_done;
+    auto process_outgoing(
+      const send_handler,
+      const span_size_t max_data_size) noexcept -> work_done;
 
 private:
     const message_id _fragment_msg_id;
@@ -231,7 +238,7 @@ private:
       const span_size_t total_size,
       blob_manipulator&) noexcept -> std::unique_ptr<blob_io>;
 
-    auto _scratch_block(const span_size_t size) -> memory::block;
+    auto _scratch_block(const span_size_t size) noexcept -> memory::block;
 };
 //------------------------------------------------------------------------------
 } // namespace eagine::msgbus
