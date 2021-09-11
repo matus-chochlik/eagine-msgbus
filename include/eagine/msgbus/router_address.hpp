@@ -19,11 +19,11 @@ namespace eagine::msgbus {
 /// @ingroup msgbus
 class router_address : public main_ctx_object {
 public:
-    router_address(main_ctx_parent parent, const nothing_t)
+    router_address(main_ctx_parent parent, const nothing_t) noexcept
       : main_ctx_object{EAGINE_ID(RouterAddr), parent} {}
 
     /// @brief Construction from parent main context object.
-    router_address(main_ctx_parent parent)
+    router_address(main_ctx_parent parent) noexcept
       : router_address{parent, nothing} {
         configure(app_config());
     }
