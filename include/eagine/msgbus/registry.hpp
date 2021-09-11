@@ -24,7 +24,7 @@ struct registered_entry {
     std::unique_ptr<endpoint> _endpoint{};
     std::unique_ptr<service_interface> _service{};
 
-    auto update_service() -> work_done;
+    auto update_service() noexcept -> work_done;
 };
 //------------------------------------------------------------------------------
 /// @brief Class combining a local bus router and a set of endpoints.
@@ -32,18 +32,19 @@ struct registered_entry {
 class registry : public main_ctx_object {
 public:
     /// @brief Construction from parent main context object.
-    registry(main_ctx_parent parent);
+    registry(main_ctx_parent parent) noexcept;
 
     /// @brief Establishes a new endpoint with the specified logger identifier.
     /// @see emplace
-    [[nodiscard]] auto establish(const identifier log_id) -> endpoint& {
+    [[nodiscard]] auto establish(const identifier log_id) noexcept
+      -> endpoint& {
         return extract(_add_entry(log_id)._endpoint);
     }
 
     /// @brief Establishes an endpoint and instantiates a service object tied to it.
     /// @see establish
     template <typename Service, typename... Args>
-    auto emplace(const identifier log_id, Args&&... args) -> std::
+    auto emplace(const identifier log_id, Args&&... args) noexcept -> std::
       enable_if_t<std::is_base_of_v<service_interface, Service>, Service&> {
         auto& entry = _add_entry(log_id);
         auto temp{std::make_unique<Service>(
@@ -54,16 +55,16 @@ public:
     }
 
     /// @brief Removes a previously emplaced service.
-    void remove(service_interface&);
+    void remove(service_interface&) noexcept;
 
-    auto update() -> work_done;
-    auto update_all() -> work_done;
+    auto update() noexcept -> work_done;
+    auto update_all() noexcept -> work_done;
 
-    auto is_done() -> bool {
+    auto is_done() noexcept -> bool {
         return _router.is_done();
     }
 
-    void finish() {
+    void finish() noexcept {
         _router.finish();
     }
 
@@ -72,7 +73,7 @@ private:
     router _router;
     std::vector<registered_entry> _entries;
 
-    auto _add_entry(const identifier log_id) -> registered_entry&;
+    auto _add_entry(const identifier log_id) noexcept -> registered_entry&;
 };
 //------------------------------------------------------------------------------
 } // namespace eagine::msgbus
