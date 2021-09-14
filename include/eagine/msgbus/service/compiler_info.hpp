@@ -58,7 +58,7 @@ class compiler_info_consumer : public Base {
 public:
     /// @brief Queries information about compiler used to build given endpoint.
     /// @see compiler_info_received
-    void query_compiler_info(const identifier_t endpoint_id) {
+    void query_compiler_info(const identifier_t endpoint_id) noexcept {
         _compiler.invoke_on(
           this->bus_node(), endpoint_id, EAGINE_MSG_ID(eagiCplInf, request));
     }
@@ -71,7 +71,7 @@ public:
 protected:
     using Base::Base;
 
-    void add_methods() {
+    void add_methods() noexcept {
         Base::add_methods();
 
         Base::add_method(_compiler(

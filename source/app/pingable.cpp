@@ -32,7 +32,7 @@ public:
         return EAGINE_THIS_MEM_FUNC_REF(on_shutdown);
     }
 
-    pingable_node(main_ctx_parent parent)
+    pingable_node(main_ctx_parent parent) noexcept
       : base{EAGINE_ID(PngablNode), parent} {
         shutdown_requested.connect(on_shutdown_slot());
         auto& info = provided_endpoint_info();
@@ -45,7 +45,7 @@ public:
     auto respond_to_ping(
       const identifier_t,
       const message_sequence_t,
-      const verification_bits) -> bool final {
+      const verification_bits) noexcept -> bool final {
         if(EAGINE_UNLIKELY((++_sent % _mod) == 0)) {
             log_info("sent ${sent} pongs").arg(EAGINE_ID(sent), _sent);
         }

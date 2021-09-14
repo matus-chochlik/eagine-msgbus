@@ -47,7 +47,7 @@ public:
     auto respond_to_ping(
       const identifier_t,
       const message_sequence_t,
-      const verification_bits) -> bool final {
+      const verification_bits) noexcept -> bool final {
         if(EAGINE_UNLIKELY((++_sent % _mod) == 0)) {
             log_info("sent ${sent} pongs").arg(EAGINE_ID(sent), _sent);
         }

@@ -191,7 +191,7 @@ class system_info_consumer : public Base {
 public:
     /// @brief Queries the endpoint's host system uptime.
     /// @see uptime_received
-    void query_uptime(const identifier_t endpoint_id) {
+    void query_uptime(const identifier_t endpoint_id) noexcept {
         _uptime.invoke_on(
           this->bus_node(), endpoint_id, EAGINE_MSG_ID(eagiSysInf, rqUptime));
     }
@@ -204,7 +204,7 @@ public:
 
     /// @brief Queries the endpoint's host CPU's supported concurrent thread count.
     /// @see cpu_concurrent_threads_received
-    void query_cpu_concurrent_threads(const identifier_t endpoint_id) {
+    void query_cpu_concurrent_threads(const identifier_t endpoint_id) noexcept {
         _cpu_concurrent_threads.invoke_on(
           this->bus_node(), endpoint_id, EAGINE_MSG_ID(eagiSysInf, rqCpuThrds));
     }
@@ -218,7 +218,7 @@ public:
 
     /// @brief Queries the endpoint's host system short average load (0.0 - 1.0).
     /// @see short_average_load_received
-    void query_short_average_load(const identifier_t endpoint_id) {
+    void query_short_average_load(const identifier_t endpoint_id) noexcept {
         _short_average_load.invoke_on(
           this->bus_node(), endpoint_id, EAGINE_MSG_ID(eagiSysInf, rqShrtLoad));
     }
@@ -231,7 +231,7 @@ public:
 
     /// @brief Queries the endpoint's host system long average load (0.0 - 1.0).
     /// @see long_average_load_received
-    void query_long_average_load(const identifier_t endpoint_id) {
+    void query_long_average_load(const identifier_t endpoint_id) noexcept {
         _long_average_load.invoke_on(
           this->bus_node(), endpoint_id, EAGINE_MSG_ID(eagiSysInf, rqLongLoad));
     }
@@ -244,7 +244,7 @@ public:
 
     /// @brief Queries the endpoint's host system memory page size in bytes.
     /// @see memory_page_size_received
-    void query_memory_page_size(const identifier_t endpoint_id) {
+    void query_memory_page_size(const identifier_t endpoint_id) noexcept {
         _memory_page_size.invoke_on(
           this->bus_node(), endpoint_id, EAGINE_MSG_ID(eagiSysInf, rqMemPgSz));
     }
@@ -259,7 +259,7 @@ public:
     /// @brief Queries the endpoint's host system free RAM size in bytes.
     /// @see free_ram_size_received
     /// @see query_total_ram_size
-    void query_free_ram_size(const identifier_t endpoint_id) {
+    void query_free_ram_size(const identifier_t endpoint_id) noexcept {
         _free_ram_size.invoke_on(
           this->bus_node(), endpoint_id, EAGINE_MSG_ID(eagiSysInf, rqFreRamSz));
     }
@@ -274,7 +274,7 @@ public:
     /// @brief Queries the endpoint's host system total RAM size in bytes.
     /// @see total_ram_size_received
     /// @see query_free_ram_size
-    void query_total_ram_size(const identifier_t endpoint_id) {
+    void query_total_ram_size(const identifier_t endpoint_id) noexcept {
         _total_ram_size.invoke_on(
           this->bus_node(), endpoint_id, EAGINE_MSG_ID(eagiSysInf, rqTtlRamSz));
     }
@@ -289,7 +289,7 @@ public:
     /// @brief Queries the endpoint's host system free swap size in bytes.
     /// @see free_swap_size_received
     /// @see query_total_swap_size
-    void query_free_swap_size(const identifier_t endpoint_id) {
+    void query_free_swap_size(const identifier_t endpoint_id) noexcept {
         _free_swap_size.invoke_on(
           this->bus_node(), endpoint_id, EAGINE_MSG_ID(eagiSysInf, rqFreSwpSz));
     }
@@ -304,7 +304,7 @@ public:
     /// @brief Queries the endpoint's host system total swap size in bytes.
     /// @see total_swap_size_received
     /// @see query_free_swap_size
-    void query_total_swap_size(const identifier_t endpoint_id) {
+    void query_total_swap_size(const identifier_t endpoint_id) noexcept {
         _total_swap_size.invoke_on(
           this->bus_node(), endpoint_id, EAGINE_MSG_ID(eagiSysInf, rqTtlSwpSz));
     }
@@ -317,7 +317,7 @@ public:
       total_swap_size_received;
 
     /// @brief Queries the endpoint's host system minimum and maximum temperature.
-    void query_temperature_min_max(const identifier_t endpoint_id) {
+    void query_temperature_min_max(const identifier_t endpoint_id) noexcept {
         _temperature_min_max.invoke_on(
           this->bus_node(), endpoint_id, EAGINE_MSG_ID(eagiSysInf, rqTempMnMx));
     }
@@ -332,7 +332,7 @@ public:
       temperature_min_max_received;
 
     /// @brief Queries the endpoint's host system power supply kind information.
-    void query_power_supply_kind(const identifier_t endpoint_id) {
+    void query_power_supply_kind(const identifier_t endpoint_id) noexcept {
         _power_supply_kind.invoke_on(
           this->bus_node(), endpoint_id, EAGINE_MSG_ID(eagiSysInf, rqPwrSuply));
     }
@@ -347,7 +347,7 @@ public:
     /// @see query_memory_page_size
     /// @see query_total_ram_size
     /// @see query_total_swap_size
-    void query_stats(const identifier_t endpoint_id) {
+    void query_stats(const identifier_t endpoint_id) noexcept {
         message_view message{};
         const auto msg_id{EAGINE_MSG_ID(eagiSysInf, qryStats)};
         message.set_target_id(endpoint_id);
@@ -360,7 +360,7 @@ public:
     /// @see query_free_ram_size
     /// @see query_free_swap_size
     /// @see query_power_supply_kind
-    void query_sensors(const identifier_t endpoint_id) {
+    void query_sensors(const identifier_t endpoint_id) noexcept {
         message_view message{};
         const auto msg_id{EAGINE_MSG_ID(eagiSysInf, qrySensors)};
         message.set_target_id(endpoint_id);
@@ -408,7 +408,7 @@ private:
 protected:
     using Base::Base;
 
-    void add_methods() {
+    void add_methods() noexcept {
         Base::add_methods();
 
         Base::add_method(

@@ -32,7 +32,7 @@ public:
     virtual auto respond_to_ping(
       const identifier_t pinger_id,
       const message_sequence_t,
-      const verification_bits) -> bool {
+      const verification_bits) noexcept -> bool {
         EAGINE_MAYBE_UNUSED(pinger_id);
         return true;
     }
@@ -81,7 +81,7 @@ public:
     }
 
     /// @brief Broadcasts a query searching for pingable message bus nodes.
-    void query_pingables() {
+    void query_pingables() noexcept {
         this->bus_node().query_subscribers_of(ping_msg_id());
     }
 
@@ -91,7 +91,7 @@ public:
     /// @see has_pending_pings
     void ping(
       const identifier_t pingable_id,
-      const std::chrono::milliseconds max_time) {
+      const std::chrono::milliseconds max_time) noexcept {
         message_view message{};
         auto msg_id{EAGINE_MSGBUS_ID(ping)};
         message.set_target_id(pingable_id);
@@ -105,14 +105,14 @@ public:
     /// @see ping_responded
     /// @see ping_timeouted
     /// @see has_pending_pings
-    void ping(const identifier_t pingable_id) {
+    void ping(const identifier_t pingable_id) noexcept {
         ping(
           pingable_id,
           adjusted_duration(
             std::chrono::milliseconds{5000}, memory_access_rate::low));
     }
 
-    auto update() -> work_done {
+    auto update() noexcept -> work_done {
         some_true something_done{};
         something_done(Base::update());
 
@@ -168,7 +168,7 @@ public:
 protected:
     using Base::Base;
 
-    void add_methods() {
+    void add_methods() noexcept {
         Base::add_methods();
         Base::add_method(
           this, EAGINE_MSG_MAP(eagiMsgBus, pong, This, _handle_pong));
