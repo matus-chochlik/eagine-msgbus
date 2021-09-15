@@ -37,8 +37,8 @@ public:
     promise(std::shared_ptr<future_state<T>>& state) noexcept
       : _state{state} {}
 
-    auto should_be_removed() -> bool {
-        if(auto state{_state.lock()}) {
+    auto should_be_removed() noexcept -> bool {
+        if(const auto state{_state.lock()}) {
             if(state->too_late) {
                 if(state->timeout_handler) {
                     state->timeout_handler();
@@ -52,8 +52,8 @@ public:
     }
 
     /// @brief Fulfills the promise and the corresponding future.
-    void fulfill(T value) {
-        if(auto state{_state.lock()}) {
+    void fulfill(T value) noexcept {
+        if(const auto state{_state.lock()}) {
             _state.reset();
             if(state->too_late) {
                 if(state->timeout_handler) {
@@ -82,7 +82,7 @@ public:
     future() = default;
 
     /// @brief Constructs empty stateless future.
-    future(nothing_t) noexcept
+    future(const nothing_t) noexcept
       : _state{} {}
 
     /// @brief Checks if the future has state (is associated with a promise).
@@ -102,7 +102,8 @@ public:
     /// @brief Sets the on-success handler.
     /// @see then
     /// @see on_timeout
-    auto on_success(const std::function<void(T)>& handler) -> future<T>& {
+    auto on_success(const std::function<void(T)>& handler) noexcept
+      -> future<T>& {
         if(_state) {
             _state->success_handler = handler;
         }
@@ -111,7 +112,8 @@ public:
 
     /// @brief Sets the on-timeout handler.
     /// @see on_success
-    auto on_timeout(const std::function<void()>& handler) -> future<T>& {
+    auto on_timeout(const std::function<void()>& handler) noexcept
+      -> future<T>& {
         if(_state) {
             _state->timeout_handler = handler;
         }
@@ -124,7 +126,7 @@ public:
     template <
       typename Handler,
       typename = std::enable_if_t<std::is_invocable_v<Handler, T>>>
-    auto then(Handler handler) -> future<T>& {
+    auto then(Handler handler) noexcept -> future<T>& {
         if(_state) {
             _state->success_handler = std::function<void(T)>(
               [state{_state}, handler{std::move(handler)}](T value) {
@@ -140,7 +142,7 @@ public:
     template <
       typename Handler,
       typename = std::enable_if_t<std::is_invocable_v<Handler>>>
-    auto otherwise(Handler handler) -> future<T>& {
+    auto otherwise(Handler handler) noexcept -> future<T>& {
         if(_state) {
             _state->timeout_handler = std::function<void()>(
               [state{_state}, handler{std::move(handler)}]() { handler(); });
@@ -149,7 +151,7 @@ public:
     }
 
     /// @brief Returns the associated promise it there is shared state.
-    auto get_promise() -> promise<T> {
+    auto get_promise() noexcept -> promise<T> {
         return {_state};
     }
 
@@ -168,7 +170,7 @@ public:
     /// @brief Constructs and returns a new message bus future and its unique id.
     ///
     /// The returned future can be used to retrieve the promise.
-    auto make() -> std::tuple<message_sequence_t, future<T>> {
+    auto make() noexcept -> std::tuple<message_sequence_t, future<T>> {
         future<T> result{};
         const auto id{++_id_seq};
         _promises[id] = result.get_promise();
@@ -176,7 +178,7 @@ public:
     }
 
     /// @brief Fulfills the promise/future pair idenified by id with the given value.
-    void fulfill(const message_sequence_t id, T value) {
+    void fulfill(const message_sequence_t id, T value) noexcept {
         const auto pos = _promises.find(id);
         if(pos != _promises.end()) {
             pos->second.fulfill(std::move(value));
@@ -186,7 +188,7 @@ public:
     }
 
     /// @brief Update the internal state of this promise/future tracker.
-    auto update() -> bool {
+    auto update() noexcept -> bool {
         return _promises.erase_if(
                  [](auto& p) { return p.second.should_be_removed(); }) > 0;
     }

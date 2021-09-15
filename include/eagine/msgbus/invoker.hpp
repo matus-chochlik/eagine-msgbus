@@ -125,13 +125,15 @@ class callback_invoker
 public:
     using base::base;
 
-    auto operator()(const _callback_t callback) -> callback_invoker& {
+    auto operator()(const _callback_t callback) noexcept -> callback_invoker& {
         this->_callback = callback;
         return *this;
     }
 
     template <typename Class, typename MfcT, MfcT Mfc>
-    auto operator()(Class* that, const member_function_constant<MfcT, Mfc> func)
+    auto operator()(
+      Class* that,
+      const member_function_constant<MfcT, Mfc> func) noexcept
       -> callback_invoker& {
         this->_callback = _callback_t{that, func};
         return *this;
@@ -140,7 +142,8 @@ public:
     template <typename Class, typename MfcT, MfcT Mfc>
     auto operator()(
       const Class* that,
-      const member_function_constant<MfcT, Mfc> func) -> callback_invoker& {
+      const member_function_constant<MfcT, Mfc> func) noexcept
+      -> callback_invoker& {
         this->_callback = _callback_t{that, func};
         return *this;
     }
@@ -174,7 +177,7 @@ public:
       endpoint& bus,
       const identifier_t target_id,
       const message_id msg_id,
-      Args&&... args) -> bool {
+      Args&&... args) noexcept -> bool {
         std::array<byte, MaxDataSize> temp{};
         return invoke_on(
           bus, target_id, msg_id, cover(temp), std::forward<Args>(args)...);
@@ -266,9 +269,9 @@ public:
       const identifier_t target_id,
       const message_id msg_id,
       memory::block buffer,
-      std::add_lvalue_reference_t<std::add_const_t<Params>>... args)
+      std::add_lvalue_reference_t<std::add_const_t<Params>>... args) noexcept
       -> future<Result> {
-        auto [invocation_id, result] = this->_results.make();
+        const auto [invocation_id, result] = this->_results.make();
 
         auto tupl{std::tie(args...)};
 
@@ -292,7 +295,7 @@ public:
       endpoint& bus,
       const identifier_t target_id,
       const message_id msg_id,
-      std::add_lvalue_reference_t<std::add_const_t<Params>>... args)
+      std::add_lvalue_reference_t<std::add_const_t<Params>>... args) noexcept
       -> future<Result> {
         std::array<byte, MaxDataSize> buffer{};
         return invoke_on(bus, target_id, msg_id, cover(buffer), args...);
@@ -301,7 +304,7 @@ public:
     auto invoke(
       endpoint& bus,
       const message_id msg_id,
-      std::add_lvalue_reference_t<std::add_const_t<Params>>... args)
+      std::add_lvalue_reference_t<std::add_const_t<Params>>... args) noexcept
       -> future<Result> {
         return invoke_on(bus, broadcast_endpoint_id(), msg_id, args...);
     }
@@ -321,7 +324,7 @@ public:
       endpoint& bus,
       const identifier_t target_id,
       const message_id msg_id,
-      memory::block) -> future<Result> {
+      memory::block) noexcept -> future<Result> {
         auto [invocation_id, result] = this->_results.make();
 
         message_view message{};
@@ -335,11 +338,12 @@ public:
     auto invoke_on(
       endpoint& bus,
       const identifier_t target_id,
-      const message_id msg_id) -> future<Result> {
+      const message_id msg_id) noexcept -> future<Result> {
         return invoke_on(bus, target_id, msg_id, {});
     }
 
-    auto invoke(endpoint& bus, const message_id msg_id) -> future<Result> {
+    auto invoke(endpoint& bus, const message_id msg_id) noexcept
+      -> future<Result> {
         return invoke_on(bus, broadcast_endpoint_id(), msg_id);
     }
 };

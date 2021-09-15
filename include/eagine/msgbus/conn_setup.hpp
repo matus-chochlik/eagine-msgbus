@@ -25,7 +25,7 @@ void connection_setup_configure(connection_setup&, application_config&);
 //------------------------------------------------------------------------------
 static inline auto adapt_log_entry_arg(
   const identifier name,
-  const std::unique_ptr<connection_factory>& value) {
+  const std::unique_ptr<connection_factory>& value) noexcept {
     return [name, &value](logger_backend& backend) {
         if(value) {
             backend.add_identifier(
