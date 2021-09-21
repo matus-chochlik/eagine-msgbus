@@ -11,7 +11,7 @@
 namespace eagine::msgbus {
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-auto registered_entry::update_service() -> work_done {
+auto registered_entry::update_service() noexcept -> work_done {
     some_true something_done;
     if(EAGINE_LIKELY(_service)) {
         something_done(_service->update_and_process_all());
@@ -20,7 +20,7 @@ auto registered_entry::update_service() -> work_done {
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-registry::registry(main_ctx_parent parent)
+registry::registry(main_ctx_parent parent) noexcept
   : main_ctx_object{EAGINE_ID(MsgBusRgtr), parent}
   , _acceptor{std::make_shared<direct_acceptor>(*this)}
   , _router{*this} {
@@ -30,7 +30,8 @@ registry::registry(main_ctx_parent parent)
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-auto registry::_add_entry(const identifier log_id) -> registered_entry& {
+auto registry::_add_entry(const identifier log_id) noexcept
+  -> registered_entry& {
     auto new_ept{std::make_unique<endpoint>(main_ctx_object{log_id, *this})};
     new_ept->add_connection(_acceptor->make_connection());
 
@@ -43,7 +44,7 @@ auto registry::_add_entry(const identifier log_id) -> registered_entry& {
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-void registry::remove(service_interface& service) {
+void registry::remove(service_interface& service) noexcept {
     _entries.erase(
       std::remove_if(
         _entries.begin(),
@@ -53,12 +54,12 @@ void registry::remove(service_interface& service) {
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-auto registry::update() -> work_done {
+auto registry::update() noexcept -> work_done {
     return _router.update(8);
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-auto registry::update_all() -> work_done {
+auto registry::update_all() noexcept -> work_done {
     some_true something_done{};
 
     something_done(_router.do_work());

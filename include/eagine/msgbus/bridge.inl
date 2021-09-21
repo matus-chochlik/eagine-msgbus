@@ -26,7 +26,7 @@ namespace eagine::msgbus {
 //------------------------------------------------------------------------------
 class bridge_state : public std::enable_shared_from_this<bridge_state> {
 public:
-    bridge_state(const valid_if_positive<span_size_t>& max_data_size)
+    bridge_state(const valid_if_positive<span_size_t>& max_data_size) noexcept
       : _max_read{extract_or(max_data_size, 2048) * 2} {}
     bridge_state(bridge_state&&) = delete;
     bridge_state(const bridge_state&) = delete;
@@ -40,7 +40,7 @@ public:
         return std::weak_ptr(this->shared_from_this());
     }
 
-    auto make_input_main() {
+    auto make_input_main() noexcept {
         return [selfref{weak_ref()}]() {
             while(auto self{selfref.lock()}) {
                 self->recv_input();
@@ -48,7 +48,7 @@ public:
         };
     }
 
-    auto make_output_main() {
+    auto make_output_main() noexcept {
         return [selfref{weak_ref()}]() {
             while(auto self{selfref.lock()}) {
                 self->send_output();
@@ -56,7 +56,7 @@ public:
         };
     }
 
-    void start() {
+    void start() noexcept {
         std::thread(make_input_main()).detach();
         std::thread(make_output_main()).detach();
     }
@@ -75,12 +75,12 @@ public:
         return input_usable() && output_usable();
     }
 
-    void push(const message_id msg_id, const message_view& message) {
+    void push(const message_id msg_id, const message_view& message) noexcept {
         std::unique_lock lock{_output_mutex};
         _outgoing.back().push(msg_id, message);
     }
 
-    void notify_output_ready() {
+    void notify_output_ready() noexcept {
         _output_ready.notify_one();
     }
 
@@ -96,11 +96,11 @@ public:
         return _decode_errors;
     }
 
-    void send_output() {
-        auto handler = [this](
-                         const message_id msg_id,
-                         const message_age msg_age,
-                         message_view message) {
+    void send_output() noexcept {
+        const auto handler = [this](
+                               const message_id msg_id,
+                               const message_age msg_age,
+                               message_view message) {
             if(EAGINE_UNLIKELY(message.add_age(msg_age).too_old())) {
                 ++_dropped_messages;
             } else {
@@ -136,7 +136,7 @@ public:
 
     using fetch_handler = message_storage::fetch_handler;
 
-    auto fetch_messages(const fetch_handler handler) {
+    auto fetch_messages(const fetch_handler handler) noexcept {
         auto& queue = [this]() -> message_storage& {
             std::unique_lock lock{_input_mutex};
             _incoming.swap();
@@ -145,7 +145,7 @@ public:
         return queue.fetch_all(handler);
     }
 
-    void recv_input() {
+    void recv_input() noexcept {
         if(const auto pos{_source.scan_for('\n', _max_read)}) {
             block_data_source source(_source.top(extract(pos)));
             default_deserializer_backend backend(source);
@@ -204,21 +204,21 @@ private:
 // bridge
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-auto bridge::_uptime_seconds() -> std::int64_t {
+auto bridge::_uptime_seconds() noexcept -> std::int64_t {
     return std::chrono::duration_cast<std::chrono::seconds>(
              std::chrono::steady_clock::now() - _startup_time)
       .count();
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-void bridge::add_certificate_pem(const memory::const_block blk) {
+void bridge::add_certificate_pem(const memory::const_block blk) noexcept {
     if(_context) {
         _context->add_own_certificate_pem(blk);
     }
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-void bridge::add_ca_certificate_pem(const memory::const_block blk) {
+void bridge::add_ca_certificate_pem(const memory::const_block blk) noexcept {
     if(_context) {
         _context->add_ca_certificate_pem(blk);
     }
@@ -236,7 +236,7 @@ void bridge::_setup_from_config() {
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-auto bridge::_handle_id_assigned(const message_view& message)
+auto bridge::_handle_id_assigned(const message_view& message) noexcept
   -> message_handling_result {
     if(!has_id()) {
         _id = message.target_id;
@@ -246,7 +246,7 @@ auto bridge::_handle_id_assigned(const message_view& message)
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-auto bridge::_handle_id_confirmed(const message_view& message)
+auto bridge::_handle_id_confirmed(const message_view& message) noexcept
   -> message_handling_result {
     if(has_id()) {
         if(_id != message.target_id) {
@@ -262,8 +262,9 @@ auto bridge::_handle_id_confirmed(const message_view& message)
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-auto bridge::_handle_ping(const message_view& message, const bool to_connection)
-  -> message_handling_result {
+auto bridge::_handle_ping(
+  const message_view& message,
+  const bool to_connection) noexcept -> message_handling_result {
     if(has_id()) {
         if(_id == message.target_id) {
             message_view response{};
@@ -283,7 +284,7 @@ auto bridge::_handle_ping(const message_view& message, const bool to_connection)
 EAGINE_LIB_FUNC
 auto bridge::_handle_topo_bridge_conn(
   const message_view& message,
-  const bool to_connection) -> message_handling_result {
+  const bool to_connection) noexcept -> message_handling_result {
     if(to_connection) {
         bridge_topology_info info{};
         if(default_deserialize(info, message.content())) {
@@ -302,12 +303,12 @@ auto bridge::_handle_topo_bridge_conn(
 EAGINE_LIB_FUNC
 auto bridge::_handle_topology_query(
   const message_view& message,
-  const bool to_connection) -> message_handling_result {
+  const bool to_connection) noexcept -> message_handling_result {
     bridge_topology_info info{};
     info.bridge_id = _id;
     info.instance_id = _instance_id;
     auto temp{default_serialize_buffer_for(info)};
-    if(auto serialized{default_serialize(info, cover(temp))}) {
+    if(const auto serialized{default_serialize(info, cover(temp))}) {
         message_view response{extract(serialized)};
         response.setup_response(message);
         if(to_connection) {
@@ -322,7 +323,7 @@ auto bridge::_handle_topology_query(
 EAGINE_LIB_FUNC
 auto bridge::_handle_stats_query(
   const message_view& message,
-  const bool to_connection) -> message_handling_result {
+  const bool to_connection) noexcept -> message_handling_result {
     _stats.forwarded_messages = _forwarded_messages_i2c;
     _stats.dropped_messages = _dropped_messages_i2c;
     _stats.uptime_seconds = _uptime_seconds();
@@ -339,7 +340,7 @@ auto bridge::_handle_stats_query(
     }
 
     auto bs_buf{default_serialize_buffer_for(_stats)};
-    if(auto serialized{default_serialize(_stats, cover(bs_buf))}) {
+    if(const auto serialized{default_serialize(_stats, cover(bs_buf))}) {
         message_view response{extract(serialized)};
         response.setup_response(message);
         response.set_source_id(_id);
@@ -356,7 +357,7 @@ EAGINE_LIB_FUNC
 auto bridge::_handle_special(
   const message_id msg_id,
   const message_view& message,
-  const bool to_connection) -> message_handling_result {
+  const bool to_connection) noexcept -> message_handling_result {
     if(EAGINE_UNLIKELY(is_special_message(msg_id))) {
         log_debug("bridge handling special message ${message}")
           .arg(EAGINE_ID(bridge), _id)
@@ -384,7 +385,8 @@ auto bridge::_handle_special(
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-auto bridge::_do_send(const message_id msg_id, message_view& message) -> bool {
+auto bridge::_do_send(const message_id msg_id, message_view& message) noexcept
+  -> bool {
     message.add_hop();
     if(EAGINE_LIKELY(_connection)) {
         if(_connection->send(msg_id, message)) {
@@ -398,14 +400,16 @@ auto bridge::_do_send(const message_id msg_id, message_view& message) -> bool {
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-auto bridge::_send(const message_id msg_id, message_view& message) -> bool {
+auto bridge::_send(const message_id msg_id, message_view& message) noexcept
+  -> bool {
     EAGINE_ASSERT(has_id());
     message.set_source_id(_id);
     return _do_send(msg_id, message);
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-auto bridge::_do_push(const message_id msg_id, message_view& message) -> bool {
+auto bridge::_do_push(const message_id msg_id, message_view& message) noexcept
+  -> bool {
     if(EAGINE_LIKELY(_state)) {
         message.add_hop();
         _state->push(msg_id, message);
@@ -418,11 +422,12 @@ auto bridge::_do_push(const message_id msg_id, message_view& message) -> bool {
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-auto bridge::_forward_messages() -> work_done {
+auto bridge::_forward_messages() noexcept -> work_done {
     some_true something_done{};
 
-    auto forward_conn_to_output =
-      [this](message_id msg_id, message_age msg_age, message_view message) {
+    const auto forward_conn_to_output =
+      [this](
+        const message_id msg_id, message_age msg_age, message_view message) {
           _message_age_sum_c2o += message.add_age(msg_age).age().count();
           if(EAGINE_UNLIKELY(message.too_old())) {
               ++_dropped_messages_c2o;
@@ -462,8 +467,9 @@ auto bridge::_forward_messages() -> work_done {
     }
     _state->notify_output_ready();
 
-    auto forward_input_to_conn =
-      [this](message_id msg_id, message_age msg_age, message_view message) {
+    const auto forward_input_to_conn =
+      [this](
+        const message_id msg_id, message_age msg_age, message_view message) {
           _message_age_sum_i2c += message.add_age(msg_age).age().count();
           if(EAGINE_UNLIKELY(message.too_old())) {
               ++_dropped_messages_i2c;
@@ -515,12 +521,12 @@ auto bridge::_recoverable_state() const noexcept -> bool {
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-auto bridge::_check_state() -> work_done {
+auto bridge::_check_state() noexcept -> work_done {
     some_true something_done{};
 
     if(EAGINE_UNLIKELY(!(_state && _state->is_usable()))) {
         if(_recoverable_state() && _connection) {
-            if(auto max_data_size = _connection->max_data_size()) {
+            if(const auto max_data_size{_connection->max_data_size()}) {
                 ++_state_count;
                 _state = std::make_shared<bridge_state>(extract(max_data_size));
                 _state->start();
@@ -533,7 +539,7 @@ auto bridge::_check_state() -> work_done {
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-auto bridge::_update_connections() -> work_done {
+auto bridge::_update_connections() noexcept -> work_done {
     some_true something_done{};
 
     if(EAGINE_LIKELY(_connection)) {
@@ -552,7 +558,7 @@ auto bridge::_update_connections() -> work_done {
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-auto bridge::update() -> work_done {
+auto bridge::update() noexcept -> work_done {
     some_true something_done{};
 
     const bool had_id = has_id();
@@ -577,7 +583,7 @@ auto bridge::is_done() const noexcept -> bool {
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-void bridge::say_bye() {
+void bridge::say_bye() noexcept {
     const auto msgid = EAGINE_MSGBUS_ID(byeByeBrdg);
     message_view msg{};
     msg.set_source_id(_id);
@@ -595,7 +601,7 @@ void bridge::say_bye() {
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-void bridge::cleanup() {
+void bridge::cleanup() noexcept {
     if(_connection) {
         _connection->cleanup();
     }
@@ -626,7 +632,7 @@ void bridge::cleanup() {
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-void bridge::finish() {
+void bridge::finish() noexcept {
     say_bye();
     timeout too_long{adjusted_duration(std::chrono::seconds{1})};
     while(!too_long) {

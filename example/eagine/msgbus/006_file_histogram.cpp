@@ -28,8 +28,9 @@ public:
         zero(cover(_byte_counts));
     }
 
-    auto store_fragment(const span_size_t, const memory::const_block src)
-      -> bool final {
+    auto store_fragment(
+      const span_size_t,
+      const memory::const_block src) noexcept -> bool final {
         for(auto b : src) {
             _max_count = math::maximum(_max_count, ++_byte_counts[std_size(b)]);
         }
@@ -39,7 +40,7 @@ public:
     void handle_finished(
       const message_id,
       const message_age,
-      const message_info&) final {
+      const message_info&) noexcept final {
         _finished = true;
         _log.info("blob byte counts")
           .arg(EAGINE_ID(url), EAGINE_ID(URL), _locator.str())
@@ -57,7 +58,7 @@ public:
           });
     }
 
-    void handle_cancelled() final {
+    void handle_cancelled() noexcept final {
         _finished = true;
     }
 

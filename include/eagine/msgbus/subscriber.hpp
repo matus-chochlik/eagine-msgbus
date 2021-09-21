@@ -60,13 +60,13 @@ public:
 
     /// @brief Queries the subscriptions of the remote endpoint with the specified id.
     /// @see query_subscribers_of
-    void query_subscriptions_of(const identifier_t target_id) {
+    void query_subscriptions_of(const identifier_t target_id) noexcept {
         _endpoint.query_subscriptions_of(target_id);
     }
 
     /// @brief Queries remote nodes subscribing to the specified message.
     /// @see query_subscriptions_of
-    void query_subscribers_of(const message_id sub_msg) {
+    void query_subscribers_of(const message_id sub_msg) noexcept {
         _endpoint.query_subscribers_of(sub_msg);
     }
 
@@ -140,15 +140,16 @@ protected:
     subscriber_base(subscriber_base&& temp) noexcept
       : _endpoint{temp._endpoint} {}
 
-    void _subscribe_to(const span<const handler_entry> msg_handlers) const {
-        for(auto& entry : msg_handlers) {
+    void _subscribe_to(
+      const span<const handler_entry> msg_handlers) const noexcept {
+        for(const auto& entry : msg_handlers) {
             _endpoint.subscribe(entry.msg_id);
         }
     }
 
     void _unsubscribe_from(
       const span<const handler_entry> msg_handlers) const noexcept {
-        for(auto& entry : msg_handlers) {
+        for(const auto& entry : msg_handlers) {
             try {
                 _endpoint.unsubscribe(entry.msg_id);
             } catch(...) {
@@ -157,22 +158,22 @@ protected:
     }
 
     void _announce_subscriptions(
-      const span<const handler_entry> msg_handlers) const {
-        for(auto& entry : msg_handlers) {
+      const span<const handler_entry> msg_handlers) const noexcept {
+        for(const auto& entry : msg_handlers) {
             _endpoint.say_subscribes_to(entry.msg_id);
         }
     }
 
     void _allow_subscriptions(
-      const span<const handler_entry> msg_handlers) const {
-        for(auto& entry : msg_handlers) {
+      const span<const handler_entry> msg_handlers) const noexcept {
+        for(const auto& entry : msg_handlers) {
             _endpoint.allow_message_type(entry.msg_id);
         }
     }
 
     void _retract_subscriptions(
       const span<const handler_entry> msg_handlers) const noexcept {
-        for(auto& entry : msg_handlers) {
+        for(const auto& entry : msg_handlers) {
             try {
                 _endpoint.say_unsubscribes_from(entry.msg_id);
             } catch(...) {
@@ -182,8 +183,8 @@ protected:
 
     void _respond_to_subscription_query(
       const identifier_t source_id,
-      const span<const handler_entry> msg_handlers) const {
-        for(auto& entry : msg_handlers) {
+      const span<const handler_entry> msg_handlers) const noexcept {
+        for(const auto& entry : msg_handlers) {
             _endpoint.say_subscribes_to(source_id, entry.msg_id);
         }
     }
@@ -191,8 +192,8 @@ protected:
     void _respond_to_subscription_query(
       const identifier_t source_id,
       const message_id sub_msg,
-      const span<const handler_entry> msg_handlers) const {
-        for(auto& entry : msg_handlers) {
+      const span<const handler_entry> msg_handlers) const noexcept {
+        for(const auto& entry : msg_handlers) {
             if(entry.msg_id == sub_msg) {
                 _endpoint.say_subscribes_to(source_id, sub_msg);
                 return;
@@ -201,8 +202,9 @@ protected:
         _endpoint.say_not_subscribed_to(source_id, sub_msg);
     }
 
-    auto _process_one(const span<const handler_entry> msg_handlers) -> bool {
-        for(auto& entry : msg_handlers) {
+    auto _process_one(const span<const handler_entry> msg_handlers) noexcept
+      -> bool {
+        for(const auto& entry : msg_handlers) {
             EAGINE_ASSERT(entry.queue);
             const message_context msg_ctx{this->bus_node(), entry.msg_id};
             if(extract(entry.queue).process_all(msg_ctx, entry.handler)) {
@@ -212,10 +214,10 @@ protected:
         return false;
     }
 
-    auto _process_all(const span<const handler_entry> msg_handlers)
+    auto _process_all(const span<const handler_entry> msg_handlers) noexcept
       -> span_size_t {
         span_size_t result{0};
-        for(auto& entry : msg_handlers) {
+        for(const auto& entry : msg_handlers) {
             EAGINE_ASSERT(entry.queue);
             const message_context msg_ctx{this->bus_node(), entry.msg_id};
             result += extract(entry.queue).process_all(msg_ctx, entry.handler);
@@ -256,7 +258,7 @@ public:
     template <
       typename... MsgHandlers,
       typename = std::enable_if_t<sizeof...(MsgHandlers) == N>>
-    static_subscriber(endpoint& bus, MsgHandlers&&... msg_handlers)
+    static_subscriber(endpoint& bus, MsgHandlers&&... msg_handlers) noexcept
       : subscriber_base{bus}
       , _msg_handlers{{std::forward<MsgHandlers>(msg_handlers)...}} {
         this->_setup_queues(cover(_msg_handlers));
@@ -271,7 +273,10 @@ public:
       typename Class,
       typename... MsgMaps,
       typename = std::enable_if_t<sizeof...(MsgMaps) == N>>
-    static_subscriber(endpoint& bus, Class* instance, const MsgMaps... msg_maps)
+    static_subscriber(
+      endpoint& bus,
+      Class* instance,
+      const MsgMaps... msg_maps) noexcept
       : static_subscriber(bus, handler_entry(instance, msg_maps)...) {}
 
     /// @brief Not move constructible.
@@ -291,12 +296,12 @@ public:
     }
 
     /// @brief Processes one pending enqueued message.
-    auto process_one() -> bool {
+    auto process_one() noexcept -> bool {
         return this->_process_one(view(_msg_handlers));
     }
 
     /// @brief Processes all pending enqueued messages.
-    auto process_all() -> span_size_t {
+    auto process_all() noexcept -> span_size_t {
         return this->_process_all(view(_msg_handlers));
     }
 
@@ -304,7 +309,7 @@ public:
     /// @see retract_subscriptions
     /// @see respond_to_subscription_query
     /// @see allow_subscriptions
-    void announce_subscriptions() const {
+    void announce_subscriptions() const noexcept {
         this->_announce_subscriptions(view(_msg_handlers));
     }
 
@@ -312,7 +317,7 @@ public:
     /// @see announce_subscriptions
     /// @see retract_subscriptions
     /// @see respond_to_subscription_query
-    void allow_subscriptions() const {
+    void allow_subscriptions() const noexcept {
         this->_allow_subscriptions(view(_msg_handlers));
     }
 
@@ -427,13 +432,13 @@ public:
 
     /// @brief Handles (and removes) one of pending received messages.
     /// @see process_all
-    auto process_one() -> bool {
+    auto process_one() noexcept -> bool {
         return this->_process_one(view(_msg_handlers));
     }
 
     /// @brief Handles (and removes) all pending received messages.
     /// @see process_one
-    auto process_all() -> span_size_t {
+    auto process_all() noexcept -> span_size_t {
         return this->_process_all(view(_msg_handlers));
     }
 
@@ -441,7 +446,7 @@ public:
     /// @see retract_subscriptions
     /// @see respond_to_subscription_query
     /// @see allow_subscriptions
-    void announce_subscriptions() const {
+    void announce_subscriptions() const noexcept {
         this->_announce_subscriptions(view(_msg_handlers));
     }
 
@@ -449,7 +454,7 @@ public:
     /// @see announce_subscriptions
     /// @see retract_subscriptions
     /// @see respond_to_subscription_query
-    void allow_subscriptions() const {
+    void allow_subscriptions() const noexcept {
         this->_allow_subscriptions(view(_msg_handlers));
     }
 
@@ -482,7 +487,7 @@ public:
 protected:
     constexpr void add_methods() noexcept {}
 
-    void init() {
+    void init() noexcept {
         this->_setup_queues(cover(_msg_handlers));
         this->_subscribe_to(view(_msg_handlers));
     }

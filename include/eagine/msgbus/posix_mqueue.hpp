@@ -317,7 +317,7 @@ public:
         if(is_open()) {
             unsigned priority{0U};
             errno = 0;
-            auto received =
+            const auto received =
               ::mq_receive(_ihandle, blk.data(), blk.size(), &priority);
             _last_errno = errno;
             if(received > 0) {

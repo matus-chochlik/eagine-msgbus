@@ -18,11 +18,11 @@ namespace eagine {
 static inline auto adapt_log_entry_arg(
   const identifier name,
   const msgbus::remote_node& value) {
-    return [name, value](logger_backend& backend) {
+    return [name, value](logger_backend& backend) noexcept {
         backend.add_unsigned(
           name, EAGINE_ID(uint64), extract_or(value.id(), 0U));
 
-        if(auto opt_id{value.instance_id()}) {
+        if(const auto opt_id{value.instance_id()}) {
             backend.add_unsigned(
               EAGINE_ID(instanceId), EAGINE_ID(uint32), extract(opt_id));
         }
@@ -61,7 +61,7 @@ static inline auto adapt_log_entry_arg(
 //------------------------------------------------------------------------------
 static inline auto adapt_log_entry_arg(
   const identifier name,
-  const msgbus::remote_host& value) {
+  const msgbus::remote_host& value) noexcept {
     return [name, value](logger_backend& backend) {
         backend.add_unsigned(
           name, EAGINE_ID(uint64), extract_or(value.id(), 0U));

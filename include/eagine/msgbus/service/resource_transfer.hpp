@@ -33,17 +33,17 @@
 
 namespace eagine::msgbus {
 //------------------------------------------------------------------------------
-class single_byte_blob_io : public blob_io {
+class single_byte_blob_io final : public blob_io {
 public:
     single_byte_blob_io(const span_size_t size, const byte value) noexcept
       : _size{size}
       , _value{value} {}
 
-    auto total_size() -> span_size_t final {
+    auto total_size() noexcept -> span_size_t final {
         return _size;
     }
 
-    auto fetch_fragment(const span_size_t offs, memory::block dst)
+    auto fetch_fragment(const span_size_t offs, memory::block dst) noexcept
       -> span_size_t final {
         return fill(head(dst, _size - offs), _value).size();
     }
@@ -53,17 +53,17 @@ private:
     byte _value;
 };
 //------------------------------------------------------------------------------
-class random_byte_blob_io : public blob_io {
+class random_byte_blob_io final : public blob_io {
 public:
     random_byte_blob_io(span_size_t size) noexcept
       : _size{size}
       , _re{std::random_device{}()} {}
 
-    auto total_size() -> span_size_t final {
+    auto total_size() noexcept -> span_size_t final {
         return _size;
     }
 
-    auto fetch_fragment(const span_size_t offs, memory::block dst)
+    auto fetch_fragment(const span_size_t offs, memory::block dst) noexcept
       -> span_size_t final {
         return fill_with_random_bytes(
                  head(dst, _size - offs), any_random_engine(_re))
@@ -75,12 +75,12 @@ private:
     std::default_random_engine _re;
 };
 //------------------------------------------------------------------------------
-class file_blob_io : public blob_io {
+class file_blob_io final : public blob_io {
 public:
     file_blob_io(
       std::fstream file,
       optionally_valid<span_size_t> offs,
-      optionally_valid<span_size_t> size)
+      optionally_valid<span_size_t> size) noexcept
       : _file{std::move(file)} {
         _file.seekg(0, std::ios::end);
         _size = limit_cast<span_size_t>(_file.tellg());
@@ -92,39 +92,40 @@ public:
         }
     }
 
-    auto is_at_eod(const span_size_t offs) -> bool final {
+    auto is_at_eod(const span_size_t offs) noexcept -> bool final {
         return offs >= total_size();
     }
 
-    auto total_size() -> span_size_t final {
+    auto total_size() noexcept -> span_size_t final {
         return _size - _offs;
     }
 
-    auto fetch_fragment(const span_size_t offs, memory::block dst)
+    auto fetch_fragment(const span_size_t offs, memory::block dst) noexcept
       -> span_size_t final {
         _file.seekg(_offs + offs, std::ios::beg);
         return limit_cast<span_size_t>(
           read_from_stream(_file, head(dst, _size - _offs - offs)).gcount());
     }
 
-    auto store_fragment(const span_size_t offs, memory::const_block src)
+    auto store_fragment(const span_size_t offs, memory::const_block src) noexcept
       -> bool final {
         _file.seekg(_offs + offs, std::ios::beg);
         return write_to_stream(_file, head(src, _size - _offs - offs)).good();
     }
 
-    auto check_stored(const span_size_t, memory::const_block) -> bool final {
+    auto check_stored(const span_size_t, memory::const_block) noexcept
+      -> bool final {
         return true;
     }
 
     void handle_finished(
       const message_id,
       const message_age,
-      const message_info&) final {
+      const message_info&) noexcept final {
         _file.close();
     }
 
-    void handle_cancelled() final {
+    void handle_cancelled() noexcept final {
         _file.close();
     }
 
@@ -143,7 +144,7 @@ class resource_server : public Base {
     using This = resource_server;
 
 public:
-    void set_file_root(const std::filesystem::path& root_path) {
+    void set_file_root(const std::filesystem::path& root_path) noexcept {
         _root_path = std::filesystem::canonical(root_path);
     }
 
@@ -167,7 +168,7 @@ protected:
             eagiRsrces, fragResend, This, _handle_resource_resend_request));
     }
 
-    auto update() -> work_done {
+    auto update() noexcept -> work_done {
         some_true something_done{Base::update()};
 
         something_done(_blobs.update(this->bus_node().post_callable()));
@@ -185,21 +186,23 @@ protected:
         return {};
     }
 
-    virtual auto get_blob_timeout(const identifier_t, const span_size_t size)
-      -> std::chrono::seconds {
+    virtual auto get_blob_timeout(
+      const identifier_t,
+      const span_size_t size) noexcept -> std::chrono::seconds {
         return std::chrono::seconds{size / 1024};
     }
 
     virtual auto get_blob_priority(
       const identifier_t,
-      const message_priority priority) -> message_priority {
+      const message_priority priority) noexcept -> message_priority {
         return priority;
     }
 
 private:
-    auto _get_file_path(const url& locator) const -> std::filesystem::path {
+    auto _get_file_path(const url& locator) const noexcept
+      -> std::filesystem::path {
         try {
-            if(auto loc_path_str{locator.path_str()}) {
+            if(const auto loc_path_str{locator.path_str()}) {
                 std::filesystem::path loc_path{
                   std::string_view{extract(loc_path_str)}};
                 if(_root_path.empty()) {
@@ -215,12 +218,13 @@ private:
                 }
                 return std::filesystem::canonical(_root_path / loc_path);
             }
-        } catch(const std::runtime_error&) {
+        } catch(const std::exception&) {
         }
         return {};
     }
 
-    auto _has_resource(const message_context&, const url& locator) -> bool {
+    auto _has_resource(const message_context&, const url& locator) noexcept
+      -> bool {
         if(locator.has_scheme("eagires")) {
             return locator.has_path("/zeroes") || locator.has_path("/ones") ||
                    locator.has_path("/random");
@@ -399,7 +403,7 @@ public:
 
     /// @brief Returns the best-guess of server endpoint id for a URL.
     /// @see query_resource_content
-    auto server_endpoint_id(const url& locator) -> identifier_t {
+    auto server_endpoint_id(const url& locator) noexcept -> identifier_t {
         if(locator.has_scheme("eagimbe")) {
             if(const auto opt_id{from_string<identifier_t>(
                  extract_or(locator.host(), string_view{}))}) {
@@ -428,8 +432,9 @@ public:
     /// @brief Sends a query to a server checking if it can provide resource.
     /// @see server_has_resource
     /// @see server_has_not_resource
-    auto search_resource(const identifier_t endpoint_id, const url& locator)
-      -> optionally_valid<message_sequence_t> {
+    auto search_resource(
+      const identifier_t endpoint_id,
+      const url& locator) noexcept -> optionally_valid<message_sequence_t> {
         auto buffer = default_serialize_buffer_for(locator.str());
 
         if(auto serialized{default_serialize(locator.str(), cover(buffer))}) {
@@ -446,7 +451,7 @@ public:
     /// @brief Sends a query to the bus checking if any server can provide resource.
     /// @see server_has_resource
     /// @see server_has_not_resource
-    auto search_resource(const url& locator)
+    auto search_resource(const url& locator) noexcept
       -> optionally_valid<message_sequence_t> {
         return search_resource(broadcast_endpoint_id(), locator);
     }
@@ -465,7 +470,8 @@ public:
             endpoint_id = server_endpoint_id(locator);
         }
 
-        if(auto serialized{default_serialize(locator.str(), cover(buffer))}) {
+        if(const auto serialized{
+             default_serialize(locator.str(), cover(buffer))}) {
             const auto msg_id{EAGINE_MSG_ID(eagiRsrces, getContent)};
             message_view message{extract(serialized)};
             message.set_target_id(endpoint_id);
@@ -502,7 +508,7 @@ public:
 protected:
     using base::base;
 
-    void init() {
+    void init() noexcept {
         base::init();
 
         this->reported_alive.connect(EAGINE_THIS_MEM_FUNC_REF(_handle_alive));
@@ -517,7 +523,7 @@ protected:
           EAGINE_THIS_MEM_FUNC_REF(_handle_hostname_received));
     }
 
-    void add_methods() {
+    void add_methods() noexcept {
         base::add_methods();
 
         base::add_method(
@@ -541,7 +547,7 @@ protected:
             eagiRsrces, fragResend, This, _handle_resource_resend_request));
     }
 
-    auto update() -> work_done {
+    auto update() noexcept -> work_done {
         some_true something_done{base::update()};
 
         something_done(_blobs.handle_complete() > 0);

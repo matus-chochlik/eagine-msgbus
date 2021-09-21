@@ -13,7 +13,7 @@ auto router_certificate_pem(
   const memory::const_block embedded_blk,
   memory::buffer& buf,
   application_config& cfg,
-  const logger& log) -> memory::const_block {
+  const logger& log) noexcept -> memory::const_block {
     return fetch_resource(
       string_view{"message bus router certificate"},
       string_view{"msgbus.router.cert_path"},
@@ -28,7 +28,7 @@ auto bridge_certificate_pem(
   const memory::const_block embedded_blk,
   memory::buffer& buf,
   application_config& cfg,
-  const logger& log) -> memory::const_block {
+  const logger& log) noexcept -> memory::const_block {
     return fetch_resource(
       string_view{"message bus bridge certificate"},
       string_view{"msgbus.bridge.cert_path"},
@@ -43,7 +43,7 @@ auto endpoint_certificate_pem(
   const memory::const_block embedded_blk,
   memory::buffer& buf,
   application_config& cfg,
-  const logger& log) -> memory::const_block {
+  const logger& log) noexcept -> memory::const_block {
     return fetch_resource(
       string_view{"message bus endpoint certificate"},
       string_view{"msgbus.endpoint.cert_path"},

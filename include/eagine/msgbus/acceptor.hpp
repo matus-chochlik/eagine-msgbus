@@ -20,7 +20,8 @@ namespace eagine::msgbus {
 struct acceptor : connection_info {
 
     /// @brief Alias for accepted connection handler callable reference type.
-    using accept_handler = callable_ref<void(std::unique_ptr<connection>)>;
+    using accept_handler =
+      callable_ref<void(std::unique_ptr<connection>) noexcept>;
 
     /// @brief Updates the internal state of the acceptor (called repeatedly).
     virtual auto update() noexcept -> work_done {

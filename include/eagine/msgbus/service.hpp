@@ -72,7 +72,7 @@ public:
     }
 
 protected:
-    void add_methods() {
+    void add_methods() noexcept {
         Base::add_methods();
         Base::add_method(
           this,
@@ -100,7 +100,7 @@ private:
         return true;
     }
 
-    void _init() {
+    void _init() noexcept {
         this->add_methods();
         this->init();
         this->announce_subscriptions();
@@ -113,7 +113,7 @@ class service_node
   , private protected_member<endpoint>
   , public service_composition<Base> {
 public:
-    service_node(const identifier id, main_ctx_parent parent)
+    service_node(const identifier id, main_ctx_parent parent) noexcept
       : main_ctx_object{id, parent}
       , protected_member<endpoint>{id, parent}
       , service_composition<Base>{this->get_the_member()} {}

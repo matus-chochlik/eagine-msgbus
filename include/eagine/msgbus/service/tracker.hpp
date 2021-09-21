@@ -217,7 +217,7 @@ public:
         return EAGINE_THIS_MEM_FUNC_REF(_handle_ping_timeout);
     }
 
-    auto update() -> work_done {
+    auto update() noexcept -> work_done {
         some_true something_done{};
         something_done(base::update());
 
@@ -233,15 +233,15 @@ public:
 
         const bool should_query_info{_should_query_info};
 
-        _tracker.for_each_host_state([&](auto host_id, auto& host) {
+        _tracker.for_each_host_state([&](const auto host_id, auto& host) {
             _handle_host_change(host_id, host);
         });
 
-        _tracker.for_each_instance_state([&](auto inst_id, auto& inst) {
+        _tracker.for_each_instance_state([&](const auto inst_id, auto& inst) {
             _handle_inst_change(inst_id, inst);
         });
 
-        _tracker.for_each_node_state([&](auto node_id, auto& node) {
+        _tracker.for_each_node_state([&](const auto node_id, auto& node) {
             if(should_query_info) {
                 if(!node.has_known_kind()) {
                     this->query_topology(node_id);
@@ -259,7 +259,7 @@ public:
                     this->query_build_info(node_id);
                 }
                 if(node.is_responsive()) {
-                    if(auto inst{node.instance_state()}) {
+                    if(const auto inst{node.instance_state()}) {
                         if(!inst.application_name()) {
                             this->query_application_name(node_id);
                         }
@@ -309,25 +309,25 @@ public:
     }
 
     /// @brief Returns information about a host with the specified id.
-    auto get_host(const host_id_t id) -> const remote_host& {
+    auto get_host(const host_id_t id) noexcept -> const remote_host& {
         return _tracker.get_host(id);
     }
 
     /// @brief Returns information about an instance with the specified id.
-    auto get_instance(const process_instance_id_t id)
+    auto get_instance(const process_instance_id_t id) noexcept
       -> const remote_instance& {
         return _tracker.get_instance(id);
     }
 
     /// @brief Returns information about a node with the specified id.
-    auto get_node(const identifier_t id) -> const remote_node& {
+    auto get_node(const identifier_t id) noexcept -> const remote_node& {
         return _tracker.get_node(id);
     }
 
 protected:
     using base::base;
 
-    void init() {
+    void init() noexcept {
         base::init();
 
         this->reported_alive.connect(on_alive());
@@ -378,31 +378,35 @@ private:
 
     remote_node_tracker _tracker{};
 
-    auto _get_host(const host_id_t id) -> remote_host_state& {
+    auto _get_host(const host_id_t id) noexcept -> remote_host_state& {
         return _tracker.get_host(id);
     }
 
-    auto _get_instance(const process_instance_id_t id)
+    auto _get_instance(const process_instance_id_t id) noexcept
       -> remote_instance_state& {
         return _tracker.get_instance(id);
     }
 
-    auto _get_node(const identifier_t id) -> remote_node_state& {
+    auto _get_node(const identifier_t id) noexcept -> remote_node_state& {
         return _tracker.get_node(id);
     }
 
-    auto _get_connection(const identifier_t id1, const identifier_t id2)
+    auto _get_connection(const identifier_t id1, const identifier_t id2) noexcept
       -> node_connection_state& {
         return _tracker.get_connection(id1, id2);
     }
 
-    void _handle_host_change(const identifier_t, remote_host_state& host) {
+    void _handle_host_change(
+      const identifier_t,
+      remote_host_state& host) noexcept {
         if(const auto changes{host.update().changes()}) {
             host_changed(host, changes);
         }
     }
 
-    void _handle_inst_change(const identifier_t, remote_instance_state& inst) {
+    void _handle_inst_change(
+      const identifier_t,
+      remote_instance_state& inst) noexcept {
         if(const auto changes{inst.update().changes()}) {
             instance_changed(inst, changes);
         }
@@ -410,7 +414,7 @@ private:
 
     void _handle_node_change(
       const identifier_t node_id,
-      remote_node_state& node) {
+      remote_node_state& node) noexcept {
         if(const auto changes{node.update().changes()}) {
             node_changed(node, changes);
             if(EAGINE_UNLIKELY(changes.new_instance())) {
@@ -511,7 +515,7 @@ private:
       const valid_if_not_empty<std::string>& app_name) noexcept {
         if(app_name) {
             auto& node = _get_node(ctx.source_id());
-            if(auto inst_id{node.instance_id()}) {
+            if(const auto inst_id{node.instance_id()}) {
                 auto& inst = _get_instance(extract(inst_id));
                 inst.set_app_name(extract(app_name)).notice_alive();
                 _tracker.for_each_instance_node_state(
@@ -544,7 +548,7 @@ private:
       const valid_if_not_empty<std::string>& hostname) noexcept {
         if(hostname) {
             auto& node = _get_node(ctx.source_id());
-            if(auto host_id{node.host_id()}) {
+            if(const auto host_id{node.host_id()}) {
                 auto& host = _get_host(extract(host_id));
                 host.set_hostname(extract(hostname)).notice_alive();
                 _tracker.for_each_host_node_state(
@@ -559,7 +563,7 @@ private:
       const result_context& ctx,
       const compiler_info& info) noexcept {
         auto& node = _get_node(ctx.source_id()).notice_alive();
-        if(auto inst_id{node.instance_id()}) {
+        if(const auto inst_id{node.instance_id()}) {
             auto& inst = _get_instance(extract(inst_id));
             inst.assign(info);
             _tracker.for_each_instance_node_state(
@@ -573,7 +577,7 @@ private:
       const result_context& ctx,
       const build_info& info) noexcept {
         auto& node = _get_node(ctx.source_id()).notice_alive();
-        if(auto inst_id{node.instance_id()}) {
+        if(const auto inst_id{node.instance_id()}) {
             auto& inst = _get_instance(extract(inst_id));
             inst.assign(info);
             _tracker.for_each_instance_node_state(
@@ -588,7 +592,7 @@ private:
       const valid_if_positive<span_size_t>& opt_value) noexcept {
         if(opt_value) {
             auto& node = _get_node(ctx.source_id()).notice_alive();
-            if(auto host_id{node.host_id()}) {
+            if(const auto host_id{node.host_id()}) {
                 auto& host = _get_host(extract(host_id)).notice_alive();
                 host.set_cpu_concurrent_threads(extract(opt_value));
                 _tracker.for_each_host_node_state(
@@ -604,7 +608,7 @@ private:
       const valid_if_nonnegative<float>& opt_value) noexcept {
         if(opt_value) {
             auto& node = _get_node(ctx.source_id()).notice_alive();
-            if(auto host_id{node.host_id()}) {
+            if(const auto host_id{node.host_id()}) {
                 auto& host = _get_host(extract(host_id)).notice_alive();
                 host.set_short_average_load(extract(opt_value));
                 _tracker.for_each_host_node_state(
@@ -620,7 +624,7 @@ private:
       const valid_if_nonnegative<float>& opt_value) noexcept {
         if(opt_value) {
             auto& node = _get_node(ctx.source_id()).notice_alive();
-            if(auto host_id{node.host_id()}) {
+            if(const auto host_id{node.host_id()}) {
                 auto& host = _get_host(extract(host_id)).notice_alive();
                 host.set_long_average_load(extract(opt_value));
                 _tracker.for_each_host_node_state(
@@ -636,7 +640,7 @@ private:
       const valid_if_positive<span_size_t>& opt_value) noexcept {
         if(opt_value) {
             auto& node = _get_node(ctx.source_id()).notice_alive();
-            if(auto host_id{node.host_id()}) {
+            if(const auto host_id{node.host_id()}) {
                 auto& host = _get_host(extract(host_id)).notice_alive();
                 host.set_free_ram_size(extract(opt_value));
                 _tracker.for_each_host_node_state(
@@ -652,7 +656,7 @@ private:
       const valid_if_positive<span_size_t>& opt_value) noexcept {
         if(opt_value) {
             auto& node = _get_node(ctx.source_id()).notice_alive();
-            if(auto host_id{node.host_id()}) {
+            if(const auto host_id{node.host_id()}) {
                 auto& host = _get_host(extract(host_id)).notice_alive();
                 host.set_total_ram_size(extract(opt_value));
                 _tracker.for_each_host_node_state(
@@ -668,7 +672,7 @@ private:
       const valid_if_nonnegative<span_size_t>& opt_value) noexcept {
         if(opt_value) {
             auto& node = _get_node(ctx.source_id()).notice_alive();
-            if(auto host_id{node.host_id()}) {
+            if(const auto host_id{node.host_id()}) {
                 auto& host = _get_host(extract(host_id)).notice_alive();
                 host.set_free_swap_size(extract(opt_value));
                 _tracker.for_each_host_node_state(
@@ -684,7 +688,7 @@ private:
       const valid_if_nonnegative<span_size_t>& opt_value) noexcept {
         if(opt_value) {
             auto& node = _get_node(ctx.source_id()).notice_alive();
-            if(auto host_id{node.host_id()}) {
+            if(const auto host_id{node.host_id()}) {
                 auto& host = _get_host(extract(host_id)).notice_alive();
                 host.set_total_swap_size(extract(opt_value));
                 _tracker.for_each_host_node_state(
@@ -703,7 +707,7 @@ private:
         const auto& [min, max] = value;
         if(min && max) {
             auto& node = _get_node(ctx.source_id()).notice_alive();
-            if(auto host_id{node.host_id()}) {
+            if(const auto host_id{node.host_id()}) {
                 auto& host = _get_host(extract(host_id)).notice_alive();
                 host.set_temperature_min_max(extract(min), extract(max));
                 _tracker.for_each_host_node_state(
@@ -718,7 +722,7 @@ private:
       const result_context& ctx,
       const power_supply_kind value) noexcept {
         auto& node = _get_node(ctx.source_id()).notice_alive();
-        if(auto host_id{node.host_id()}) {
+        if(const auto host_id{node.host_id()}) {
             auto& host = _get_host(extract(host_id)).notice_alive();
             host.set_power_supply(value);
             _tracker.for_each_host_node_state(

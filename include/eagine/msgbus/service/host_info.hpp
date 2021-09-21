@@ -68,7 +68,7 @@ public:
     /// @brief Queries the endpoint's host identifier.
     /// @see host_id_received
     /// @see query_hostname
-    void query_host_id(const identifier_t endpoint_id) {
+    void query_host_id(const identifier_t endpoint_id) noexcept {
         _host_id.invoke_on(
           this->bus_node(), endpoint_id, EAGINE_MSG_ID(eagiSysInf, rqHostId));
     }
@@ -82,7 +82,7 @@ public:
     /// @brief Queries the endpoint's host name.
     /// @see hostname_received
     /// @see query_host_id
-    void query_hostname(const identifier_t endpoint_id) {
+    void query_hostname(const identifier_t endpoint_id) noexcept {
         _hostname.invoke_on(
           this->bus_node(), endpoint_id, EAGINE_MSG_ID(eagiSysInf, rqHostname));
     }
@@ -97,7 +97,7 @@ public:
 protected:
     using Base::Base;
 
-    void add_methods() {
+    void add_methods() noexcept {
         Base::add_methods();
 
         Base::add_method(

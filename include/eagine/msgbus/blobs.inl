@@ -14,7 +14,7 @@ namespace eagine::msgbus {
 //------------------------------------------------------------------------------
 // buffer blob I/O
 //------------------------------------------------------------------------------
-class buffer_blob_io : public blob_io {
+class buffer_blob_io final : public blob_io {
 public:
     buffer_blob_io(memory::buffer buf) noexcept
       : _buf{std::move(buf)} {
@@ -26,23 +26,24 @@ public:
         copy(src, cover(_buf));
     }
 
-    auto is_at_eod(const span_size_t offs) -> bool final {
+    auto is_at_eod(const span_size_t offs) noexcept -> bool final {
         return offs >= _buf.size();
     }
 
-    auto total_size() -> span_size_t final {
+    auto total_size() noexcept -> span_size_t final {
         return _buf.size();
     }
 
-    auto fetch_fragment(const span_size_t offs, memory::block dst)
+    auto fetch_fragment(const span_size_t offs, memory::block dst) noexcept
       -> span_size_t final {
         const auto src = head(skip(view(_buf), offs), dst.size());
         copy(src, dst);
         return src.size();
     }
 
-    auto store_fragment(const span_size_t offs, const memory::const_block src)
-      -> bool final {
+    auto store_fragment(
+      const span_size_t offs,
+      const memory::const_block src) noexcept -> bool final {
         auto dst = skip(cover(_buf), offs);
         if(EAGINE_LIKELY(src.size() <= dst.size())) {
             copy(src, dst);
@@ -51,8 +52,9 @@ public:
         return false;
     }
 
-    auto check_stored(const span_size_t offs, const memory::const_block blk)
-      -> bool final {
+    auto check_stored(
+      const span_size_t offs,
+      const memory::const_block blk) noexcept -> bool final {
         return are_equal(head(skip(view(_buf), offs), blk.size()), blk);
     }
 
@@ -117,7 +119,7 @@ EAGINE_LIB_FUNC auto pending_blob::received_everything() const noexcept
 EAGINE_LIB_FUNC
 auto pending_blob::merge_fragment(
   const span_size_t bgn,
-  const memory::const_block fragment) -> bool {
+  const memory::const_block fragment) noexcept -> bool {
     const auto end = bgn + fragment.size();
     fragment_parts.swap();
     auto& dst = done_parts();
@@ -181,7 +183,9 @@ auto pending_blob::merge_fragment(
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-void pending_blob::merge_resend_request(const span_size_t bgn, span_size_t end) {
+void pending_blob::merge_resend_request(
+  const span_size_t bgn,
+  span_size_t end) noexcept {
     if(end == 0) {
         end = total_size;
     }
@@ -235,8 +239,8 @@ void pending_blob::merge_resend_request(const span_size_t bgn, span_size_t end) 
 // blob manipulator
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-auto blob_manipulator::update(const blob_manipulator::send_handler do_send)
-  -> work_done {
+auto blob_manipulator::update(
+  const blob_manipulator::send_handler do_send) noexcept -> work_done {
     const auto now = std::chrono::steady_clock::now();
     some_true something_done{};
 
@@ -293,7 +297,7 @@ auto blob_manipulator::update(const blob_manipulator::send_handler do_send)
     return something_done;
 }
 //------------------------------------------------------------------------------
-auto blob_manipulator::make_io(const span_size_t total_size)
+auto blob_manipulator::make_io(const span_size_t total_size) noexcept
   -> std::unique_ptr<blob_io> {
     if(total_size < _max_blob_size) {
         return std::make_unique<buffer_blob_io>(_buffers.get(total_size));
@@ -318,7 +322,7 @@ auto blob_manipulator::expect_incoming(
   const identifier_t source_id,
   const blob_id_t target_blob_id,
   std::shared_ptr<blob_io> io,
-  const std::chrono::seconds max_time) -> bool {
+  const std::chrono::seconds max_time) noexcept -> bool {
     log_debug("expecting incoming fragment")
       .arg(EAGINE_ID(source), source_id)
       .arg(EAGINE_ID(tgtBlobId), target_blob_id)
@@ -347,7 +351,7 @@ auto blob_manipulator::push_incoming_fragment(
   const std::int64_t total_size,
   io_getter get_io,
   const memory::const_block fragment,
-  const message_priority priority) -> bool {
+  const message_priority priority) noexcept -> bool {
 
     auto pos = std::find_if(
       _incoming.begin(),
@@ -450,7 +454,7 @@ auto blob_manipulator::push_incoming_fragment(
 EAGINE_LIB_FUNC
 auto blob_manipulator::process_incoming(
   blob_manipulator::io_getter get_io,
-  const message_view& message) -> bool {
+  const message_view& message) noexcept -> bool {
 
     identifier class_id{};
     identifier method_id{};
@@ -500,12 +504,14 @@ auto blob_manipulator::process_incoming(
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-auto blob_manipulator::process_incoming(const message_view& message) -> bool {
+auto blob_manipulator::process_incoming(const message_view& message) noexcept
+  -> bool {
     return process_incoming(EAGINE_THIS_MEM_FUNC_REF(_make_io), message);
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-auto blob_manipulator::process_resend(const message_view& message) -> bool {
+auto blob_manipulator::process_resend(const message_view& message) noexcept
+  -> bool {
     std::tuple<identifier_t, std::uint64_t, std::uint64_t> params{};
     if(default_deserialize(params, message.content())) {
         const auto source_blob_id = std::get<0>(params);
@@ -528,8 +534,8 @@ auto blob_manipulator::process_resend(const message_view& message) -> bool {
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-auto blob_manipulator::cancel_incoming(const identifier_t target_blob_id)
-  -> bool {
+auto blob_manipulator::cancel_incoming(
+  const identifier_t target_blob_id) noexcept -> bool {
     const auto pos = std::find_if(
       _incoming.begin(), _incoming.end(), [target_blob_id](auto& pending) {
           return pending.target_blob_id == target_blob_id;
@@ -565,7 +571,7 @@ auto blob_manipulator::message_size(
     return 0;
 }
 //------------------------------------------------------------------------------
-inline auto blob_manipulator::_scratch_block(const span_size_t size)
+inline auto blob_manipulator::_scratch_block(const span_size_t size) noexcept
   -> memory::block {
     return cover(_scratch_buffer.resize(size));
 }
@@ -578,7 +584,7 @@ auto blob_manipulator::push_outgoing(
   const blob_id_t target_blob_id,
   std::shared_ptr<blob_io> io,
   const std::chrono::seconds max_time,
-  const message_priority priority) -> blob_id_t {
+  const message_priority priority) noexcept -> blob_id_t {
     EAGINE_ASSERT(io);
     _outgoing.emplace_back();
     auto& pending = _outgoing.back();
@@ -603,7 +609,7 @@ auto blob_manipulator::push_outgoing(
   const blob_id_t target_blob_id,
   const memory::const_block src,
   const std::chrono::seconds max_time,
-  const message_priority priority) -> blob_id_t {
+  const message_priority priority) noexcept -> blob_id_t {
     return push_outgoing(
       msg_id,
       source_id,
@@ -617,7 +623,7 @@ auto blob_manipulator::push_outgoing(
 EAGINE_LIB_FUNC
 auto blob_manipulator::process_outgoing(
   const send_handler do_send,
-  const span_size_t max_message_size) -> work_done {
+  const span_size_t max_message_size) noexcept -> work_done {
     some_true something_done{};
 
     for(auto& pending : _outgoing) {
@@ -676,7 +682,7 @@ auto blob_manipulator::process_outgoing(
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-auto blob_manipulator::handle_complete() -> span_size_t {
+auto blob_manipulator::handle_complete() noexcept -> span_size_t {
 
     span_size_t done_count{0};
     auto predicate = [this, &done_count](auto& pending) {
@@ -709,7 +715,7 @@ auto blob_manipulator::handle_complete() -> span_size_t {
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
 auto blob_manipulator::fetch_all(
-  const blob_manipulator::fetch_handler handle_fetch) -> span_size_t {
+  const blob_manipulator::fetch_handler handle_fetch) noexcept -> span_size_t {
 
     span_size_t done_count{0};
     auto predicate = [this, &done_count, &handle_fetch](auto& pending) {

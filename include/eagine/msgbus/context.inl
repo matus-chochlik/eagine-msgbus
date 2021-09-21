@@ -13,7 +13,7 @@
 namespace eagine::msgbus {
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-context::context(main_ctx_parent parent)
+context::context(main_ctx_parent parent) noexcept
   : main_ctx_object{EAGINE_ID(MsgBusCtxt), parent} {
 
     if(ok make_result{_ssl.new_x509_store()}) {
@@ -45,7 +45,7 @@ context::context(main_ctx_parent parent)
         }
     }
     if(cfg.fetch("msgbus.pkey_id", temp)) {
-        if(ok uim_result{_ssl.openssl_ui()}) {
+        if(const ok uim_result{_ssl.openssl_ui()}) {
             if(ok pkey_result{
                  _ssl.load_engine_private_key(_ssl_engine, temp, uim_result)}) {
                 if(_own_pkey) {
@@ -111,12 +111,12 @@ auto context::next_sequence_no(const message_id msg_id) noexcept
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-auto context::verify_certificate(const sslplus::x509 cert) -> bool {
+auto context::verify_certificate(const sslplus::x509 cert) noexcept -> bool {
     if(ok vrfy_ctx{_ssl.new_x509_store_ctx()}) {
         auto del_vrfy{_ssl.delete_x509_store_ctx.raii(vrfy_ctx)};
 
         if(_ssl.init_x509_store_ctx(vrfy_ctx, _ssl_store, cert)) {
-            if(ok verify_res{_ssl.x509_verify_certificate(vrfy_ctx)}) {
+            if(const ok verify_res{_ssl.x509_verify_certificate(vrfy_ctx)}) {
                 return true;
             } else {
                 log_debug("failed to verify x509 certificate")
@@ -135,7 +135,7 @@ auto context::verify_certificate(const sslplus::x509 cert) -> bool {
 EAGINE_LIB_FUNC
 auto context::verify_certificate_node_kind(
   const sslplus::x509 cert,
-  const node_kind kind) -> bool {
+  const node_kind kind) noexcept -> bool {
     return _ssl.certificate_subject_name_has_entry_value(
       cert,
       "eagiMsgBusNodeKind",
@@ -144,7 +144,8 @@ auto context::verify_certificate_node_kind(
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-auto context::add_own_certificate_pem(const memory::const_block blk) -> bool {
+auto context::add_own_certificate_pem(const memory::const_block blk) noexcept
+  -> bool {
     if(blk) {
         if(ok cert{_ssl.parse_x509(blk, {})}) {
             if(_own_cert) {
@@ -163,7 +164,8 @@ auto context::add_own_certificate_pem(const memory::const_block blk) -> bool {
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-auto context::add_ca_certificate_pem(const memory::const_block blk) -> bool {
+auto context::add_ca_certificate_pem(const memory::const_block blk) noexcept
+  -> bool {
     if(blk) {
         if(ok cert{_ssl.parse_x509(blk, {})}) {
             if(_ssl.add_cert_into_x509_store(_ssl_store, cert)) {
@@ -190,7 +192,7 @@ auto context::add_ca_certificate_pem(const memory::const_block blk) -> bool {
 EAGINE_LIB_FUNC
 auto context::add_remote_certificate_pem(
   const identifier_t node_id,
-  const memory::const_block blk) -> bool {
+  const memory::const_block blk) noexcept -> bool {
     if(blk) {
         if(ok cert{_ssl.parse_x509(blk, {})}) {
             auto& info = _remotes[node_id];
@@ -298,7 +300,7 @@ auto context::message_digest_verify_init(
     return _ssl.message_digest_verify_init.fake();
 }
 //------------------------------------------------------------------------------
-auto context::get_own_signature(const memory::const_block nonce)
+auto context::get_own_signature(const memory::const_block nonce) noexcept
   -> memory::const_block {
     if(ok md_type{default_message_digest()}) {
         if(ok md_ctx{_ssl.new_message_digest()}) {
@@ -342,7 +344,7 @@ auto context::verify_remote_signature(
   const memory::const_block content,
   const memory::const_block signature,
   const identifier_t node_id,
-  const bool verified_key) -> verification_bits {
+  const bool verified_key) noexcept -> verification_bits {
     verification_bits result{};
 
     if(content && signature) {
@@ -390,7 +392,7 @@ auto context::verify_remote_signature(
 EAGINE_LIB_FUNC
 auto context::verify_remote_signature(
   const memory::const_block sig,
-  const identifier_t node_id) -> bool {
+  const identifier_t node_id) noexcept -> bool {
     const auto pos = _remotes.find(node_id);
     if(pos != _remotes.end()) {
         auto& remote{std::get<1>(*pos)};

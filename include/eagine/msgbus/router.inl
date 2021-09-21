@@ -40,7 +40,7 @@ static inline void message_id_list_remove(
     }
 }
 //------------------------------------------------------------------------------
-routed_node::routed_node() {
+routed_node::routed_node() noexcept {
     message_block_list.reserve(8);
     message_allow_list.reserve(8);
 }
@@ -61,7 +61,7 @@ auto routed_node::is_allowed(const message_id msg_id) const noexcept -> bool {
 auto routed_node::send(
   main_ctx_object& user,
   const message_id msg_id,
-  const message_view& message) const -> bool {
+  const message_view& message) const noexcept -> bool {
     if(EAGINE_LIKELY(the_connection)) {
         if(EAGINE_UNLIKELY(!the_connection->send(msg_id, message))) {
             user.log_debug("failed to send message to connected node");
@@ -74,24 +74,25 @@ auto routed_node::send(
     return true;
 }
 //------------------------------------------------------------------------------
-void routed_node::block_message(const message_id msg_id) {
+void routed_node::block_message(const message_id msg_id) noexcept {
     message_id_list_add(message_block_list, msg_id);
 }
 //------------------------------------------------------------------------------
-void routed_node::allow_message(const message_id msg_id) {
+void routed_node::allow_message(const message_id msg_id) noexcept {
     message_id_list_add(message_allow_list, msg_id);
 }
 //------------------------------------------------------------------------------
 // parent_router
 //------------------------------------------------------------------------------
-inline void parent_router::reset(std::unique_ptr<connection> a_connection) {
+inline void parent_router::reset(
+  std::unique_ptr<connection> a_connection) noexcept {
     the_connection = std::move(a_connection);
     confirmed_id = 0;
 }
 //------------------------------------------------------------------------------
 inline auto parent_router::update(
   main_ctx_object& user,
-  const identifier_t id_base) -> work_done {
+  const identifier_t id_base) noexcept -> work_done {
     some_true something_done{};
 
     if(the_connection) {
@@ -125,14 +126,14 @@ inline auto parent_router::update(
 template <typename Handler>
 inline auto parent_router::fetch_messages(
   main_ctx_object& user,
-  const Handler& handler) -> work_done {
+  const Handler& handler) noexcept -> work_done {
     some_true something_done;
 
     if(the_connection) {
-        auto wrapped = [&](
-                         message_id msg_id,
-                         message_age msg_age,
-                         const message_view& message) -> bool {
+        const auto wrapped = [&](
+                               message_id msg_id,
+                               message_age msg_age,
+                               const message_view& message) -> bool {
             if(msg_id == EAGINE_MSGBUS_ID(confirmId)) {
                 confirmed_id = message.target_id;
                 user.log_debug("confirmed id ${id} by parent router ${source}")
@@ -162,7 +163,7 @@ inline auto parent_router::fetch_messages(
 auto parent_router::send(
   main_ctx_object& user,
   const message_id msg_id,
-  const message_view& message) const -> bool {
+  const message_view& message) const noexcept -> bool {
     if(the_connection) {
         if(EAGINE_UNLIKELY(!the_connection->send(msg_id, message))) {
             user.log_debug("failed to send message to parent router");
@@ -175,21 +176,21 @@ auto parent_router::send(
 // router
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-auto router::_uptime_seconds() -> std::int64_t {
+auto router::_uptime_seconds() noexcept -> std::int64_t {
     return std::chrono::duration_cast<std::chrono::seconds>(
              std::chrono::steady_clock::now() - _startup_time)
       .count();
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-void router::add_certificate_pem(const memory::const_block blk) {
+void router::add_certificate_pem(const memory::const_block blk) noexcept {
     if(_context) {
         _context->add_own_certificate_pem(blk);
     }
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-void router::add_ca_certificate_pem(const memory::const_block blk) {
+void router::add_ca_certificate_pem(const memory::const_block blk) noexcept {
     if(_context) {
         _context->add_ca_certificate_pem(blk);
     }
@@ -251,7 +252,7 @@ void router::_setup_from_config() {
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-auto router::_handle_accept() -> work_done {
+auto router::_handle_accept() noexcept -> work_done {
     some_true something_done{};
 
     if(EAGINE_LIKELY(!_acceptors.empty())) {
@@ -267,7 +268,7 @@ auto router::_handle_accept() -> work_done {
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-auto router::_handle_pending() -> work_done {
+auto router::_handle_pending() noexcept -> work_done {
     some_true something_done{};
 
     if(!_pending.empty()) {
@@ -343,7 +344,7 @@ auto router::_handle_pending() -> work_done {
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-auto router::_remove_timeouted() -> work_done {
+auto router::_remove_timeouted() noexcept -> work_done {
     some_true something_done{};
 
     _pending.erase(
@@ -376,7 +377,7 @@ auto router::_remove_timeouted() -> work_done {
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-auto router::_is_disconnected(const identifier_t endpoint_id) -> bool {
+auto router::_is_disconnected(const identifier_t endpoint_id) noexcept -> bool {
     auto pos = _recently_disconnected.find(endpoint_id);
     if(pos != _recently_disconnected.end()) {
         if(pos->second.is_expired()) {
@@ -389,14 +390,15 @@ auto router::_is_disconnected(const identifier_t endpoint_id) -> bool {
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-auto router::_mark_disconnected(const identifier_t endpoint_id) -> void {
+auto router::_mark_disconnected(const identifier_t endpoint_id) noexcept
+  -> void {
     _recently_disconnected.erase_if(
       [](auto& p) { return std::get<1>(p).is_expired(); });
     _recently_disconnected.emplace(endpoint_id, std::chrono::seconds{15});
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-auto router::_remove_disconnected() -> work_done {
+auto router::_remove_disconnected() noexcept -> work_done {
     some_true something_done{};
 
     for(auto& [endpoint_id, node] : _nodes) {
@@ -427,7 +429,7 @@ auto router::_remove_disconnected() -> work_done {
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-void router::_assign_id(std::unique_ptr<connection>& conn) {
+void router::_assign_id(std::unique_ptr<connection>& conn) noexcept {
     EAGINE_ASSERT(conn);
     // find a currently unused endpoint id value
     const auto seq_orig = _id_sequence;
@@ -449,7 +451,8 @@ void router::_assign_id(std::unique_ptr<connection>& conn) {
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-void router::_handle_connection(std::unique_ptr<connection> a_connection) {
+void router::_handle_connection(
+  std::unique_ptr<connection> a_connection) noexcept {
     EAGINE_ASSERT(a_connection);
     log_info("accepted pending connection")
       .arg(EAGINE_ID(kind), a_connection->kind())
@@ -458,9 +461,10 @@ void router::_handle_connection(std::unique_ptr<connection> a_connection) {
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-auto router::_process_blobs() -> work_done {
+auto router::_process_blobs() noexcept -> work_done {
     some_true something_done{};
-    auto resend_request = [&](message_id msg_id, message_view request) -> bool {
+    const auto resend_request =
+      [&](message_id msg_id, message_view request) -> bool {
         return this->_do_route_message(msg_id, _id_base, request);
     };
     something_done(_blobs.update({construct_from, resend_request}));
@@ -540,7 +544,7 @@ auto router::_handle_blob(
 //------------------------------------------------------------------------------
 auto router::_update_endpoint_info(
   const identifier_t incoming_id,
-  const message_view& message) -> router_endpoint_info& {
+  const message_view& message) noexcept -> router_endpoint_info& {
     _endpoint_idx[message.source_id] = incoming_id;
     auto& info = _endpoint_infos[message.source_id];
     // sequence_no is the instance id in this message type
@@ -549,7 +553,7 @@ auto router::_update_endpoint_info(
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-auto router::_handle_ping(const message_view& message)
+auto router::_handle_ping(const message_view& message) noexcept
   -> message_handling_result {
     if(message.target_id == _id_base) {
         message_view response{};
@@ -564,7 +568,7 @@ auto router::_handle_ping(const message_view& message)
 EAGINE_LIB_FUNC
 auto router::_handle_subscribed(
   const identifier_t incoming_id,
-  const message_view& message) -> message_handling_result {
+  const message_view& message) noexcept -> message_handling_result {
     message_id sub_msg_id{};
     if(default_deserialize_message_type(sub_msg_id, message.content())) {
         log_debug("endpoint ${source} subscribes to ${message}")
@@ -581,7 +585,7 @@ auto router::_handle_subscribed(
 EAGINE_LIB_FUNC
 auto router::_handle_not_subscribed(
   const identifier_t incoming_id,
-  const message_view& message) -> message_handling_result {
+  const message_view& message) noexcept -> message_handling_result {
     message_id sub_msg_id{};
     if(default_deserialize_message_type(sub_msg_id, message.content())) {
         log_debug("endpoint ${source} unsubscribes from ${message}")
@@ -596,7 +600,7 @@ auto router::_handle_not_subscribed(
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-auto router::_handle_subscribers_query(const message_view& message)
+auto router::_handle_subscribers_query(const message_view& message) noexcept
   -> message_handling_result {
     const auto pos = _endpoint_infos.find(message.target_id);
     if(pos != _endpoint_infos.end()) {
@@ -630,7 +634,7 @@ auto router::_handle_subscribers_query(const message_view& message)
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-auto router::_handle_subscriptions_query(const message_view& message)
+auto router::_handle_subscriptions_query(const message_view& message) noexcept
   -> message_handling_result {
     const auto pos = _endpoint_infos.find(message.target_id);
     if(pos != _endpoint_infos.end()) {
@@ -654,8 +658,8 @@ auto router::_handle_subscriptions_query(const message_view& message)
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-auto router::_handle_router_certificate_query(const message_view& message)
-  -> message_handling_result {
+auto router::_handle_router_certificate_query(
+  const message_view& message) noexcept -> message_handling_result {
     post_blob(
       EAGINE_MSGBUS_ID(rtrCertPem),
       0U,
@@ -668,9 +672,10 @@ auto router::_handle_router_certificate_query(const message_view& message)
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-auto router::_handle_endpoint_certificate_query(const message_view& message)
-  -> message_handling_result {
-    if(auto cert_pem{_context->get_remote_certificate_pem(message.target_id)}) {
+auto router::_handle_endpoint_certificate_query(
+  const message_view& message) noexcept -> message_handling_result {
+    if(const auto cert_pem{
+         _context->get_remote_certificate_pem(message.target_id)}) {
         post_blob(
           EAGINE_MSGBUS_ID(eptCertPem),
           message.target_id,
@@ -685,7 +690,7 @@ auto router::_handle_endpoint_certificate_query(const message_view& message)
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-auto router::_handle_topology_query(const message_view& message)
+auto router::_handle_topology_query(const message_view& message) noexcept
   -> message_handling_result {
     router_topology_info info{};
 
@@ -714,7 +719,7 @@ auto router::_handle_topology_query(const message_view& message)
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-auto router::_update_stats() -> work_done {
+auto router::_update_stats() noexcept -> work_done {
     some_true something_done;
 
     const auto now = std::chrono::steady_clock::now();
@@ -764,7 +769,7 @@ auto router::_update_stats() -> work_done {
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-auto router::_handle_stats_query(const message_view& message)
+auto router::_handle_stats_query(const message_view& message) noexcept
   -> message_handling_result {
     _update_stats();
 
@@ -777,7 +782,7 @@ auto router::_handle_stats_query(const message_view& message)
           EAGINE_MSGBUS_ID(statsRutr), _id_base, response);
     }
 
-    auto respond = [&](const identifier_t remote_id, const auto& conn) {
+    const auto respond = [&](const identifier_t remote_id, const auto& conn) {
         connection_statistics conn_stats{};
         conn_stats.local_id = _id_base;
         conn_stats.remote_id = remote_id;
@@ -803,7 +808,7 @@ auto router::_handle_stats_query(const message_view& message)
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-auto router::_handle_blob_fragment(const message_view& message)
+auto router::_handle_blob_fragment(const message_view& message) noexcept
   -> message_handling_result {
     if(_blobs.process_incoming(
          EAGINE_THIS_MEM_FUNC_REF(_do_get_blob_io), message)) {
@@ -813,7 +818,7 @@ auto router::_handle_blob_fragment(const message_view& message)
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-auto router::_handle_blob_resend(const message_view& message)
+auto router::_handle_blob_resend(const message_view& message) noexcept
   -> message_handling_result {
     if(message.target_id == _id_base) {
         _blobs.process_resend(message);
@@ -826,7 +831,7 @@ EAGINE_LIB_FUNC
 auto router::_handle_special_common(
   const message_id msg_id,
   const identifier_t incoming_id,
-  const message_view& message) -> message_handling_result {
+  const message_view& message) noexcept -> message_handling_result {
 
     if(msg_id.has_method(EAGINE_ID(ping))) {
         return _handle_ping(message);
@@ -882,7 +887,7 @@ EAGINE_LIB_FUNC
 auto router::_handle_special(
   const message_id msg_id,
   const identifier_t incoming_id,
-  const message_view& message) -> message_handling_result {
+  const message_view& message) noexcept -> message_handling_result {
     if(EAGINE_UNLIKELY(is_special_message(msg_id))) {
         log_debug("router handling special message ${message} from parent")
           .arg(EAGINE_ID(router), _id_base)
@@ -905,7 +910,7 @@ auto router::_handle_special(
   const message_id msg_id,
   const identifier_t incoming_id,
   routed_node& node,
-  const message_view& message) -> message_handling_result {
+  const message_view& message) noexcept -> message_handling_result {
     if(EAGINE_UNLIKELY(is_special_message(msg_id))) {
         log_debug("router handling special message ${message} from node")
           .arg(EAGINE_ID(router), _id_base)
@@ -981,7 +986,7 @@ EAGINE_LIB_FUNC
 auto router::_do_route_message(
   const message_id msg_id,
   const identifier_t incoming_id,
-  message_view& message) -> bool {
+  message_view& message) noexcept -> bool {
 
     bool result = true;
     if(EAGINE_UNLIKELY(message.too_many_hops())) {
@@ -1080,7 +1085,7 @@ auto router::_do_route_message(
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-auto router::_route_messages() -> work_done {
+auto router::_route_messages() noexcept -> work_done {
     some_true something_done{};
     const auto now = std::chrono::steady_clock::now();
     const auto message_age_inc =
@@ -1111,7 +1116,7 @@ auto router::_route_messages() -> work_done {
         }
     }
 
-    auto handler =
+    const auto handler =
       [&](message_id msg_id, message_age msg_age, message_view message) {
           _message_age_sum +=
             message.add_age(msg_age).age().count() + message_age_inc;
@@ -1132,7 +1137,7 @@ auto router::_route_messages() -> work_done {
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-auto router::_update_connections() -> work_done {
+auto router::_update_connections() noexcept -> work_done {
     some_true something_done{};
 
     for(auto& [id, node] : _nodes) {
@@ -1154,7 +1159,7 @@ auto router::_update_connections() -> work_done {
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-auto router::do_maintenance() -> work_done {
+auto router::do_maintenance() noexcept -> work_done {
     some_true something_done{};
 
     something_done(_update_stats());
@@ -1166,7 +1171,7 @@ auto router::do_maintenance() -> work_done {
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-auto router::do_work() -> work_done {
+auto router::do_work() noexcept -> work_done {
     some_true something_done{};
 
     something_done(_handle_pending());
@@ -1178,7 +1183,7 @@ auto router::do_work() -> work_done {
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-auto router::update(const valid_if_positive<int>& count) -> work_done {
+auto router::update(const valid_if_positive<int>& count) noexcept -> work_done {
     some_true something_done{};
 
     something_done(do_maintenance());
@@ -1192,7 +1197,7 @@ auto router::update(const valid_if_positive<int>& count) -> work_done {
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-void router::say_bye() {
+void router::say_bye() noexcept {
     const auto msgid = EAGINE_MSGBUS_ID(byeByeRutr);
     message_view msg{};
     msg.set_source_id(_id_base);
@@ -1209,7 +1214,7 @@ void router::say_bye() {
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-void router::cleanup() {
+void router::cleanup() noexcept {
     for(auto& [id, node] : _nodes) {
         EAGINE_MAYBE_UNUSED(id);
         const auto& conn = node.the_connection;
@@ -1226,7 +1231,7 @@ void router::cleanup() {
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
-void router::finish() {
+void router::finish() noexcept {
     say_bye();
     timeout too_long{adjusted_duration(std::chrono::seconds{1})};
     while(!too_long) {

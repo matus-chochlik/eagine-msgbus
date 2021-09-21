@@ -23,7 +23,7 @@ using ipv4_port = unsigned short int;
 
 /// @brief Parses a IPv4 hostname:port pair,
 /// @ingroup msgbus
-static inline auto parse_ipv4_addr(const string_view addr_str)
+static inline auto parse_ipv4_addr(const string_view addr_str) noexcept
   -> std::tuple<std::string, ipv4_port> {
     auto [hostname, port_str] = split_by_last(
       addr_str ? addr_str : string_view{"localhost"}, string_view(":"));

@@ -38,7 +38,7 @@ struct context_remote_node {
 /// @ingroup msgbus
 class context : main_ctx_object {
 public:
-    context(main_ctx_parent parent);
+    context(main_ctx_parent parent) noexcept;
 
     /// @brief Not move constructible.
     context(context&&) = delete;
@@ -63,26 +63,26 @@ public:
     auto next_sequence_no(const message_id) noexcept -> message_sequence_t;
 
     /// @brief Verifies the specified x509 certificate against CA certificate.
-    auto verify_certificate(const sslplus::x509 cert) -> bool;
+    auto verify_certificate(const sslplus::x509 cert) noexcept -> bool;
 
     /// @brief Checks if x509 certificate has the specified node kind DN entry.
     auto verify_certificate_node_kind(
       const sslplus::x509 cert,
-      const node_kind kind) -> bool;
+      const node_kind kind) noexcept -> bool;
 
     /// @brief Sets this bus node certificate encoded in PEM format.
     /// @see get_own_certificate_pem
     /// @see add_ca_certificate_pem
     /// @see add_remote_certificate_pem
     /// @see add_router_certificate_pem
-    auto add_own_certificate_pem(const memory::const_block) -> bool;
+    auto add_own_certificate_pem(const memory::const_block) noexcept -> bool;
 
     /// @brief Sets a CA certificate encoded in PEM format.
     /// @see get_ca_certificate_pem
     /// @see add_own_certificate_pem
     /// @see add_remote_certificate_pem
     /// @see add_router_certificate_pem
-    auto add_ca_certificate_pem(const memory::const_block) -> bool;
+    auto add_ca_certificate_pem(const memory::const_block) noexcept -> bool;
 
     /// @brief Sets remote bus node certificate encoded in PEM format.
     /// @see get_remote_certificate_pem
@@ -91,14 +91,15 @@ public:
     /// @see add_router_certificate_pem
     auto add_remote_certificate_pem(
       const identifier_t node_id,
-      memory::const_block) -> bool;
+      memory::const_block) noexcept -> bool;
 
     /// @brief Sets the router certificate encoded in PEM format.
     /// @see get_router_certificate_pem
     /// @see add_own_certificate_pem
     /// @see add_ca_certificate_pem
     /// @see add_remote_certificate_pem
-    auto add_router_certificate_pem(const memory::const_block blk) -> bool {
+    auto add_router_certificate_pem(const memory::const_block blk) noexcept
+      -> bool {
         return add_remote_certificate_pem(0, blk);
     }
 
@@ -159,18 +160,19 @@ public:
       -> decltype(ssl().message_digest_verify_init.fake());
 
     /// @brief Signs the specified memory block and returns the signature.
-    auto get_own_signature(const memory::const_block) -> memory::const_block;
+    auto get_own_signature(const memory::const_block) noexcept
+      -> memory::const_block;
 
     auto verify_remote_signature(
       const memory::const_block data,
       const memory::const_block sig,
       const identifier_t,
-      const bool = false) -> verification_bits;
+      const bool = false) noexcept -> verification_bits;
 
     /// @brief Verifies the signature on a data block from a remote node.
     auto verify_remote_signature(
       const memory::const_block sig,
-      const identifier_t) -> bool;
+      const identifier_t) noexcept -> bool;
 
 private:
     //

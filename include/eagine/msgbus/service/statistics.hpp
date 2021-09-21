@@ -26,7 +26,7 @@ class statistics_consumer : public Base {
 public:
     /// @brief Queries the statistics information of the specified bus node.
     /// @see discover_statistics
-    void query_statistics(identifier_t node_id) {
+    void query_statistics(identifier_t node_id) noexcept {
         message_view message{};
         message.set_target_id(node_id);
         const auto msg_id{EAGINE_MSGBUS_ID(statsQuery)};
@@ -35,7 +35,7 @@ public:
 
     /// @brief Broadcasts network statistics query to all message bus nodes.
     /// @see query_statistics
-    void discover_statistics() {
+    void discover_statistics() noexcept {
         query_statistics(broadcast_endpoint_id());
     }
 

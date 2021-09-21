@@ -38,7 +38,7 @@ struct sudoku_rank_tuple
     sudoku_rank_tuple() = default;
 
     template <typename... Args>
-    sudoku_rank_tuple(const Args&... args)
+    sudoku_rank_tuple(const Args&... args) noexcept
       : base{
           nothing,
           nothing,
@@ -183,7 +183,7 @@ class sudoku_helper : public Base {
     using This = sudoku_helper;
 
 public:
-    auto update() -> work_done {
+    auto update() noexcept -> work_done {
         some_true something_done{};
         something_done(Base::update());
 
@@ -198,7 +198,7 @@ public:
         return something_done;
     }
 
-    void mark_activity() {
+    void mark_activity() noexcept {
         _activity_time = std::chrono::steady_clock::now();
     }
 
@@ -286,7 +286,7 @@ private:
 
         flat_set<identifier_t> searches;
 
-        void on_search(const identifier_t source_id) {
+        void on_search(const identifier_t source_id) noexcept {
             searches.insert(source_id);
         }
 
@@ -294,7 +294,7 @@ private:
           endpoint& bus,
           const identifier_t source_id,
           const message_sequence_t sequence_no,
-          const basic_sudoku_board<S> board) {
+          const basic_sudoku_board<S> board) noexcept {
             if(EAGINE_LIKELY(boards.size() <= 8)) {
                 searches.insert(source_id);
                 boards.emplace_back(source_id, sequence_no, std::move(board));
@@ -305,7 +305,7 @@ private:
             }
         }
 
-        auto update(endpoint& bus, const data_compressor& compressor)
+        auto update(endpoint& bus, const data_compressor& compressor) noexcept
           -> work_done {
             const unsigned_constant<S> rank{};
             some_true something_done;
@@ -382,7 +382,7 @@ public:
     /// @see has_work
     /// @see is_done
     template <unsigned S>
-    auto enqueue(Key key, basic_sudoku_board<S> board) -> auto& {
+    auto enqueue(Key key, basic_sudoku_board<S> board) noexcept -> auto& {
         _infos.get(unsigned_constant<S>{})
           .add_board(std::move(key), std::move(board));
         return *this;
@@ -406,7 +406,7 @@ public:
         return !has_work();
     }
 
-    void init() {
+    void init() noexcept {
         Base::init();
         this->bus_node().id_assigned.connect(
           EAGINE_THIS_MEM_FUNC_REF(on_id_assigned));
@@ -468,7 +468,8 @@ public:
     /// @brief Indicates if a board with the given rank and key is enqueued.
     /// @see enqueue
     template <unsigned S>
-    auto has_enqueued(const Key& key, const unsigned_constant<S> rank) -> bool {
+    auto has_enqueued(const Key& key, const unsigned_constant<S> rank) noexcept
+      -> bool {
         return _infos.get(rank).has_enqueued(key);
     }
 
@@ -546,19 +547,23 @@ public:
     }
 
     /// @brief Indicates if board with the specified rank is already solved.
-    virtual auto already_done(const Key&, const unsigned_constant<3>) -> bool {
+    virtual auto already_done(const Key&, const unsigned_constant<3>) noexcept
+      -> bool {
         return false;
     }
     /// @brief Indicates if board with the specified rank is already solved.
-    virtual auto already_done(const Key&, const unsigned_constant<4>) -> bool {
+    virtual auto already_done(const Key&, const unsigned_constant<4>) noexcept
+      -> bool {
         return false;
     }
     /// @brief Indicates if board with the specified rank is already solved.
-    virtual auto already_done(const Key&, const unsigned_constant<5>) -> bool {
+    virtual auto already_done(const Key&, const unsigned_constant<5>) noexcept
+      -> bool {
         return false;
     }
     /// @brief Indicates if board with the specified rank is already solved.
-    virtual auto already_done(const Key&, const unsigned_constant<6>) -> bool {
+    virtual auto already_done(const Key&, const unsigned_constant<6>) noexcept
+      -> bool {
         return false;
     }
 
@@ -605,7 +610,7 @@ public:
 protected:
     using Base::Base;
 
-    void add_methods() {
+    void add_methods() noexcept {
         Base::add_methods();
 
         sudoku_rank_tuple<unsigned_constant> ranks;
@@ -657,7 +662,7 @@ private:
             return !key_boards.empty() || !pending.empty();
         }
 
-        void add_board(const Key key, basic_sudoku_board<S> board) {
+        void add_board(const Key key, basic_sudoku_board<S> board) noexcept {
             const auto alternative_count = board.alternative_count();
             auto& boards = key_boards[key];
             auto pos = std::lower_bound(
@@ -670,7 +675,7 @@ private:
             boards.emplace(pos, std::move(board));
         }
 
-        auto search_helpers(endpoint& bus) -> work_done {
+        auto search_helpers(endpoint& bus) noexcept -> work_done {
             some_true something_done;
             if(search_timeout) {
                 bus.broadcast(sudoku_search_msg(unsigned_constant<S>{}));
@@ -680,7 +685,7 @@ private:
             return something_done;
         }
 
-        auto handle_timeouted(This& solver) -> work_done {
+        auto handle_timeouted(This& solver) noexcept -> work_done {
             span_size_t count = 0;
             pending.erase(
               std::remove_if(
@@ -728,7 +733,7 @@ private:
         void handle_response(
           This& parent,
           const message_id msg_id,
-          const stored_message& message) {
+          const stored_message& message) noexcept {
             const unsigned_constant<S> rank{};
             basic_sudoku_board<S> board{traits};
 
@@ -782,9 +787,9 @@ private:
         auto send_board_to(
           endpoint& bus,
           data_compressor& compressor,
-          const identifier_t helper_id) -> bool {
+          const identifier_t helper_id) noexcept -> bool {
             if(!key_boards.empty()) {
-                auto kbpos =
+                const auto kbpos =
                   key_boards.begin() + (query_sequence % key_boards.size());
                 EAGINE_ASSERT(kbpos < key_boards.end());
                 auto& [key, boards] = *kbpos;
@@ -792,7 +797,7 @@ private:
                   boards.size() - 1U,
                   math::blend(1.0, 0.8, std::exp(-boards.size())));
 
-                auto pos = std::next(boards.begin(), dist(randeng));
+                const auto pos = std::next(boards.begin(), dist(randeng));
                 auto& board = *pos;
                 serialize_buffer.ensure(
                   default_serialize_buffer_size_for(board));
@@ -828,7 +833,8 @@ private:
             return false;
         }
 
-        auto find_helpers(span<identifier_t> dst) const -> span<identifier_t> {
+        auto find_helpers(span<identifier_t> dst) const noexcept
+          -> span<identifier_t> {
             span_size_t done = 0;
             for(const auto helper_id : ready_helpers) {
                 if(done < dst.size()) {
@@ -846,7 +852,7 @@ private:
             return head(dst, done);
         }
 
-        auto send_boards(endpoint& bus, data_compressor& compressor)
+        auto send_boards(endpoint& bus, data_compressor& compressor) noexcept
           -> work_done {
             some_true something_done;
 
@@ -865,7 +871,7 @@ private:
             return something_done;
         }
 
-        void pending_done(const message_sequence_t sequence_no) {
+        void pending_done(const message_sequence_t sequence_no) noexcept {
             const auto pos = std::find_if(
               pending.begin(), pending.end(), [&](const auto& entry) {
                   return entry.sequence_no == sequence_no;
@@ -877,14 +883,14 @@ private:
             }
         }
 
-        void helper_alive(This& parent, const identifier_t id) {
+        void helper_alive(This& parent, const identifier_t id) noexcept {
             if(std::get<1>(known_helpers.insert(id))) {
                 parent.helper_appeared(id);
             }
             ready_helpers.insert(id);
         }
 
-        auto has_enqueued(const Key& key) -> bool {
+        auto has_enqueued(const Key& key) noexcept -> bool {
             return std::find_if(
                      key_boards.begin(),
                      key_boards.end(),
@@ -1052,7 +1058,7 @@ public:
     }
 
     /// @brief Sets the board at the specified coordinate.
-    auto set_board(Coord coord, basic_sudoku_board<S> board) -> bool {
+    auto set_board(Coord coord, basic_sudoku_board<S> board) noexcept -> bool {
         return _boards.try_emplace(std::move(coord), std::move(board)).second;
     }
 
@@ -1084,7 +1090,7 @@ public:
     }
 
     /// @brief Returns the extent between min and max in units of boards.
-    auto boards_extent(const Coord min, const Coord max) const
+    auto boards_extent(const Coord min, const Coord max) const noexcept
       -> std::tuple<int, int, int, int> {
         const auto conv = [](int c) {
             const auto mult = S * (S - 2);
@@ -1101,12 +1107,12 @@ public:
     }
 
     /// @brief Returns the extent of this tiling in units of boards.
-    auto boards_extent() const {
+    auto boards_extent() const noexcept {
         return boards_extent({_minu, _minv}, {_maxu, _maxv});
     }
 
     /// @brief Indicates if the boards between the min and max coordinates are solved.
-    auto are_complete(const Coord min, const Coord max) const -> bool {
+    auto are_complete(const Coord min, const Coord max) const noexcept -> bool {
         const auto [xmin, ymin, xmax, ymax] = boards_extent(min, max);
         for(const auto y : integer_range(ymin, ymax)) {
             for(const auto x : integer_range(xmin, xmax)) {
@@ -1119,7 +1125,7 @@ public:
     }
 
     /// @brief Indicates if the boards in this tiling's extent are solved.
-    auto are_complete() const -> bool {
+    auto are_complete() const noexcept -> bool {
         return are_complete({_minu, _minv}, {_maxu, _maxv});
     }
 
@@ -1128,7 +1134,8 @@ public:
       std::ostream& out,
       const Coord min,
       const Coord max,
-      const basic_sudoku_board_traits<S>& traits) const -> std::ostream& {
+      const basic_sudoku_board_traits<S>& traits) const noexcept
+      -> std::ostream& {
         const auto [xmin, ymin, xmax, ymax] = boards_extent(min, max);
 
         for(const auto y : integer_range(ymin, ymax)) {
@@ -1157,7 +1164,7 @@ public:
 
     /// @brief Shows which tiles are solved and which unsolved.
     auto print_progress(std::ostream& out, const Coord min, const Coord max)
-      const -> std::ostream& {
+      const noexcept -> std::ostream& {
         const auto [xmin, ymin, xmax, ymax] = boards_extent(min, max);
 
         for(const auto y : integer_range(ymin, ymax)) {
@@ -1174,24 +1181,24 @@ public:
     }
 
     /// @brief Prints the current tiling using the specified sudoku board traits.
-    auto print(std::ostream& out, const Coord min, const Coord max) const
-      -> std::ostream& {
+    auto print(std::ostream& out, const Coord min, const Coord max)
+      const noexcept -> std::ostream& {
         return print(out, min, max, _traits);
     }
 
     /// @brief Prints the current tiling using the specified sudoku board traits.
     auto print(std::ostream& out, const basic_sudoku_board_traits<S>& traits)
-      const -> auto& {
+      const noexcept -> auto& {
         return print(out, {_minu, _minv}, {_maxu, _maxv}, traits);
     }
 
     /// @brief Prints the current tiling using the specified sudoku board traits.
-    auto print(std::ostream& out) const -> auto& {
+    auto print(std::ostream& out) const noexcept -> auto& {
         return print(out, {_minu, _minv}, {_maxu, _maxv});
     }
 
     /// @brief Shows which tiles are solved and which unsolved.
-    auto print_progress(std::ostream& out) const -> auto& {
+    auto print_progress(std::ostream& out) const noexcept -> auto& {
         return print_progress(out, {_minu, _minv}, {_maxu, _maxv});
     }
 
@@ -1255,7 +1262,7 @@ public:
       const Coord min,
       const Coord max,
       const Coord coord,
-      basic_sudoku_board<S> board) -> auto& {
+      basic_sudoku_board<S> board) noexcept -> auto& {
         const auto [x, y] = coord;
         auto& info = _infos.get(unsigned_constant<S>{});
         info.set_extent(min, max);
@@ -1265,13 +1272,14 @@ public:
 
     /// @brief Initializes the tiling to be generated with initial board.
     template <unsigned S>
-    auto initialize(const Coord max, basic_sudoku_board<S> board) -> auto& {
+    auto initialize(const Coord max, basic_sudoku_board<S> board) noexcept
+      -> auto& {
         return initialize({0, 0}, max, {0, 0}, std::move(board));
     }
 
     /// @brief Resets the tiling with the specified rank.
     template <unsigned S>
-    auto reset(unsigned_constant<S> rank) -> auto& {
+    auto reset(unsigned_constant<S> rank) noexcept -> auto& {
         base::reset(rank);
         _infos.get(rank).reset();
         return *this;
@@ -1279,7 +1287,8 @@ public:
 
     /// @brief Re-initializes the tiling with the specified board.
     template <unsigned S>
-    auto reinitialize(const Coord max, basic_sudoku_board<S> board) -> auto& {
+    auto reinitialize(const Coord max, basic_sudoku_board<S> board) noexcept
+      -> auto& {
         reset(unsigned_constant<S>{});
         return initialize(max, board);
     }
@@ -1343,13 +1352,14 @@ public:
 
     /// @brief Logs the contributions of the helpers to the solution.
     template <unsigned S>
-    auto log_contribution_histogram(const unsigned_constant<S> rank) -> auto& {
+    auto log_contribution_histogram(const unsigned_constant<S> rank) noexcept
+      -> auto& {
         _infos.get(rank).log_contribution_histogram(*this);
         return *this;
     }
 
 protected:
-    sudoku_tiling(endpoint& bus)
+    sudoku_tiling(endpoint& bus) noexcept
       : base{bus} {
         this->solved_3.connect(
           EAGINE_THIS_MEM_FUNC_REF(template _handle_solved<3>));
@@ -1369,7 +1379,7 @@ private:
           This& solver,
           const int x,
           const int y,
-          basic_sudoku_board<S> board) {
+          basic_sudoku_board<S> board) noexcept {
             solver.enqueue({x, y}, std::move(board));
             solver.bus_node()
               .log_debug("enqueuing initial board (${x}, ${y})")
@@ -1378,13 +1388,13 @@ private:
               .arg(EAGINE_ID(rank), S);
         }
 
-        void do_enqueue(This& solver, const int x, const int y) {
+        void do_enqueue(This& solver, const int x, const int y) noexcept {
             auto board{this->new_board()};
             bool should_enqueue = false;
             if(y > 0) {
                 if(x > 0) {
-                    auto left = this->get_board(x - 1, y);
-                    auto down = this->get_board(x, y - 1);
+                    const auto left = this->get_board(x - 1, y);
+                    const auto down = this->get_board(x, y - 1);
                     if(left && down) {
                         for(const auto by : integer_range(S - 1U)) {
                             board.set_block(
@@ -1397,8 +1407,8 @@ private:
                         should_enqueue = true;
                     }
                 } else if(x < 0) {
-                    auto right = this->get_board(x + 1, y);
-                    auto down = this->get_board(x, y - 1);
+                    const auto right = this->get_board(x + 1, y);
+                    const auto down = this->get_board(x, y - 1);
                     if(right && down) {
                         for(const auto by : integer_range(S - 1U)) {
                             board.set_block(
@@ -1411,7 +1421,7 @@ private:
                         should_enqueue = true;
                     }
                 } else {
-                    auto down = this->get_board(x, y - 1);
+                    const auto down = this->get_board(x, y - 1);
                     if(down) {
                         for(const auto bx : integer_range(S)) {
                             board.set_block(
@@ -1422,8 +1432,8 @@ private:
                 }
             } else if(y < 0) {
                 if(x > 0) {
-                    auto left = this->get_board(x - 1, y);
-                    auto up = this->get_board(x, y + 1);
+                    const auto left = this->get_board(x - 1, y);
+                    const auto up = this->get_board(x, y + 1);
                     if(left && up) {
                         for(const auto by : integer_range(1U, S)) {
                             board.set_block(
@@ -1436,8 +1446,8 @@ private:
                         should_enqueue = true;
                     }
                 } else if(x < 0) {
-                    auto right = this->get_board(x + 1, y);
-                    auto up = this->get_board(x, y + 1);
+                    const auto right = this->get_board(x + 1, y);
+                    const auto up = this->get_board(x, y + 1);
                     if(right && up) {
                         for(const auto by : integer_range(1U, S)) {
                             board.set_block(
@@ -1450,7 +1460,7 @@ private:
                         should_enqueue = true;
                     }
                 } else {
-                    auto up = this->get_board(x, y + 1);
+                    const auto up = this->get_board(x, y + 1);
                     if(up) {
                         for(const auto bx : integer_range(S)) {
                             board.set_block(
@@ -1461,7 +1471,7 @@ private:
                 }
             } else {
                 if(x > 0) {
-                    auto left = this->get_board(x - 1, y);
+                    const auto left = this->get_board(x - 1, y);
                     if(left) {
                         for(const auto by : integer_range(S)) {
                             board.set_block(
@@ -1470,7 +1480,7 @@ private:
                         should_enqueue = true;
                     }
                 } else if(x < 0) {
-                    auto right = this->get_board(x + 1, y);
+                    const auto right = this->get_board(x + 1, y);
                     if(right) {
                         for(const auto by : integer_range(S)) {
                             board.set_block(
@@ -1490,7 +1500,7 @@ private:
             }
         }
 
-        void enqueue_incomplete(This& solver) {
+        void enqueue_incomplete(This& solver) noexcept {
             const unsigned_constant<S> rank{};
             const auto [xmin, ymin, xmax, ymax] = this->boards_extent();
             for(const auto y : integer_range(ymin, ymax)) {
@@ -1508,7 +1518,7 @@ private:
           This& solver,
           const identifier_t helper_id,
           const Coord coord,
-          basic_sudoku_board<S> board) {
+          basic_sudoku_board<S> board) noexcept {
 
             if(this->set_board(coord, std::move(board))) {
                 solver.bus_node()
@@ -1531,7 +1541,7 @@ private:
             enqueue_incomplete(solver);
         }
 
-        void log_contribution_histogram(This& solver) {
+        void log_contribution_histogram(This& solver) noexcept {
             span_size_t max_count = 0;
             for(const auto& p : helper_contrib) {
                 max_count = std::max(max_count, std::get<1>(p));
@@ -1556,20 +1566,24 @@ private:
 
     sudoku_rank_tuple<rank_info> _infos;
 
-    auto already_done(const Coord& coord, const unsigned_constant<3> rank)
-      -> bool final {
+    auto already_done(
+      const Coord& coord,
+      const unsigned_constant<3> rank) noexcept -> bool final {
         return _is_already_done(coord, rank);
     }
-    auto already_done(const Coord& coord, const unsigned_constant<4> rank)
-      -> bool final {
+    auto already_done(
+      const Coord& coord,
+      const unsigned_constant<4> rank) noexcept -> bool final {
         return _is_already_done(coord, rank);
     }
-    auto already_done(const Coord& coord, const unsigned_constant<5> rank)
-      -> bool final {
+    auto already_done(
+      const Coord& coord,
+      const unsigned_constant<5> rank) noexcept -> bool final {
         return _is_already_done(coord, rank);
     }
-    auto already_done(const Coord& coord, const unsigned_constant<6> rank)
-      -> bool final {
+    auto already_done(
+      const Coord& coord,
+      const unsigned_constant<6> rank) noexcept -> bool final {
         return _is_already_done(coord, rank);
     }
 

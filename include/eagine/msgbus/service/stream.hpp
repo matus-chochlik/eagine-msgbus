@@ -106,7 +106,7 @@ public:
 protected:
     using base::base;
 
-    void init() {
+    void init() noexcept {
         base::init();
 
         this->reported_alive.connect(
@@ -119,7 +119,7 @@ protected:
           EAGINE_THIS_MEM_FUNC_REF(_handle_stream_relay_unsubscribed));
     }
 
-    auto update() -> work_done {
+    auto update() noexcept -> work_done {
         some_true something_done{base::update()};
 
         if(_stream_relay_timeout) {
@@ -183,7 +183,7 @@ public:
     /// @brief Adds the information about a new stream. Returns the stream id.
     /// @see remove_stream
     /// @see send_stream_data
-    auto add_stream(stream_info info) -> identifier_t {
+    auto add_stream(stream_info info) noexcept -> identifier_t {
         if(info.id == 0) {
             if(_stream_id_seq == 0) {
                 ++_stream_id_seq;
@@ -206,7 +206,7 @@ public:
 
     /// @brief Removes the information about the specified stream.
     /// @see add_stream
-    auto remove_stream(const identifier_t stream_id) -> bool {
+    auto remove_stream(const identifier_t stream_id) noexcept -> bool {
         if(this->has_stream_relay()) {
             _retract_stream(this->stream_relay(), stream_id);
         }
@@ -217,7 +217,7 @@ public:
     /// @see add_stream
     auto send_stream_data(
       const identifier_t stream_id,
-      const memory::const_block data) -> bool {
+      const memory::const_block data) noexcept -> bool {
         if(this->has_stream_relay()) {
             const auto pos = _streams.find(stream_id);
             if(pos != _streams.end()) {
@@ -233,7 +233,7 @@ public:
 protected:
     using base::base;
 
-    void init() {
+    void init() noexcept {
         base::init();
 
         this->stream_relay_assigned.connect(
@@ -255,7 +255,9 @@ protected:
     }
 
 private:
-    void _announce_stream(const identifier_t relay_id, const stream_info& info) {
+    void _announce_stream(
+      const identifier_t relay_id,
+      const stream_info& info) noexcept {
         auto buffer = default_serialize_buffer_for(info);
 
         if(auto serialized{default_serialize(info, cover(buffer))}) {
@@ -269,7 +271,7 @@ private:
 
     void _retract_stream(
       const identifier_t relay_id,
-      const identifier_t stream_id) {
+      const identifier_t stream_id) noexcept {
         auto buffer = default_serialize_buffer_for(stream_id);
         auto serialized{default_serialize(stream_id, cover(buffer))};
         EAGINE_ASSERT(serialized);
@@ -366,7 +368,7 @@ public:
     /// @see unsubscribe_from_stream
     void subscribe_to_stream(
       const identifier_t provider_id,
-      const identifier_t stream_id) {
+      const identifier_t stream_id) noexcept {
         const stream_key_t key{provider_id, stream_id};
         auto pos = _streams.find(key);
         if(pos == _streams.end()) {
@@ -381,7 +383,7 @@ public:
     /// @seei subscribe_to_stream
     void unsubscribe_from_stream(
       const identifier_t provider_id,
-      const identifier_t stream_id) {
+      const identifier_t stream_id) noexcept {
         const stream_key_t key{provider_id, stream_id};
         auto pos = _streams.find(key);
         if(pos != _streams.end()) {
@@ -393,7 +395,7 @@ public:
 protected:
     using base::base;
 
-    void add_methods() {
+    void add_methods() noexcept {
         base::add_methods();
         base::add_method(
           this,
@@ -404,14 +406,14 @@ protected:
             eagiStream, disapeared, This, _handle_stream_disappeared));
     }
 
-    auto update() -> work_done {
+    auto update() noexcept -> work_done {
         some_true something_done{base::update()};
         // TODO
         return something_done;
     }
 
 private:
-    void _do_subscribe(const stream_key_t& key) {
+    void _do_subscribe(const stream_key_t& key) noexcept {
         auto buffer = default_serialize_buffer_for(key);
         auto serialized{default_serialize(key, cover(buffer))};
         EAGINE_ASSERT(serialized);
@@ -420,7 +422,7 @@ private:
         this->bus_node().post(EAGINE_MSG_ID(eagiStream, startFrwrd), message);
     }
 
-    void _do_unsubscribe(const stream_key_t& key) {
+    void _do_unsubscribe(const stream_key_t& key) noexcept {
         auto buffer = default_serialize_buffer_for(key);
         auto serialized{default_serialize(key, cover(buffer))};
         EAGINE_ASSERT(serialized);
@@ -490,7 +492,7 @@ public:
 protected:
     using base::base;
 
-    void add_methods() {
+    void add_methods() noexcept {
         base::add_methods();
 
         base::add_method(
@@ -507,7 +509,7 @@ protected:
           EAGINE_MSG_MAP(eagiStream, stopFrwrd, This, _handle_stop_forward));
     }
 
-    auto update() -> work_done {
+    auto update() noexcept -> work_done {
         some_true something_done{base::update()};
         // TODO
         return something_done;
@@ -574,7 +576,7 @@ private:
       const identifier_t provider_id,
       const stream_status& stream,
       const verification_bits verified,
-      message_view message) {
+      message_view message) noexcept {
         const auto msg_id{EAGINE_MSG_ID(eagiStream, appeared)};
         for(const auto consumer_id : stream.forward_set) {
             message.set_target_id(consumer_id);
@@ -605,7 +607,7 @@ private:
       const identifier_t provider_id,
       const stream_status& stream,
       const verification_bits verified,
-      message_view message) {
+      message_view message) noexcept {
         const auto msg_id{EAGINE_MSG_ID(eagiStream, disapeared)};
         for(const auto consumer_id : stream.forward_set) {
             message.set_target_id(consumer_id);
@@ -626,18 +628,18 @@ private:
         return true;
     }
 
-    void _handle_stream_relay_alive(const subscriber_info& sub_info) {
-        auto ppos = _providers.find(sub_info.endpoint_id);
+    void _handle_stream_relay_alive(const subscriber_info& sub_info) noexcept {
+        const auto ppos = _providers.find(sub_info.endpoint_id);
         if(ppos != _providers.end()) {
             ppos->second.provider_timeout.reset();
         }
 
-        auto cpos = _consumers.find(sub_info.endpoint_id);
+        const auto cpos = _consumers.find(sub_info.endpoint_id);
         if(cpos != _consumers.end()) {
             cpos->second.consumer_timeout.reset();
         }
 
-        auto rpos = _relays.find(sub_info.endpoint_id);
+        const auto rpos = _relays.find(sub_info.endpoint_id);
         if(rpos != _relays.end()) {
             rpos->second.relay_timeout.reset();
         }
@@ -645,7 +647,7 @@ private:
 
     void _handle_stream_relay_subscribed(
       const subscriber_info& sub_info,
-      const message_id msg_id) {
+      const message_id msg_id) noexcept {
         if(msg_id == EAGINE_MSG_ID(eagiStream, startFrwrd)) {
             auto pos = _relays.find(sub_info.endpoint_id);
             if(pos == _relays.end()) {
@@ -658,7 +660,7 @@ private:
 
     void _handle_stream_relay_unsubscribed(
       const subscriber_info& sub_info,
-      const message_id msg_id) {
+      const message_id msg_id) noexcept {
         if(msg_id == EAGINE_MSG_ID(eagiStream, startFrwrd)) {
             auto pos = _relays.find(sub_info.endpoint_id);
             if(pos != _relays.end()) {
