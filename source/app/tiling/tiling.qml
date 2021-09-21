@@ -23,6 +23,7 @@ ApplicationWindow {
         id: saveAction
         text: qsTr("&Save")
         shortcut: StandardKey.Save
+		enabled: backend.tiling.complete
         onTriggered: {
             saveDialog.open()
         }

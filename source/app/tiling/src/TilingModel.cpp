@@ -34,10 +34,12 @@ TilingModel::TilingModel(TilingBackend& backend)
 }
 //------------------------------------------------------------------------------
 void TilingModel::update() {
-    _tiling.process_all();
-    _tiling.update();
-    if(_tiling.solution_timeouted(eagine::unsigned_constant<4>{})) {
-        reinitialize(_width, _height);
+    if(!_tiling.tiling_complete()) {
+        _tiling.process_all();
+        _tiling.update();
+        if(_tiling.solution_timeouted(eagine::unsigned_constant<4>{})) {
+            reinitialize(_width, _height);
+        }
     }
 }
 //------------------------------------------------------------------------------
@@ -82,6 +84,10 @@ auto TilingModel::getProgress() const noexcept -> QVariant {
         return {float(_cellsDone) / float(total)};
     }
     return {};
+}
+//------------------------------------------------------------------------------
+auto TilingModel::isComplete() const noexcept -> bool {
+    return _tiling.tiling_complete();
 }
 //------------------------------------------------------------------------------
 auto TilingModel::getUpdatedByHelper(

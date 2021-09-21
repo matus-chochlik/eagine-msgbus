@@ -92,6 +92,13 @@ auto TilingViewModel::getProgress() const -> QVariant {
     return {};
 }
 //------------------------------------------------------------------------------
+auto TilingViewModel::isComplete() const -> bool {
+    if(auto tilingModel{_backend.getTilingModel()}) {
+        return extract(tilingModel).isComplete();
+    }
+    return false;
+}
+//------------------------------------------------------------------------------
 void TilingViewModel::onTilingModelChanged() {
     connect(
       _backend.getTilingModel(),
