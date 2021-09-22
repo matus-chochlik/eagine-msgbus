@@ -14,6 +14,7 @@
 #include <chrono>
 #include <tuple>
 
+class TilingBackend;
 //------------------------------------------------------------------------------
 class SolutionIntervalViewModel final
   : public QObject
@@ -23,7 +24,7 @@ class SolutionIntervalViewModel final
     Q_PROPERTY(QVariantList intervals READ getIntervals NOTIFY dataChanged)
     Q_PROPERTY(qreal maxInterval READ getMaxInterval NOTIFY dataChanged)
 public:
-    SolutionIntervalViewModel(eagine::main_ctx_parent);
+    SolutionIntervalViewModel(TilingBackend&);
     ~SolutionIntervalViewModel() final;
 
     void tilingReset();
@@ -38,6 +39,7 @@ private:
     void timerEvent(QTimerEvent*) final;
     void addInterval();
 
+    TilingBackend& _backend;
     int _timerId{0};
     std::chrono::steady_clock::time_point _previousSolutionTime{
       std::chrono::steady_clock::now()};

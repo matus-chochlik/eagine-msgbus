@@ -5,13 +5,15 @@
 ///
 
 #include "SolutionIntervalViewModel.hpp"
+#include "TilingBackend.hpp"
+#include "TilingModel.hpp"
 #include <eagine/iterator.hpp>
 
 //------------------------------------------------------------------------------
-SolutionIntervalViewModel::SolutionIntervalViewModel(
-  eagine::main_ctx_parent parent)
+SolutionIntervalViewModel::SolutionIntervalViewModel(TilingBackend& backend)
   : QObject{nullptr}
-  , eagine::main_ctx_object{EAGINE_ID(IntvlModel), parent} {
+  , eagine::main_ctx_object{EAGINE_ID(IntvlModel), backend}
+  , _backend{backend} {
     for(const auto& interval : eagine::reverse(_intervals)) {
         _intervalList.append(interval.count());
     }
@@ -47,6 +49,11 @@ void SolutionIntervalViewModel::helperContributed(eagine::identifier_t) {
 //------------------------------------------------------------------------------
 void SolutionIntervalViewModel::timerEvent(QTimerEvent*) {
     const auto now = std::chrono::steady_clock::now();
+    if(const auto tilingModel{_backend.getTilingModel()}) {
+        if(extract(tilingModel).isComplete()) {
+            _previousSolutionTime = now;
+        }
+    }
     const std::chrono::duration<float> current{now - _previousSolutionTime};
     EAGINE_ASSERT(!_intervalList.empty());
     _maxInterval = std::max(_maxInterval, current);

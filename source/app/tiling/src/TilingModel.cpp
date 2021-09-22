@@ -26,21 +26,13 @@ TilingModel::TilingModel(TilingBackend& backend)
     _tiling.helper_appeared.connect(EAGINE_THIS_MEM_FUNC_REF(onHelperAppeared));
     _tiling.tiles_generated_4.connect(
       EAGINE_THIS_MEM_FUNC_REF(onFragmentAdded));
-
+}
+//------------------------------------------------------------------------------
+void TilingModel::initialize() {
     reinitialize(
       extract_or(app_config().get<int>("msgbus.sudoku.solver.width"), 64),
       extract_or(app_config().get<int>("msgbus.sudoku.solver.height"), 64));
     _resetCount = 0;
-}
-//------------------------------------------------------------------------------
-void TilingModel::update() {
-    if(!_tiling.tiling_complete()) {
-        _tiling.process_all();
-        _tiling.update();
-        if(_tiling.solution_timeouted(eagine::unsigned_constant<4>{})) {
-            reinitialize(_width, _height);
-        }
-    }
 }
 //------------------------------------------------------------------------------
 void TilingModel::reinitialize(int w, int h) {
@@ -60,6 +52,16 @@ void TilingModel::reinitialize(int w, int h) {
         .generate_medium());
     _backend.onTilingReset();
     emit reinitialized();
+}
+//------------------------------------------------------------------------------
+void TilingModel::update() {
+    if(!_tiling.tiling_complete()) {
+        _tiling.process_all();
+        _tiling.update();
+        if(_tiling.solution_timeouted(eagine::unsigned_constant<4>{})) {
+            reinitialize(_width, _height);
+        }
+    }
 }
 //------------------------------------------------------------------------------
 auto TilingModel::getWidth() const noexcept -> int {

@@ -24,9 +24,9 @@ class TilingModel
 public:
     TilingModel(TilingBackend&);
 
-    void update();
-
+    void initialize();
     void reinitialize(int w, int h);
+    void update();
 
     auto getWidth() const noexcept -> int;
     auto getHeight() const noexcept -> int;
