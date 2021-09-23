@@ -33,7 +33,7 @@ void TilingViewModel::reinitialize(int w, int h) {
     }
 }
 //------------------------------------------------------------------------------
-void TilingViewModel::saveAs(const QUrl& filePath) {
+void TilingViewModel::doSaveAs(const QUrl& filePath) {
     if(auto optTilingModel{_backend.getTilingModel()}) {
         QFile tilingFile(QDir::toNativeSeparators(filePath.toLocalFile()));
         if(tilingFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
@@ -48,6 +48,20 @@ void TilingViewModel::saveAs(const QUrl& filePath) {
             }
         }
     }
+}
+//------------------------------------------------------------------------------
+void TilingViewModel::saveAs(const QUrl& filePath) {
+    if(auto optTilingModel{_backend.getTilingModel()}) {
+        auto& tilingModel = extract(optTilingModel);
+        if(tilingModel.isComplete()) {
+            doSaveAs(filePath);
+            _filePath.clear();
+            emit filePathChanged();
+            return;
+        }
+    }
+    _filePath = filePath;
+    emit filePathChanged();
 }
 //------------------------------------------------------------------------------
 auto TilingViewModel::rowCount(const QModelIndex&) const -> int {
@@ -76,6 +90,10 @@ auto TilingViewModel::data(const QModelIndex& index, int role) const
 //------------------------------------------------------------------------------
 auto TilingViewModel::roleNames() const -> QHash<int, QByteArray> {
     return {{Qt::DisplayRole, "tile"}};
+}
+//------------------------------------------------------------------------------
+auto TilingViewModel::getFilePath() const -> QVariant {
+    return _filePath.isEmpty() ? QVariant{} : QVariant{_filePath};
 }
 //------------------------------------------------------------------------------
 auto TilingViewModel::getResetCount() const -> QVariant {
@@ -129,5 +147,14 @@ void TilingViewModel::onTilingChanged() {
 void TilingViewModel::onTilesAdded(int rmin, int cmin, int rmax, int cmax) {
     emit dataChanged(createIndex(rmin, cmin), createIndex(rmax + 1, cmax + 1));
     emit progressChanged();
+    if(!_filePath.isEmpty()) {
+        if(auto optTilingModel{_backend.getTilingModel()}) {
+            if(extract(optTilingModel).isComplete()) {
+                doSaveAs(_filePath);
+                _filePath.clear();
+                emit filePathChanged();
+            }
+        }
+    }
 }
 //------------------------------------------------------------------------------

@@ -19,11 +19,14 @@ ApplicationWindow {
     Material.theme: backend.theme.light ? Material.Light : Material.Dark
     Material.accent: Material.Blue
 
+	title: backend.tiling.filePath
+		? qsTr("Tiling - %1").arg(backend.tiling.filePath)
+		: qsTr("Tiling")
+
     Action {
         id: saveAction
         text: qsTr("&Save")
         shortcut: StandardKey.Save
-		enabled: backend.tiling.complete
         onTriggered: {
             saveDialog.open()
         }

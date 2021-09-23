@@ -18,6 +18,7 @@ class TilingViewModel
   , public eagine::main_ctx_object {
     Q_OBJECT
 
+    Q_PROPERTY(QVariant filePath READ getFilePath NOTIFY filePathChanged)
     Q_PROPERTY(QVariant resetCount READ getResetCount NOTIFY reinitialized)
     Q_PROPERTY(QVariant progress READ getProgress NOTIFY progressChanged)
     Q_PROPERTY(bool complete READ isComplete NOTIFY progressChanged)
@@ -29,6 +30,7 @@ public:
     auto data(const QModelIndex& index, int role) const -> QVariant final;
     auto roleNames() const -> QHash<int, QByteArray> final;
 
+    auto getFilePath() const -> QVariant;
     auto getResetCount() const -> QVariant;
     auto getProgress() const -> QVariant;
     auto isComplete() const -> bool;
@@ -38,6 +40,7 @@ public:
 signals:
     void reinitialized();
     void progressChanged();
+    void filePathChanged();
 private slots:
     void onTilingModelChanged();
     void onTilingReset();
@@ -45,7 +48,10 @@ private slots:
     void onTilesAdded(int rmin, int cmin, int rmax, int cmax);
 
 private:
+    void doSaveAs(const QUrl& filePath);
+
     TilingBackend& _backend;
+    QUrl _filePath;
 };
 //------------------------------------------------------------------------------
 #endif
