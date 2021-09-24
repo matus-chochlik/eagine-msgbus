@@ -17,7 +17,7 @@ class TilingTheme
     Q_OBJECT
 
     Q_PROPERTY(bool light READ getLight WRITE setLight NOTIFY lightChanged)
-    Q_PROPERTY(QString tileset READ getTileset CONSTANT)
+    Q_PROPERTY(QString tileset READ getTileset NOTIFY tilesetChanged)
     Q_PROPERTY(int tileWidth READ getTileWidth NOTIFY tileSizeChanged)
     Q_PROPERTY(int tileHeight READ getTileHeight NOTIFY tileSizeChanged)
 
@@ -31,13 +31,16 @@ public:
     auto getTileWidth() const -> int;
     auto getTileHeight() const -> int;
 
+    Q_INVOKABLE void setTileset(QString);
     Q_INVOKABLE void setTileSize(int);
 
 signals:
     void lightChanged();
+    void tilesetChanged();
     void tileSizeChanged();
 public slots:
 private:
+    QString _tileset{"b16"};
     int _tileSize{16};
     bool _light{false};
 };

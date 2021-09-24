@@ -29,5 +29,22 @@
 	<file>tiles/b16_D.svg</file>
 	<file>tiles/b16_E.svg</file>
 	<file>tiles/b16_F.svg</file>
+
+	<file>tiles/thicket_0.svg</file>
+	<file>tiles/thicket_1.svg</file>
+	<file>tiles/thicket_2.svg</file>
+	<file>tiles/thicket_3.svg</file>
+	<file>tiles/thicket_4.svg</file>
+	<file>tiles/thicket_5.svg</file>
+	<file>tiles/thicket_6.svg</file>
+	<file>tiles/thicket_7.svg</file>
+	<file>tiles/thicket_8.svg</file>
+	<file>tiles/thicket_9.svg</file>
+	<file>tiles/thicket_A.svg</file>
+	<file>tiles/thicket_B.svg</file>
+	<file>tiles/thicket_C.svg</file>
+	<file>tiles/thicket_D.svg</file>
+	<file>tiles/thicket_E.svg</file>
+	<file>tiles/thicket_F.svg</file>
 </qresource>
 </RCC>

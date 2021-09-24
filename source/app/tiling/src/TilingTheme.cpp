@@ -24,7 +24,7 @@ auto TilingTheme::getLight() const -> bool {
 }
 //------------------------------------------------------------------------------
 auto TilingTheme::getTileset() const -> QString {
-    return "b16";
+    return _tileset;
 }
 //------------------------------------------------------------------------------
 auto TilingTheme::getTileWidth() const -> int {
@@ -33,6 +33,11 @@ auto TilingTheme::getTileWidth() const -> int {
 //------------------------------------------------------------------------------
 auto TilingTheme::getTileHeight() const -> int {
     return _tileSize;
+}
+//------------------------------------------------------------------------------
+void TilingTheme::setTileset(QString tileset) {
+    _tileset = std::move(tileset);
+    emit tilesetChanged();
 }
 //------------------------------------------------------------------------------
 void TilingTheme::setTileSize(int size) {
