@@ -71,6 +71,10 @@ target_link_libraries(
 )
 EOD
 # ------------------------------------------------------------------------------
+cat << EOD > "${cmk_prefix}/EAGineMsgBusDeps.cmake"
+set(EAGineMsgBusDeps Core SSLplus)
+EOD
+# ------------------------------------------------------------------------------
 mkdir -p "${pkg_dir}/DEBIAN"
 cat << EOD > "${pkg_dir}/DEBIAN/control"
 Package: eagine-msgbus-dev
