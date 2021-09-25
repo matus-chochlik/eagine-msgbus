@@ -99,6 +99,7 @@ ApplicationWindow {
                 Repeater {
                     model: [
 						"b16",
+						"nodes",
 						"bricks_large",
 						"bricks_small",
 						"thicket"
