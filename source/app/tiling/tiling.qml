@@ -97,7 +97,12 @@ ApplicationWindow {
             Menu {
                 title: qsTr("Tile se&t")
                 Repeater {
-                    model: ["b16", "bricks", "thicket"]
+                    model: [
+						"b16",
+						"bricks_large",
+						"bricks_small",
+						"thicket"
+					]
                     MenuItem {
                         text: qsTr("tileset_%1").arg(modelData)
                         onTriggered: {
