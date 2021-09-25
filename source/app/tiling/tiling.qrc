@@ -30,6 +30,23 @@
 	<file>tiles/b16_E.svg</file>
 	<file>tiles/b16_F.svg</file>
 
+	<file>tiles/bricks_0.svg</file>
+	<file>tiles/bricks_1.svg</file>
+	<file>tiles/bricks_2.svg</file>
+	<file>tiles/bricks_3.svg</file>
+	<file>tiles/bricks_4.svg</file>
+	<file>tiles/bricks_5.svg</file>
+	<file>tiles/bricks_6.svg</file>
+	<file>tiles/bricks_7.svg</file>
+	<file>tiles/bricks_8.svg</file>
+	<file>tiles/bricks_9.svg</file>
+	<file>tiles/bricks_A.svg</file>
+	<file>tiles/bricks_B.svg</file>
+	<file>tiles/bricks_C.svg</file>
+	<file>tiles/bricks_D.svg</file>
+	<file>tiles/bricks_E.svg</file>
+	<file>tiles/bricks_F.svg</file>
+
 	<file>tiles/thicket_0.svg</file>
 	<file>tiles/thicket_1.svg</file>
 	<file>tiles/thicket_2.svg</file>
