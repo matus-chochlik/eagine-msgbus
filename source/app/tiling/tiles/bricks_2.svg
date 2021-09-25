@@ -13,7 +13,7 @@
      id="tile_bg" />
   <rect
      style="fill:white;fill-opacity:1;stroke:none"
-     x="0" y="1" width="20" height="6"
+     x="2" y="1" width="18" height="6"
      id="brick00" />
   <rect
      style="fill:white;fill-opacity:1;stroke:none"
