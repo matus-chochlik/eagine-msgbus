@@ -12,7 +12,7 @@
 
 //------------------------------------------------------------------------------
 auto SolutionIntervalViewModel::fixInterval(float i) const noexcept {
-    return i > 1.F ? 1 + std::log10(i) : i;
+    return i > 1.F ? 1 + std::log10(i) : std::sqrt(i);
 }
 //------------------------------------------------------------------------------
 SolutionIntervalViewModel::SolutionIntervalViewModel(TilingBackend& backend)

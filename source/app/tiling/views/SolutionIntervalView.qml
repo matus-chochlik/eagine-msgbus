@@ -12,7 +12,7 @@ Pane {
 		anchors.fill: parent
 
 		ChartView {
- 		id: fixedIntervalChart
+	 		id: fixedIntervalChart
 
 			Layout.fillWidth: true
 			Layout.fillHeight: true
@@ -25,6 +25,7 @@ Pane {
 				? ChartView.ChartThemeLight
 				: ChartView.ChartThemeDark
 			antialiasing: true
+			legend.visible: false
 
 			BarSeries {
 				axisX: ValueAxis {
@@ -35,8 +36,10 @@ Pane {
 
 				axisY: ValueAxis {
 					titleText: qsTr("~log(seconds)")
+					visible: false
 					min: 0
 					max: fixedIntervalChart.axisYMax
+					labelsVisible: false
 				}
 
 				BarSet {
