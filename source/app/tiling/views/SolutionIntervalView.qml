@@ -1,43 +1,104 @@
 import QtQuick 2.12
 import QtCharts 2.1
+import QtQuick.Controls 2.4
+import QtQuick.Layouts 1.5
 import "qrc:///views"
 
-ChartView {
-    id: solutionIntervalView
-    property var model: null
-	property real axisYMax: model ? model.maxInterval : 1
+Pane {
+	id: solutionIntervalView
+	property var model: null
 
-    theme: backend.theme.light
-        ? ChartView.ChartThemeLight
-        : ChartView.ChartThemeDark
-    antialiasing: true
+	ColumnLayout {
+		anchors.fill: parent
 
-    BarSeries {
-		axisX: ValueAxis {
-			tickCount: 0
-			titleVisible: false
-			labelsVisible: false
+		ChartView {
+ 		id: fixedIntervalChart
+
+			Layout.fillWidth: true
+			Layout.fillHeight: true
+
+			property real axisYMax: solutionIntervalView.model
+				? solutionIntervalView.model.maxFixedInterval
+				: 1
+
+			theme: backend.theme.light
+				? ChartView.ChartThemeLight
+				: ChartView.ChartThemeDark
+			antialiasing: true
+
+			BarSeries {
+				axisX: ValueAxis {
+					tickCount: 0
+					titleVisible: false
+					labelsVisible: false
+				}
+
+				axisY: ValueAxis {
+					titleText: qsTr("~log(seconds)")
+					min: 0
+					max: fixedIntervalChart.axisYMax
+				}
+
+				BarSet {
+					label: qsTr("interval between solutions")
+					values: solutionIntervalView.model
+						? solutionIntervalView.model.fixedIntervals
+						: []
+				}
+			}
+
+			Behavior on axisYMax {
+				NumberAnimation {
+					duration: 500
+					easing.type: Easing.InOutBack
+					easing.overshoot: 0
+				}
+			}
 		}
 
-        axisY: ValueAxis {
-			titleText: qsTr("duration (seconds)")
-            min: 0
-            max: axisYMax
-        }
+		ChartView {
+			id: intervalChart
 
-        BarSet {
-            label: qsTr("interval between solutions")
-            values: solutionIntervalView.model
-                ? solutionIntervalView.model.intervals
-                : []
-        }
-    }
+			Layout.fillWidth: true
+			Layout.fillHeight: true
 
-	Behavior on axisYMax {
-		NumberAnimation {
-			duration: 500
-			easing.type: Easing.InOutBack
-			easing.overshoot: 0
+			property real axisYMax: solutionIntervalView.model
+				? solutionIntervalView.model.maxInterval
+				: 1
+
+			theme: backend.theme.light
+				? ChartView.ChartThemeLight
+				: ChartView.ChartThemeDark
+			antialiasing: true
+
+			BarSeries {
+				axisX: ValueAxis {
+					tickCount: 0
+					titleVisible: false
+					labelsVisible: false
+				}
+
+				axisY: ValueAxis {
+					titleText: qsTr("seconds")
+					min: 0
+					max: intervalChart.axisYMax
+				}
+
+				BarSet {
+					label: qsTr("interval between solutions")
+					values: solutionIntervalView.model
+						? solutionIntervalView.model.intervals
+						: []
+				}
+			}
+
+			Behavior on axisYMax {
+				NumberAnimation {
+					duration: 500
+					easing.type: Easing.InOutBack
+					easing.overshoot: 0
+				}
+			}
 		}
 	}
 }
