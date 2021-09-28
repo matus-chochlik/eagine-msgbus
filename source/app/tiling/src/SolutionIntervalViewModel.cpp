@@ -5,17 +5,27 @@
 ///
 
 #include "SolutionIntervalViewModel.hpp"
+#include "TilingBackend.hpp"
+#include "TilingModel.hpp"
 #include <eagine/iterator.hpp>
+#include <cmath>
 
 //------------------------------------------------------------------------------
-SolutionIntervalViewModel::SolutionIntervalViewModel(
-  eagine::main_ctx_parent parent)
+auto SolutionIntervalViewModel::fixInterval(float i) const noexcept {
+    return i > 1.F ? 1 + std::log10(i) : std::sqrt(i);
+}
+//------------------------------------------------------------------------------
+SolutionIntervalViewModel::SolutionIntervalViewModel(TilingBackend& backend)
   : QObject{nullptr}
-  , eagine::main_ctx_object{EAGINE_ID(IntvlModel), parent} {
+  , eagine::main_ctx_object{EAGINE_ID(IntvlModel), backend}
+  , _backend{backend} {
     for(const auto& interval : eagine::reverse(_intervals)) {
         _intervalList.append(interval.count());
+        _fixedIntervalList.append(fixInterval(interval.count()));
     }
     _intervalList.append(0.F);
+    _fixedIntervalList.append(0.F);
+    _maxInterval = std::chrono::duration<float>{1.F};
     _timerId = startTimer(500);
 }
 //------------------------------------------------------------------------------
@@ -29,11 +39,14 @@ void SolutionIntervalViewModel::addInterval() {
     _previousSolutionTime = now;
     _maxInterval = std::chrono::duration<float>{1.F};
     _intervalList.clear();
+    _fixedIntervalList.clear();
     for(const auto& interval : eagine::reverse(_intervals)) {
         _maxInterval = std::max(_maxInterval, interval);
         _intervalList.append(interval.count());
+        _fixedIntervalList.append(fixInterval(interval.count()));
     }
     _intervalList.append(0.F);
+    _fixedIntervalList.append(0.F);
 }
 //------------------------------------------------------------------------------
 void SolutionIntervalViewModel::tilingReset() {
@@ -47,10 +60,16 @@ void SolutionIntervalViewModel::helperContributed(eagine::identifier_t) {
 //------------------------------------------------------------------------------
 void SolutionIntervalViewModel::timerEvent(QTimerEvent*) {
     const auto now = std::chrono::steady_clock::now();
+    if(const auto tilingModel{_backend.getTilingModel()}) {
+        if(extract(tilingModel).isComplete()) {
+            _previousSolutionTime = now;
+        }
+    }
     const std::chrono::duration<float> current{now - _previousSolutionTime};
     EAGINE_ASSERT(!_intervalList.empty());
     _maxInterval = std::max(_maxInterval, current);
     _intervalList.back() = current.count();
+    _fixedIntervalList.back() = fixInterval(current.count());
     emit dataChanged();
 }
 //------------------------------------------------------------------------------
@@ -58,7 +77,17 @@ auto SolutionIntervalViewModel::getIntervals() const -> const QVariantList& {
     return _intervalList;
 }
 //------------------------------------------------------------------------------
+auto SolutionIntervalViewModel::getFixedIntervals() const
+  -> const QVariantList& {
+    return _fixedIntervalList;
+}
+//------------------------------------------------------------------------------
 auto SolutionIntervalViewModel::getMaxInterval() const -> qreal {
     return _maxInterval.count();
+}
+//------------------------------------------------------------------------------
+auto SolutionIntervalViewModel::getMaxFixedInterval() const -> qreal {
+    using std::ceil;
+    return ceil(fixInterval(_maxInterval.count()));
 }
 //------------------------------------------------------------------------------

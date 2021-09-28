@@ -24,9 +24,9 @@ class TilingModel
 public:
     TilingModel(TilingBackend&);
 
-    void update();
-
+    void initialize();
     void reinitialize(int w, int h);
+    void update();
 
     auto getWidth() const noexcept -> int;
     auto getHeight() const noexcept -> int;
@@ -35,6 +35,7 @@ public:
 
     auto getResetCount() const noexcept -> QVariant;
     auto getProgress() const noexcept -> QVariant;
+    auto isComplete() const noexcept -> bool;
     auto getUpdatedByHelper(eagine::identifier_t helperId) const noexcept
       -> qlonglong;
     auto getSolvedByHelper(eagine::identifier_t helperId) const noexcept

@@ -14,6 +14,10 @@ TilingViewModel::TilingViewModel(TilingBackend& backend)
   : QAbstractTableModel{nullptr}
   , eagine::main_ctx_object{EAGINE_ID(TilingVM), backend}
   , _backend{backend} {
+    std::string filePath;
+    if(app_config().fetch("msgbus.sudoku.solver.output_path", filePath)) {
+        _filePath = QUrl::fromLocalFile(filePath.c_str());
+    }
     connect(
       _backend.getTilingTheme(),
       &TilingTheme::tileSizeChanged,
@@ -33,7 +37,7 @@ void TilingViewModel::reinitialize(int w, int h) {
     }
 }
 //------------------------------------------------------------------------------
-void TilingViewModel::saveAs(const QUrl& filePath) {
+void TilingViewModel::doSaveAs(const QUrl& filePath) {
     if(auto optTilingModel{_backend.getTilingModel()}) {
         QFile tilingFile(QDir::toNativeSeparators(filePath.toLocalFile()));
         if(tilingFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
@@ -48,6 +52,20 @@ void TilingViewModel::saveAs(const QUrl& filePath) {
             }
         }
     }
+}
+//------------------------------------------------------------------------------
+void TilingViewModel::saveAs(const QUrl& filePath) {
+    if(auto optTilingModel{_backend.getTilingModel()}) {
+        auto& tilingModel = extract(optTilingModel);
+        if(tilingModel.isComplete()) {
+            doSaveAs(filePath);
+            _filePath.clear();
+            emit filePathChanged();
+            return;
+        }
+    }
+    _filePath = filePath;
+    emit filePathChanged();
 }
 //------------------------------------------------------------------------------
 auto TilingViewModel::rowCount(const QModelIndex&) const -> int {
@@ -78,6 +96,10 @@ auto TilingViewModel::roleNames() const -> QHash<int, QByteArray> {
     return {{Qt::DisplayRole, "tile"}};
 }
 //------------------------------------------------------------------------------
+auto TilingViewModel::getFilePath() const -> QVariant {
+    return _filePath.isEmpty() ? QVariant{} : QVariant{_filePath};
+}
+//------------------------------------------------------------------------------
 auto TilingViewModel::getResetCount() const -> QVariant {
     if(auto tilingModel{_backend.getTilingModel()}) {
         return extract(tilingModel).getResetCount();
@@ -90,6 +112,13 @@ auto TilingViewModel::getProgress() const -> QVariant {
         return extract(tilingModel).getProgress();
     }
     return {};
+}
+//------------------------------------------------------------------------------
+auto TilingViewModel::isComplete() const -> bool {
+    if(auto tilingModel{_backend.getTilingModel()}) {
+        return extract(tilingModel).isComplete();
+    }
+    return false;
 }
 //------------------------------------------------------------------------------
 void TilingViewModel::onTilingModelChanged() {
@@ -122,5 +151,14 @@ void TilingViewModel::onTilingChanged() {
 void TilingViewModel::onTilesAdded(int rmin, int cmin, int rmax, int cmax) {
     emit dataChanged(createIndex(rmin, cmin), createIndex(rmax + 1, cmax + 1));
     emit progressChanged();
+    if(!_filePath.isEmpty()) {
+        if(auto optTilingModel{_backend.getTilingModel()}) {
+            if(extract(optTilingModel).isComplete()) {
+                doSaveAs(_filePath);
+                _filePath.clear();
+                emit filePathChanged();
+            }
+        }
+    }
 }
 //------------------------------------------------------------------------------

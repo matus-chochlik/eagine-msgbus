@@ -19,6 +19,10 @@ ApplicationWindow {
     Material.theme: backend.theme.light ? Material.Light : Material.Dark
     Material.accent: Material.Blue
 
+	title: backend.tiling.filePath
+		? qsTr("Tiling - %1").arg(backend.tiling.filePath)
+		: qsTr("Tiling")
+
     Action {
         id: saveAction
         text: qsTr("&Save")
@@ -73,7 +77,7 @@ ApplicationWindow {
         Menu {
             title: qsTr("&Window")
             Menu {
-                title: qsTr("&Theme")
+                title: qsTr("T&heme")
                 MenuItem {
                     action: lightThemeToggleAction
                 }
@@ -86,6 +90,24 @@ ApplicationWindow {
                         text: qsTr("%1x%1").arg(modelData)
                         onTriggered: {
                             backend.theme.setTileSize(modelData)
+                        }
+                    }
+                }
+            }
+            Menu {
+                title: qsTr("Tile se&t")
+                Repeater {
+                    model: [
+						"b16",
+						"nodes",
+						"bricks_large",
+						"bricks_small",
+						"thicket"
+					]
+                    MenuItem {
+                        text: qsTr("tileset_%1").arg(modelData)
+                        onTriggered: {
+                            backend.theme.setTileset(modelData)
                         }
                     }
                 }

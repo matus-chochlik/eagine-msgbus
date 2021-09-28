@@ -29,5 +29,73 @@
 	<file>tiles/b16_D.svg</file>
 	<file>tiles/b16_E.svg</file>
 	<file>tiles/b16_F.svg</file>
+
+	<file>tiles/nodes_0.svg</file>
+	<file>tiles/nodes_1.svg</file>
+	<file>tiles/nodes_2.svg</file>
+	<file>tiles/nodes_3.svg</file>
+	<file>tiles/nodes_4.svg</file>
+	<file>tiles/nodes_5.svg</file>
+	<file>tiles/nodes_6.svg</file>
+	<file>tiles/nodes_7.svg</file>
+	<file>tiles/nodes_8.svg</file>
+	<file>tiles/nodes_9.svg</file>
+	<file>tiles/nodes_A.svg</file>
+	<file>tiles/nodes_B.svg</file>
+	<file>tiles/nodes_C.svg</file>
+	<file>tiles/nodes_D.svg</file>
+	<file>tiles/nodes_E.svg</file>
+	<file>tiles/nodes_F.svg</file>
+
+	<file>tiles/bricks_large_0.svg</file>
+	<file>tiles/bricks_large_1.svg</file>
+	<file>tiles/bricks_large_2.svg</file>
+	<file>tiles/bricks_large_3.svg</file>
+	<file>tiles/bricks_large_4.svg</file>
+	<file>tiles/bricks_large_5.svg</file>
+	<file>tiles/bricks_large_6.svg</file>
+	<file>tiles/bricks_large_7.svg</file>
+	<file>tiles/bricks_large_8.svg</file>
+	<file>tiles/bricks_large_9.svg</file>
+	<file>tiles/bricks_large_A.svg</file>
+	<file>tiles/bricks_large_B.svg</file>
+	<file>tiles/bricks_large_C.svg</file>
+	<file>tiles/bricks_large_D.svg</file>
+	<file>tiles/bricks_large_E.svg</file>
+	<file>tiles/bricks_large_F.svg</file>
+
+	<file>tiles/bricks_small_0.svg</file>
+	<file>tiles/bricks_small_1.svg</file>
+	<file>tiles/bricks_small_2.svg</file>
+	<file>tiles/bricks_small_3.svg</file>
+	<file>tiles/bricks_small_4.svg</file>
+	<file>tiles/bricks_small_5.svg</file>
+	<file>tiles/bricks_small_6.svg</file>
+	<file>tiles/bricks_small_7.svg</file>
+	<file>tiles/bricks_small_8.svg</file>
+	<file>tiles/bricks_small_9.svg</file>
+	<file>tiles/bricks_small_A.svg</file>
+	<file>tiles/bricks_small_B.svg</file>
+	<file>tiles/bricks_small_C.svg</file>
+	<file>tiles/bricks_small_D.svg</file>
+	<file>tiles/bricks_small_E.svg</file>
+	<file>tiles/bricks_small_F.svg</file>
+
+	<file>tiles/thicket_0.svg</file>
+	<file>tiles/thicket_1.svg</file>
+	<file>tiles/thicket_2.svg</file>
+	<file>tiles/thicket_3.svg</file>
+	<file>tiles/thicket_4.svg</file>
+	<file>tiles/thicket_5.svg</file>
+	<file>tiles/thicket_6.svg</file>
+	<file>tiles/thicket_7.svg</file>
+	<file>tiles/thicket_8.svg</file>
+	<file>tiles/thicket_9.svg</file>
+	<file>tiles/thicket_A.svg</file>
+	<file>tiles/thicket_B.svg</file>
+	<file>tiles/thicket_C.svg</file>
+	<file>tiles/thicket_D.svg</file>
+	<file>tiles/thicket_E.svg</file>
+	<file>tiles/thicket_F.svg</file>
 </qresource>
 </RCC>
