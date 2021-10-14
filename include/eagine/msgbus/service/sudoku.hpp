@@ -902,11 +902,10 @@ private:
         void pending_done(
           This& solver,
           const message_sequence_t sequence_no) noexcept {
-            const auto predicate = [&](const auto& entry) {
-                return entry.sequence_no == sequence_no;
-            };
-            const auto pos =
-              std::find_if(pending.begin(), pending.end(), predicate);
+            const auto pos = std::find_if(
+              pending.begin(), pending.end(), [&](const auto& entry) {
+                  return entry.sequence_no == sequence_no;
+              });
 
             if(pos != pending.end()) {
                 ready_helpers.insert(pos->used_helper);
@@ -915,7 +914,11 @@ private:
                 if(solver.already_done(pos->key, rank)) {
                     remaining.erase(
                       std::remove_if(
-                        remaining.begin(), remaining.end(), predicate),
+                        remaining.begin(),
+                        remaining.end(),
+                        [&](const auto& entry) {
+                            return entry.key == pos->key;
+                        }),
                       remaining.end());
                 } else {
                     remaining.emplace_back(std::move(*pos));
