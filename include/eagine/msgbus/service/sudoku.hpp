@@ -326,24 +326,35 @@ private:
                 auto board = std::get<2>(boards.back());
                 boards.pop_back();
 
-                auto process_candidate = [&](auto& candidate) {
+                const auto send_board =
+                  [&](auto& candidate, const bool is_solved) {
+                      serialize_buffer.ensure(
+                        default_serialize_buffer_size_for(candidate));
+                      const auto serialized{
+                        (S >= 4)
+                          ? default_serialize_packed(
+                              candidate, cover(serialize_buffer), compressor)
+                          : default_serialize(
+                              candidate, cover(serialize_buffer))};
+                      EAGINE_ASSERT(serialized);
+
+                      message_view response{extract(serialized)};
+                      response.set_target_id(target_id);
+                      response.set_sequence_no(sequence_no);
+                      bus.post(sudoku_response_msg(rank, is_solved), response);
+                  };
+
+                const auto process_candidate = [&](auto& candidate) {
                     ++counter;
-                    const bool is_solved = candidate.is_solved();
 
-                    serialize_buffer.ensure(
-                      default_serialize_buffer_size_for(candidate));
-                    const auto serialized{
-                      (S >= 4)
-                        ? default_serialize_packed(
-                            candidate, cover(serialize_buffer), compressor)
-                        : default_serialize(
-                            candidate, cover(serialize_buffer))};
-                    EAGINE_ASSERT(serialized);
-
-                    message_view response{extract(serialized)};
-                    response.set_target_id(target_id);
-                    response.set_sequence_no(sequence_no);
-                    bus.post(sudoku_response_msg(rank, is_solved), response);
+                    if(candidate.is_solved()) {
+                        send_board(candidate, true);
+                    } else {
+                        candidate.for_each_alternative(
+                          candidate.find_unsolved(), [&](auto& nested) {
+                              send_board(nested, nested.is_solved());
+                          });
+                    }
                 };
 
                 board.for_each_alternative(
@@ -648,6 +659,7 @@ private:
             timeout too_late{};
         };
         std::vector<pending_info> pending;
+        std::vector<pending_info> remaining;
 
         flat_set<identifier_t> known_helpers;
         flat_set<identifier_t> ready_helpers;
@@ -730,11 +742,48 @@ private:
             return count > 0;
         }
 
+        auto process_pending_entry(
+          This& parent,
+          const message_id msg_id,
+          pending_info& done,
+          basic_sudoku_board<S>& board) noexcept -> bool {
+            const unsigned_constant<S> rank{};
+            const bool is_solved = msg_id == sudoku_solved_msg(rank);
+
+            if(is_solved) {
+                EAGINE_ASSERT(board.is_solved());
+                key_boards.erase(
+                  std::remove_if(
+                    key_boards.begin(),
+                    key_boards.end(),
+                    [&](const auto& entry) {
+                        return done.key == std::get<0>(entry);
+                    }),
+                  key_boards.end());
+                auto spos = solved_by_helper.find(done.used_helper);
+                if(spos == solved_by_helper.end()) {
+                    spos = solved_by_helper.emplace(done.used_helper, 0L).first;
+                }
+                spos->second++;
+                parent.solved_signal(rank)(done.used_helper, done.key, board);
+                solution_timeout.reset();
+            } else {
+                add_board(done.key, std::move(board));
+                auto upos = updated_by_helper.find(done.used_helper);
+                if(upos == updated_by_helper.end()) {
+                    upos =
+                      updated_by_helper.emplace(done.used_helper, 0L).first;
+                }
+                upos->second++;
+            }
+            done.too_late.reset();
+            return is_solved;
+        }
+
         void handle_response(
           This& parent,
           const message_id msg_id,
           const stored_message& message) noexcept {
-            const unsigned_constant<S> rank{};
             basic_sudoku_board<S> board{traits};
 
             const auto deserialized{
@@ -743,43 +792,22 @@ private:
                        : default_deserialize(board, message.content())};
 
             if(EAGINE_LIKELY(deserialized)) {
-                const auto pos = std::find_if(
-                  pending.begin(), pending.end(), [&](const auto& entry) {
-                      return entry.sequence_no == message.sequence_no;
-                  });
+                const auto predicate = [&](const auto& entry) {
+                    return entry.sequence_no == message.sequence_no;
+                };
+                auto pos =
+                  std::find_if(pending.begin(), pending.end(), predicate);
 
                 if(pos != pending.end()) {
-                    if(msg_id == sudoku_solved_msg(rank)) {
-                        EAGINE_ASSERT(board.is_solved());
-                        key_boards.erase(
-                          std::remove_if(
-                            key_boards.begin(),
-                            key_boards.end(),
-                            [&](const auto& entry) {
-                                return pos->key == std::get<0>(entry);
-                            }),
-                          key_boards.end());
-                        auto spos = solved_by_helper.find(pos->used_helper);
-                        if(spos == solved_by_helper.end()) {
-                            spos =
-                              solved_by_helper.emplace(pos->used_helper, 0L)
-                                .first;
+                    process_pending_entry(parent, msg_id, *pos, board);
+                } else {
+                    pos = std::find_if(
+                      remaining.begin(), remaining.end(), predicate);
+                    if(pos != remaining.end()) {
+                        if(process_pending_entry(parent, msg_id, *pos, board)) {
+                            remaining.erase(pos);
                         }
-                        spos->second++;
-                        parent.solved_signal(rank)(
-                          pos->used_helper, pos->key, board);
-                        solution_timeout.reset();
-                    } else {
-                        add_board(pos->key, std::move(board));
-                        auto upos = updated_by_helper.find(pos->used_helper);
-                        if(upos == updated_by_helper.end()) {
-                            upos =
-                              updated_by_helper.emplace(pos->used_helper, 0L)
-                                .first;
-                        }
-                        upos->second++;
                     }
-                    pos->too_late.reset();
                 }
             }
         }
@@ -871,14 +899,27 @@ private:
             return something_done;
         }
 
-        void pending_done(const message_sequence_t sequence_no) noexcept {
-            const auto pos = std::find_if(
-              pending.begin(), pending.end(), [&](const auto& entry) {
-                  return entry.sequence_no == sequence_no;
-              });
+        void pending_done(
+          This& solver,
+          const message_sequence_t sequence_no) noexcept {
+            const auto predicate = [&](const auto& entry) {
+                return entry.sequence_no == sequence_no;
+            };
+            const auto pos =
+              std::find_if(pending.begin(), pending.end(), predicate);
+
             if(pos != pending.end()) {
                 ready_helpers.insert(pos->used_helper);
                 used_helpers.erase(pos->used_helper);
+                const unsigned_constant<S> rank{};
+                if(solver.already_done(pos->key, rank)) {
+                    remaining.erase(
+                      std::remove_if(
+                        remaining.begin(), remaining.end(), predicate),
+                      remaining.end());
+                } else {
+                    remaining.emplace_back(std::move(*pos));
+                }
                 pending.erase(pos);
             }
         }
@@ -906,6 +947,7 @@ private:
         void reset(This& parent) noexcept {
             key_boards.clear();
             pending.clear();
+            remaining.clear();
             used_helpers.clear();
             solution_timeout.reset();
 
@@ -967,7 +1009,8 @@ private:
     auto _handle_done(
       const message_context&,
       const stored_message& message) noexcept -> bool {
-        _infos.get(unsigned_constant<S>{}).pending_done(message.sequence_no);
+        _infos.get(unsigned_constant<S>{})
+          .pending_done(*this, message.sequence_no);
         return true;
     }
 
