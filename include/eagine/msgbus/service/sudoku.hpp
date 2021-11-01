@@ -1060,13 +1060,37 @@ public:
     using Coord = std::tuple<int, int>;
 
     /// @brief Returns the width (in cells) of the tiling.
+    /// @see height
+    /// @see cell_count
     auto width() const noexcept -> int {
         return _maxu - _minu;
     }
 
     /// @brief Returns the height (in cells) of the tiling.
+    /// @see width
+    /// @see cell_count
     auto height() const noexcept -> int {
         return _maxv - _minv;
+    }
+
+    /// @brief Total count of tiles in this tiling.
+    /// @see width
+    /// @see height
+    /// @see cells_per_tile
+    auto cell_count() const noexcept -> int {
+        return width() * height();
+    }
+
+    /// @brief Returns how many cells are on the side of a single tile.
+    /// @see cells_per_tile
+    constexpr auto cells_per_tile_side() const noexcept -> int {
+        return S * (S - 2);
+    }
+
+    /// @brief Returns how many cells are in a single tile.
+    /// @see cells_per_tile_side
+    constexpr auto cells_per_tile() const noexcept -> int {
+        return cells_per_tile_side() * cells_per_tile_side();
     }
 
     /// @brief Get the board at the specified coordinate if it is solved.
@@ -1413,6 +1437,7 @@ private:
               .arg(EAGINE_ID(x), x)
               .arg(EAGINE_ID(y), y)
               .arg(EAGINE_ID(rank), S);
+            cells_done = 0;
         }
 
         void do_enqueue(This& solver, const int x, const int y) noexcept {
@@ -1548,12 +1573,19 @@ private:
           basic_sudoku_board<S> board) noexcept {
 
             if(this->set_board(coord, std::move(board))) {
+                cells_done += this->cells_per_tile();
                 solver.bus_node()
                   .log_info("solved board (${x}, ${y})")
                   .arg(EAGINE_ID(rank), S)
                   .arg(EAGINE_ID(x), std::get<0>(coord))
                   .arg(EAGINE_ID(y), std::get<1>(coord))
-                  .arg(EAGINE_ID(helper), helper_id);
+                  .arg(EAGINE_ID(helper), helper_id)
+                  .arg(
+                    EAGINE_ID(progress),
+                    EAGINE_ID(Progress),
+                    0.F,
+                    float(cells_done),
+                    float(this->cell_count()));
 
                 auto helper_pos = helper_contrib.find(helper_id);
                 if(helper_pos == helper_contrib.end()) {
@@ -1589,6 +1621,7 @@ private:
         }
 
         flat_map<identifier_t, span_size_t> helper_contrib;
+        int cells_done{0};
     };
 
     sudoku_rank_tuple<rank_info> _infos;
