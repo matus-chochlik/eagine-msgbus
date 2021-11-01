@@ -593,21 +593,14 @@ private:
         for(auto& entry : _host_id_to_endpoint) {
             std::get<1>(entry).erase(endpoint_id);
         }
-        _host_id_to_endpoint.erase(
-          std::remove_if(
-            _host_id_to_endpoint.begin(),
-            _host_id_to_endpoint.end(),
-            [](const auto& entry) { return std::get<1>(entry).empty(); }),
-          _host_id_to_endpoint.end());
+        _host_id_to_endpoint.erase_if(
+          [](const auto& entry) { return std::get<1>(entry).empty(); });
+
         for(auto& entry : _hostname_to_endpoint) {
             std::get<1>(entry).erase(endpoint_id);
         }
-        _hostname_to_endpoint.erase(
-          std::remove_if(
-            _hostname_to_endpoint.begin(),
-            _hostname_to_endpoint.end(),
-            [](const auto& entry) { return std::get<1>(entry).empty(); }),
-          _hostname_to_endpoint.end());
+        _hostname_to_endpoint.erase_if(
+          [](const auto& entry) { return std::get<1>(entry).empty(); });
     }
 
     void _handle_unsubscribed(

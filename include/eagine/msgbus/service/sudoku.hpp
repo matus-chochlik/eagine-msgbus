@@ -699,37 +699,28 @@ private:
 
         auto handle_timeouted(This& solver) noexcept -> work_done {
             span_size_t count = 0;
-            pending.erase(
-              std::remove_if(
-                pending.begin(),
-                pending.end(),
-                [&](auto& entry) {
-                    if(entry.too_late) {
-                        const unsigned_constant<S> rank{};
-                        if(!solver.already_done(entry.key, rank)) {
-                            entry.board.for_each_alternative(
-                              entry.board.find_unsolved(),
-                              [&](auto& candidate) {
-                                  if(candidate.is_solved()) {
-                                      solver.solved_signal(rank)(
-                                        entry.used_helper,
-                                        entry.key,
-                                        candidate);
-                                  } else {
-                                      add_board(
-                                        std::move(entry.key),
-                                        std::move(candidate));
-                                      ++count;
-                                  }
-                              });
-                        }
-                        known_helpers.erase(entry.used_helper);
-                        used_helpers.erase(entry.used_helper);
-                        return true;
+            std::erase_if(pending, [&](auto& entry) {
+                if(entry.too_late) {
+                    const unsigned_constant<S> rank{};
+                    if(!solver.already_done(entry.key, rank)) {
+                        entry.board.for_each_alternative(
+                          entry.board.find_unsolved(), [&](auto& candidate) {
+                              if(candidate.is_solved()) {
+                                  solver.solved_signal(rank)(
+                                    entry.used_helper, entry.key, candidate);
+                              } else {
+                                  add_board(
+                                    std::move(entry.key), std::move(candidate));
+                                  ++count;
+                              }
+                          });
                     }
-                    return false;
-                }),
-              pending.end());
+                    known_helpers.erase(entry.used_helper);
+                    used_helpers.erase(entry.used_helper);
+                    return true;
+                }
+                return false;
+            });
             if(count > 0) {
                 solver.bus_node()
                   .log_warning("replacing ${count} timeouted boards")
@@ -752,14 +743,9 @@ private:
 
             if(is_solved) {
                 EAGINE_ASSERT(board.is_solved());
-                key_boards.erase(
-                  std::remove_if(
-                    key_boards.begin(),
-                    key_boards.end(),
-                    [&](const auto& entry) {
-                        return done.key == std::get<0>(entry);
-                    }),
-                  key_boards.end());
+                key_boards.erase_if([&](const auto& entry) {
+                    return done.key == std::get<0>(entry);
+                });
                 auto spos = solved_by_helper.find(done.used_helper);
                 if(spos == solved_by_helper.end()) {
                     spos = solved_by_helper.emplace(done.used_helper, 0L).first;
@@ -912,14 +898,9 @@ private:
                 used_helpers.erase(pos->used_helper);
                 const unsigned_constant<S> rank{};
                 if(solver.already_done(pos->key, rank)) {
-                    remaining.erase(
-                      std::remove_if(
-                        remaining.begin(),
-                        remaining.end(),
-                        [&](const auto& entry) {
-                            return entry.key == pos->key;
-                        }),
-                      remaining.end());
+                    std::erase_if(remaining, [&](const auto& entry) {
+                        return entry.key == pos->key;
+                    });
                 } else {
                     remaining.emplace_back(std::move(*pos));
                 }

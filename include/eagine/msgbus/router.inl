@@ -347,21 +347,16 @@ EAGINE_LIB_FUNC
 auto router::_remove_timeouted() noexcept -> work_done {
     some_true something_done{};
 
-    _pending.erase(
-      std::remove_if(
-        _pending.begin(),
-        _pending.end(),
-        [this, &something_done](auto& pending) {
-            if(pending.age() > this->_pending_timeout) {
-                something_done();
-                log_warning("removing timeouted pending ${type} connection")
-                  .arg(EAGINE_ID(type), pending.the_connection->type_id())
-                  .arg(EAGINE_ID(age), pending.age());
-                return true;
-            }
-            return false;
-        }),
-      _pending.end());
+    std::erase_if(_pending, [this, &something_done](auto& pending) {
+        if(pending.age() > this->_pending_timeout) {
+            something_done();
+            log_warning("removing timeouted pending ${type} connection")
+              .arg(EAGINE_ID(type), pending.the_connection->type_id())
+              .arg(EAGINE_ID(age), pending.age());
+            return true;
+        }
+        return false;
+    });
 
     _endpoint_infos.erase_if([this](auto& entry) {
         auto& [endpoint_id, info] = entry;

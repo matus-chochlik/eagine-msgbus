@@ -1440,12 +1440,10 @@ auto remote_node_tracker::notice_instance(
             node.clear();
             // remove connection info
             auto& connections = _get_connections();
-            connections.erase(
-              std::remove_if(
-                connections.begin(),
-                connections.end(),
-                [=](const auto& conn) { return conn.connects(node_id); }),
-              connections.end());
+
+            std::erase_if(connections, [=](const auto& conn) {
+                return conn.connects(node_id);
+            });
 
             node.set_instance_id(instance_id);
             if(auto host_id{node.host_id()}) {
