@@ -65,9 +65,7 @@ public:
 
     auto fetch_fragment(const span_size_t offs, memory::block dst) noexcept
       -> span_size_t final {
-        return fill_with_random_bytes(
-                 head(dst, _size - offs), any_random_engine(_re))
-          .size();
+        return fill_with_random_bytes(head(dst, _size - offs), _re).size();
     }
 
 private:

@@ -207,8 +207,7 @@ auto context::add_remote_certificate_pem(
             if(verify_certificate(info.cert)) {
                 if(ok pubkey{_ssl.get_x509_pubkey(info.cert)}) {
                     info.pubkey = std::move(pubkey.get());
-                    fill_with_random_bytes(
-                      cover(info.nonce), any_random_engine{_rand_engine});
+                    fill_with_random_bytes(cover(info.nonce), _rand_engine);
                     return true;
                 } else {
                     log_error("failed to get remote node x509 public key")
