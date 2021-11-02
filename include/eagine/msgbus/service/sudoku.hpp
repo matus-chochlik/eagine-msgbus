@@ -1409,6 +1409,13 @@ public:
         return *this;
     }
 
+    /// @brief Returns the fraction <0, 1> indicating how many tiles are solved.
+    template <unsigned S>
+    auto solution_progress(const unsigned_constant<S> rank) const noexcept
+      -> float {
+        return _infos.get(rank).solution_progress();
+    }
+
 protected:
     sudoku_tiling(endpoint& bus) noexcept
       : base{bus} {
@@ -1618,6 +1625,10 @@ private:
                         float(max_count));
                   }
               });
+        }
+
+        auto solution_progress() const noexcept -> float {
+            return float(cells_done) / float(this->cell_count());
         }
 
         flat_map<identifier_t, span_size_t> helper_contrib;

@@ -43,7 +43,6 @@ void TilingModel::reinitialize(int w, int h) {
     }
     zero(eagine::cover(_cellCache));
     _resetCount++;
-    _cellsDone = 0;
 
     _tiling.reinitialize(
       {_width, _height},
@@ -83,7 +82,7 @@ auto TilingModel::getResetCount() const noexcept -> QVariant {
 //------------------------------------------------------------------------------
 auto TilingModel::getProgress() const noexcept -> QVariant {
     if(const auto total = _cellCache.size()) {
-        return {float(_cellsDone) / float(total)};
+        return {_tiling.solution_progress(eagine::unsigned_constant<4>{})};
     }
     return {};
 }
@@ -133,7 +132,6 @@ void TilingModel::onFragmentAdded(
               const auto k = eagine::std_size(row * _width + column);
               if(_cellCache[k] == '\0') {
                   _cellCache[k] = extract(glyphStr).front();
-                  ++_cellsDone;
                   rmin = std::min(rmin, row);
                   rmax = std::max(rmax, row);
                   cmin = std::min(cmin, column);
