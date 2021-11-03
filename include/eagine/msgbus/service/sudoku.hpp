@@ -429,6 +429,9 @@ public:
         if(const auto solution_timeout{this->app_config().get(
              "msgbus.sudoku.solver.solution_timeout",
              type_identity<std::chrono::seconds>{})}) {
+            this->bus_node()
+              .log_info("setting solution timeout to ${timeout}")
+              .arg(EAGINE_ID(timeout), extract(solution_timeout));
             for_each_sudoku_rank_unit(
               [&](auto& info) {
                   info.solution_timeout.reset(extract(solution_timeout));
