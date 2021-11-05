@@ -100,6 +100,7 @@ ApplicationWindow {
                     model: [
 						"b16",
 						"nodes",
+						"connections",
 						"bricks_large",
 						"bricks_small",
 						"thicket"
