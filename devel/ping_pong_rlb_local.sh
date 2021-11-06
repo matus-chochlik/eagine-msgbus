@@ -6,7 +6,7 @@
 #
 variant=${1:-007}
 install_prefix="$(<$(dirname ${0})/../INSTALL_PREFIX)"
-log_args=("--use-asio-log" "--min-log-severity" "stat")
+log_args=("--min-log-severity" "stat")
 conn_type="--msgbus-asio-local-stream"
 ping_addr="/tmp/ping"
 pong_addr="/tmp/pong"
