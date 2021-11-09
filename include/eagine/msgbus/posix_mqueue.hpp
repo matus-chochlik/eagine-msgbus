@@ -348,10 +348,8 @@ private:
 };
 //------------------------------------------------------------------------------
 struct posix_mqueue_shared_state {
-    std::default_random_engine _rand_eng{std::random_device{}()};
-
-    auto make_id() noexcept {
-        return random_identifier(any_random_engine(_rand_eng));
+    auto make_id() const noexcept {
+        return random_identifier();
     }
 };
 //------------------------------------------------------------------------------

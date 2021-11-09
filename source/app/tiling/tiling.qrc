@@ -47,6 +47,23 @@
 	<file>tiles/nodes_E.svg</file>
 	<file>tiles/nodes_F.svg</file>
 
+	<file>tiles/connections_0.svg</file>
+	<file>tiles/connections_1.svg</file>
+	<file>tiles/connections_2.svg</file>
+	<file>tiles/connections_3.svg</file>
+	<file>tiles/connections_4.svg</file>
+	<file>tiles/connections_5.svg</file>
+	<file>tiles/connections_6.svg</file>
+	<file>tiles/connections_7.svg</file>
+	<file>tiles/connections_8.svg</file>
+	<file>tiles/connections_9.svg</file>
+	<file>tiles/connections_A.svg</file>
+	<file>tiles/connections_B.svg</file>
+	<file>tiles/connections_C.svg</file>
+	<file>tiles/connections_D.svg</file>
+	<file>tiles/connections_E.svg</file>
+	<file>tiles/connections_F.svg</file>
+
 	<file>tiles/bricks_large_0.svg</file>
 	<file>tiles/bricks_large_1.svg</file>
 	<file>tiles/bricks_large_2.svg</file>

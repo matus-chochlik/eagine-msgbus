@@ -72,7 +72,7 @@ Package: eagine-msgbus-dev
 Version: @PKG_VERSION@
 Architecture: @PKG_ARCH@
 Installed-Size: $(du -k -s ${pkg_dir} | cut -f1)
-Depends: eagine-core-dev,eagine-sslplus-dev
+Depends: eagine-core-dev (>= @PKG_VERSION@),eagine-sslplus-dev (>= @PKG_VERSION@)
 Maintainer: Matus Chochlik <chochlik@gmail.com>
 Description: Message bus for distributed C++ applications.
 EOD

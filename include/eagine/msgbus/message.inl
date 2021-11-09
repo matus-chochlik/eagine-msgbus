@@ -86,12 +86,8 @@ auto message_storage::fetch_all(const fetch_handler handler) noexcept -> bool {
         }
     }
     if(keep_some) {
-        _messages.erase(
-          std::remove_if(
-            _messages.begin(),
-            _messages.end(),
-            [](auto& t) { return !std::get<0>(t).is_valid(); }),
-          _messages.end());
+        std::erase_if(
+          _messages, [](auto& t) { return !std::get<0>(t).is_valid(); });
     } else {
         _messages.clear();
     }
@@ -100,15 +96,10 @@ auto message_storage::fetch_all(const fetch_handler handler) noexcept -> bool {
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
 void message_storage::cleanup(const cleanup_predicate predicate) noexcept {
-    _messages.erase(
-      std::remove_if(
-        _messages.begin(),
-        _messages.end(),
-        [predicate](auto& t) {
-            const message_age msg_age{_clock_t::now() - std::get<2>(t)};
-            return predicate(msg_age);
-        }),
-      _messages.end());
+    std::erase_if(_messages, [predicate](auto& t) {
+        const message_age msg_age{_clock_t::now() - std::get<2>(t)};
+        return predicate(msg_age);
+    });
 }
 //------------------------------------------------------------------------------
 // serialized_message_storage
@@ -127,12 +118,8 @@ auto serialized_message_storage::fetch_all(const fetch_handler handler) noexcept
         }
     }
     if(keep_some) {
-        _messages.erase(
-          std::remove_if(
-            _messages.begin(),
-            _messages.end(),
-            [](auto& entry) { return std::get<0>(entry).empty(); }),
-          _messages.end());
+        std::erase_if(
+          _messages, [](auto& entry) { return std::get<0>(entry).empty(); });
     } else {
         _messages.clear();
     }
@@ -213,12 +200,9 @@ void serialized_message_storage::cleanup(
         ++i;
         to_be_removed >>= 1U;
     }
-    _messages.erase(
-      std::remove_if(
-        _messages.begin(),
-        _messages.end(),
-        [](auto& entry) mutable { return std::get<0>(entry).empty(); }),
-      _messages.end());
+    std::erase_if(_messages, [](auto& entry) mutable {
+        return std::get<0>(entry).empty();
+    });
 }
 //------------------------------------------------------------------------------
 // connection_outgoing_messages

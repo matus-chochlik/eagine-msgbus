@@ -253,40 +253,29 @@ void NodeListViewModel::Data::fixupHierarchy(
         for(auto& instEntry : hostInfo.instances) {
             auto& instInfo = instEntry.second;
 
-            instInfo.nodes.erase(
-              std::remove_if(
-                instInfo.nodes.begin(),
-                instInfo.nodes.end(),
-                [this, nodeId, instId, &instEntry](auto& nodeEntry) {
-                    if((instEntry.first != instId) && (nodeEntry.first == nodeId)) {
-                        node2Inst.erase(nodeId);
-                        return true;
-                    }
-                    node2Inst[nodeEntry.first] = instEntry.first;
-                    return false;
-                }),
-              instInfo.nodes.end());
-        }
-        hostInfo.instances.erase(
-          std::remove_if(
-            hostInfo.instances.begin(),
-            hostInfo.instances.end(),
-            [this, instId, hostId, &hostEntry](auto& instEntry) {
-                if((hostEntry.first != hostId) && (instEntry.first == instId)) {
-                    inst2Host.erase(instId);
+            instInfo.nodes.erase_if([this, nodeId, instId, &instEntry](
+                                      auto& nodeEntry) {
+                if((instEntry.first != instId) && (nodeEntry.first == nodeId)) {
+                    node2Inst.erase(nodeId);
                     return true;
                 }
-                inst2Host[instEntry.first] = hostEntry.first;
+                node2Inst[nodeEntry.first] = instEntry.first;
                 return false;
-            }),
-          hostInfo.instances.end());
+            });
+        }
+
+        hostInfo.instances.erase_if(
+          [this, instId, hostId, &hostEntry](auto& instEntry) {
+              if((hostEntry.first != hostId) && (instEntry.first == instId)) {
+                  inst2Host.erase(instId);
+                  return true;
+              }
+              inst2Host[instEntry.first] = hostEntry.first;
+              return false;
+          });
     }
-    hosts.erase(
-      std::remove_if(
-        hosts.begin(),
-        hosts.end(),
-        [](auto& hostEntry) { return hostEntry.second.instances.empty(); }),
-      hosts.end());
+    hosts.erase_if(
+      [](auto& hostEntry) { return hostEntry.second.instances.empty(); });
 }
 //------------------------------------------------------------------------------
 auto NodeListViewModel::Data::updateNode(
@@ -392,34 +381,24 @@ auto NodeListViewModel::Data::removeNode(eagine::identifier_t nodeId) -> bool {
 
     for(auto& hostEntry : hosts) {
         auto& hostInfo = hostEntry.second;
-        hostInfo.instances.erase(
-          std::remove_if(
-            hostInfo.instances.begin(),
-            hostInfo.instances.end(),
-            [nodeId, &erased](auto& instEntry) {
-                auto& instInfo = instEntry.second;
-                erased += instInfo.nodes.erase(nodeId);
-                if(instInfo.nodes.empty()) {
-                    ++erased;
-                    return true;
-                }
-                return false;
-            }),
-          hostInfo.instances.end());
-    }
-    hosts.erase(
-      std::remove_if(
-        hosts.begin(),
-        hosts.end(),
-        [&erased](auto& hostEntry) {
-            auto& hostInfo = hostEntry.second;
-            if(hostInfo.instances.empty()) {
+        hostInfo.instances.erase_if([nodeId, &erased](auto& instEntry) {
+            auto& instInfo = instEntry.second;
+            erased += instInfo.nodes.erase(nodeId);
+            if(instInfo.nodes.empty()) {
                 ++erased;
                 return true;
             }
             return false;
-        }),
-      hosts.end());
+        });
+    }
+    hosts.erase_if([&erased](auto& hostEntry) {
+        auto& hostInfo = hostEntry.second;
+        if(hostInfo.instances.empty()) {
+            ++erased;
+            return true;
+        }
+        return false;
+    });
     return erased > 0;
 }
 //------------------------------------------------------------------------------

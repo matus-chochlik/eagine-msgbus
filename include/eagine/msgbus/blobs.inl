@@ -244,55 +244,46 @@ auto blob_manipulator::update(
     const auto now = std::chrono::steady_clock::now();
     some_true something_done{};
 
-    _incoming.erase(
-      std::remove_if(
-        _incoming.begin(),
-        _incoming.end(),
-        [this, now, do_send, &something_done](auto& pending) {
-            bool should_erase = false;
-            if(pending.max_time.is_expired()) {
-                extract(pending.io).handle_cancelled();
-                if(auto buf_io{pending.buffer_io()}) {
-                    _buffers.eat(extract(buf_io).release_buffer());
-                }
-                something_done();
-                should_erase = true;
-            } else if(now - pending.latest_update > std::chrono::seconds{2}) {
-                auto& done = pending.done_parts();
-                if(!done.empty()) {
-                    const auto bgn = std::get<1>(done[0]);
-                    const auto end = done.size() > 1 ? std::get<1>(done[0])
-                                                     : pending.total_size;
-                    const std::tuple<identifier_t, std::uint64_t, std::uint64_t>
-                      params{pending.source_blob_id, bgn, end};
-                    auto buffer{default_serialize_buffer_for(params)};
-                    auto serialized{default_serialize(params, cover(buffer))};
-                    EAGINE_ASSERT(serialized);
-                    message_view resend_request{extract(serialized)};
-                    resend_request.set_target_id(pending.source_id);
-                    pending.latest_update = now;
-                    something_done(do_send(_resend_msg_id, resend_request));
-                }
-            }
-            return should_erase;
-        }),
-      _incoming.end());
+    std::erase_if(
+      _incoming, [this, now, do_send, &something_done](auto& pending) {
+          bool should_erase = false;
+          if(pending.max_time.is_expired()) {
+              extract(pending.io).handle_cancelled();
+              if(auto buf_io{pending.buffer_io()}) {
+                  _buffers.eat(extract(buf_io).release_buffer());
+              }
+              something_done();
+              should_erase = true;
+          } else if(now - pending.latest_update > std::chrono::seconds{2}) {
+              auto& done = pending.done_parts();
+              if(!done.empty()) {
+                  const auto bgn = std::get<1>(done[0]);
+                  const auto end =
+                    done.size() > 1 ? std::get<1>(done[0]) : pending.total_size;
+                  const std::tuple<identifier_t, std::uint64_t, std::uint64_t>
+                    params{pending.source_blob_id, bgn, end};
+                  auto buffer{default_serialize_buffer_for(params)};
+                  auto serialized{default_serialize(params, cover(buffer))};
+                  EAGINE_ASSERT(serialized);
+                  message_view resend_request{extract(serialized)};
+                  resend_request.set_target_id(pending.source_id);
+                  pending.latest_update = now;
+                  something_done(do_send(_resend_msg_id, resend_request));
+              }
+          }
+          return should_erase;
+      });
 
-    _outgoing.erase(
-      std::remove_if(
-        _outgoing.begin(),
-        _outgoing.end(),
-        [this, &something_done](auto& pending) {
-            if(pending.max_time.is_expired()) {
-                if(auto buf_io{pending.buffer_io()}) {
-                    _buffers.eat(extract(buf_io).release_buffer());
-                }
-                something_done();
-                return true;
+    std::erase_if(_outgoing, [this, &something_done](auto& pending) {
+        if(pending.max_time.is_expired()) {
+            if(auto buf_io{pending.buffer_io()}) {
+                _buffers.eat(extract(buf_io).release_buffer());
             }
-            return false;
-        }),
-      _outgoing.end());
+            something_done();
+            return true;
+        }
+        return false;
+    });
 
     return something_done;
 }
@@ -684,8 +675,7 @@ auto blob_manipulator::process_outgoing(
 EAGINE_LIB_FUNC
 auto blob_manipulator::handle_complete() noexcept -> span_size_t {
 
-    span_size_t done_count{0};
-    auto predicate = [this, &done_count](auto& pending) {
+    auto predicate = [this](auto& pending) {
         if(pending.received_everything()) {
             log_debug("handling complete blob ${id}")
               .arg(EAGINE_ID(source), pending.source_id)
@@ -700,25 +690,19 @@ auto blob_manipulator::handle_complete() noexcept -> span_size_t {
             info.set_priority(pending.priority);
             extract(pending.io)
               .handle_finished(pending.msg_id, pending.age(), info);
-            ++done_count;
             return true;
         }
         return false;
     };
 
-    _incoming.erase(
-      std::remove_if(_incoming.begin(), _incoming.end(), predicate),
-      _incoming.end());
-
-    return done_count;
+    return span_size(std::erase_if(_incoming, predicate));
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
 auto blob_manipulator::fetch_all(
   const blob_manipulator::fetch_handler handle_fetch) noexcept -> span_size_t {
 
-    span_size_t done_count{0};
-    auto predicate = [this, &done_count, &handle_fetch](auto& pending) {
+    auto predicate = [this, &handle_fetch](auto& pending) {
         if(pending.received_everything()) {
             log_debug("fetching complete blob ${id}")
               .arg(EAGINE_ID(source), pending.source_id)
@@ -744,17 +728,12 @@ auto blob_manipulator::fetch_all(
                 extract(pending.io)
                   .handle_finished(pending.msg_id, pending.age(), info);
             }
-            ++done_count;
             return true;
         }
         return false;
     };
 
-    _incoming.erase(
-      std::remove_if(_incoming.begin(), _incoming.end(), predicate),
-      _incoming.end());
-
-    return done_count;
+    return span_size(std::erase_if(_incoming, predicate));
 }
 //------------------------------------------------------------------------------
 } // namespace eagine::msgbus

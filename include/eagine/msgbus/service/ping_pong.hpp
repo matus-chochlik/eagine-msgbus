@@ -116,24 +116,19 @@ public:
         some_true something_done{};
         something_done(Base::update());
 
-        _pending.erase(
-          std::remove_if(
-            _pending.begin(),
-            _pending.end(),
-            [this, &something_done](auto& entry) {
-                auto& [pingable_id, sequence_no, ping_time] = entry;
-                if(ping_time.is_expired()) {
-                    ping_timeouted(
-                      pingable_id,
-                      sequence_no,
-                      std::chrono::duration_cast<std::chrono::microseconds>(
-                        ping_time.elapsed_time()));
-                    something_done();
-                    return true;
-                }
-                return false;
-            }),
-          _pending.end());
+        something_done(
+          std::erase_if(_pending, [this](auto& entry) {
+              auto& [pingable_id, sequence_no, ping_time] = entry;
+              if(ping_time.is_expired()) {
+                  ping_timeouted(
+                    pingable_id,
+                    sequence_no,
+                    std::chrono::duration_cast<std::chrono::microseconds>(
+                      ping_time.elapsed_time()));
+                  return true;
+              }
+              return false;
+          }) > 0);
         return something_done;
     }
 
@@ -178,26 +173,21 @@ private:
     auto _handle_pong(
       const message_context&,
       const stored_message& message) noexcept -> bool {
-        _pending.erase(
-          std::remove_if(
-            _pending.begin(),
-            _pending.end(),
-            [this, &message](auto& entry) {
-                auto& [pingable_id, sequence_no, ping_time] = entry;
-                const bool is_response = (message.source_id == pingable_id) &&
-                                         (message.sequence_no == sequence_no);
-                if(is_response) {
-                    ping_responded(
-                      message.source_id,
-                      message.sequence_no,
-                      std::chrono::duration_cast<std::chrono::microseconds>(
-                        ping_time.elapsed_time()),
-                      this->verify_bits(message));
-                    return true;
-                }
-                return false;
-            }),
-          _pending.end());
+        std::erase_if(_pending, [this, &message](auto& entry) {
+            auto& [pingable_id, sequence_no, ping_time] = entry;
+            const bool is_response = (message.source_id == pingable_id) &&
+                                     (message.sequence_no == sequence_no);
+            if(is_response) {
+                ping_responded(
+                  message.source_id,
+                  message.sequence_no,
+                  std::chrono::duration_cast<std::chrono::microseconds>(
+                    ping_time.elapsed_time()),
+                  this->verify_bits(message));
+                return true;
+            }
+            return false;
+        });
         return true;
     }
 };

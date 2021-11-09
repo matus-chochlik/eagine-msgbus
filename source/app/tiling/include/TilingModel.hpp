@@ -67,7 +67,6 @@ private:
     int _width{0};
     int _height{0};
     int _resetCount{0};
-    std::size_t _cellsDone{0U};
 };
 //------------------------------------------------------------------------------
 #endif

@@ -8,25 +8,25 @@
    version="1.1"
    id="svg_tile_1">
   <rect
-     style="fill:black;fill-opacity:1;stroke:none"
-     x="0" y="0" width="40" height="40"
-     id="tile_bg" />
+    style="fill:black;fill-opacity:1;stroke:none"
+    x="0" y="0" width="40" height="40"
+    id="tile_bg" />
   <path
-     style="fill:none;stroke:white;stroke-width:5"
-	 d="M -1 20 L 1 20 C 2 20 15 8 16 8"
-     id="path_l" />
+    style="fill:none;stroke:white;stroke-width:5"
+    d="M -1 20 L 1 20 C 2 20 15 8 16 8"
+    id="path_l" />
   <path
-     style="fill:none;stroke:white;stroke-width:5"
-	 d="M 41 20 L 39 20 C 38 20 17 8 16 8"
-     id="path_r" />
+    style="fill:none;stroke:white;stroke-width:5"
+    d="M 41 20 L 39 20 C 38 20 17 8 16 8"
+    id="path_r" />
   <path
-     style="fill:none;stroke:white;stroke-width:5"
-	 d="M 20 -1 L 20 1 C 20 2 16 7 16 8"
-     id="path_t" />
+    style="fill:none;stroke:white;stroke-width:5"
+    d="M 20 -1 L 20 1 C 20 2 16 7 16 8"
+    id="path_t" />
   <path
-     style="fill:none;stroke:white;stroke-width:5"
-	 d="M 20 41 L 20 39 C 20 38 15 8 16 8"
-     id="path_t" />
+    style="fill:none;stroke:white;stroke-width:5"
+    d="M 20 41 L 20 39 C 20 38 15 8 16 8"
+    id="path_t" />
   <circle
     style="fill:white;stroke:white;stroke-width:5"
     cx="16" cy="8" r="5"

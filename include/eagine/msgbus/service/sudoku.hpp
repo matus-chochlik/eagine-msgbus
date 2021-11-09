@@ -429,6 +429,9 @@ public:
         if(const auto solution_timeout{this->app_config().get(
              "msgbus.sudoku.solver.solution_timeout",
              type_identity<std::chrono::seconds>{})}) {
+            this->bus_node()
+              .log_info("setting solution timeout to ${timeout}")
+              .arg(EAGINE_ID(timeout), extract(solution_timeout));
             for_each_sudoku_rank_unit(
               [&](auto& info) {
                   info.solution_timeout.reset(extract(solution_timeout));
@@ -699,37 +702,28 @@ private:
 
         auto handle_timeouted(This& solver) noexcept -> work_done {
             span_size_t count = 0;
-            pending.erase(
-              std::remove_if(
-                pending.begin(),
-                pending.end(),
-                [&](auto& entry) {
-                    if(entry.too_late) {
-                        const unsigned_constant<S> rank{};
-                        if(!solver.already_done(entry.key, rank)) {
-                            entry.board.for_each_alternative(
-                              entry.board.find_unsolved(),
-                              [&](auto& candidate) {
-                                  if(candidate.is_solved()) {
-                                      solver.solved_signal(rank)(
-                                        entry.used_helper,
-                                        entry.key,
-                                        candidate);
-                                  } else {
-                                      add_board(
-                                        std::move(entry.key),
-                                        std::move(candidate));
-                                      ++count;
-                                  }
-                              });
-                        }
-                        known_helpers.erase(entry.used_helper);
-                        used_helpers.erase(entry.used_helper);
-                        return true;
+            std::erase_if(pending, [&](auto& entry) {
+                if(entry.too_late) {
+                    const unsigned_constant<S> rank{};
+                    if(!solver.already_done(entry.key, rank)) {
+                        entry.board.for_each_alternative(
+                          entry.board.find_unsolved(), [&](auto& candidate) {
+                              if(candidate.is_solved()) {
+                                  solver.solved_signal(rank)(
+                                    entry.used_helper, entry.key, candidate);
+                              } else {
+                                  add_board(
+                                    std::move(entry.key), std::move(candidate));
+                                  ++count;
+                              }
+                          });
                     }
-                    return false;
-                }),
-              pending.end());
+                    known_helpers.erase(entry.used_helper);
+                    used_helpers.erase(entry.used_helper);
+                    return true;
+                }
+                return false;
+            });
             if(count > 0) {
                 solver.bus_node()
                   .log_warning("replacing ${count} timeouted boards")
@@ -752,14 +746,9 @@ private:
 
             if(is_solved) {
                 EAGINE_ASSERT(board.is_solved());
-                key_boards.erase(
-                  std::remove_if(
-                    key_boards.begin(),
-                    key_boards.end(),
-                    [&](const auto& entry) {
-                        return done.key == std::get<0>(entry);
-                    }),
-                  key_boards.end());
+                key_boards.erase_if([&](const auto& entry) {
+                    return done.key == std::get<0>(entry);
+                });
                 auto spos = solved_by_helper.find(done.used_helper);
                 if(spos == solved_by_helper.end()) {
                     spos = solved_by_helper.emplace(done.used_helper, 0L).first;
@@ -912,14 +901,9 @@ private:
                 used_helpers.erase(pos->used_helper);
                 const unsigned_constant<S> rank{};
                 if(solver.already_done(pos->key, rank)) {
-                    remaining.erase(
-                      std::remove_if(
-                        remaining.begin(),
-                        remaining.end(),
-                        [&](const auto& entry) {
-                            return entry.key == pos->key;
-                        }),
-                      remaining.end());
+                    std::erase_if(remaining, [&](const auto& entry) {
+                        return entry.key == pos->key;
+                    });
                 } else {
                     remaining.emplace_back(std::move(*pos));
                 }
@@ -1079,13 +1063,37 @@ public:
     using Coord = std::tuple<int, int>;
 
     /// @brief Returns the width (in cells) of the tiling.
+    /// @see height
+    /// @see cell_count
     auto width() const noexcept -> int {
         return _maxu - _minu;
     }
 
     /// @brief Returns the height (in cells) of the tiling.
+    /// @see width
+    /// @see cell_count
     auto height() const noexcept -> int {
         return _maxv - _minv;
+    }
+
+    /// @brief Total count of tiles in this tiling.
+    /// @see width
+    /// @see height
+    /// @see cells_per_tile
+    auto cell_count() const noexcept -> int {
+        return width() * height();
+    }
+
+    /// @brief Returns how many cells are on the side of a single tile.
+    /// @see cells_per_tile
+    constexpr auto cells_per_tile_side() const noexcept -> int {
+        return S * (S - 2);
+    }
+
+    /// @brief Returns how many cells are in a single tile.
+    /// @see cells_per_tile_side
+    constexpr auto cells_per_tile() const noexcept -> int {
+        return cells_per_tile_side() * cells_per_tile_side();
     }
 
     /// @brief Get the board at the specified coordinate if it is solved.
@@ -1404,6 +1412,13 @@ public:
         return *this;
     }
 
+    /// @brief Returns the fraction <0, 1> indicating how many tiles are solved.
+    template <unsigned S>
+    auto solution_progress(const unsigned_constant<S> rank) const noexcept
+      -> float {
+        return _infos.get(rank).solution_progress();
+    }
+
 protected:
     sudoku_tiling(endpoint& bus) noexcept
       : base{bus} {
@@ -1432,6 +1447,7 @@ private:
               .arg(EAGINE_ID(x), x)
               .arg(EAGINE_ID(y), y)
               .arg(EAGINE_ID(rank), S);
+            cells_done = 0;
         }
 
         void do_enqueue(This& solver, const int x, const int y) noexcept {
@@ -1567,12 +1583,19 @@ private:
           basic_sudoku_board<S> board) noexcept {
 
             if(this->set_board(coord, std::move(board))) {
+                cells_done += this->cells_per_tile();
                 solver.bus_node()
                   .log_info("solved board (${x}, ${y})")
                   .arg(EAGINE_ID(rank), S)
                   .arg(EAGINE_ID(x), std::get<0>(coord))
                   .arg(EAGINE_ID(y), std::get<1>(coord))
-                  .arg(EAGINE_ID(helper), helper_id);
+                  .arg(EAGINE_ID(helper), helper_id)
+                  .arg(
+                    EAGINE_ID(progress),
+                    EAGINE_ID(Progress),
+                    0.F,
+                    float(cells_done),
+                    float(this->cell_count()));
 
                 auto helper_pos = helper_contrib.find(helper_id);
                 if(helper_pos == helper_contrib.end()) {
@@ -1607,7 +1630,12 @@ private:
               });
         }
 
+        auto solution_progress() const noexcept -> float {
+            return float(cells_done) / float(this->cell_count());
+        }
+
         flat_map<identifier_t, span_size_t> helper_contrib;
+        int cells_done{0};
     };
 
     sudoku_rank_tuple<rank_info> _infos;

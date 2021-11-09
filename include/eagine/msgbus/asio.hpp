@@ -87,12 +87,8 @@ public:
     }
 
     void update() noexcept {
-        _waiting.erase(
-          std::remove_if(
-            _waiting.begin(),
-            _waiting.end(),
-            [](auto& waiting) { return bool(std::get<0>(waiting)); }),
-          _waiting.end());
+        std::erase_if(
+          _waiting, [](auto& waiting) { return bool(std::get<0>(waiting)); });
     }
 
 private:

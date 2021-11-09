@@ -45,12 +45,9 @@ auto registry::_add_entry(const identifier log_id) noexcept
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
 void registry::remove(service_interface& service) noexcept {
-    _entries.erase(
-      std::remove_if(
-        _entries.begin(),
-        _entries.end(),
-        [&service](auto& entry) { return entry._service.get() == &service; }),
-      _entries.end());
+    std::erase_if(_entries, [&service](auto& entry) {
+        return entry._service.get() == &service;
+    });
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC

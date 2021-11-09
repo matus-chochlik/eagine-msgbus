@@ -19,25 +19,25 @@ cat << EOD > ./nodes_${n}.svg
    version="1.1"
    id="svg_tile_${n}">
   <rect
-     style="fill:black;fill-opacity:1;stroke:none"
-     x="0" y="0" width="${s}" height="${s}"
-     id="tile_bg" />
+    style="fill:black;fill-opacity:1;stroke:none"
+    x="0" y="0" width="${s}" height="${s}"
+    id="tile_bg" />
   <path
-     style="fill:none;stroke:white;stroke-width:${p}"
-	 d="M -1 ${h} L 1 ${h} C 2 ${h} $(((i+1)*m-1)) $(((j+1)*m)) $(((i+1)*m)) $(((j+1)*m))"
-     id="path_l" />
+    style="fill:none;stroke:white;stroke-width:${p}"
+    d="M -1 ${h} L 1 ${h} C 2 ${h} $(((i+1)*m-1)) $(((j+1)*m)) $(((i+1)*m)) $(((j+1)*m))"
+    id="path_l" />
   <path
-     style="fill:none;stroke:white;stroke-width:${p}"
-	 d="M $((s+1)) ${h} L $((s-1)) ${h} C $((s-2)) ${h} $(((i+1)*m+1)) $(((j+1)*m)) $(((i+1)*m)) $(((j+1)*m))"
-     id="path_r" />
+    style="fill:none;stroke:white;stroke-width:${p}"
+	d="M $((s+1)) ${h} L $((s-1)) ${h} C $((s-2)) ${h} $(((i+1)*m+1)) $(((j+1)*m)) $(((i+1)*m)) $(((j+1)*m))"
+    id="path_r" />
   <path
-     style="fill:none;stroke:white;stroke-width:${p}"
-	 d="M ${h} -1 L ${h} 1 C ${h} 2 $(((i+1)*m)) $(((j+1)*m-1)) $(((i+1)*m)) $(((j+1)*m))"
-     id="path_t" />
+    style="fill:none;stroke:white;stroke-width:${p}"
+	d="M ${h} -1 L ${h} 1 C ${h} 2 $(((i+1)*m)) $(((j+1)*m-1)) $(((i+1)*m)) $(((j+1)*m))"
+    id="path_t" />
   <path
-     style="fill:none;stroke:white;stroke-width:${p}"
-	 d="M ${h} $((s+1)) L ${h} $((s-1)) C ${h} $((s-2)) $(((i+1)*m-1)) $(((j+1)*m)) $(((i+1)*m)) $(((j+1)*m))"
-     id="path_t" />
+    style="fill:none;stroke:white;stroke-width:${p}"
+	d="M ${h} $((s+1)) L ${h} $((s-1)) C ${h} $((s-2)) $(((i+1)*m-1)) $(((j+1)*m)) $(((i+1)*m)) $(((j+1)*m))"
+    id="path_t" />
   <circle
     style="fill:white;stroke:white;stroke-width:${p}"
     cx="$(((i+1)*m))" cy="$(((j+1)*m))" r="${p}"
