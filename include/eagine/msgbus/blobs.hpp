@@ -9,6 +9,7 @@
 #ifndef EAGINE_MSGBUS_BLOBS_HPP
 #define EAGINE_MSGBUS_BLOBS_HPP
 
+#include "config/basic.hpp"
 #include "message.hpp"
 #include <eagine/bool_aggregate.hpp>
 #include <eagine/callable_ref.hpp>

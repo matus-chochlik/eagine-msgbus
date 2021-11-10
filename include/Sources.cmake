@@ -6,6 +6,7 @@
 set(HEADERS
     eagine/logging/type/remote_node.hpp
     eagine/message_bus.hpp
+    eagine/msgbus/config/basic.hpp
     eagine/msgbus/acceptor.hpp
     eagine/msgbus/actor.hpp
     eagine/msgbus/asio.hpp

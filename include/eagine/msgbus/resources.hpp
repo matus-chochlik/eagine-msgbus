@@ -9,6 +9,7 @@
 #ifndef EAGINE_MSGBUS_RESOURCES_HPP
 #define EAGINE_MSGBUS_RESOURCES_HPP
 
+#include "config/basic.hpp"
 #include <eagine/resources.hpp>
 
 namespace eagine::msgbus {

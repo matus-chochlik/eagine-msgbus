@@ -10,6 +10,7 @@
 #define EAGINE_MSGBUS_ENDPOINT_HPP
 
 #include "blobs.hpp"
+#include "config/basic.hpp"
 #include "connection.hpp"
 #include "context_fwd.hpp"
 #include "serialize.hpp"

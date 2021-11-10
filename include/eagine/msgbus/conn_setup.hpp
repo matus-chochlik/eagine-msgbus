@@ -9,6 +9,7 @@
 #ifndef EAGINE_MSGBUS_CONN_SETUP_HPP
 #define EAGINE_MSGBUS_CONN_SETUP_HPP
 
+#include "config/basic.hpp"
 #include "conn_factory.hpp"
 #include <eagine/enum_map.hpp>
 #include <eagine/main_ctx_object.hpp>

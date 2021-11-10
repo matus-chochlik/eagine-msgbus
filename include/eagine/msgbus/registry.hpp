@@ -9,6 +9,7 @@
 #ifndef EAGINE_MSGBUS_REGISTRY_HPP
 #define EAGINE_MSGBUS_REGISTRY_HPP
 
+#include "config/basic.hpp"
 #include "direct.hpp"
 #include "endpoint.hpp"
 #include "router.hpp"

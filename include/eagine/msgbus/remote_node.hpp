@@ -9,6 +9,7 @@
 #ifndef EAGINE_MSGBUS_REMOTE_NODE_HPP
 #define EAGINE_MSGBUS_REMOTE_NODE_HPP
 
+#include "config/basic.hpp"
 #include "node_kind.hpp"
 #include "types.hpp"
 #include <eagine/bitfield.hpp>

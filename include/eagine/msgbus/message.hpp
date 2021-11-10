@@ -9,6 +9,7 @@
 #ifndef EAGINE_MSGBUS_MESSAGE_HPP
 #define EAGINE_MSGBUS_MESSAGE_HPP
 
+#include "config/basic.hpp"
 #include "context_fwd.hpp"
 #include "types.hpp"
 #include "verification.hpp"

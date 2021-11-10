@@ -9,6 +9,7 @@
 #ifndef EAGINE_MSGBUS_CONTEXT_HPP
 #define EAGINE_MSGBUS_CONTEXT_HPP
 
+#include "config/basic.hpp"
 #include "context_fwd.hpp"
 #include "node_kind.hpp"
 #include "types.hpp"

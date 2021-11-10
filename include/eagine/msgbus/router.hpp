@@ -11,6 +11,7 @@
 
 #include "acceptor.hpp"
 #include "blobs.hpp"
+#include "config/basic.hpp"
 #include "context_fwd.hpp"
 #include <eagine/bool_aggregate.hpp>
 #include <eagine/flat_map.hpp>
