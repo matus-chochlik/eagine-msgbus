@@ -20,6 +20,7 @@ sleep 1
 ${install_prefix}/share/eagine/example/msgbus/eagine-${variant}_ping \
 	"${log_args[@]}" \
 	--ping-count ${2:-1M} \
+	--ping-batch ${3:-10k} \
 	${conn_type} \
 	& pids+=($!)
 sleep 5

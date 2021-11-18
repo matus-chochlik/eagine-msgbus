@@ -76,9 +76,13 @@ class ping_example
     using base = ping_base;
 
 public:
-    ping_example(endpoint& bus, const valid_if_positive<std::intmax_t>& max)
+    ping_example(
+      endpoint& bus,
+      const valid_if_positive<std::intmax_t>& mod,
+      const valid_if_positive<std::intmax_t>& max)
       : main_ctx_object{EAGINE_ID(PingExampl), bus}
       , base{bus}
+      , _mod{extract_or(mod, 10000)}
       , _max{extract_or(max, 100000)} {
         object_description("Pinger", "Ping example");
 
@@ -292,8 +296,8 @@ private:
     std::chrono::steady_clock::time_point prev_log{
       std::chrono::steady_clock::now()};
     std::map<identifier_t, ping_stats> _targets{};
-    std::intmax_t _mod{10000};
-    std::intmax_t _max{100000};
+    std::intmax_t _mod;
+    std::intmax_t _max;
     std::intmax_t _sent{0};
     std::intmax_t _rcvd{0};
     std::intmax_t _tout{0};
@@ -308,12 +312,17 @@ auto main(main_ctx& ctx) -> int {
 
     msgbus::endpoint bus{EAGINE_ID(PingEndpt), ctx};
 
+    valid_if_positive<std::intmax_t> ping_batch{};
+    if(auto arg{ctx.args().find("--ping-batch")}) {
+        arg.next().parse(ping_batch, ctx.log().error_stream());
+    }
+
     valid_if_positive<std::intmax_t> ping_count{};
     if(auto arg{ctx.args().find("--ping-count")}) {
         arg.next().parse(ping_count, ctx.log().error_stream());
     }
 
-    msgbus::ping_example the_pinger{bus, ping_count};
+    msgbus::ping_example the_pinger{bus, ping_batch, ping_count};
     ctx.bus().setup_connectors(the_pinger);
 
     resetting_timeout do_chart_stats{std::chrono::seconds(15), nothing};
