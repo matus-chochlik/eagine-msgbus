@@ -1334,7 +1334,7 @@ public:
 
     ~asio_acceptor() noexcept override {
         try {
-            std::remove(_addr_str.c_str());
+            EAGINE_MAYBE_UNUSED(std::remove(_addr_str.c_str()));
         } catch(...) {
         }
     }
@@ -1422,7 +1422,7 @@ private:
     static inline auto _prepare(
       std::shared_ptr<asio_common_state> asio_state,
       string_view addr_str) noexcept -> std::shared_ptr<asio_common_state> {
-        std::remove(c_str(addr_str));
+        EAGINE_MAYBE_UNUSED(std::remove(c_str(addr_str)));
         return asio_state;
     }
 };
