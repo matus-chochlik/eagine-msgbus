@@ -42,10 +42,7 @@ auto HostViewModel::getIdentifier() -> QVariant {
 }
 //------------------------------------------------------------------------------
 auto HostViewModel::getDisplayName() -> QVariant {
-    if(auto optStr{_host.name()}) {
-        return {c_str(extract(optStr))};
-    }
-    return {};
+    return {c_str(_host.name())};
 }
 //------------------------------------------------------------------------------
 auto HostViewModel::getDescription() -> QVariant {
