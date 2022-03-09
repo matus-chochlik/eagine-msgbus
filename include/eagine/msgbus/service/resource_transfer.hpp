@@ -250,8 +250,9 @@ private:
         auto read_io = get_resource_io(endpoint_id, locator);
         if(!read_io) {
             if(locator.has_scheme("eagires")) {
-                if(auto count{locator.argument("count")}) {
-                    if(auto bytes{from_string<span_size_t>(extract(count))}) {
+                if(const auto count{locator.argument("count")}) {
+                    if(const auto bytes{
+                         from_string<span_size_t>(extract(count))}) {
                         if(locator.has_path("/random")) {
                             read_io = std::make_unique<random_byte_blob_io>(
                               extract(bytes));
@@ -435,7 +436,8 @@ public:
       const url& locator) noexcept -> optionally_valid<message_sequence_t> {
         auto buffer = default_serialize_buffer_for(locator.str());
 
-        if(auto serialized{default_serialize(locator.str(), cover(buffer))}) {
+        if(const auto serialized{
+             default_serialize(locator.str(), cover(buffer))}) {
             const auto msg_id{EAGINE_MSG_ID(eagiRsrces, qryResurce)};
             message_view message{extract(serialized)};
             message.set_target_id(endpoint_id);

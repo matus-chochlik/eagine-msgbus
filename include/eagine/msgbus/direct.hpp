@@ -222,8 +222,8 @@ private:
     auto _checkup() -> work_done {
         some_true something_done;
         if(EAGINE_UNLIKELY(!_state)) {
-            if(auto address{_weak_address.lock()}) {
-                _state = address->connect();
+            if(const auto address{_weak_address.lock()}) {
+                _state = extract(address).connect();
                 something_done();
             }
         }

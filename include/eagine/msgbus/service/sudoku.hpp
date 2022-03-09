@@ -1279,7 +1279,7 @@ private:
 template <unsigned S>
 template <typename Function>
 void sudoku_fragment_view<S>::for_each_cell(Function function) const {
-    if(auto board{_tiles.get_board(_board_coord)}) {
+    if(const auto board{_tiles.get_board(_board_coord)}) {
         const auto [bx, by] = _board_coord;
         const Coord frag_coord{
           limit_cast<int>(bx * width()), limit_cast<int>(by * height())};

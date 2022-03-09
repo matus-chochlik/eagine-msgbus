@@ -336,12 +336,12 @@ auto main(main_ctx& ctx) -> int {
     ctx.preinitialize();
 
     valid_if_positive<std::intmax_t> ping_count{};
-    if(auto arg{ctx.args().find("--ping-count")}) {
+    if(const auto arg{ctx.args().find("--ping-count")}) {
         arg.next().parse(ping_count, ctx.log().error_stream());
     }
 
     valid_if_positive<std::intmax_t> limit_count{};
-    if(auto arg{ctx.args().find("--limit-count")}) {
+    if(const auto arg{ctx.args().find("--limit-count")}) {
         arg.next().parse(limit_count, ctx.log().error_stream());
     }
 
@@ -358,7 +358,7 @@ auto main(main_ctx& ctx) -> int {
                   EAGINE_ID(shortLoad), ctx.system().short_average_load());
                 the_pinger.log_chart_sample(
                   EAGINE_ID(longLoad), ctx.system().long_average_load());
-                if(auto temp_k{ctx.system().cpu_temperature()}) {
+                if(const auto temp_k{ctx.system().cpu_temperature()}) {
                     the_pinger.log_chart_sample(
                       EAGINE_ID(cpuTempC),
                       extract(temp_k).to<units::degree_celsius>());

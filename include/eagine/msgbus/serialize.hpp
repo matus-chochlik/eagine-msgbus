@@ -107,7 +107,7 @@ auto serialize_message(
     auto errors = serialize_message_header(msg_id, msg, backend);
 
     if(!errors) {
-        if(auto sink = backend.sink()) {
+        if(auto sink{backend.sink()}) {
             errors |= extract(sink).write(msg.data());
         } else {
             errors |= serialization_error_code::backend_error;

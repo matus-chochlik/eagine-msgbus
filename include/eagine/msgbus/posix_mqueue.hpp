@@ -665,7 +665,7 @@ public:
 
             if(auto conn{std::make_unique<posix_mqueue_connection>(
                  *this, _shared_state)}) {
-                if(conn->open(to_string(message.text_content()))) {
+                if(extract(conn).open(to_string(message.text_content()))) {
                     handler(std::move(conn));
                 }
             }

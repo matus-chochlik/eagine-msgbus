@@ -134,7 +134,7 @@ auto endpoint::_handle_endpoint_certificate(const message_view& message) noexcep
           .arg(EAGINE_ID(endpoint), _endpoint_id)
           .arg(EAGINE_ID(source), message.source_id);
 
-        if(auto nonce{_context->get_remote_nonce(message.source_id)}) {
+        if(const auto nonce{_context->get_remote_nonce(message.source_id)}) {
             post_blob(
               EAGINE_MSGBUS_ID(eptSigNnce),
               message.source_id,
@@ -165,7 +165,7 @@ auto endpoint::_handle_router_certificate(const message_view& message) noexcept
 EAGINE_LIB_FUNC
 auto endpoint::_handle_sign_nonce_request(const message_view& message) noexcept
   -> message_handling_result {
-    if(auto signature{_context->get_own_signature(message.content())}) {
+    if(const auto signature{_context->get_own_signature(message.content())}) {
         post_blob(
           EAGINE_MSGBUS_ID(eptNnceSig),
           message.source_id,
@@ -199,7 +199,7 @@ auto endpoint::_handle_topology_query(const message_view& message) noexcept
     info.endpoint_id = _endpoint_id;
     info.instance_id = _instance_id;
     auto temp{default_serialize_buffer_for(info)};
-    if(auto serialized{default_serialize(info, cover(temp))}) {
+    if(const auto serialized{default_serialize(info, cover(temp))}) {
         message_view response{extract(serialized)};
         response.setup_response(message);
         if(post(EAGINE_MSGBUS_ID(topoEndpt), response)) {
@@ -219,7 +219,7 @@ auto endpoint::_handle_stats_query(const message_view& message) noexcept
     _stats.uptime_seconds = _uptime_seconds();
 
     auto temp{default_serialize_buffer_for(_stats)};
-    if(auto serialized{default_serialize(_stats, cover(temp))}) {
+    if(const auto serialized{default_serialize(_stats, cover(temp))}) {
         message_view response{extract(serialized)};
         response.setup_response(message);
         if(post(EAGINE_MSGBUS_ID(statsEndpt), response)) {
@@ -588,7 +588,8 @@ void endpoint::post_meta_message(
   const message_id meta_msg_id,
   const message_id msg_id) noexcept {
     auto temp{default_serialize_buffer_for(msg_id)};
-    if(auto serialized{default_serialize_message_type(msg_id, cover(temp))}) {
+    if(const auto serialized{
+         default_serialize_message_type(msg_id, cover(temp))}) {
         message_view meta_msg{extract(serialized)};
         meta_msg.set_sequence_no(_instance_id);
         post(meta_msg_id, meta_msg);
@@ -605,7 +606,8 @@ void endpoint::post_meta_message_to(
   const message_id meta_msg_id,
   const message_id msg_id) noexcept {
     auto temp{default_serialize_buffer_for(msg_id)};
-    if(auto serialized{default_serialize_message_type(msg_id, cover(temp))}) {
+    if(const auto serialized{
+         default_serialize_message_type(msg_id, cover(temp))}) {
         message_view meta_msg{extract(serialized)};
         meta_msg.set_target_id(target_id);
         meta_msg.set_sequence_no(_instance_id);
@@ -697,7 +699,7 @@ auto endpoint::post_certificate(
   const identifier_t target_id,
   const blob_id_t target_blob_id) noexcept -> bool {
     EAGINE_ASSERT(_context);
-    if(auto cert_pem{_context->get_own_certificate_pem()}) {
+    if(const auto cert_pem{_context->get_own_certificate_pem()}) {
         return post_blob(
           EAGINE_MSGBUS_ID(eptCertPem),
           target_id,
@@ -713,7 +715,7 @@ auto endpoint::post_certificate(
 EAGINE_LIB_FUNC
 auto endpoint::broadcast_certificate() noexcept -> bool {
     EAGINE_ASSERT(_context);
-    if(auto cert_pem{_context->get_own_certificate_pem()}) {
+    if(const auto cert_pem{_context->get_own_certificate_pem()}) {
         return broadcast_blob(
           EAGINE_MSGBUS_ID(eptCertPem),
           cert_pem,

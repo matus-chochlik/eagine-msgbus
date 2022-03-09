@@ -218,7 +218,7 @@ void maybe_start_coprocess(int& argc, const char**& argv) {
             const int fork_res = ::fork();
             EAGINE_ASSERT(fork_res >= 0);
             if(fork_res == 0) {
-                if(auto ssh_host{arg.next()}) {
+                if(const auto ssh_host{arg.next()}) {
                     ::close(pipe_b2c[1]);
                     ::close(0);
                     ::dup2(pipe_b2c[0], 0);
