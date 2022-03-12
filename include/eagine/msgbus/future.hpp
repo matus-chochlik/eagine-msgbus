@@ -123,10 +123,9 @@ public:
     /// @brief Wraps the given handler object and sets it as the on-success handler.
     /// @see on_success
     /// @see otherwise
-    template <
-      typename Handler,
-      typename = std::enable_if_t<std::is_invocable_v<Handler, T>>>
-    auto then(Handler handler) noexcept -> future<T>& {
+    template <typename Handler>
+    auto then(Handler handler) noexcept
+      -> future<T>& requires(std::is_invocable_v<Handler, T>) {
         if(_state) {
             _state->success_handler = std::function<void(T)>(
               [state{_state}, handler{std::move(handler)}](T value) {
@@ -139,10 +138,9 @@ public:
     /// @brief Wraps the given handler object and sets it as the on-timeout handler.
     /// @see on_timeout
     /// @see then
-    template <
-      typename Handler,
-      typename = std::enable_if_t<std::is_invocable_v<Handler>>>
-    auto otherwise(Handler handler) noexcept -> future<T>& {
+    template <typename Handler>
+    auto otherwise(Handler handler) noexcept
+      -> future<T>& requires(std::is_invocable_v<Handler>) {
         if(_state) {
             _state->timeout_handler = std::function<void()>(
               [state{_state}, handler{std::move(handler)}]() { handler(); });

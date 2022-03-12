@@ -85,14 +85,11 @@ protected:
     }
 
     /// @brief Constructor usable from derived classes
-    template <
-      typename Class,
-      typename... MsgMaps,
-      typename = std::enable_if_t<sizeof...(MsgMaps) == N>>
+    template <typename Class, typename... MsgMaps>
     actor(
       main_ctx_object obj, // NOLINT(performance-unnecessary-value-param)
       Class* instance,
-      MsgMaps... msg_maps) noexcept
+      MsgMaps... msg_maps) noexcept requires(sizeof...(MsgMaps) == N)
       : _endpoint{_make_endpoint(
           std::move(obj),
           EAGINE_THIS_MEM_FUNC_REF(_process_message))}
@@ -101,13 +98,9 @@ protected:
     }
 
     /// @brief Constructor usable from derived classes
-    template <
-      typename Derived,
-      typename Class,
-      typename... MsgMaps,
-      typename = std::enable_if_t<
-        (sizeof...(MsgMaps) == N) && std::is_base_of_v<actor, Derived>>>
+    template <typename Derived, typename Class, typename... MsgMaps>
     actor(Derived&& temp, Class* instance, const MsgMaps... msg_maps) noexcept
+      requires((sizeof...(MsgMaps) == N) && std::is_base_of_v<actor, Derived>)
       : _endpoint{_move_endpoint(
           std::move(temp._endpoint),
           EAGINE_THIS_MEM_FUNC_REF(_process_message))}

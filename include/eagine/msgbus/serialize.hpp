@@ -71,10 +71,8 @@ template <typename Backend>
 auto serialize_message_header(
   const message_id msg_id,
   const message_view& msg,
-  Backend& backend) noexcept
-  -> std::enable_if_t<
-    std::is_base_of_v<serializer_backend, Backend>,
-    serialization_errors> {
+  Backend& backend) noexcept -> serialization_errors
+  requires(std::is_base_of_v<serializer_backend, Backend>) {
 
     auto message_params = std::make_tuple(
       msg_id.class_(),
@@ -99,10 +97,8 @@ template <typename Backend>
 auto serialize_message(
   const message_id msg_id,
   const message_view& msg,
-  Backend& backend) noexcept
-  -> std::enable_if_t<
-    std::is_base_of_v<serializer_backend, Backend>,
-    serialization_errors> {
+  Backend& backend) noexcept -> serialization_errors
+  requires(std::is_base_of_v<serializer_backend, Backend>) {
 
     auto errors = serialize_message_header(msg_id, msg, backend);
 
@@ -126,10 +122,8 @@ auto deserialize_message_header(
   identifier& class_id,
   identifier& method_id,
   stored_message& msg,
-  Backend& backend) noexcept
-  -> std::enable_if_t<
-    std::is_base_of_v<deserializer_backend, Backend>,
-    deserialization_errors> {
+  Backend& backend) noexcept -> deserialization_errors
+  requires(std::is_base_of_v<deserializer_backend, Backend>) {
 
     auto message_params = std::tie(
       class_id,
@@ -155,10 +149,8 @@ auto deserialize_message(
   identifier& class_id,
   identifier& method_id,
   stored_message& msg,
-  Backend& backend) noexcept
-  -> std::enable_if_t<
-    std::is_base_of_v<deserializer_backend, Backend>,
-    deserialization_errors> {
+  Backend& backend) noexcept -> deserialization_errors
+  requires(std::is_base_of_v<deserializer_backend, Backend>) {
 
     auto errors = deserialize_message_header(class_id, method_id, msg, backend);
 
@@ -181,10 +173,8 @@ template <typename Backend>
 auto deserialize_message(
   message_id& msg_id,
   stored_message& msg,
-  Backend& backend) noexcept
-  -> std::enable_if_t<
-    std::is_base_of_v<deserializer_backend, Backend>,
-    deserialization_errors> {
+  Backend& backend) noexcept -> deserialization_errors
+  requires(std::is_base_of_v<deserializer_backend, Backend>) {
 
     identifier class_id{};
     identifier method_id{};

@@ -255,10 +255,9 @@ public:
 
     using handler_entry = typename subscriber_base::handler_entry;
 
-    template <
-      typename... MsgHandlers,
-      typename = std::enable_if_t<sizeof...(MsgHandlers) == N>>
+    template <typename... MsgHandlers>
     static_subscriber(endpoint& bus, MsgHandlers&&... msg_handlers) noexcept
+      requires(sizeof...(MsgHandlers) == N)
       : subscriber_base{bus}
       , _msg_handlers{{std::forward<MsgHandlers>(msg_handlers)...}} {
         this->_setup_queues(cover(_msg_handlers));
@@ -269,14 +268,11 @@ public:
     /// @see endpoint
     /// @see message_handler_map
     /// @see EAGINE_MSG_MAP
-    template <
-      typename Class,
-      typename... MsgMaps,
-      typename = std::enable_if_t<sizeof...(MsgMaps) == N>>
+    template <typename Class, typename... MsgMaps>
     static_subscriber(
       endpoint& bus,
       Class* instance,
-      const MsgMaps... msg_maps) noexcept
+      const MsgMaps... msg_maps) noexcept requires(sizeof...(MsgMaps) == N)
       : static_subscriber(bus, handler_entry(instance, msg_maps)...) {}
 
     /// @brief Not move constructible.
