@@ -49,6 +49,7 @@ ${install_prefix}/share/eagine/example/msgbus/eagine-${variant}_ping \
 	"${log_args[@]}" \
 	--ping-count ${2:-1M} \
 	--ping-batch ${3:-10k} \
+	--ping-repeat ${4:-1} \
 	${conn_type} \
 	--msgbus-router-address ${ping_addr} \
 	& pids+=($!)
