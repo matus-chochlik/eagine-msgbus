@@ -78,10 +78,12 @@ class ping_example
 public:
     ping_example(
       endpoint& bus,
+      const valid_if_positive<std::intmax_t>& rep,
       const valid_if_positive<std::intmax_t>& mod,
       const valid_if_positive<std::intmax_t>& max)
       : main_ctx_object{EAGINE_ID(PingExampl), bus}
       , base{bus}
+      , _rep{extract_or(rep, 1)}
       , _mod{extract_or(mod, 10000)}
       , _max{extract_or(max, 100000)} {
         object_description("Pinger", "Ping example");
@@ -213,6 +215,39 @@ public:
         return !(((_rcvd + _tout + _mod) < _max) || this->has_pending_pings());
     }
 
+    auto do_update() -> work_done {
+        some_true something_done{};
+        if(!_targets.empty()) {
+            const auto lim{
+              _rcvd +
+              static_cast<std::intmax_t>(
+                static_cast<float>(_mod) *
+                (1.F + std::log(static_cast<float>(1 + _targets.size()))))};
+            for(auto& [pingable_id, entry] : _targets) {
+                if((_rcvd < _max) && (_sent < lim)) {
+                    this->ping(pingable_id, std::chrono::seconds(5));
+                    if(EAGINE_UNLIKELY((++_sent % _mod) == 0)) {
+                        log_info("sent ${sent} pings")
+                          .arg(EAGINE_ID(sent), _sent);
+                    }
+
+                    if(EAGINE_UNLIKELY(entry.should_check_info)) {
+                        if(!entry.host_id) {
+                            this->query_host_id(pingable_id);
+                        }
+                        if(entry.hostname.empty()) {
+                            this->query_hostname(pingable_id);
+                        }
+                    }
+                    something_done();
+                } else {
+                    break;
+                }
+            }
+        }
+        return something_done;
+    }
+
     auto update() -> work_done {
         some_true something_done{};
         something_done(base::update());
@@ -221,36 +256,9 @@ public:
                 log_info("searching for pingables");
                 query_pingables();
             }
-            if(!_targets.empty()) {
-                for(auto& [pingable_id, entry] : _targets) {
-                    if(_rcvd < _max) {
-                        const auto lim{
-                          _rcvd + static_cast<std::intmax_t>(
-                                    static_cast<float>(_mod) *
-                                    (1.F + std::log(static_cast<float>(
-                                             1 + _targets.size()))))};
-
-                        if(_sent < lim) {
-                            this->ping(pingable_id, std::chrono::seconds(5));
-                            if(EAGINE_UNLIKELY((++_sent % _mod) == 0)) {
-                                log_info("sent ${sent} pings")
-                                  .arg(EAGINE_ID(sent), _sent);
-                            }
-
-                            if(EAGINE_UNLIKELY(entry.should_check_info)) {
-                                if(!entry.host_id) {
-                                    this->query_host_id(pingable_id);
-                                }
-                                if(entry.hostname.empty()) {
-                                    this->query_hostname(pingable_id);
-                                }
-                            }
-                            something_done();
-                        }
-                    } else {
-                        break;
-                    }
-                }
+            for(const auto i : integer_range(_rep)) {
+                EAGINE_MAYBE_UNUSED(i);
+                something_done(do_update());
             }
         }
         something_done(base::process_all() > 0);
@@ -296,6 +304,7 @@ private:
     std::chrono::steady_clock::time_point prev_log{
       std::chrono::steady_clock::now()};
     std::map<identifier_t, ping_stats> _targets{};
+    std::intmax_t _rep;
     std::intmax_t _mod;
     std::intmax_t _max;
     std::intmax_t _sent{0};
@@ -312,6 +321,11 @@ auto main(main_ctx& ctx) -> int {
 
     msgbus::endpoint bus{EAGINE_ID(PingEndpt), ctx};
 
+    valid_if_positive<std::intmax_t> ping_repeat{};
+    if(auto arg{ctx.args().find("--ping-repeat")}) {
+        arg.next().parse(ping_repeat, ctx.log().error_stream());
+    }
+
     valid_if_positive<std::intmax_t> ping_batch{};
     if(auto arg{ctx.args().find("--ping-batch")}) {
         arg.next().parse(ping_batch, ctx.log().error_stream());
@@ -322,7 +336,7 @@ auto main(main_ctx& ctx) -> int {
         arg.next().parse(ping_count, ctx.log().error_stream());
     }
 
-    msgbus::ping_example the_pinger{bus, ping_batch, ping_count};
+    msgbus::ping_example the_pinger{bus, ping_repeat, ping_batch, ping_count};
     ctx.bus().setup_connectors(the_pinger);
 
     resetting_timeout do_chart_stats{std::chrono::seconds(15), nothing};
