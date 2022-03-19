@@ -355,10 +355,8 @@ auto context::verify_remote_signature(
                      message_digest_verify_init(md_ctx, md_type, node_id))) {
                     if(EAGINE_LIKELY(
                          _ssl.message_digest_verify_update(md_ctx, content))) {
-                        if(extract_or(
-                             _ssl.message_digest_verify_final(
-                               md_ctx, signature),
-                             false)) {
+                        if(_ssl.message_digest_verify_final(
+                             md_ctx, signature)) {
 
                             if(verified_key || verified_remote_key(node_id)) {
                                 result |= verification_bit::source_private_key;
@@ -366,7 +364,6 @@ auto context::verify_remote_signature(
 
                             result |= verification_bit::source_certificate;
                             result |= verification_bit::message_content;
-
                         } else {
                             log_debug("failed to finish ssl verification");
                         }
