@@ -20,7 +20,8 @@ auto stored_message::store_and_sign(
     if(const ok md_type{ctx.default_message_digest()}) {
         auto& ssl = ctx.ssl();
         _buffer.resize(max_size);
-        if(const auto used{store_data_with_size(data, storage())}) {
+        const auto used{store_data_with_size(data, storage())};
+        if(EAGINE_LIKELY(used)) {
             if(ok md_ctx{ssl.new_message_digest()}) {
                 const auto cleanup{ssl.delete_message_digest.raii(md_ctx)};
 
@@ -255,7 +256,7 @@ auto connection_incoming_messages::fetch_messages(
                       msg_ts = data_ts;
                       return true;
                   } else {
-                      user.log_error("failed to deserialize message)")
+                      user.log_error("failed to deserialize message")
                         .arg(EAGINE_ID(errorBits), errors.bits())
                         .arg(EAGINE_ID(block), blk);
                       return false;

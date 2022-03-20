@@ -152,7 +152,7 @@ public:
     auto message_digest_sign_init(
       const sslplus::message_digest mdc,
       const sslplus::message_digest_type mdt) noexcept
-      -> decltype(ssl().message_digest_sign_init.fake());
+      -> decltype(ssl().message_digest_sign_init.fail());
 
     auto message_digest_verify_init(
       const sslplus::message_digest mdc,

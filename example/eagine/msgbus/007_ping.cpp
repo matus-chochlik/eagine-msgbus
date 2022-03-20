@@ -266,6 +266,8 @@ public:
     }
 
     void shutdown() {
+        log_info("sending shutdown requests to ${count} targets")
+          .arg(EAGINE_ID(count), _targets.size());
         for(auto& entry : _targets) {
             this->shutdown_one(std::get<0>(entry));
         }

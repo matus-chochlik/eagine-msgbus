@@ -273,11 +273,11 @@ EAGINE_LIB_FUNC
 auto context::message_digest_sign_init(
   const sslplus::message_digest mdc,
   const sslplus::message_digest_type mdt) noexcept
-  -> decltype(_ssl.message_digest_sign_init.fake()) {
+  -> decltype(_ssl.message_digest_sign_init.fail()) {
     if(_own_pkey) {
         return _ssl.message_digest_sign_init(mdc, mdt, _own_pkey);
     }
-    return _ssl.message_digest_sign_init.fake();
+    return _ssl.message_digest_sign_init.fail();
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
