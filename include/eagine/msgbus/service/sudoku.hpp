@@ -17,7 +17,6 @@
 #include <eagine/flat_set.hpp>
 #include <eagine/int_constant.hpp>
 #include <eagine/math/functions.hpp>
-#include <eagine/maybe_unused.hpp>
 #include <eagine/serialize/type/sudoku.hpp>
 #include <eagine/sudoku.hpp>
 #include <algorithm>

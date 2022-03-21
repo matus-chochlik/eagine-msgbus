@@ -13,7 +13,6 @@
 #include "handler_map.hpp"
 #include "verification.hpp"
 #include <eagine/interface.hpp>
-#include <eagine/maybe_unused.hpp>
 #include <eagine/span.hpp>
 #include <array>
 #include <type_traits>

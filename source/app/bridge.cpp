@@ -10,7 +10,6 @@
 #include <eagine/main_ctx.hpp>
 #include <eagine/main_fwd.hpp>
 #include <eagine/math/functions.hpp>
-#include <eagine/maybe_unused.hpp>
 #include <eagine/message_bus.hpp>
 #include <eagine/msgbus/bridge.hpp>
 #include <eagine/msgbus/resources.hpp>
@@ -202,18 +201,20 @@ namespace eagine {
 static ::pid_t ssh_coprocess_pid = -1;
 #endif
 //------------------------------------------------------------------------------
-void maybe_start_coprocess(int& argc, const char**& argv) {
+void maybe_start_coprocess(
+  [[maybe_unused]] int& argc,
+  [[maybe_unused]] const char**& argv) {
 #if EAGINE_POSIX
     for(int argi = 1; argi < argc; ++argi) {
         program_arg arg{argi, argc, argv};
         if(arg.is_tag("--ssh")) {
             int pipe_b2c[2] = {-1, -1};
             int pipe_c2b[2] = {-1, -1};
-            const int pipe_res_b2c = ::pipe(static_cast<int*>(pipe_b2c));
-            const int pipe_res_c2b = ::pipe(static_cast<int*>(pipe_c2b));
+            [[maybe_unused]] const int pipe_res_b2c =
+              ::pipe(static_cast<int*>(pipe_b2c));
+            [[maybe_unused]] const int pipe_res_c2b =
+              ::pipe(static_cast<int*>(pipe_c2b));
             EAGINE_ASSERT(pipe_res_b2c == 0 && pipe_res_c2b == 0);
-            EAGINE_MAYBE_UNUSED(pipe_res_b2c);
-            EAGINE_MAYBE_UNUSED(pipe_res_c2b);
 
             const int fork_res = ::fork();
             EAGINE_ASSERT(fork_res >= 0);
@@ -259,8 +260,6 @@ void maybe_start_coprocess(int& argc, const char**& argv) {
         }
     }
 #endif
-    EAGINE_MAYBE_UNUSED(argc);
-    EAGINE_MAYBE_UNUSED(argv);
 }
 //------------------------------------------------------------------------------
 auto maybe_cleanup(int result) -> int {

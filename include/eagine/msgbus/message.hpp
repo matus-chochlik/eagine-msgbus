@@ -562,7 +562,7 @@ public:
           stored_message{{}, _buffers.get(req_size)},
           _clock_t::now());
         auto& [msg_id, message, insert_time] = _messages.back();
-        EAGINE_MAYBE_UNUSED(insert_time);
+        (void)(insert_time);
         bool rollback = false;
         try {
             if(!function(msg_id, insert_time, message)) {

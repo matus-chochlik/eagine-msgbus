@@ -1135,9 +1135,8 @@ EAGINE_LIB_FUNC
 auto router::_update_connections() noexcept -> work_done {
     some_true something_done{};
 
-    for(auto& [id, node] : _nodes) {
-        EAGINE_MAYBE_UNUSED(id);
-        const auto& conn = node.the_connection;
+    for(auto& entry : _nodes) {
+        const auto& conn = std::get<1>(entry).the_connection;
         if(EAGINE_LIKELY(conn)) {
             something_done(conn->update());
         }
@@ -1196,9 +1195,8 @@ void router::say_bye() noexcept {
     const auto msgid = EAGINE_MSGBUS_ID(byeByeRutr);
     message_view msg{};
     msg.set_source_id(_id_base);
-    for(auto& [id, node] : _nodes) {
-        EAGINE_MAYBE_UNUSED(id);
-        const auto& conn = node.the_connection;
+    for(auto& entry : _nodes) {
+        const auto& conn = std::get<1>(entry).the_connection;
         if(conn) {
             conn->send(msgid, msg);
             conn->update();
@@ -1210,9 +1208,8 @@ void router::say_bye() noexcept {
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
 void router::cleanup() noexcept {
-    for(auto& [id, node] : _nodes) {
-        EAGINE_MAYBE_UNUSED(id);
-        const auto& conn = node.the_connection;
+    for(auto& entry : _nodes) {
+        const auto& conn = std::get<1>(entry).the_connection;
         if(conn) {
             conn->cleanup();
         }

@@ -648,9 +648,8 @@ private:
     }
 
     auto _handle_resource_fragment(
-      const message_context& ctx,
+      [[maybe_unused]] const message_context& ctx,
       const stored_message& message) noexcept -> bool {
-        EAGINE_MAYBE_UNUSED(ctx);
         _blobs.process_incoming(message);
         return true;
     }

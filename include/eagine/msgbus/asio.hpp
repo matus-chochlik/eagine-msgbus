@@ -18,7 +18,6 @@
 #include <eagine/flat_map.hpp>
 #include <eagine/logging/type/exception.hpp>
 #include <eagine/main_ctx_object.hpp>
-#include <eagine/maybe_unused.hpp>
 #include <eagine/serialize/size_and_data.hpp>
 #include <eagine/timeout.hpp>
 #include <eagine/value_tracker.hpp>
@@ -322,8 +321,8 @@ struct asio_connection_state
               target_endpoint,
               blk,
               [this, &group, target_endpoint, packed, selfref{weak_ref()}](
-                const std::error_code error, const std::size_t length) {
-                  EAGINE_MAYBE_UNUSED(length);
+                const std::error_code error,
+                [[maybe_unused]] const std::size_t length) {
                   if(const auto self{selfref.lock()}) {
                       if(!error) {
                           EAGINE_ASSERT(span_size(length) == packed.total());
@@ -1334,7 +1333,7 @@ public:
 
     ~asio_acceptor() noexcept override {
         try {
-            EAGINE_MAYBE_UNUSED(std::remove(_addr_str.c_str()));
+            [[maybe_unused]] std::remove(_addr_str.c_str());
         } catch(...) {
         }
     }
@@ -1422,7 +1421,7 @@ private:
     static inline auto _prepare(
       std::shared_ptr<asio_common_state> asio_state,
       string_view addr_str) noexcept -> std::shared_ptr<asio_common_state> {
-        EAGINE_MAYBE_UNUSED(std::remove(c_str(addr_str)));
+        [[maybe_unused]] std::remove(c_str(addr_str));
         return asio_state;
     }
 };

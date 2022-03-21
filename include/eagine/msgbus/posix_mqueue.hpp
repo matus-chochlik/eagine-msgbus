@@ -112,9 +112,8 @@ public:
     auto error_message(const int error_number) const noexcept -> std::string {
         if(error_number) {
             char buf[128] = {};
-            const auto unused =
-              ::strerror_r(error_number, static_cast<char*>(buf), sizeof(buf));
-            EAGINE_MAYBE_UNUSED(unused);
+            [[maybe_unused]] ::strerror_r(
+              error_number, static_cast<char*>(buf), sizeof(buf));
             return {static_cast<const char*>(buf)};
         }
         return {};
@@ -654,11 +653,10 @@ public:
     auto process_accepted(const accept_handler handler) noexcept
       -> work_done final {
         auto fetch_handler = [this, &handler](
-                               const message_id msg_id,
+                               [[maybe_unused]] const message_id msg_id,
                                const message_age,
                                const message_view& message) -> bool {
             EAGINE_ASSERT((msg_id == EAGINE_MSGBUS_ID(pmqConnect)));
-            EAGINE_MAYBE_UNUSED(msg_id);
 
             log_debug("accepting connection from ${name}")
               .arg(EAGINE_ID(name), message.text_content());

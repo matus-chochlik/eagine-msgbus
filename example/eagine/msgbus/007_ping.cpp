@@ -256,8 +256,7 @@ public:
                 log_info("searching for pingables");
                 query_pingables();
             }
-            for(const auto i : integer_range(_rep)) {
-                EAGINE_MAYBE_UNUSED(i);
+            for([[maybe_unused]] const auto i : integer_range(_rep)) {
                 something_done(do_update());
             }
         }

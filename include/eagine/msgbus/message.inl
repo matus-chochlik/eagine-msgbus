@@ -172,7 +172,7 @@ auto serialized_message_storage::pack_into(memory::block dest) noexcept
     message_packing_context packing{dest};
 
     for(auto& [message, timestamp] : _messages) {
-        EAGINE_MAYBE_UNUSED(timestamp);
+        (void)(timestamp);
         if(packing.is_full()) {
             break;
         }
