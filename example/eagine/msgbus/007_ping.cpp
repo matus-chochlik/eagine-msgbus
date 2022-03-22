@@ -225,7 +225,7 @@ public:
                 (1.F + std::log(static_cast<float>(1 + _targets.size()))))};
             for(auto& [pingable_id, entry] : _targets) {
                 if((_rcvd < _max) && (_sent < lim)) {
-                    this->ping(pingable_id, std::chrono::seconds(5));
+                    this->ping(pingable_id, std::chrono::seconds(3 + _rep));
                     if(EAGINE_UNLIKELY((++_sent % _mod) == 0)) {
                         log_info("sent ${sent} pings")
                           .arg(EAGINE_ID(sent), _sent);
