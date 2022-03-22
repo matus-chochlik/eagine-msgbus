@@ -285,7 +285,7 @@ auto context::message_digest_verify_init(
   const sslplus::message_digest mdc,
   const sslplus::message_digest_type mdt,
   const identifier_t node_id) noexcept
-  -> decltype(_ssl.message_digest_verify_init.fake()) {
+  -> decltype(_ssl.message_digest_verify_init.fail()) {
     auto pos = _remotes.find(node_id);
     if(pos != _remotes.end()) {
         auto& info = std::get<1>(*pos);
@@ -296,7 +296,7 @@ auto context::message_digest_verify_init(
         log_debug("could not find remote node ${endpoint} for verification")
           .arg(EAGINE_ID(endpoint), node_id);
     }
-    return _ssl.message_digest_verify_init.fake();
+    return _ssl.message_digest_verify_init.fail();
 }
 //------------------------------------------------------------------------------
 auto context::get_own_signature(const memory::const_block nonce) noexcept

@@ -158,7 +158,7 @@ public:
       const sslplus::message_digest mdc,
       const sslplus::message_digest_type mdt,
       const identifier_t node_id) noexcept
-      -> decltype(ssl().message_digest_verify_init.fake());
+      -> decltype(ssl().message_digest_verify_init.fail());
 
     /// @brief Signs the specified memory block and returns the signature.
     auto get_own_signature(const memory::const_block) noexcept
