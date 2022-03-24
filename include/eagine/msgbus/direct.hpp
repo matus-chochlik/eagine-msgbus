@@ -168,7 +168,7 @@ public:
       std::shared_ptr<direct_connection_address>& address) noexcept
       : _weak_address{address}
       , _state{address->connect()} {
-        if(EAGINE_LIKELY(_state)) {
+        if(_state) [[likely]] {
             _state->client_connect();
         }
     }
@@ -179,7 +179,7 @@ public:
     auto operator=(const direct_client_connection&) = delete;
 
     ~direct_client_connection() noexcept final {
-        if(EAGINE_LIKELY(_state)) {
+        if(_state) [[likely]] {
             _state->client_disconnect();
         }
     }
@@ -192,7 +192,7 @@ public:
     auto send(const message_id msg_id, const message_view& message) noexcept
       -> bool final {
         _checkup();
-        if(EAGINE_LIKELY(_state)) {
+        if(_state) [[likely]] {
             _state->send_to_server(msg_id, message);
             return true;
         }
@@ -202,7 +202,7 @@ public:
     auto fetch_messages(const connection::fetch_handler handler) noexcept
       -> work_done final {
         some_true something_done{_checkup()};
-        if(EAGINE_LIKELY(_state)) {
+        if(_state) [[likely]] {
             something_done(_state->fetch_from_server(handler));
         }
         return something_done;
@@ -221,7 +221,7 @@ private:
 
     auto _checkup() -> work_done {
         some_true something_done;
-        if(EAGINE_UNLIKELY(!_state)) {
+        if(!_state) [[unlikely]] {
             if(const auto address{_weak_address.lock()}) {
                 _state = extract(address).connect();
                 something_done();
@@ -243,8 +243,8 @@ public:
       : _state{state} {}
 
     auto is_usable() noexcept -> bool final {
-        if(EAGINE_LIKELY(_state)) {
-            if(EAGINE_LIKELY(_is_usable)) {
+        if(_state) [[likely]] {
+            if(_is_usable) [[likely]] {
                 return true;
             }
             _state.reset();
@@ -254,7 +254,7 @@ public:
 
     auto send(const message_id msg_id, const message_view& message) noexcept
       -> bool final {
-        if(EAGINE_LIKELY(_state)) {
+        if(_state) [[likely]] {
             return _state->send_to_client(msg_id, message);
         }
         return false;
@@ -263,7 +263,7 @@ public:
     auto fetch_messages(const connection::fetch_handler handler) noexcept
       -> work_done final {
         bool result = false;
-        if(EAGINE_LIKELY(_state)) {
+        if(_state) [[likely]] {
             std::tie(result, _is_usable) = _state->fetch_from_client(handler);
         }
         return result;

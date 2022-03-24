@@ -359,7 +359,7 @@ public:
     /// @see text_content
     /// @see const_content
     auto content() const noexcept -> memory::const_block {
-        if(EAGINE_UNLIKELY(is_signed())) {
+        if(is_signed()) [[unlikely]] {
             return get_data_with_size(data());
         }
         return data();
@@ -453,7 +453,7 @@ public:
     /// @brief Returns a mutable view of the data content of the message.
     /// @see signature
     auto content() noexcept -> memory::block {
-        if(EAGINE_UNLIKELY(is_signed())) {
+        if(is_signed()) [[unlikely]] {
             return get_data_with_size(storage());
         }
         return storage();
@@ -464,7 +464,7 @@ public:
     /// @see text_content
     /// @see const_content
     auto content() const noexcept -> memory::const_block {
-        if(EAGINE_UNLIKELY(is_signed())) {
+        if(is_signed()) [[unlikely]] {
             return get_data_with_size(data());
         }
         return data();

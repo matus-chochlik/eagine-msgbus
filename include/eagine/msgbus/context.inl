@@ -305,9 +305,8 @@ auto context::get_own_signature(const memory::const_block nonce) noexcept
         if(ok md_ctx{_ssl.new_message_digest()}) {
             auto cleanup{_ssl.delete_message_digest.raii(md_ctx)};
 
-            if(EAGINE_LIKELY(message_digest_sign_init(md_ctx, md_type))) {
-                if(EAGINE_LIKELY(
-                     _ssl.message_digest_sign_update(md_ctx, nonce))) {
+            if(message_digest_sign_init(md_ctx, md_type)) [[likely]] {
+                if(_ssl.message_digest_sign_update(md_ctx, nonce)) [[likely]] {
                     const auto req_size{
                       _ssl.message_digest_sign_final.required_size(md_ctx)};
 
@@ -351,10 +350,10 @@ auto context::verify_remote_signature(
             if(ok md_ctx{_ssl.new_message_digest()}) {
                 auto cleanup{_ssl.delete_message_digest.raii(md_ctx)};
 
-                if(EAGINE_LIKELY(
-                     message_digest_verify_init(md_ctx, md_type, node_id))) {
-                    if(EAGINE_LIKELY(
-                         _ssl.message_digest_verify_update(md_ctx, content))) {
+                if(message_digest_verify_init(md_ctx, md_type, node_id))
+                  [[likely]] {
+                    if(_ssl.message_digest_verify_update(md_ctx, content))
+                      [[likely]] {
                         if(_ssl.message_digest_verify_final(
                              md_ctx, signature)) {
 

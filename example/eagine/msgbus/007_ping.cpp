@@ -177,11 +177,11 @@ public:
         stats.max_time = std::max(stats.max_time, age);
         stats.sum_time += age;
         stats.finish = std::chrono::steady_clock::now();
-        if(EAGINE_UNLIKELY((++_rcvd % _mod) == 0)) {
+        if((++_rcvd % _mod) == 0) [[unlikely]] {
             const auto now{std::chrono::steady_clock::now()};
             const std::chrono::duration<float> interval{now - prev_log};
 
-            if(EAGINE_LIKELY(interval > decltype(interval)::zero())) {
+            if(interval > decltype(interval)::zero()) [[likely]] {
                 const auto msgs_per_sec{float(_mod) / interval.count()};
 
                 log_chart_sample(EAGINE_ID(msgsPerSec), msgs_per_sec);
@@ -206,7 +206,7 @@ public:
       const std::chrono::microseconds) noexcept {
         auto& stats = _targets[pinger_id];
         stats.timeouted++;
-        if(EAGINE_UNLIKELY((++_tout % _mod) == 0)) {
+        if((++_tout % _mod) == 0) [[unlikely]] {
             log_info("${tout} pongs timeouted").arg(EAGINE_ID(tout), _tout);
         }
     }
@@ -226,12 +226,12 @@ public:
             for(auto& [pingable_id, entry] : _targets) {
                 if((_rcvd < _max) && (_sent < lim)) {
                     this->ping(pingable_id, std::chrono::seconds(3 + _rep));
-                    if(EAGINE_UNLIKELY((++_sent % _mod) == 0)) {
+                    if((++_sent % _mod) == 0) [[unlikely]] {
                         log_info("sent ${sent} pings")
                           .arg(EAGINE_ID(sent), _sent);
                     }
 
-                    if(EAGINE_UNLIKELY(entry.should_check_info)) {
+                    if(entry.should_check_info) [[unlikely]] {
                         if(!entry.host_id) {
                             this->query_host_id(pingable_id);
                         }
@@ -252,7 +252,7 @@ public:
         some_true something_done{};
         something_done(base::update());
         if(_do_ping) {
-            if(EAGINE_UNLIKELY(_should_query_pingable)) {
+            if(_should_query_pingable) [[unlikely]] {
                 log_info("searching for pingables");
                 query_pingables();
             }

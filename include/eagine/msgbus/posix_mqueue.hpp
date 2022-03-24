@@ -112,8 +112,8 @@ public:
     auto error_message(const int error_number) const noexcept -> std::string {
         if(error_number) {
             char buf[128] = {};
-            [[maybe_unused]] ::strerror_r(
-              error_number, static_cast<char*>(buf), sizeof(buf));
+            [[maybe_unused]] auto unused{
+              ::strerror_r(error_number, static_cast<char*>(buf), sizeof(buf))};
             return {static_cast<const char*>(buf)};
         }
         return {};
@@ -295,7 +295,7 @@ public:
             errno = 0;
             ::mq_send(_ohandle, blk.data(), std_size(blk.size()), priority);
             _last_errno = errno;
-            if(EAGINE_UNLIKELY((_last_errno != 0) && (_last_errno != EAGAIN))) {
+            if((_last_errno != 0) && (_last_errno != EAGAIN)) [[unlikely]] {
                 log_error("failed to send message")
                   .arg(EAGINE_ID(name), get_name())
                   .arg(EAGINE_ID(errno), _last_errno)
@@ -322,9 +322,9 @@ public:
             if(received > 0) {
                 handler(priority, head(blk, received));
                 return true;
-            } else if(EAGINE_UNLIKELY(
-                        (_last_errno != 0) && (_last_errno != EAGAIN) &&
-                        (_last_errno != ETIMEDOUT))) {
+            } else if(
+              (_last_errno != 0) && (_last_errno != EAGAIN) &&
+              (_last_errno != ETIMEDOUT)) [[unlikely]] {
                 log_error("failed to receive message")
                   .arg(EAGINE_ID(name), get_name())
                   .arg(EAGINE_ID(errno), _last_errno);
@@ -418,7 +418,7 @@ public:
 
     auto send(const message_id msg_id, const message_view& message) noexcept
       -> bool final {
-        if(EAGINE_LIKELY(is_usable())) {
+        if(is_usable()) [[likely]] {
             block_data_sink sink(cover(_buffer));
             default_serializer_backend backend(sink);
             auto errors = serialize_message(msg_id, message, backend);
@@ -468,7 +468,7 @@ protected:
                           EAGINE_MSGBUS_ID(pmqConnect),
                           message_view(_data_queue.get_name()),
                           backend);
-                        if(EAGINE_LIKELY(!errors)) {
+                        if(!errors) [[likely]] {
                             connect_queue.send(1, as_chars(sink.done()));
                             _buffer.resize(_data_queue.data_size());
                             something_done();
@@ -710,8 +710,8 @@ private:
               block_data_source source(as_bytes(data));
               default_deserializer_backend backend(source);
               const auto errors = deserialize_message(msg_id, message, backend);
-              if(EAGINE_LIKELY(is_special_message(msg_id))) {
-                  if(EAGINE_LIKELY(msg_id.has_method(EAGINE_ID(pmqConnect)))) {
+              if(is_special_message(msg_id)) [[likely]] {
+                  if(msg_id.has_method(EAGINE_ID(pmqConnect))) [[likely]] {
                       return !errors;
                   }
               }

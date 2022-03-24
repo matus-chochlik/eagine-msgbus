@@ -243,14 +243,14 @@ struct asio_connection_state
     }
 
     auto is_usable() const noexcept -> bool {
-        if(EAGINE_LIKELY(common)) {
+        if(common) [[likely]] {
             return socket.is_open();
         }
         return false;
     }
 
     auto log_usage_stats(const span_size_t threshold = 0) noexcept -> bool {
-        if(EAGINE_UNLIKELY(total_sent_size >= threshold)) {
+        if(total_sent_size >= threshold) [[unlikely]] {
             usage_ratio = float(total_used_size) / float(total_sent_size);
             const auto slack = 1.F - usage_ratio;
             const auto msgs_per_block =
@@ -1346,7 +1346,7 @@ public:
     auto update() noexcept -> work_done final {
         EAGINE_ASSERT(this->_asio_state);
         some_true something_done{};
-        if(EAGINE_UNLIKELY(!_acceptor.is_open())) {
+        if(!_acceptor.is_open()) [[unlikely]] {
             _acceptor = {
               _asio_state->context,
               asio::local::stream_protocol::endpoint(_addr_str.c_str())};

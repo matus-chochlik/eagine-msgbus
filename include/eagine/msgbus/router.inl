@@ -46,7 +46,7 @@ routed_node::routed_node() noexcept {
 }
 //------------------------------------------------------------------------------
 auto routed_node::is_allowed(const message_id msg_id) const noexcept -> bool {
-    if(EAGINE_UNLIKELY(is_special_message(msg_id))) {
+    if(is_special_message(msg_id)) [[unlikely]] {
         return true;
     }
     if(!message_allow_list.empty()) {
@@ -62,8 +62,8 @@ auto routed_node::send(
   main_ctx_object& user,
   const message_id msg_id,
   const message_view& message) const noexcept -> bool {
-    if(EAGINE_LIKELY(the_connection)) {
-        if(EAGINE_UNLIKELY(!the_connection->send(msg_id, message))) {
+    if(the_connection) [[likely]] {
+        if(!the_connection->send(msg_id, message)) [[unlikely]] {
             user.log_debug("failed to send message to connected node");
             return false;
         }
@@ -98,7 +98,7 @@ inline auto parent_router::update(
     if(the_connection) {
         something_done(the_connection->update());
         if(the_connection->is_usable()) {
-            if(EAGINE_UNLIKELY(!confirmed_id)) {
+            if(!confirmed_id) [[unlikely]] {
                 if(confirm_id_timeout) {
                     message_view announcement{};
                     announcement.set_source_id(id_base);
@@ -113,7 +113,7 @@ inline auto parent_router::update(
             }
             something_done(the_connection->update());
         } else {
-            if(EAGINE_UNLIKELY(confirmed_id)) {
+            if(confirmed_id) [[unlikely]] {
                 confirmed_id = 0;
                 something_done();
                 user.log_debug("lost connection to parent router");
@@ -165,7 +165,7 @@ auto parent_router::send(
   const message_id msg_id,
   const message_view& message) const noexcept -> bool {
     if(the_connection) {
-        if(EAGINE_UNLIKELY(!the_connection->send(msg_id, message))) {
+        if(!the_connection->send(msg_id, message)) [[unlikely]] {
             user.log_debug("failed to send message to parent router");
             return false;
         }
@@ -255,7 +255,7 @@ EAGINE_LIB_FUNC
 auto router::_handle_accept() noexcept -> work_done {
     some_true something_done{};
 
-    if(EAGINE_LIKELY(!_acceptors.empty())) {
+    if(!_acceptors.empty()) [[likely]] {
         acceptor::accept_handler handler{
           this, EAGINE_THIS_MEM_FUNC_C(_handle_connection)};
         for(auto& an_acceptor : _acceptors) {
@@ -398,13 +398,13 @@ auto router::_remove_disconnected() noexcept -> work_done {
 
     for(auto& [endpoint_id, node] : _nodes) {
         auto& conn = node.the_connection;
-        if(EAGINE_UNLIKELY(node.do_disconnect)) {
+        if(node.do_disconnect) [[unlikely]] {
             if(conn) {
                 conn->cleanup();
             }
             conn.reset();
         } else {
-            if(EAGINE_UNLIKELY(!conn->is_usable())) {
+            if(!conn->is_usable()) [[unlikely]] {
                 log_debug("removing disconnected connection");
                 if(conn) {
                     conn->cleanup();
@@ -429,9 +429,9 @@ void router::_assign_id(std::unique_ptr<connection>& conn) noexcept {
     // find a currently unused endpoint id value
     const auto seq_orig = _id_sequence;
     while(_nodes.find(_id_sequence) != _nodes.end()) {
-        if(EAGINE_UNLIKELY(++_id_sequence >= _id_end)) {
+        if(++_id_sequence >= _id_end) [[unlikely]] {
             _id_sequence = _id_base + 1;
-        } else if(EAGINE_UNLIKELY(_id_sequence == seq_orig)) {
+        } else if(_id_sequence == seq_orig) [[unlikely]] {
             return;
         }
     }
@@ -468,7 +468,7 @@ auto router::_process_blobs() noexcept -> work_done {
         for(auto& nd : _nodes) {
             const auto node_id = std::get<0>(nd);
             const auto& conn = std::get<1>(nd).the_connection;
-            if(EAGINE_LIKELY(conn && conn->is_usable())) {
+            if(conn && conn->is_usable()) [[likely]] {
                 if(auto opt_max_size{conn->max_data_size()}) {
                     auto handle_send = [node_id, &conn](
                                          message_id msg_id,
@@ -719,7 +719,7 @@ auto router::_update_stats() noexcept -> work_done {
 
     const auto now = std::chrono::steady_clock::now();
     const std::chrono::duration<float> seconds{now - _forwarded_since_stat};
-    if(EAGINE_UNLIKELY(seconds.count() >= 15.F)) {
+    if(seconds.count() >= 15.F) [[unlikely]] {
         _forwarded_since_stat = now;
 
         _stats.messages_per_second = static_cast<std::int32_t>(
@@ -738,7 +738,7 @@ auto router::_update_stats() noexcept -> work_done {
           _flow_info.avg_msg_age_ms != limit_cast<std::int16_t>(avg_msg_age_ms);
         _flow_info.avg_msg_age_ms = limit_cast<std::int16_t>(avg_msg_age_ms);
 
-        if(EAGINE_UNLIKELY(flow_info_changed)) {
+        if(flow_info_changed) [[unlikely]] {
             const auto send_info =
               [&](const identifier_t remote_id, const auto& conn) {
                   auto buf{default_serialize_buffer_for(_flow_info)};
@@ -883,7 +883,7 @@ auto router::_handle_special(
   const message_id msg_id,
   const identifier_t incoming_id,
   const message_view& message) noexcept -> message_handling_result {
-    if(EAGINE_UNLIKELY(is_special_message(msg_id))) {
+    if(is_special_message(msg_id)) [[unlikely]] {
         log_debug("router handling special message ${message} from parent")
           .arg(EAGINE_ID(router), _id_base)
           .arg(EAGINE_ID(message), msg_id)
@@ -906,7 +906,7 @@ auto router::_handle_special(
   const identifier_t incoming_id,
   routed_node& node,
   const message_view& message) noexcept -> message_handling_result {
-    if(EAGINE_UNLIKELY(is_special_message(msg_id))) {
+    if(is_special_message(msg_id)) [[unlikely]] {
         log_debug("router handling special message ${message} from node")
           .arg(EAGINE_ID(router), _id_base)
           .arg(EAGINE_ID(message), msg_id)
@@ -984,7 +984,7 @@ auto router::_do_route_message(
   message_view& message) noexcept -> bool {
 
     bool result = true;
-    if(EAGINE_UNLIKELY(message.too_many_hops())) {
+    if(message.too_many_hops()) [[unlikely]] {
         log_warning("message ${message} discarded after too many hops")
           .arg(EAGINE_ID(message), msg_id);
         ++_stats.dropped_messages;
@@ -994,12 +994,12 @@ auto router::_do_route_message(
         const bool is_targeted = (message.target_id != broadcast_endpoint_id());
 
         const auto forward_to = [&](auto& node_out) {
-            if(EAGINE_UNLIKELY(++_stats.forwarded_messages % 1000000 == 0)) {
+            if(++_stats.forwarded_messages % 1000000 == 0) [[unlikely]] {
                 const auto now{std::chrono::steady_clock::now()};
                 const std::chrono::duration<float> interval{
                   now - _forwarded_since_log};
 
-                if(EAGINE_LIKELY(interval > decltype(interval)::zero())) {
+                if(interval > decltype(interval)::zero()) [[likely]] {
                     const auto msgs_per_sec{1000000.F / interval.count()};
 
                     log_chart_sample(EAGINE_ID(msgsPerSec), msgs_per_sec);
@@ -1046,7 +1046,7 @@ auto router::_do_route_message(
                 }
             }
 
-            if(EAGINE_LIKELY(!_is_disconnected(message.target_id))) {
+            if(!_is_disconnected(message.target_id)) [[likely]] {
                 if(!has_routed) {
                     for(const auto& [outgoing_id, node_out] : nodes) {
                         if(node_out.maybe_router) {
@@ -1098,7 +1098,7 @@ auto router::_route_messages() noexcept -> work_done {
                 was_handled) {
                   return true;
               }
-              if(EAGINE_UNLIKELY(message.too_old())) {
+              if(message.too_old()) [[unlikely]] {
                   ++_stats.dropped_messages;
                   return true;
               }
@@ -1106,7 +1106,7 @@ auto router::_route_messages() noexcept -> work_done {
           };
 
         const auto& conn_in = std::get<1>(nd).the_connection;
-        if(EAGINE_LIKELY(conn_in && conn_in->is_usable())) {
+        if(conn_in && conn_in->is_usable()) [[likely]] {
             something_done(conn_in->fetch_messages({construct_from, handler}));
         }
     }
@@ -1120,7 +1120,7 @@ auto router::_route_messages() noexcept -> work_done {
               msg_id, _parent_router.confirmed_id, message) == was_handled) {
               return true;
           }
-          if(EAGINE_UNLIKELY(message.too_old())) {
+          if(message.too_old()) [[unlikely]] {
               ++_stats.dropped_messages;
               return true;
           }
@@ -1137,7 +1137,7 @@ auto router::_update_connections() noexcept -> work_done {
 
     for(auto& entry : _nodes) {
         const auto& conn = std::get<1>(entry).the_connection;
-        if(EAGINE_LIKELY(conn)) {
+        if(conn) [[likely]] {
             something_done(conn->update());
         }
     }

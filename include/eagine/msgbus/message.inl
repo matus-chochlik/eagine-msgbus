@@ -21,14 +21,13 @@ auto stored_message::store_and_sign(
         auto& ssl = ctx.ssl();
         _buffer.resize(max_size);
         const auto used{store_data_with_size(data, storage())};
-        if(EAGINE_LIKELY(used)) {
+        if(used) [[likely]] {
             if(ok md_ctx{ssl.new_message_digest()}) {
                 const auto cleanup{ssl.delete_message_digest.raii(md_ctx)};
 
-                if(EAGINE_LIKELY(
-                     ctx.message_digest_sign_init(md_ctx, md_type))) {
-                    if(EAGINE_LIKELY(
-                         ssl.message_digest_sign_update(md_ctx, data))) {
+                if(ctx.message_digest_sign_init(md_ctx, md_type)) [[likely]] {
+                    if(ssl.message_digest_sign_update(md_ctx, data))
+                      [[likely]] {
 
                         auto free{skip(storage(), used.size())};
                         if(const ok sig{
@@ -218,7 +217,7 @@ auto connection_outgoing_messages::enqueue(
     block_data_sink sink(temp);
     default_serializer_backend backend(sink);
     const auto errors{serialize_message(msg_id, message, backend)};
-    if(EAGINE_LIKELY(!errors)) {
+    if(!errors) [[likely]] {
         user.log_trace("enqueuing message ${message} to be sent")
           .arg(EAGINE_ID(message), msg_id);
         _serialized.push(sink.done());

@@ -25,7 +25,7 @@ auto endpoint::_process_blobs() noexcept -> work_done {
     some_true something_done;
     something_done(_blobs.update(EAGINE_THIS_MEM_FUNC_REF(post)));
     const auto opt_max_size = max_data_size();
-    if(EAGINE_LIKELY(opt_max_size)) {
+    if(opt_max_size) [[likely]] {
         something_done(_blobs.process_outgoing(
           EAGINE_THIS_MEM_FUNC_REF(post), extract(opt_max_size)));
     }
@@ -37,9 +37,9 @@ auto endpoint::_do_send(const message_id msg_id, message_view message) noexcept
   -> bool {
     EAGINE_ASSERT(has_id());
     message.set_source_id(_endpoint_id);
-    if(EAGINE_LIKELY(_connection && _connection->send(msg_id, message))) {
+    if(_connection && _connection->send(msg_id, message)) [[likely]] {
         ++_stats.sent_messages;
-        if(EAGINE_UNLIKELY(!_had_working_connection)) {
+        if(!_had_working_connection) [[unlikely]] {
             _had_working_connection = true;
             connection_established(has_id());
         }
@@ -74,7 +74,7 @@ auto endpoint::_handle_confirm_id(const message_view& message) noexcept
   -> message_handling_result {
     if(!has_id()) {
         _endpoint_id = message.target_id;
-        if(EAGINE_LIKELY(get_id() == get_preconfigured_id())) {
+        if(get_id() == get_preconfigured_id()) [[likely]] {
             id_assigned(_endpoint_id);
             log_debug("confirmed endpoint id ${id} by router")
               .arg(EAGINE_ID(id), get_id());
@@ -238,14 +238,14 @@ auto endpoint::_handle_special(
   const message_view& message) noexcept -> message_handling_result {
 
     EAGINE_ASSERT(_context);
-    if(EAGINE_UNLIKELY(is_special_message(msg_id))) {
+    if(is_special_message(msg_id)) [[unlikely]] {
         log_debug("endpoint handling special message ${message}")
           .arg(EAGINE_ID(message), msg_id)
           .arg(EAGINE_ID(endpoint), _endpoint_id)
           .arg(EAGINE_ID(target), message.target_id)
           .arg(EAGINE_ID(source), message.source_id);
 
-        if(EAGINE_UNLIKELY(has_id() && (message.source_id == _endpoint_id))) {
+        if(has_id() && (message.source_id == _endpoint_id)) [[unlikely]] {
             ++_stats.dropped_messages;
             log_warning("received own special message ${message}")
               .arg(EAGINE_ID(message), msg_id);
@@ -373,7 +373,7 @@ void endpoint::add_ca_certificate_pem(const memory::const_block blk) noexcept {
 EAGINE_LIB_FUNC
 auto endpoint::add_connection(std::unique_ptr<connection> conn) noexcept
   -> bool {
-    if(EAGINE_LIKELY(conn)) {
+    if(conn) [[likely]] {
         if(_connection) {
             log_debug("replacing connection type ${oldType} with ${newType}")
               .arg(EAGINE_ID(oldType), _connection->type_id())
@@ -392,7 +392,7 @@ auto endpoint::add_connection(std::unique_ptr<connection> conn) noexcept
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
 auto endpoint::is_usable() const noexcept -> bool {
-    if(EAGINE_LIKELY(_connection)) {
+    if(_connection) [[likely]] {
         if(_connection->is_usable()) {
             return true;
         }
@@ -404,7 +404,7 @@ EAGINE_LIB_FUNC
 auto endpoint::max_data_size() const noexcept
   -> valid_if_positive<span_size_t> {
     span_size_t result{0};
-    if(EAGINE_LIKELY(_connection)) {
+    if(_connection) [[likely]] {
         if(_connection->is_usable()) {
             if(const auto opt_max_size = _connection->max_data_size()) {
                 const auto max_size = extract(opt_max_size);
@@ -429,7 +429,7 @@ void endpoint::flush_outbox() noexcept {
 
         _outgoing.fetch_all(EAGINE_THIS_MEM_FUNC_REF(_handle_send));
 
-        if(EAGINE_LIKELY(_connection)) {
+        if(_connection) [[likely]] {
             _connection->update();
             _connection->cleanup();
         }
@@ -475,17 +475,17 @@ auto endpoint::update() noexcept -> work_done {
 
     something_done(_process_blobs());
 
-    if(EAGINE_UNLIKELY(!_connection)) {
+    if(!_connection) [[unlikely]] {
         log_warning("endpoint has no connection");
     }
 
     const bool had_id = has_id();
-    if(EAGINE_LIKELY(_connection)) {
-        if(EAGINE_UNLIKELY(!_had_working_connection)) {
+    if(_connection) [[likely]] {
+        if(!_had_working_connection) [[unlikely]] {
             _had_working_connection = true;
             connection_established(had_id);
         }
-        if(EAGINE_UNLIKELY(!had_id && _no_id_timeout)) {
+        if(!had_id && _no_id_timeout) [[unlikely]] {
             if(!has_preconfigured_id()) {
                 log_debug("requesting endpoint id");
                 _connection->send(EAGINE_MSGBUS_ID(requestId), {});
@@ -499,7 +499,7 @@ auto endpoint::update() noexcept -> work_done {
     }
 
     // if processing the messages assigned the endpoint id
-    if(EAGINE_UNLIKELY(!had_id)) {
+    if(!had_id) [[unlikely]] {
         if(_connection) {
             if(has_id()) {
                 log_debug("announcing endpoint id ${id} assigned by router")
@@ -530,7 +530,7 @@ auto endpoint::update() noexcept -> work_done {
     }
 
     // if we have a valid id and we have messages in outbox
-    if(EAGINE_UNLIKELY(has_id() && !_outgoing.empty())) {
+    if(has_id() && !_outgoing.empty()) [[unlikely]] {
         log_debug("sending ${count} messages from outbox")
           .arg(EAGINE_ID(count), _outgoing.count());
         something_done(

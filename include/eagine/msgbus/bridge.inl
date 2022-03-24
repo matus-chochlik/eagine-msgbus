@@ -102,7 +102,7 @@ public:
                                const message_id msg_id,
                                const message_age msg_age,
                                message_view message) {
-            if(EAGINE_UNLIKELY(message.add_age(msg_age).too_old())) {
+            if(message.add_age(msg_age).too_old()) [[unlikely]] {
                 ++_dropped_messages;
             } else {
                 default_serializer_backend backend(_sink);
@@ -156,7 +156,7 @@ public:
             const auto errors = deserialize_message_header(
               class_id, method_id, _recv_dest, backend);
 
-            if(EAGINE_UNLIKELY(errors)) {
+            if(errors) [[unlikely]] {
                 ++_decode_errors;
             } else {
                 _buffer.ensure(source.remaining().size());
@@ -331,7 +331,7 @@ auto bridge::_handle_stats_query(
 
     const auto now = std::chrono::steady_clock::now();
     const std::chrono::duration<float> seconds{now - _forwarded_since_stat};
-    if(EAGINE_LIKELY(seconds.count() > 15.F)) {
+    if(seconds.count() > 15.F) [[likely]] {
         _forwarded_since_stat = now;
 
         _stats.messages_per_second = static_cast<std::int32_t>(
@@ -359,7 +359,7 @@ auto bridge::_handle_special(
   const message_id msg_id,
   const message_view& message,
   const bool to_connection) noexcept -> message_handling_result {
-    if(EAGINE_UNLIKELY(is_special_message(msg_id))) {
+    if(is_special_message(msg_id)) [[unlikely]] {
         log_debug("bridge handling special message ${message}")
           .arg(EAGINE_ID(bridge), _id)
           .arg(EAGINE_ID(message), msg_id)
@@ -389,7 +389,7 @@ EAGINE_LIB_FUNC
 auto bridge::_do_send(const message_id msg_id, message_view& message) noexcept
   -> bool {
     message.add_hop();
-    if(EAGINE_LIKELY(_connection)) {
+    if(_connection) [[likely]] {
         if(_connection->send(msg_id, message)) {
             log_trace("forwarding message ${message} to connection")
               .arg(EAGINE_ID(message), msg_id)
@@ -411,7 +411,7 @@ auto bridge::_send(const message_id msg_id, message_view& message) noexcept
 EAGINE_LIB_FUNC
 auto bridge::_do_push(const message_id msg_id, message_view& message) noexcept
   -> bool {
-    if(EAGINE_LIKELY(_state)) {
+    if(_state) [[likely]] {
         message.add_hop();
         _state->push(msg_id, message);
         log_trace("forwarding message ${message} to stream")
@@ -430,16 +430,16 @@ auto bridge::_forward_messages() noexcept -> work_done {
       [this](
         const message_id msg_id, message_age msg_age, message_view message) {
           _message_age_sum_c2o += message.add_age(msg_age).age().count();
-          if(EAGINE_UNLIKELY(message.too_old())) {
+          if(message.too_old()) [[unlikely]] {
               ++_dropped_messages_c2o;
               return true;
           }
-          if(EAGINE_UNLIKELY(++_forwarded_messages_c2o % 1000000 == 0)) {
+          if(++_forwarded_messages_c2o % 1000000 == 0) [[unlikely]] {
               const auto now{std::chrono::steady_clock::now()};
               const std::chrono::duration<float> interval{
                 now - _forwarded_since_c2o};
 
-              if(EAGINE_LIKELY(interval > decltype(interval)::zero())) {
+              if(interval > decltype(interval)::zero()) [[likely]] {
                   const auto msgs_per_sec{1000000.F / interval.count()};
                   const auto avg_msg_age =
                     _message_age_sum_c2o /
@@ -462,7 +462,7 @@ auto bridge::_forward_messages() noexcept -> work_done {
           return this->_do_push(msg_id, message);
       };
 
-    if(EAGINE_LIKELY(_connection)) {
+    if(_connection) [[likely]] {
         something_done(_connection->fetch_messages(
           {construct_from, forward_conn_to_output}));
     }
@@ -472,16 +472,16 @@ auto bridge::_forward_messages() noexcept -> work_done {
       [this](
         const message_id msg_id, message_age msg_age, message_view message) {
           _message_age_sum_i2c += message.add_age(msg_age).age().count();
-          if(EAGINE_UNLIKELY(message.too_old())) {
+          if(message.too_old()) [[unlikely]] {
               ++_dropped_messages_i2c;
               return true;
           }
-          if(EAGINE_UNLIKELY(++_forwarded_messages_i2c % 1000000 == 0)) {
+          if(++_forwarded_messages_i2c % 1000000 == 0) [[unlikely]] {
               const auto now{std::chrono::steady_clock::now()};
               const std::chrono::duration<float> interval{
                 now - _forwarded_since_i2c};
 
-              if(EAGINE_LIKELY(interval > decltype(interval)::zero())) {
+              if(interval > decltype(interval)::zero()) [[likely]] {
                   const auto msgs_per_sec{1000000.F / interval.count()};
                   const auto avg_msg_age =
                     _message_age_sum_i2c /
@@ -508,7 +508,7 @@ auto bridge::_forward_messages() noexcept -> work_done {
           return true;
       };
 
-    if(EAGINE_LIKELY(_state)) {
+    if(_state) [[likely]] {
         something_done(
           _state->fetch_messages({construct_from, forward_input_to_conn}));
     }
@@ -525,7 +525,7 @@ EAGINE_LIB_FUNC
 auto bridge::_check_state() noexcept -> work_done {
     some_true something_done{};
 
-    if(EAGINE_UNLIKELY(!(_state && _state->is_usable()))) {
+    if(!(_state && _state->is_usable())) [[unlikely]] {
         if(_recoverable_state() && _connection) {
             if(const auto max_data_size{_connection->max_data_size()}) {
                 ++_state_count;
@@ -543,8 +543,8 @@ EAGINE_LIB_FUNC
 auto bridge::_update_connections() noexcept -> work_done {
     some_true something_done{};
 
-    if(EAGINE_LIKELY(_connection)) {
-        if(EAGINE_UNLIKELY(!has_id() && _no_id_timeout)) {
+    if(_connection) [[likely]] {
+        if(!has_id() && _no_id_timeout) [[unlikely]] {
             log_debug("requesting bridge id");
             _connection->send(EAGINE_MSGBUS_ID(requestId), {});
             _no_id_timeout.reset();
@@ -568,7 +568,7 @@ auto bridge::update() noexcept -> work_done {
     something_done(_forward_messages());
 
     // if processing the messages assigned the id
-    if(EAGINE_UNLIKELY(has_id() && !had_id)) {
+    if(has_id() && !had_id) [[unlikely]] {
         log_debug("announcing id ${id}").arg(EAGINE_ID(id), _id);
         message_view msg;
         _send(EAGINE_MSGBUS_ID(announceId), msg);

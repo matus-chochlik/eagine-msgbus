@@ -111,19 +111,16 @@ auto main(main_ctx& ctx) -> int {
     int idle_streak = 0;
     while(keep_running()) {
         tiling_generator.update();
-        if(EAGINE_UNLIKELY(
-             rank == 3 &&
-             tiling_generator.solution_timeouted(unsigned_constant<3>{}))) {
+        if(rank == 3 && tiling_generator.solution_timeouted(unsigned_constant<3>{}))
+          [[unlikely]] {
             enqueue(default_sudoku_board_traits<3>());
         }
-        if(EAGINE_UNLIKELY(
-             rank == 4 &&
-             tiling_generator.solution_timeouted(unsigned_constant<4>{}))) {
+        if(rank == 4 && tiling_generator.solution_timeouted(unsigned_constant<4>{}))
+          [[unlikely]] {
             enqueue(default_sudoku_board_traits<4>());
         }
-        if(EAGINE_UNLIKELY(
-             rank == 5 &&
-             tiling_generator.solution_timeouted(unsigned_constant<5>{}))) {
+        if(rank == 5 && tiling_generator.solution_timeouted(unsigned_constant<5>{}))
+          [[unlikely]] {
             enqueue(default_sudoku_board_traits<5>());
         }
         if(tiling_generator.process_all()) {

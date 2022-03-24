@@ -87,7 +87,7 @@ public:
       const identifier_t endpoint_id,
       const subscriber_info::hop_count_t hop_count =
         subscriber_info::max_hops()) noexcept {
-        if(EAGINE_LIKELY(is_valid_endpoint_id(endpoint_id))) {
+        if(is_valid_endpoint_id(endpoint_id)) [[likely]] {
             _stream_relay_id = endpoint_id;
             _stream_relay_timeout.reset();
             _stream_relay_hops = hop_count;

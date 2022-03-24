@@ -112,7 +112,7 @@ inline auto remote_instance::_impl() const noexcept
 //------------------------------------------------------------------------------
 inline auto remote_instance::_impl() noexcept -> remote_instance_impl* {
     try {
-        if(EAGINE_UNLIKELY(!_pimpl)) {
+        if(!_pimpl) [[unlikely]] {
             _pimpl = std::make_shared<remote_instance_impl>();
         }
         return _pimpl.get();
@@ -283,7 +283,7 @@ inline auto remote_host::_impl() const noexcept -> const remote_host_impl* {
 //------------------------------------------------------------------------------
 inline auto remote_host::_impl() noexcept -> remote_host_impl* {
     try {
-        if(EAGINE_UNLIKELY(!_pimpl)) {
+        if(!_pimpl) [[unlikely]] {
             _pimpl = std::make_shared<remote_host_impl>();
         }
         return _pimpl.get();
@@ -505,7 +505,7 @@ inline auto remote_node::_impl() const noexcept -> const remote_node_impl* {
 //------------------------------------------------------------------------------
 inline auto remote_node::_impl() noexcept -> remote_node_impl* {
     try {
-        if(EAGINE_UNLIKELY(!_pimpl)) {
+        if(!_pimpl) [[unlikely]] {
             _pimpl = std::make_shared<remote_node_impl>();
         }
         return _pimpl.get();
@@ -1195,7 +1195,7 @@ inline auto node_connection::_impl() const noexcept
 //------------------------------------------------------------------------------
 inline auto node_connection::_impl() noexcept -> node_connection_impl* {
     try {
-        if(EAGINE_UNLIKELY(!_pimpl)) {
+        if(!_pimpl) [[unlikely]] {
             _pimpl = std::make_shared<node_connection_impl>();
         }
         return _pimpl.get();

@@ -171,7 +171,7 @@ protected:
 
         something_done(_blobs.update(this->bus_node().post_callable()));
         const auto opt_max_size = this->bus_node().max_data_size();
-        if(EAGINE_LIKELY(opt_max_size)) {
+        if(opt_max_size) [[likely]] {
             something_done(_blobs.process_outgoing(
               this->bus_node().post_callable(), extract(opt_max_size)));
         }
@@ -303,7 +303,7 @@ private:
       const message_context& ctx,
       const stored_message& message) noexcept -> bool {
         std::string url_str;
-        if(EAGINE_LIKELY(default_deserialize(url_str, message.content()))) {
+        if(default_deserialize(url_str, message.content())) [[likely]] {
             const url locator{std::move(url_str)};
             if(_has_resource(ctx, locator)) {
                 message_view response{message.content()};
@@ -324,7 +324,7 @@ private:
       const message_context& ctx,
       const stored_message& message) noexcept -> bool {
         std::string url_str;
-        if(EAGINE_LIKELY(default_deserialize(url_str, message.content()))) {
+        if(default_deserialize(url_str, message.content())) [[likely]] {
             const url locator{std::move(url_str)};
             ctx.bus_node()
               .log_info("received content request for ${url}")
@@ -631,7 +631,7 @@ private:
       const message_context&,
       const stored_message& message) noexcept -> bool {
         std::string url_str;
-        if(EAGINE_LIKELY(default_deserialize(url_str, message.content()))) {
+        if(default_deserialize(url_str, message.content())) [[likely]] {
             server_has_resource(message.source_id, url{std::move(url_str)});
         }
         return true;
@@ -641,7 +641,7 @@ private:
       const message_context&,
       const stored_message& message) noexcept -> bool {
         std::string url_str;
-        if(EAGINE_LIKELY(default_deserialize(url_str, message.content()))) {
+        if(default_deserialize(url_str, message.content())) [[likely]] {
             server_has_not_resource(message.source_id, url{std::move(url_str)});
         }
         return true;
