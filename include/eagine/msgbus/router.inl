@@ -6,7 +6,6 @@
 ///  http://www.boost.org/LICENSE_1_0.txt
 ///
 #include <eagine/app_config.hpp>
-#include <eagine/branch_predict.hpp>
 #include <eagine/main_ctx.hpp>
 #include <eagine/msgbus/context.hpp>
 #include <eagine/msgbus/serialize.hpp>

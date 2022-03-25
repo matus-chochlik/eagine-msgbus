@@ -12,7 +12,6 @@
 #include "conn_factory.hpp"
 #include "serialize.hpp"
 #include <eagine/bool_aggregate.hpp>
-#include <eagine/branch_predict.hpp>
 #include <eagine/main_ctx_object.hpp>
 #include <eagine/random_identifier.hpp>
 #include <eagine/serialize/block_sink.hpp>

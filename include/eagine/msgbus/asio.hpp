@@ -14,7 +14,6 @@
 #include "serialize.hpp"
 #include <eagine/config/platform.hpp>
 #include <eagine/bool_aggregate.hpp>
-#include <eagine/branch_predict.hpp>
 #include <eagine/flat_map.hpp>
 #include <eagine/logging/type/exception.hpp>
 #include <eagine/main_ctx_object.hpp>

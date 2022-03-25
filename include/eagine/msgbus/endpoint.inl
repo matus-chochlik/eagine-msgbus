@@ -6,7 +6,6 @@
 ///  http://www.boost.org/LICENSE_1_0.txt
 ///
 #include <eagine/bool_aggregate.hpp>
-#include <eagine/branch_predict.hpp>
 #include <eagine/msgbus/context.hpp>
 
 namespace eagine::msgbus {

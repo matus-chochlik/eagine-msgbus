@@ -7,7 +7,6 @@
 ///
 #include "config/basic.hpp"
 #include <eagine/base64.hpp>
-#include <eagine/branch_predict.hpp>
 #include <eagine/double_buffer.hpp>
 #include <eagine/math/functions.hpp>
 #include <eagine/msgbus/context.hpp>

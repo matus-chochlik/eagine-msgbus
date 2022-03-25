@@ -11,7 +11,6 @@
 
 #include "conn_factory.hpp"
 #include <eagine/bool_aggregate.hpp>
-#include <eagine/branch_predict.hpp>
 #include <eagine/double_buffer.hpp>
 #include <eagine/main_ctx_object.hpp>
 #include <atomic>
