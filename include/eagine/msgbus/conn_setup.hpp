@@ -24,10 +24,10 @@ namespace msgbus {
 class connection_setup;
 void connection_setup_configure(connection_setup&, application_config&);
 //------------------------------------------------------------------------------
-static inline auto adapt_log_entry_arg(
+static inline auto adapt_entry_arg(
   const identifier name,
   const std::unique_ptr<connection_factory>& value) noexcept {
-    return [name, &value](logger_backend& backend) {
+    return [name, &value](auto& backend) {
         if(value) {
             backend.add_identifier(
               name, EAGINE_ID(ConnFactry), value->type_id());
