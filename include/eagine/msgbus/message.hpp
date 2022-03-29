@@ -9,6 +9,7 @@
 #ifndef EAGINE_MSGBUS_MESSAGE_HPP
 #define EAGINE_MSGBUS_MESSAGE_HPP
 
+#include "config/basic.hpp"
 #include "context_fwd.hpp"
 #include "types.hpp"
 #include "verification.hpp"
@@ -358,7 +359,7 @@ public:
     /// @see text_content
     /// @see const_content
     auto content() const noexcept -> memory::const_block {
-        if(EAGINE_UNLIKELY(is_signed())) {
+        if(is_signed()) [[unlikely]] {
             return get_data_with_size(data());
         }
         return data();
@@ -452,7 +453,7 @@ public:
     /// @brief Returns a mutable view of the data content of the message.
     /// @see signature
     auto content() noexcept -> memory::block {
-        if(EAGINE_UNLIKELY(is_signed())) {
+        if(is_signed()) [[unlikely]] {
             return get_data_with_size(storage());
         }
         return storage();
@@ -463,7 +464,7 @@ public:
     /// @see text_content
     /// @see const_content
     auto content() const noexcept -> memory::const_block {
-        if(EAGINE_UNLIKELY(is_signed())) {
+        if(is_signed()) [[unlikely]] {
             return get_data_with_size(data());
         }
         return data();
@@ -561,7 +562,7 @@ public:
           stored_message{{}, _buffers.get(req_size)},
           _clock_t::now());
         auto& [msg_id, message, insert_time] = _messages.back();
-        EAGINE_MAYBE_UNUSED(insert_time);
+        (void)(insert_time);
         bool rollback = false;
         try {
             if(!function(msg_id, insert_time, message)) {

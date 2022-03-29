@@ -197,11 +197,11 @@ public:
         state.max_time = std::max(state.max_time, age);
         state.sum_time += age;
         state.finish = std::chrono::steady_clock::now();
-        if(EAGINE_UNLIKELY((++_rcvd % _mod) == 0)) {
+        if((++_rcvd % _mod) == 0) [[unlikely]] {
             const auto now{std::chrono::steady_clock::now()};
             const std::chrono::duration<float> interval{now - prev_log};
 
-            if(EAGINE_LIKELY(interval > decltype(interval)::zero())) {
+            if(interval > decltype(interval)::zero()) [[likely]] {
                 const auto msgs_per_sec{float(_mod) / interval.count()};
 
                 log_chart_sample(EAGINE_ID(msgsPerSec), msgs_per_sec);
@@ -226,7 +226,7 @@ public:
       const std::chrono::microseconds) noexcept {
         auto& state = _targets[pinger_id];
         state.timeouted++;
-        if(EAGINE_UNLIKELY((++_tout % _mod) == 0)) {
+        if((++_tout % _mod) == 0) [[unlikely]] {
             log_info("${tout} pongs expired").arg(EAGINE_ID(tout), _tout);
         }
     }
@@ -237,7 +237,7 @@ public:
 
     auto do_ping() -> work_done {
         some_true something_done{};
-        if(EAGINE_UNLIKELY(_should_query_pingable)) {
+        if(_should_query_pingable) [[unlikely]] {
             log_info("searching for pingable nodes");
             query_pingables();
         }
@@ -252,12 +252,12 @@ public:
                         if(balance <= limit) {
                             this->ping(pingable_id, std::chrono::seconds(15));
                             entry.sent++;
-                            if(EAGINE_UNLIKELY((++_sent % _mod) == 0)) {
+                            if((++_sent % _mod) == 0) [[unlikely]] {
                                 log_info("sent ${sent} pings")
                                   .arg(EAGINE_ID(sent), _sent);
                             }
 
-                            if(EAGINE_UNLIKELY(entry.should_check_info)) {
+                            if(entry.should_check_info) [[unlikely]] {
                                 if(!entry.host_id) {
                                     this->query_host_id(pingable_id);
                                 }
@@ -278,7 +278,7 @@ public:
 
     auto update() -> work_done {
         some_true something_done{base::update()};
-        if(EAGINE_LIKELY(_can_ping)) {
+        if(_can_ping) [[likely]] {
             something_done(do_ping());
         }
         something_done(base::process_all() > 0);
@@ -336,12 +336,12 @@ auto main(main_ctx& ctx) -> int {
     ctx.preinitialize();
 
     valid_if_positive<std::intmax_t> ping_count{};
-    if(auto arg{ctx.args().find("--ping-count")}) {
+    if(const auto arg{ctx.args().find("--ping-count")}) {
         arg.next().parse(ping_count, ctx.log().error_stream());
     }
 
     valid_if_positive<std::intmax_t> limit_count{};
-    if(auto arg{ctx.args().find("--limit-count")}) {
+    if(const auto arg{ctx.args().find("--limit-count")}) {
         arg.next().parse(limit_count, ctx.log().error_stream());
     }
 
@@ -358,7 +358,7 @@ auto main(main_ctx& ctx) -> int {
                   EAGINE_ID(shortLoad), ctx.system().short_average_load());
                 the_pinger.log_chart_sample(
                   EAGINE_ID(longLoad), ctx.system().long_average_load());
-                if(auto temp_k{ctx.system().cpu_temperature()}) {
+                if(const auto temp_k{ctx.system().cpu_temperature()}) {
                     the_pinger.log_chart_sample(
                       EAGINE_ID(cpuTempC),
                       extract(temp_k).to<units::degree_celsius>());

@@ -417,7 +417,7 @@ private:
       remote_node_state& node) noexcept {
         if(const auto changes{node.update().changes()}) {
             node_changed(node, changes);
-            if(EAGINE_UNLIKELY(changes.new_instance())) {
+            if(changes.new_instance()) [[unlikely]] {
                 this->query_endpoint_info(node_id);
                 this->query_host_id(node_id);
                 this->query_hostname(node_id);

@@ -17,7 +17,6 @@
 #include <eagine/flat_set.hpp>
 #include <eagine/int_constant.hpp>
 #include <eagine/math/functions.hpp>
-#include <eagine/maybe_unused.hpp>
 #include <eagine/serialize/type/sudoku.hpp>
 #include <eagine/sudoku.hpp>
 #include <algorithm>
@@ -255,7 +254,7 @@ private:
             ? default_deserialize_packed(board, message.content(), _compressor)
             : default_deserialize(board, message.content())};
 
-        if(EAGINE_LIKELY(deserialized)) {
+        if(deserialized) [[likely]] {
             info.add_board(
               this->bus_node(),
               message.source_id,
@@ -295,7 +294,7 @@ private:
           const identifier_t source_id,
           const message_sequence_t sequence_no,
           const basic_sudoku_board<S> board) noexcept {
-            if(EAGINE_LIKELY(boards.size() <= 8)) {
+            if(boards.size() <= 8) [[likely]] {
                 searches.insert(source_id);
                 boards.emplace_back(source_id, sequence_no, std::move(board));
             } else {
@@ -461,7 +460,7 @@ public:
         for_each_sudoku_rank_unit(
           [&](auto& info) {
               something_done(info.handle_timeouted(*this));
-              if(EAGINE_LIKELY(_can_work)) {
+              if(_can_work) [[likely]] {
                   something_done(
                     info.send_boards(this->bus_node(), _compressor));
                   something_done(info.search_helpers(this->bus_node()));
@@ -780,7 +779,7 @@ private:
                            board, message.content(), parent._compressor)
                        : default_deserialize(board, message.content())};
 
-            if(EAGINE_LIKELY(deserialized)) {
+            if(deserialized) [[likely]] {
                 const auto predicate = [&](const auto& entry) {
                     return entry.sequence_no == message.sequence_no;
                 };
@@ -1279,7 +1278,7 @@ private:
 template <unsigned S>
 template <typename Function>
 void sudoku_fragment_view<S>::for_each_cell(Function function) const {
-    if(auto board{_tiles.get_board(_board_coord)}) {
+    if(const auto board{_tiles.get_board(_board_coord)}) {
         const auto [bx, by] = _board_coord;
         const Coord frag_coord{
           limit_cast<int>(bx * width()), limit_cast<int>(by * height())};

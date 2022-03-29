@@ -9,6 +9,7 @@
 #ifndef EAGINE_MSGBUS_CONTEXT_HPP
 #define EAGINE_MSGBUS_CONTEXT_HPP
 
+#include "config/basic.hpp"
 #include "context_fwd.hpp"
 #include "node_kind.hpp"
 #include "types.hpp"
@@ -151,13 +152,13 @@ public:
     auto message_digest_sign_init(
       const sslplus::message_digest mdc,
       const sslplus::message_digest_type mdt) noexcept
-      -> decltype(ssl().message_digest_sign_init.fake());
+      -> decltype(ssl().message_digest_sign_init.fail());
 
     auto message_digest_verify_init(
       const sslplus::message_digest mdc,
       const sslplus::message_digest_type mdt,
       const identifier_t node_id) noexcept
-      -> decltype(ssl().message_digest_verify_init.fake());
+      -> decltype(ssl().message_digest_verify_init.fail());
 
     /// @brief Signs the specified memory block and returns the signature.
     auto get_own_signature(const memory::const_block) noexcept

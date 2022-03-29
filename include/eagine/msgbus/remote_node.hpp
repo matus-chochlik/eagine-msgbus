@@ -9,6 +9,7 @@
 #ifndef EAGINE_MSGBUS_REMOTE_NODE_HPP
 #define EAGINE_MSGBUS_REMOTE_NODE_HPP
 
+#include "config/basic.hpp"
 #include "node_kind.hpp"
 #include "types.hpp"
 #include <eagine/bitfield.hpp>
@@ -1026,7 +1027,7 @@ private:
 //------------------------------------------------------------------------------
 template <typename Function>
 void remote_node_tracker::for_each_host(Function func) {
-    if(EAGINE_LIKELY(_pimpl)) {
+    if(_pimpl) [[likely]] {
         for(auto& [host_id, host] : _get_hosts()) {
             func(host_id, static_cast<remote_host&>(host));
         }
@@ -1035,7 +1036,7 @@ void remote_node_tracker::for_each_host(Function func) {
 //------------------------------------------------------------------------------
 template <typename Function>
 void remote_node_tracker::for_each_host_state(Function func) {
-    if(EAGINE_LIKELY(_pimpl)) {
+    if(_pimpl) [[likely]] {
         for(auto& [host_id, host] : _get_hosts()) {
             func(host_id, host);
         }
@@ -1044,7 +1045,7 @@ void remote_node_tracker::for_each_host_state(Function func) {
 //------------------------------------------------------------------------------
 template <typename Function>
 void remote_node_tracker::for_each_node(Function func) {
-    if(EAGINE_LIKELY(_pimpl)) {
+    if(_pimpl) [[likely]] {
         for(auto& [node_id, node] : _get_nodes()) {
             func(node_id, static_cast<remote_node&>(node));
         }
@@ -1053,7 +1054,7 @@ void remote_node_tracker::for_each_node(Function func) {
 //------------------------------------------------------------------------------
 template <typename Function>
 void remote_node_tracker::for_each_node_state(Function func) {
-    if(EAGINE_LIKELY(_pimpl)) {
+    if(_pimpl) [[likely]] {
         for(auto& [node_id, node] : _get_nodes()) {
             func(node_id, node);
         }
@@ -1062,7 +1063,7 @@ void remote_node_tracker::for_each_node_state(Function func) {
 //------------------------------------------------------------------------------
 template <typename Function>
 void remote_node_tracker::for_each_instance_state(Function func) {
-    if(EAGINE_LIKELY(_pimpl)) {
+    if(_pimpl) [[likely]] {
         for(auto& [inst_id, inst] : _get_instances()) {
             func(inst_id, inst);
         }
@@ -1073,7 +1074,7 @@ template <typename Function>
 void remote_node_tracker::for_each_instance_node_state(
   const process_instance_id_t inst_id,
   Function func) {
-    if(EAGINE_LIKELY(_pimpl)) {
+    if(_pimpl) [[likely]] {
         for(auto& [node_id, node] : _get_nodes()) {
             if(node.instance_id() == inst_id) {
                 func(node_id, node);
@@ -1086,7 +1087,7 @@ template <typename Function>
 void remote_node_tracker::for_each_host_node_state(
   const host_id_t host_id,
   Function func) {
-    if(EAGINE_LIKELY(_pimpl)) {
+    if(_pimpl) [[likely]] {
         for(auto& [node_id, node] : _get_nodes()) {
             if(node.host_id() == host_id) {
                 func(node_id, node);
@@ -1097,7 +1098,7 @@ void remote_node_tracker::for_each_host_node_state(
 //------------------------------------------------------------------------------
 template <typename Function>
 void remote_node_tracker::for_each_connection(Function func) {
-    if(EAGINE_LIKELY(_pimpl)) {
+    if(_pimpl) [[likely]] {
         for(auto& conn : _get_connections()) {
             func(conn);
         }
@@ -1106,7 +1107,7 @@ void remote_node_tracker::for_each_connection(Function func) {
 //------------------------------------------------------------------------------
 template <typename Function>
 void remote_node_tracker::for_each_connection(Function func) const {
-    if(EAGINE_LIKELY(_pimpl)) {
+    if(_pimpl) [[likely]] {
         for(const auto& conn : _get_connections()) {
             func(conn);
         }

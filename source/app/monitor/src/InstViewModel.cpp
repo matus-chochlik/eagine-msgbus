@@ -41,10 +41,7 @@ auto InstViewModel::getIdentifier() -> QVariant {
 }
 //------------------------------------------------------------------------------
 auto InstViewModel::getDisplayName() -> QVariant {
-    if(auto optStr{_inst.application_name()}) {
-        return {c_str(extract(optStr))};
-    }
-    return {};
+    return {c_str(_inst.application_name())};
 }
 //------------------------------------------------------------------------------
 auto InstViewModel::getDescription() -> QVariant {
@@ -53,18 +50,14 @@ auto InstViewModel::getDescription() -> QVariant {
 //------------------------------------------------------------------------------
 auto InstViewModel::getArchitecture() -> QVariant {
     if(auto optCompiler{_inst.compiler()}) {
-        if(auto optArchName{extract(optCompiler).architecture_name()}) {
-            return {c_str(extract(optArchName))};
-        }
+        return {c_str(extract(optCompiler).architecture_name())};
     }
     return {};
 }
 //------------------------------------------------------------------------------
 auto InstViewModel::getCompilerName() -> QVariant {
     if(auto optCompiler{_inst.compiler()}) {
-        if(auto optCompilerName{extract(optCompiler).name()}) {
-            return {c_str(extract(optCompilerName))};
-        }
+        return {c_str(extract(optCompiler).name())};
     }
     return {};
 }

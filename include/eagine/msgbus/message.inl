@@ -20,14 +20,14 @@ auto stored_message::store_and_sign(
     if(const ok md_type{ctx.default_message_digest()}) {
         auto& ssl = ctx.ssl();
         _buffer.resize(max_size);
-        if(const auto used{store_data_with_size(data, storage())}) {
+        const auto used{store_data_with_size(data, storage())};
+        if(used) [[likely]] {
             if(ok md_ctx{ssl.new_message_digest()}) {
                 const auto cleanup{ssl.delete_message_digest.raii(md_ctx)};
 
-                if(EAGINE_LIKELY(
-                     ctx.message_digest_sign_init(md_ctx, md_type))) {
-                    if(EAGINE_LIKELY(
-                         ssl.message_digest_sign_update(md_ctx, data))) {
+                if(ctx.message_digest_sign_init(md_ctx, md_type)) [[likely]] {
+                    if(ssl.message_digest_sign_update(md_ctx, data))
+                      [[likely]] {
 
                         auto free{skip(storage(), used.size())};
                         if(const ok sig{
@@ -171,7 +171,7 @@ auto serialized_message_storage::pack_into(memory::block dest) noexcept
     message_packing_context packing{dest};
 
     for(auto& [message, timestamp] : _messages) {
-        EAGINE_MAYBE_UNUSED(timestamp);
+        (void)(timestamp);
         if(packing.is_full()) {
             break;
         }
@@ -217,7 +217,7 @@ auto connection_outgoing_messages::enqueue(
     block_data_sink sink(temp);
     default_serializer_backend backend(sink);
     const auto errors{serialize_message(msg_id, message, backend)};
-    if(EAGINE_LIKELY(!errors)) {
+    if(!errors) [[likely]] {
         user.log_trace("enqueuing message ${message} to be sent")
           .arg(EAGINE_ID(message), msg_id);
         _serialized.push(sink.done());
@@ -255,7 +255,7 @@ auto connection_incoming_messages::fetch_messages(
                       msg_ts = data_ts;
                       return true;
                   } else {
-                      user.log_error("failed to deserialize message)")
+                      user.log_error("failed to deserialize message")
                         .arg(EAGINE_ID(errorBits), errors.bits())
                         .arg(EAGINE_ID(block), blk);
                       return false;

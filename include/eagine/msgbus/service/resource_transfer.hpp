@@ -171,7 +171,7 @@ protected:
 
         something_done(_blobs.update(this->bus_node().post_callable()));
         const auto opt_max_size = this->bus_node().max_data_size();
-        if(EAGINE_LIKELY(opt_max_size)) {
+        if(opt_max_size) [[likely]] {
             something_done(_blobs.process_outgoing(
               this->bus_node().post_callable(), extract(opt_max_size)));
         }
@@ -250,8 +250,9 @@ private:
         auto read_io = get_resource_io(endpoint_id, locator);
         if(!read_io) {
             if(locator.has_scheme("eagires")) {
-                if(auto count{locator.argument("count")}) {
-                    if(auto bytes{from_string<span_size_t>(extract(count))}) {
+                if(const auto count{locator.argument("count")}) {
+                    if(const auto bytes{
+                         from_string<span_size_t>(extract(count))}) {
                         if(locator.has_path("/random")) {
                             read_io = std::make_unique<random_byte_blob_io>(
                               extract(bytes));
@@ -302,7 +303,7 @@ private:
       const message_context& ctx,
       const stored_message& message) noexcept -> bool {
         std::string url_str;
-        if(EAGINE_LIKELY(default_deserialize(url_str, message.content()))) {
+        if(default_deserialize(url_str, message.content())) [[likely]] {
             const url locator{std::move(url_str)};
             if(_has_resource(ctx, locator)) {
                 message_view response{message.content()};
@@ -323,7 +324,7 @@ private:
       const message_context& ctx,
       const stored_message& message) noexcept -> bool {
         std::string url_str;
-        if(EAGINE_LIKELY(default_deserialize(url_str, message.content()))) {
+        if(default_deserialize(url_str, message.content())) [[likely]] {
             const url locator{std::move(url_str)};
             ctx.bus_node()
               .log_info("received content request for ${url}")
@@ -435,7 +436,8 @@ public:
       const url& locator) noexcept -> optionally_valid<message_sequence_t> {
         auto buffer = default_serialize_buffer_for(locator.str());
 
-        if(auto serialized{default_serialize(locator.str(), cover(buffer))}) {
+        if(const auto serialized{
+             default_serialize(locator.str(), cover(buffer))}) {
             const auto msg_id{EAGINE_MSG_ID(eagiRsrces, qryResurce)};
             message_view message{extract(serialized)};
             message.set_target_id(endpoint_id);
@@ -629,7 +631,7 @@ private:
       const message_context&,
       const stored_message& message) noexcept -> bool {
         std::string url_str;
-        if(EAGINE_LIKELY(default_deserialize(url_str, message.content()))) {
+        if(default_deserialize(url_str, message.content())) [[likely]] {
             server_has_resource(message.source_id, url{std::move(url_str)});
         }
         return true;
@@ -639,16 +641,15 @@ private:
       const message_context&,
       const stored_message& message) noexcept -> bool {
         std::string url_str;
-        if(EAGINE_LIKELY(default_deserialize(url_str, message.content()))) {
+        if(default_deserialize(url_str, message.content())) [[likely]] {
             server_has_not_resource(message.source_id, url{std::move(url_str)});
         }
         return true;
     }
 
     auto _handle_resource_fragment(
-      const message_context& ctx,
+      [[maybe_unused]] const message_context& ctx,
       const stored_message& message) noexcept -> bool {
-        EAGINE_MAYBE_UNUSED(ctx);
         _blobs.process_incoming(message);
         return true;
     }

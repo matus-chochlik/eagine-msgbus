@@ -14,11 +14,9 @@
 #include "serialize.hpp"
 #include <eagine/config/platform.hpp>
 #include <eagine/bool_aggregate.hpp>
-#include <eagine/branch_predict.hpp>
 #include <eagine/flat_map.hpp>
 #include <eagine/logging/type/exception.hpp>
 #include <eagine/main_ctx_object.hpp>
-#include <eagine/maybe_unused.hpp>
 #include <eagine/serialize/size_and_data.hpp>
 #include <eagine/timeout.hpp>
 #include <eagine/value_tracker.hpp>
@@ -244,14 +242,14 @@ struct asio_connection_state
     }
 
     auto is_usable() const noexcept -> bool {
-        if(EAGINE_LIKELY(common)) {
+        if(common) [[likely]] {
             return socket.is_open();
         }
         return false;
     }
 
     auto log_usage_stats(const span_size_t threshold = 0) noexcept -> bool {
-        if(EAGINE_UNLIKELY(total_sent_size >= threshold)) {
+        if(total_sent_size >= threshold) [[unlikely]] {
             usage_ratio = float(total_used_size) / float(total_sent_size);
             const auto slack = 1.F - usage_ratio;
             const auto msgs_per_block =
@@ -322,8 +320,8 @@ struct asio_connection_state
               target_endpoint,
               blk,
               [this, &group, target_endpoint, packed, selfref{weak_ref()}](
-                const std::error_code error, const std::size_t length) {
-                  EAGINE_MAYBE_UNUSED(length);
+                const std::error_code error,
+                [[maybe_unused]] const std::size_t length) {
                   if(const auto self{selfref.lock()}) {
                       if(!error) {
                           EAGINE_ASSERT(span_size(length) == packed.total());
@@ -1334,7 +1332,7 @@ public:
 
     ~asio_acceptor() noexcept override {
         try {
-            std::remove(_addr_str.c_str());
+            [[maybe_unused]] std::remove(_addr_str.c_str());
         } catch(...) {
         }
     }
@@ -1347,7 +1345,7 @@ public:
     auto update() noexcept -> work_done final {
         EAGINE_ASSERT(this->_asio_state);
         some_true something_done{};
-        if(EAGINE_UNLIKELY(!_acceptor.is_open())) {
+        if(!_acceptor.is_open()) [[unlikely]] {
             _acceptor = {
               _asio_state->context,
               asio::local::stream_protocol::endpoint(_addr_str.c_str())};
@@ -1422,7 +1420,7 @@ private:
     static inline auto _prepare(
       std::shared_ptr<asio_common_state> asio_state,
       string_view addr_str) noexcept -> std::shared_ptr<asio_common_state> {
-        std::remove(c_str(addr_str));
+        [[maybe_unused]] std::remove(c_str(addr_str));
         return asio_state;
     }
 };

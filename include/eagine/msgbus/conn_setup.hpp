@@ -9,6 +9,7 @@
 #ifndef EAGINE_MSGBUS_CONN_SETUP_HPP
 #define EAGINE_MSGBUS_CONN_SETUP_HPP
 
+#include "config/basic.hpp"
 #include "conn_factory.hpp"
 #include <eagine/enum_map.hpp>
 #include <eagine/main_ctx_object.hpp>
@@ -23,10 +24,10 @@ namespace msgbus {
 class connection_setup;
 void connection_setup_configure(connection_setup&, application_config&);
 //------------------------------------------------------------------------------
-static inline auto adapt_log_entry_arg(
+static inline auto adapt_entry_arg(
   const identifier name,
   const std::unique_ptr<connection_factory>& value) noexcept {
-    return [name, &value](logger_backend& backend) {
+    return [name, &value](auto& backend) {
         if(value) {
             backend.add_identifier(
               name, EAGINE_ID(ConnFactry), value->type_id());
@@ -161,8 +162,8 @@ public:
     void add_factory(std::unique_ptr<connection_factory> factory);
 
     template <typename Factory, typename... Args>
-    auto make_factory(Args&&... args)
-      -> std::enable_if_t<std::is_base_of_v<connection_factory, Factory>> {
+    void make_factory(Args&&... args) requires(
+      std::is_base_of_v<connection_factory, Factory>) {
         add_factory(
           std::make_unique<Factory>(*this, std::forward<Args>(args)...));
     }

@@ -45,7 +45,7 @@ public:
       const span_size_t offs,
       const memory::const_block src) noexcept -> bool final {
         auto dst = skip(cover(_buf), offs);
-        if(EAGINE_LIKELY(src.size() <= dst.size())) {
+        if(src.size() <= dst.size()) [[likely]] {
             copy(src, dst);
             return true;
         }
@@ -379,10 +379,10 @@ auto blob_manipulator::push_incoming_fragment(
     }
     if(pos != _incoming.end()) {
         auto& pending = *pos;
-        if(EAGINE_LIKELY(!pending.total_size_mismatch(span_size(total_size)))) {
-            if(EAGINE_LIKELY(pending.msg_id == msg_id)) {
+        if(!pending.total_size_mismatch(span_size(total_size))) [[likely]] {
+            if(pending.msg_id == msg_id) [[likely]] {
                 pending.max_time.reset();
-                if(EAGINE_UNLIKELY(pending.priority < priority)) {
+                if(pending.priority < priority) [[unlikely]] {
                     pending.priority = priority;
                 }
                 if(pending.merge_fragment(span_size(offset), fragment)) {
@@ -460,11 +460,11 @@ auto blob_manipulator::process_incoming(
     default_deserializer_backend backend(source);
     auto errors = deserialize(header, backend);
     const message_id msg_id{class_id, method_id};
-    if(EAGINE_LIKELY(!errors)) {
+    if(!errors) [[likely]] {
         if((offset >= 0) && (offset < total_size)) {
             const auto fragment = source.remaining();
             const auto max_frag_size = span_size(total_size - offset);
-            if(EAGINE_LIKELY(fragment.size() <= max_frag_size)) {
+            if(fragment.size() <= max_frag_size) [[likely]] {
                 return push_incoming_fragment(
                   msg_id,
                   message.source_id,

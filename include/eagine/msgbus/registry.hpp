@@ -9,6 +9,7 @@
 #ifndef EAGINE_MSGBUS_REGISTRY_HPP
 #define EAGINE_MSGBUS_REGISTRY_HPP
 
+#include "config/basic.hpp"
 #include "direct.hpp"
 #include "endpoint.hpp"
 #include "router.hpp"
@@ -44,8 +45,8 @@ public:
     /// @brief Establishes an endpoint and instantiates a service object tied to it.
     /// @see establish
     template <typename Service, typename... Args>
-    auto emplace(const identifier log_id, Args&&... args) noexcept -> std::
-      enable_if_t<std::is_base_of_v<service_interface, Service>, Service&> {
+    auto emplace(const identifier log_id, Args&&... args) noexcept
+      -> Service& requires(std::is_base_of_v<service_interface, Service>) {
         auto& entry = _add_entry(log_id);
         auto temp{std::make_unique<Service>(
           extract(entry._endpoint), std::forward<Args>(args)...)};

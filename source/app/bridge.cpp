@@ -10,7 +10,6 @@
 #include <eagine/main_ctx.hpp>
 #include <eagine/main_fwd.hpp>
 #include <eagine/math/functions.hpp>
-#include <eagine/maybe_unused.hpp>
 #include <eagine/message_bus.hpp>
 #include <eagine/msgbus/bridge.hpp>
 #include <eagine/msgbus/resources.hpp>
@@ -140,23 +139,24 @@ auto main(main_ctx& ctx) -> int {
         auto& wd = ctx.watchdog();
         wd.declare_initialized();
 
-        while(EAGINE_LIKELY(
-          !(interrupted || node.is_shut_down() || bridge.is_done()))) {
-            some_true something_done{};
-            something_done(bridge.update());
-            something_done(node.update());
+        while(!(interrupted || node.is_shut_down() || bridge.is_done()))
+            [[likely]] {
+                some_true something_done{};
+                something_done(bridge.update());
+                something_done(node.update());
 
-            if(something_done) {
-                ++cycles_work;
-                idle_streak = 0;
-            } else {
-                ++cycles_idle;
-                max_idle_streak = math::maximum(max_idle_streak, ++idle_streak);
-                std::this_thread::sleep_for(
-                  std::chrono::microseconds(math::minimum(idle_streak, 8000)));
+                if(something_done) {
+                    ++cycles_work;
+                    idle_streak = 0;
+                } else {
+                    ++cycles_idle;
+                    max_idle_streak =
+                      math::maximum(max_idle_streak, ++idle_streak);
+                    std::this_thread::sleep_for(std::chrono::microseconds(
+                      math::minimum(idle_streak, 8000)));
+                }
+                wd.notify_alive();
             }
-            wd.notify_alive();
-        }
         wd.announce_shutdown();
     }
     bridge.finish();
@@ -202,23 +202,25 @@ namespace eagine {
 static ::pid_t ssh_coprocess_pid = -1;
 #endif
 //------------------------------------------------------------------------------
-void maybe_start_coprocess(int& argc, const char**& argv) {
+void maybe_start_coprocess(
+  [[maybe_unused]] int& argc,
+  [[maybe_unused]] const char**& argv) {
 #if EAGINE_POSIX
     for(int argi = 1; argi < argc; ++argi) {
         program_arg arg{argi, argc, argv};
         if(arg.is_tag("--ssh")) {
             int pipe_b2c[2] = {-1, -1};
             int pipe_c2b[2] = {-1, -1};
-            const int pipe_res_b2c = ::pipe(static_cast<int*>(pipe_b2c));
-            const int pipe_res_c2b = ::pipe(static_cast<int*>(pipe_c2b));
+            [[maybe_unused]] const int pipe_res_b2c =
+              ::pipe(static_cast<int*>(pipe_b2c));
+            [[maybe_unused]] const int pipe_res_c2b =
+              ::pipe(static_cast<int*>(pipe_c2b));
             EAGINE_ASSERT(pipe_res_b2c == 0 && pipe_res_c2b == 0);
-            EAGINE_MAYBE_UNUSED(pipe_res_b2c);
-            EAGINE_MAYBE_UNUSED(pipe_res_c2b);
 
             const int fork_res = ::fork();
             EAGINE_ASSERT(fork_res >= 0);
             if(fork_res == 0) {
-                if(auto ssh_host{arg.next()}) {
+                if(const auto ssh_host{arg.next()}) {
                     ::close(pipe_b2c[1]);
                     ::close(0);
                     ::dup2(pipe_b2c[0], 0);
@@ -259,8 +261,6 @@ void maybe_start_coprocess(int& argc, const char**& argv) {
         }
     }
 #endif
-    EAGINE_MAYBE_UNUSED(argc);
-    EAGINE_MAYBE_UNUSED(argv);
 }
 //------------------------------------------------------------------------------
 auto maybe_cleanup(int result) -> int {

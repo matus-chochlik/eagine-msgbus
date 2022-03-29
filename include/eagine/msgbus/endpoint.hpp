@@ -10,6 +10,7 @@
 #define EAGINE_MSGBUS_ENDPOINT_HPP
 
 #include "blobs.hpp"
+#include "config/basic.hpp"
 #include "connection.hpp"
 #include "context_fwd.hpp"
 #include "serialize.hpp"
@@ -177,7 +178,7 @@ public:
     /// @see post_callable
     auto post(const message_id msg_id, const message_view& message) noexcept
       -> bool {
-        if(EAGINE_LIKELY(has_id())) {
+        if(has_id()) [[likely]] {
             return _do_send(msg_id, message);
         }
         _outgoing.push(msg_id, message);

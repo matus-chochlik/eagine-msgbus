@@ -13,7 +13,7 @@ namespace eagine::msgbus {
 EAGINE_LIB_FUNC
 auto registered_entry::update_service() noexcept -> work_done {
     some_true something_done;
-    if(EAGINE_LIKELY(_service)) {
+    if(_service) [[likely]] {
         something_done(_service->update_and_process_all());
     }
     return something_done;

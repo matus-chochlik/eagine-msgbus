@@ -46,7 +46,7 @@ public:
       const identifier_t,
       const message_sequence_t,
       const verification_bits) noexcept -> bool final {
-        if(EAGINE_UNLIKELY((++_sent % _mod) == 0)) {
+        if((++_sent % _mod) == 0) [[unlikely]] {
             log_info("sent ${sent} pongs").arg(EAGINE_ID(sent), _sent);
         }
         return true;
@@ -97,7 +97,7 @@ auto main(main_ctx& ctx) -> int {
     msgbus::pingable_node the_pingable{
       main_ctx_object{EAGINE_ID(PngablEndp), ctx}};
 
-    if(auto id_arg{ctx.args().find("--pingable-id").next()}) {
+    if(const auto id_arg{ctx.args().find("--pingable-id").next()}) {
         identifier_t id{0};
         if(id_arg.parse(id, ctx.log().error_stream())) {
             the_pingable.bus_node().preconfigure_id(id);

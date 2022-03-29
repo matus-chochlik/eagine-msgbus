@@ -13,7 +13,6 @@
 #include "../signal.hpp"
 #include "../subscriber.hpp"
 #include <eagine/bool_aggregate.hpp>
-#include <eagine/maybe_unused.hpp>
 #include <chrono>
 #include <vector>
 
@@ -30,10 +29,9 @@ class pingable : public Base {
 public:
     /// @brief Decides if a ping request should be responded.
     virtual auto respond_to_ping(
-      const identifier_t pinger_id,
+      [[maybe_unused]] const identifier_t pinger_id,
       const message_sequence_t,
       const verification_bits) noexcept -> bool {
-        EAGINE_MAYBE_UNUSED(pinger_id);
         return true;
     }
 

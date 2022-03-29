@@ -48,7 +48,7 @@ public:
       const identifier_t,
       const message_sequence_t,
       const verification_bits) noexcept -> bool final {
-        if(EAGINE_UNLIKELY((++_sent % _mod) == 0)) {
+        if((++_sent % _mod) == 0) [[unlikely]] {
             log_info("sent ${sent} pongs").arg(EAGINE_ID(sent), _sent);
         }
         return true;

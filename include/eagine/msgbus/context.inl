@@ -273,11 +273,11 @@ EAGINE_LIB_FUNC
 auto context::message_digest_sign_init(
   const sslplus::message_digest mdc,
   const sslplus::message_digest_type mdt) noexcept
-  -> decltype(_ssl.message_digest_sign_init.fake()) {
+  -> decltype(_ssl.message_digest_sign_init.fail()) {
     if(_own_pkey) {
         return _ssl.message_digest_sign_init(mdc, mdt, _own_pkey);
     }
-    return _ssl.message_digest_sign_init.fake();
+    return _ssl.message_digest_sign_init.fail();
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
@@ -285,7 +285,7 @@ auto context::message_digest_verify_init(
   const sslplus::message_digest mdc,
   const sslplus::message_digest_type mdt,
   const identifier_t node_id) noexcept
-  -> decltype(_ssl.message_digest_verify_init.fake()) {
+  -> decltype(_ssl.message_digest_verify_init.fail()) {
     auto pos = _remotes.find(node_id);
     if(pos != _remotes.end()) {
         auto& info = std::get<1>(*pos);
@@ -296,7 +296,7 @@ auto context::message_digest_verify_init(
         log_debug("could not find remote node ${endpoint} for verification")
           .arg(EAGINE_ID(endpoint), node_id);
     }
-    return _ssl.message_digest_verify_init.fake();
+    return _ssl.message_digest_verify_init.fail();
 }
 //------------------------------------------------------------------------------
 auto context::get_own_signature(const memory::const_block nonce) noexcept
@@ -305,9 +305,8 @@ auto context::get_own_signature(const memory::const_block nonce) noexcept
         if(ok md_ctx{_ssl.new_message_digest()}) {
             auto cleanup{_ssl.delete_message_digest.raii(md_ctx)};
 
-            if(EAGINE_LIKELY(message_digest_sign_init(md_ctx, md_type))) {
-                if(EAGINE_LIKELY(
-                     _ssl.message_digest_sign_update(md_ctx, nonce))) {
+            if(message_digest_sign_init(md_ctx, md_type)) [[likely]] {
+                if(_ssl.message_digest_sign_update(md_ctx, nonce)) [[likely]] {
                     const auto req_size{
                       _ssl.message_digest_sign_final.required_size(md_ctx)};
 
@@ -351,14 +350,12 @@ auto context::verify_remote_signature(
             if(ok md_ctx{_ssl.new_message_digest()}) {
                 auto cleanup{_ssl.delete_message_digest.raii(md_ctx)};
 
-                if(EAGINE_LIKELY(
-                     message_digest_verify_init(md_ctx, md_type, node_id))) {
-                    if(EAGINE_LIKELY(
-                         _ssl.message_digest_verify_update(md_ctx, content))) {
-                        if(extract_or(
-                             _ssl.message_digest_verify_final(
-                               md_ctx, signature),
-                             false)) {
+                if(message_digest_verify_init(md_ctx, md_type, node_id))
+                  [[likely]] {
+                    if(_ssl.message_digest_verify_update(md_ctx, content))
+                      [[likely]] {
+                        if(_ssl.message_digest_verify_final(
+                             md_ctx, signature)) {
 
                             if(verified_key || verified_remote_key(node_id)) {
                                 result |= verification_bit::source_private_key;
@@ -366,7 +363,6 @@ auto context::verify_remote_signature(
 
                             result |= verification_bit::source_certificate;
                             result |= verification_bit::message_content;
-
                         } else {
                             log_debug("failed to finish ssl verification");
                         }

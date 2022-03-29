@@ -87,7 +87,7 @@ public:
       const identifier_t endpoint_id,
       const subscriber_info::hop_count_t hop_count =
         subscriber_info::max_hops()) noexcept {
-        if(EAGINE_LIKELY(is_valid_endpoint_id(endpoint_id))) {
+        if(is_valid_endpoint_id(endpoint_id)) [[likely]] {
             _stream_relay_id = endpoint_id;
             _stream_relay_timeout.reset();
             _stream_relay_hops = hop_count;
@@ -223,7 +223,7 @@ public:
             if(pos != _streams.end()) {
                 if(pos->second.send_data) {
                     // TODO
-                    EAGINE_MAYBE_UNUSED(data);
+                    (void)(data);
                 }
             }
         }
@@ -285,7 +285,7 @@ private:
     void _handle_stream_relay_assigned(const identifier_t relay_id) noexcept {
         for(const auto& [stream_id, stream] : _streams) {
             EAGINE_ASSERT(stream_id == stream.info.id);
-            EAGINE_MAYBE_UNUSED(stream_id);
+            (void)(stream_id);
             _announce_stream(relay_id, stream.info);
         }
     }
@@ -293,7 +293,7 @@ private:
     void _handle_stream_relay_reset() noexcept {
         for(auto& [stream_id, stream] : _streams) {
             EAGINE_ASSERT(stream_id == stream.info.id);
-            EAGINE_MAYBE_UNUSED(stream_id);
+            (void)(stream_id);
             stream.send_data = false;
         }
     }

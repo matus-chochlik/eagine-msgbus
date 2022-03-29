@@ -54,10 +54,7 @@ auto NodeViewModel::getIdentifier() -> QVariant {
 auto NodeViewModel::getDisplayName() -> QVariant {
     switch(_node.kind()) {
         case eagine::msgbus::node_kind::endpoint:
-            if(auto optStr{_node.display_name()}) {
-                return {c_str(extract(optStr))};
-            }
-            break;
+            return {c_str(_node.display_name())};
         case eagine::msgbus::node_kind::router:
             return {"routing node"};
         case eagine::msgbus::node_kind::bridge:
@@ -71,10 +68,7 @@ auto NodeViewModel::getDisplayName() -> QVariant {
 auto NodeViewModel::getDescription() -> QVariant {
     switch(_node.kind()) {
         case eagine::msgbus::node_kind::endpoint:
-            if(auto optStr{_node.description()}) {
-                return {c_str(extract(optStr))};
-            }
-            break;
+            return {c_str(_node.description())};
         case eagine::msgbus::node_kind::router:
             return {"message bus routing node"};
         case eagine::msgbus::node_kind::bridge:

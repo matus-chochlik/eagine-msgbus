@@ -26,6 +26,7 @@ ${install_prefix}/share/eagine/example/msgbus/eagine-007_ping \
 	${conn_type} \
 	--msgbus-router-address ${ping_addr} \
 	--ping-count ${2:-1M} \
+	--ping-batch ${3:-10k} \
 	& pids+=($!)
 sleep 5
 ${install_prefix}/share/eagine/example/msgbus/eagine-${variant}_pong_registry \

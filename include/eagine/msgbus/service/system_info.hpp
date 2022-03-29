@@ -13,7 +13,6 @@
 #include "../signal.hpp"
 #include <eagine/bool_aggregate.hpp>
 #include <eagine/main_ctx.hpp>
-#include <eagine/maybe_unused.hpp>
 #include <array>
 #include <chrono>
 

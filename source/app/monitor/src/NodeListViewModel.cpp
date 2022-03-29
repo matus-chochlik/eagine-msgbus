@@ -682,34 +682,22 @@ auto NodeListViewModel::identifierData(const remote_node& node) const
 //------------------------------------------------------------------------------
 auto NodeListViewModel::displayNameData(const remote_host& host) const
   -> QVariant {
-    if(auto optStr{host.name()}) {
-        return {c_str(extract(optStr))};
-    }
-    return {};
+    return {c_str(host.name())};
 }
 //------------------------------------------------------------------------------
 auto NodeListViewModel::displayNameData(const remote_inst& inst) const
   -> QVariant {
-    if(auto optStr{inst.application_name()}) {
-        return {c_str(extract(optStr))};
-    }
-    return {};
+    return {c_str(inst.application_name())};
 }
 //------------------------------------------------------------------------------
 auto NodeListViewModel::displayNameData(const remote_node& node) const
   -> QVariant {
-    if(auto optStr{node.display_name()}) {
-        return {c_str(extract(optStr))};
-    }
-    return {};
+    return {c_str(node.display_name())};
 }
 //------------------------------------------------------------------------------
 auto NodeListViewModel::descriptionData(const remote_node& node) const
   -> QVariant {
-    if(auto optStr{node.description()}) {
-        return {c_str(extract(optStr))};
-    }
-    return {};
+    return {c_str(node.description())};
 }
 //------------------------------------------------------------------------------
 auto NodeListViewModel::isResponsiveData(const remote_host& host) const

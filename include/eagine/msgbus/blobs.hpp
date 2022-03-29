@@ -9,6 +9,7 @@
 #ifndef EAGINE_MSGBUS_BLOBS_HPP
 #define EAGINE_MSGBUS_BLOBS_HPP
 
+#include "config/basic.hpp"
 #include "message.hpp"
 #include <eagine/bool_aggregate.hpp>
 #include <eagine/callable_ref.hpp>
@@ -36,37 +37,27 @@ struct blob_io : interface<blob_io> {
     }
 
     virtual auto fetch_fragment(
-      const span_size_t offs,
-      memory::block dst) noexcept -> span_size_t {
-        EAGINE_MAYBE_UNUSED(offs);
-        EAGINE_MAYBE_UNUSED(dst);
+      [[maybe_unused]] const span_size_t offs,
+      [[maybe_unused]] memory::block dst) noexcept -> span_size_t {
         return 0;
     }
 
     virtual auto store_fragment(
-      const span_size_t offs,
-      memory::const_block src) noexcept -> bool {
-        EAGINE_MAYBE_UNUSED(offs);
-        EAGINE_MAYBE_UNUSED(src);
+      [[maybe_unused]] const span_size_t offs,
+      [[maybe_unused]] memory::const_block src) noexcept -> bool {
         return false;
     }
 
     virtual auto check_stored(
-      const span_size_t offs,
-      memory::const_block src) noexcept -> bool {
-        EAGINE_MAYBE_UNUSED(offs);
-        EAGINE_MAYBE_UNUSED(src);
+      [[maybe_unused]] const span_size_t offs,
+      [[maybe_unused]] memory::const_block src) noexcept -> bool {
         return true;
     }
 
     virtual void handle_finished(
-      const message_id msg_id,
-      const message_age msg_age,
-      const message_info& message) noexcept {
-        EAGINE_MAYBE_UNUSED(msg_id);
-        EAGINE_MAYBE_UNUSED(msg_age);
-        EAGINE_MAYBE_UNUSED(message);
-    }
+      [[maybe_unused]] const message_id msg_id,
+      [[maybe_unused]] const message_age msg_age,
+      [[maybe_unused]] const message_info& message) noexcept {}
 
     virtual void handle_cancelled() noexcept {}
 };
