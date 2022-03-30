@@ -599,9 +599,11 @@ public:
     /// @brief Removes messages based on the result of the specified predicate.
     void cleanup(const cleanup_predicate predicate) noexcept;
 
+    void log_stats(main_ctx_object&);
+
 private:
     using _clock_t = std::chrono::steady_clock;
-    memory::buffer_pool _buffers;
+    memory::buffer_pool _buffers{};
     std::vector<std::tuple<message_id, stored_message, message_timestamp>>
       _messages;
 };
@@ -703,9 +705,11 @@ public:
 
     void cleanup(const message_pack_info& to_be_removed) noexcept;
 
+    void log_stats(main_ctx_object&);
+
 private:
     using _clock_t = std::chrono::steady_clock;
-    memory::buffer_pool _buffers;
+    memory::buffer_pool _buffers{};
     std::vector<std::tuple<memory::buffer, message_timestamp>> _messages;
 };
 //------------------------------------------------------------------------------
@@ -793,7 +797,7 @@ public:
     }
 
 private:
-    memory::buffer_pool _buffers;
+    memory::buffer_pool _buffers{};
     std::vector<stored_message> _messages;
 };
 //------------------------------------------------------------------------------
@@ -821,6 +825,10 @@ public:
         _serialized.cleanup(packed);
     }
 
+    void log_stats(main_ctx_object& user) {
+        _serialized.log_stats(user);
+    }
+
 private:
     serialized_message_storage _serialized{};
 };
@@ -845,6 +853,11 @@ public:
     auto fetch_messages(
       main_ctx_object& user,
       const fetch_handler handler) noexcept -> bool;
+
+    void log_stats(main_ctx_object& user) {
+        _packed.log_stats(user);
+        _unpacked.log_stats(user);
+    }
 
 private:
     serialized_message_storage _packed{};
