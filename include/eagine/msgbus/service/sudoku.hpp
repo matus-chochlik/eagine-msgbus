@@ -278,7 +278,6 @@ private:
         default_sudoku_board_traits<S> traits;
         memory::buffer serialize_buffer;
 
-        std::size_t counter{0U};
         std::vector<
           std::tuple<identifier_t, message_sequence_t, basic_sudoku_board<S>>>
           boards;
@@ -343,16 +342,35 @@ private:
                       bus.post(sudoku_response_msg(rank, is_solved), response);
                   };
 
+                bool done{false};
                 const auto process_candidate = [&](auto& candidate) {
-                    ++counter;
-
                     if(candidate.is_solved()) {
                         send_board(candidate, true);
+                        done = true;
                     } else {
-                        candidate.for_each_alternative(
-                          candidate.find_unsolved(), [&](auto& nested) {
-                              send_board(nested, nested.is_solved());
-                          });
+                        if(!done) {
+                            candidate.for_each_alternative(
+                              candidate.find_unsolved(),
+                              [&](auto& intermediate) {
+                                  if(intermediate.is_solved()) {
+                                      send_board(intermediate, true);
+                                      done = true;
+                                  } else {
+                                      if(!done) {
+                                          intermediate.for_each_alternative(
+                                            intermediate.find_unsolved(),
+                                            [&](auto& nested) {
+                                                if(nested.is_solved()) {
+                                                    send_board(nested, true);
+                                                    done = true;
+                                                } else if(!done) {
+                                                    send_board(nested, false);
+                                                }
+                                            });
+                                      }
+                                  }
+                              });
+                        }
                     }
                 };
 
@@ -510,7 +528,7 @@ public:
       const unsigned_constant<S> rank) const noexcept -> std::intmax_t {
         const auto& helper_map = _infos.get(rank).updated_by_helper;
         const auto pos = helper_map.find(helper_id);
-        if(pos != helper_map.end()) {
+        if(pos != helper_map.end()) [[likely]] {
             return pos->second;
         }
         return 0;
@@ -539,7 +557,7 @@ public:
       const unsigned_constant<S> rank) const noexcept -> std::intmax_t {
         const auto& helper_map = _infos.get(rank).solved_by_helper;
         const auto pos = helper_map.find(helper_id);
-        if(pos != helper_map.end()) {
+        if(pos != helper_map.end()) [[likely]] {
             return pos->second;
         }
         return 0;
@@ -691,7 +709,7 @@ private:
 
         auto search_helpers(endpoint& bus) noexcept -> work_done {
             some_true something_done;
-            if(search_timeout) {
+            if(search_timeout) [[unlikely]] {
                 bus.broadcast(sudoku_search_msg(unsigned_constant<S>{}));
                 search_timeout.reset();
                 something_done();
@@ -723,7 +741,7 @@ private:
                 }
                 return false;
             });
-            if(count > 0) {
+            if(count > 0) [[unlikely]] {
                 solver.bus_node()
                   .log_warning("replacing ${count} timeouted boards")
                   .arg(EAGINE_ID(count), count)
