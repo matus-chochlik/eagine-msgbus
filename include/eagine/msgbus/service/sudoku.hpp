@@ -823,15 +823,12 @@ private:
           data_compressor& compressor,
           const identifier_t helper_id) noexcept -> bool {
             if(!key_boards.empty()) {
-                const auto kbpos =
-                  key_boards.begin() + (query_sequence % key_boards.size());
+                const auto kbpos = std::next(
+                  key_boards.begin(), query_sequence % key_boards.size());
                 EAGINE_ASSERT(kbpos < key_boards.end());
                 auto& [key, boards] = *kbpos;
-                std::binomial_distribution dist(
-                  boards.size() - 1U,
-                  math::blend(0.8, 1.0, std::exp(-boards.size())));
 
-                const auto pos = std::next(boards.begin(), dist(randeng));
+                const auto pos = std::prev(boards.end(), 1);
                 auto& board = *pos;
                 serialize_buffer.ensure(
                   default_serialize_buffer_size_for(board));
@@ -853,7 +850,7 @@ private:
                 query.sequence_no = sequence_no;
                 query.key = std::move(key);
                 query.too_late.reset(
-                  adjusted_duration(std::chrono::seconds{S * S}));
+                  adjusted_duration(std::chrono::seconds{S * S * S}));
                 boards.erase(pos);
                 if(boards.empty()) {
                     key_boards.erase(kbpos);
