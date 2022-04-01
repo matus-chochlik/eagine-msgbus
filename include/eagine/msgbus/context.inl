@@ -49,7 +49,7 @@ context::context(main_ctx_parent parent) noexcept
             if(ok pkey_result{
                  _ssl.load_engine_private_key(_ssl_engine, temp, uim_result)}) {
                 if(_own_pkey) {
-                    _ssl.delete_pkey(_own_pkey);
+                    _ssl.delete_pkey(std::move(_own_pkey));
                 }
                 _own_pkey = std::move(pkey_result.get());
                 log_info("successfully loaded ssl key ${keyId}")
@@ -70,29 +70,29 @@ EAGINE_LIB_FUNC
 context::~context() noexcept {
     for(auto& remote : _remotes) {
         auto& info = std::get<1>(remote);
-        _ssl.delete_pkey(info.pubkey);
-        _ssl.delete_x509(info.cert);
+        _ssl.delete_pkey(std::move(info.pubkey));
+        _ssl.delete_x509(std::move(info.cert));
     }
 
     if(_own_pkey) {
-        _ssl.delete_pkey(_own_pkey);
+        _ssl.delete_pkey(std::move(_own_pkey));
     }
 
     if(_ca_cert) {
-        _ssl.delete_x509(_ca_cert);
+        _ssl.delete_x509(std::move(_ca_cert));
     }
 
     if(_own_cert) {
-        _ssl.delete_x509(_own_cert);
+        _ssl.delete_x509(std::move(_own_cert));
     }
 
     if(_ssl_store) {
-        _ssl.delete_x509_store(_ssl_store);
+        _ssl.delete_x509_store(std::move(_ssl_store));
     }
 
     if(_ssl_engine) {
-        _ssl.finish_engine(_ssl_engine);
-        _ssl.delete_engine(_ssl_engine);
+        _ssl.finish_engine(std::move(_ssl_engine));
+        _ssl.delete_engine(std::move(_ssl_engine));
     }
 }
 //------------------------------------------------------------------------------
@@ -149,7 +149,7 @@ auto context::add_own_certificate_pem(const memory::const_block blk) noexcept
     if(blk) {
         if(ok cert{_ssl.parse_x509(blk, {})}) {
             if(_own_cert) {
-                _ssl.delete_x509(_own_cert);
+                _ssl.delete_x509(std::move(_own_cert));
             }
             _own_cert = std::move(cert.get());
             memory::copy_into(blk, _own_cert_pem);
@@ -170,7 +170,7 @@ auto context::add_ca_certificate_pem(const memory::const_block blk) noexcept
         if(ok cert{_ssl.parse_x509(blk, {})}) {
             if(_ssl.add_cert_into_x509_store(_ssl_store, cert)) {
                 if(_ca_cert) {
-                    _ssl.delete_x509(_ca_cert);
+                    _ssl.delete_x509(std::move(_ca_cert));
                 }
                 _ca_cert = std::move(cert.get());
                 memory::copy_into(blk, _ca_cert_pem);
@@ -197,10 +197,10 @@ auto context::add_remote_certificate_pem(
         if(ok cert{_ssl.parse_x509(blk, {})}) {
             auto& info = _remotes[node_id];
             if(info.cert) {
-                _ssl.delete_x509(info.cert);
+                _ssl.delete_x509(std::move(info.cert));
             }
             if(info.pubkey) {
-                _ssl.delete_pkey(info.pubkey);
+                _ssl.delete_pkey(std::move(info.pubkey));
             }
             info.cert = std::move(cert.get());
             memory::copy_into(blk, info.cert_pem);
