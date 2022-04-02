@@ -35,6 +35,8 @@ public:
 
     auto getResetCount() const noexcept -> QVariant;
     auto getProgress() const noexcept -> QVariant;
+    auto getKeyCount() const noexcept -> QVariant;
+    auto getBoardCount() const noexcept -> QVariant;
     auto isComplete() const noexcept -> bool;
     auto getUpdatedByHelper(eagine::identifier_t helperId) const noexcept
       -> qlonglong;
@@ -43,6 +45,7 @@ public:
 
 signals:
     void reinitialized();
+    void queueLengthChanged();
     void fragmentAdded(int rmin, int cmin, int rmax, int cmax);
 
 private:
@@ -54,6 +57,11 @@ private:
       eagine::identifier_t,
       const eagine::msgbus::sudoku_tiles<4>&,
       const std::tuple<int, int>&) noexcept;
+
+    void onQueueLengthChanged(
+      unsigned rank,
+      std::size_t keyCount,
+      std::size_t boardCount) noexcept;
 
     eagine::msgbus::endpoint _bus;
 
@@ -67,6 +75,8 @@ private:
     int _width{0};
     int _height{0};
     int _resetCount{0};
+    std::size_t _keyCount{0};
+    std::size_t _boardCount{0};
 };
 //------------------------------------------------------------------------------
 #endif
