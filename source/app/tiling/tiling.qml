@@ -19,9 +19,9 @@ ApplicationWindow {
     Material.theme: backend.theme.light ? Material.Light : Material.Dark
     Material.accent: Material.Blue
 
-	title: backend.tiling.filePath
-		? qsTr("Tiling - %1").arg(backend.tiling.filePath)
-		: qsTr("Tiling")
+    title: backend.tiling.filePath
+        ? qsTr("Tiling - %1").arg(backend.tiling.filePath)
+        : qsTr("Tiling")
 
     Action {
         id: saveAction
@@ -98,13 +98,13 @@ ApplicationWindow {
                 title: qsTr("Tile se&t")
                 Repeater {
                     model: [
-						"b16",
-						"nodes",
-						"connections",
-						"bricks_large",
-						"bricks_small",
-						"thicket"
-					]
+                        "b16",
+                        "nodes",
+                        "connections",
+                        "bricks_large",
+                        "bricks_small",
+                        "thicket"
+                    ]
                     MenuItem {
                         text: qsTr("tileset_%1").arg(modelData)
                         onTriggered: {
@@ -162,41 +162,51 @@ ApplicationWindow {
             
         }
 
-		RowLayout {
-			Label {
-				Layout.preferredWidth: 75
-				Layout.preferredHeight: 25
+        RowLayout {
+            Label {
+                Layout.preferredWidth: 75
+                Layout.preferredHeight: 25
 
-				text: qsTr("Resets: %1")
-					.arg(Format.integerStr(backend.tiling.resetCount))
-			}
-			ProgressBar {
-				Layout.fillWidth: true
-				Layout.preferredHeight: 25
+                text: qsTr("Resets: %1")
+                    .arg(Format.integerStr(backend.tiling.resetCount))
+            }
+            ProgressBar {
+                Layout.fillWidth: true
+                Layout.preferredHeight: 25
 
-				property real progress: backend.tiling.progress
-					? backend.tiling.progress
-					: 0.0
+                property real progress: backend.tiling.progress
+                    ? backend.tiling.progress
+                    : 0.0
 
-				from: 0
-				to: 1
-				value: progress
-				indeterminate: !backend.tiling.progress
+                from: 0
+                to: 1
+                value: progress
+                indeterminate: !backend.tiling.progress
 
-				Behavior on progress {
-					NumberAnimation {
-						duration: 1000
-					}
-				}
-			}
-			Label {
-				Layout.preferredWidth: 65
-				Layout.preferredHeight: 25
+                Behavior on progress {
+                    NumberAnimation {
+                        duration: 1000
+                    }
+                }
+            }
+            Label {
+                Layout.preferredWidth: 65
+                Layout.preferredHeight: 25
 
-				text: Format.percentStr(backend.tiling.progress)
-			}
-		}
-    }
+                text: Format.percentStr(backend.tiling.progress)
+            }
+        }
+           RowLayout {
+            Label {
+                Layout.preferredWidth: 125
+                Layout.preferredHeight: 25
+
+                text: qsTr("Enqueued boards: %2 / %1")
+                    .arg(Format.integerStr(backend.tiling.keyCount))
+                    .arg(Format.integerStr(backend.tiling.boardCount))
+            }
+        }
+ }
 
     FileDialog {
         id: saveDialog

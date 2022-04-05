@@ -26,6 +26,8 @@ TilingModel::TilingModel(TilingBackend& backend)
     _tiling.helper_appeared.connect(EAGINE_THIS_MEM_FUNC_REF(onHelperAppeared));
     _tiling.tiles_generated_4.connect(
       EAGINE_THIS_MEM_FUNC_REF(onFragmentAdded));
+    _tiling.queue_length_changed.connect(
+      EAGINE_THIS_MEM_FUNC_REF(onQueueLengthChanged));
 }
 //------------------------------------------------------------------------------
 void TilingModel::initialize() {
@@ -81,10 +83,18 @@ auto TilingModel::getResetCount() const noexcept -> QVariant {
 }
 //------------------------------------------------------------------------------
 auto TilingModel::getProgress() const noexcept -> QVariant {
-    if(const auto total = _cellCache.size()) {
+    if(const auto total{_cellCache.size()}) {
         return {_tiling.solution_progress(eagine::unsigned_constant<4>{})};
     }
     return {};
+}
+//------------------------------------------------------------------------------
+auto TilingModel::getKeyCount() const noexcept -> QVariant {
+    return {static_cast<qlonglong>(_keyCount)};
+}
+//------------------------------------------------------------------------------
+auto TilingModel::getBoardCount() const noexcept -> QVariant {
+    return {static_cast<qlonglong>(_boardCount)};
 }
 //------------------------------------------------------------------------------
 auto TilingModel::isComplete() const noexcept -> bool {
@@ -140,5 +150,18 @@ void TilingModel::onFragmentAdded(
           }
       });
     emit fragmentAdded(rmin, cmin, rmax, cmax);
+}
+//------------------------------------------------------------------------------
+void TilingModel::onQueueLengthChanged(
+  unsigned rank,
+  std::size_t keyCount,
+  std::size_t boardCount) noexcept {
+    if(rank == 4) [[likely]] {
+        if((_keyCount != keyCount) || (_boardCount != boardCount)) {
+            _keyCount = keyCount;
+            _boardCount = boardCount;
+            emit queueLengthChanged();
+        }
+    }
 }
 //------------------------------------------------------------------------------

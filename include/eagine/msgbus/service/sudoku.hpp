@@ -278,7 +278,6 @@ private:
         default_sudoku_board_traits<S> traits;
         memory::buffer serialize_buffer;
 
-        std::size_t counter{0U};
         std::vector<
           std::tuple<identifier_t, message_sequence_t, basic_sudoku_board<S>>>
           boards;
@@ -343,16 +342,35 @@ private:
                       bus.post(sudoku_response_msg(rank, is_solved), response);
                   };
 
+                bool done{false};
                 const auto process_candidate = [&](auto& candidate) {
-                    ++counter;
-
                     if(candidate.is_solved()) {
                         send_board(candidate, true);
+                        done = true;
                     } else {
-                        candidate.for_each_alternative(
-                          candidate.find_unsolved(), [&](auto& nested) {
-                              send_board(nested, nested.is_solved());
-                          });
+                        if(!done) {
+                            candidate.for_each_alternative(
+                              candidate.find_unsolved(),
+                              [&](auto& intermediate) {
+                                  if(intermediate.is_solved()) {
+                                      send_board(intermediate, true);
+                                      done = true;
+                                  } else {
+                                      if(!done) {
+                                          intermediate.for_each_alternative(
+                                            intermediate.find_unsolved(),
+                                            [&](auto& nested) {
+                                                if(nested.is_solved()) {
+                                                    send_board(nested, true);
+                                                    done = true;
+                                                } else if(!done) {
+                                                    send_board(nested, false);
+                                                }
+                                            });
+                                      }
+                                  }
+                              });
+                        }
                     }
                 };
 
@@ -394,7 +412,7 @@ public:
     template <unsigned S>
     auto enqueue(Key key, basic_sudoku_board<S> board) noexcept -> auto& {
         _infos.get(unsigned_constant<S>{})
-          .add_board(std::move(key), std::move(board));
+          .add_board(*this, std::move(key), std::move(board));
         return *this;
     }
 
@@ -462,7 +480,7 @@ public:
               something_done(info.handle_timeouted(*this));
               if(_can_work) [[likely]] {
                   something_done(
-                    info.send_boards(this->bus_node(), _compressor));
+                    info.send_boards(*this, this->bus_node(), _compressor));
                   something_done(info.search_helpers(this->bus_node()));
               }
           },
@@ -510,7 +528,7 @@ public:
       const unsigned_constant<S> rank) const noexcept -> std::intmax_t {
         const auto& helper_map = _infos.get(rank).updated_by_helper;
         const auto pos = helper_map.find(helper_id);
-        if(pos != helper_map.end()) {
+        if(pos != helper_map.end()) [[likely]] {
             return pos->second;
         }
         return 0;
@@ -539,7 +557,7 @@ public:
       const unsigned_constant<S> rank) const noexcept -> std::intmax_t {
         const auto& helper_map = _infos.get(rank).solved_by_helper;
         const auto pos = helper_map.find(helper_id);
-        if(pos != helper_map.end()) {
+        if(pos != helper_map.end()) [[likely]] {
             return pos->second;
         }
         return 0;
@@ -620,6 +638,10 @@ public:
         return solved_6;
     }
 
+    /// @brief Triggered when the length of the queue of boards change.
+    signal<void(const unsigned, const std::size_t, const std::size_t) noexcept>
+      queue_length_changed;
+
 protected:
     using Base::Base;
 
@@ -676,7 +698,20 @@ private:
             return !key_boards.empty() || !pending.empty();
         }
 
-        void add_board(const Key key, basic_sudoku_board<S> board) noexcept {
+        void queue_length_changed(This& solver) const noexcept {
+            std::size_t key_count{0};
+            std::size_t board_count{0};
+            for(const auto& entry : key_boards) {
+                key_count++;
+                board_count += std::get<1>(entry).size();
+            }
+            solver.queue_length_changed(S, key_count, board_count);
+        }
+
+        void add_board(
+          This& solver,
+          const Key key,
+          basic_sudoku_board<S> board) noexcept {
             const auto alternative_count = board.alternative_count();
             auto& boards = key_boards[key];
             auto pos = std::lower_bound(
@@ -687,11 +722,12 @@ private:
                   return entry.alternative_count() > value;
               });
             boards.emplace(pos, std::move(board));
+            queue_length_changed(solver);
         }
 
         auto search_helpers(endpoint& bus) noexcept -> work_done {
             some_true something_done;
-            if(search_timeout) {
+            if(search_timeout) [[unlikely]] {
                 bus.broadcast(sudoku_search_msg(unsigned_constant<S>{}));
                 search_timeout.reset();
                 something_done();
@@ -712,7 +748,9 @@ private:
                                     entry.used_helper, entry.key, candidate);
                               } else {
                                   add_board(
-                                    std::move(entry.key), std::move(candidate));
+                                    solver,
+                                    std::move(entry.key),
+                                    std::move(candidate));
                                   ++count;
                               }
                           });
@@ -723,7 +761,7 @@ private:
                 }
                 return false;
             });
-            if(count > 0) {
+            if(count > 0) [[unlikely]] {
                 solver.bus_node()
                   .log_warning("replacing ${count} timeouted boards")
                   .arg(EAGINE_ID(count), count)
@@ -736,7 +774,7 @@ private:
         }
 
         auto process_pending_entry(
-          This& parent,
+          This& solver,
           const message_id msg_id,
           pending_info& done,
           basic_sudoku_board<S>& board) noexcept -> bool {
@@ -748,15 +786,17 @@ private:
                 key_boards.erase_if([&](const auto& entry) {
                     return done.key == std::get<0>(entry);
                 });
+                queue_length_changed(solver);
+
                 auto spos = solved_by_helper.find(done.used_helper);
                 if(spos == solved_by_helper.end()) {
                     spos = solved_by_helper.emplace(done.used_helper, 0L).first;
                 }
                 spos->second++;
-                parent.solved_signal(rank)(done.used_helper, done.key, board);
+                solver.solved_signal(rank)(done.used_helper, done.key, board);
                 solution_timeout.reset();
             } else {
-                add_board(done.key, std::move(board));
+                add_board(solver, done.key, std::move(board));
                 auto upos = updated_by_helper.find(done.used_helper);
                 if(upos == updated_by_helper.end()) {
                     upos =
@@ -769,14 +809,14 @@ private:
         }
 
         void handle_response(
-          This& parent,
+          This& solver,
           const message_id msg_id,
           const stored_message& message) noexcept {
             basic_sudoku_board<S> board{traits};
 
             const auto deserialized{
               (S >= 4) ? default_deserialize_packed(
-                           board, message.content(), parent._compressor)
+                           board, message.content(), solver._compressor)
                        : default_deserialize(board, message.content())};
 
             if(deserialized) [[likely]] {
@@ -787,12 +827,12 @@ private:
                   std::find_if(pending.begin(), pending.end(), predicate);
 
                 if(pos != pending.end()) {
-                    process_pending_entry(parent, msg_id, *pos, board);
+                    process_pending_entry(solver, msg_id, *pos, board);
                 } else {
                     pos = std::find_if(
                       remaining.begin(), remaining.end(), predicate);
                     if(pos != remaining.end()) {
-                        if(process_pending_entry(parent, msg_id, *pos, board)) {
+                        if(process_pending_entry(solver, msg_id, *pos, board)) {
                             remaining.erase(pos);
                         }
                     }
@@ -801,19 +841,17 @@ private:
         }
 
         auto send_board_to(
+          This& solver,
           endpoint& bus,
           data_compressor& compressor,
           const identifier_t helper_id) noexcept -> bool {
             if(!key_boards.empty()) {
-                const auto kbpos =
-                  key_boards.begin() + (query_sequence % key_boards.size());
+                const auto kbpos = std::next(
+                  key_boards.begin(), query_sequence % key_boards.size());
                 EAGINE_ASSERT(kbpos < key_boards.end());
                 auto& [key, boards] = *kbpos;
-                std::binomial_distribution dist(
-                  boards.size() - 1U,
-                  math::blend(0.8, 1.0, std::exp(-boards.size())));
 
-                const auto pos = std::next(boards.begin(), dist(randeng));
+                const auto pos = std::prev(boards.end(), 1);
                 auto& board = *pos;
                 serialize_buffer.ensure(
                   default_serialize_buffer_size_for(board));
@@ -835,11 +873,12 @@ private:
                 query.sequence_no = sequence_no;
                 query.key = std::move(key);
                 query.too_late.reset(
-                  adjusted_duration(std::chrono::seconds{S * S}));
+                  adjusted_duration(std::chrono::seconds{S * S * S}));
                 boards.erase(pos);
                 if(boards.empty()) {
                     key_boards.erase(kbpos);
                 }
+                queue_length_changed(solver);
 
                 ready_helpers.erase(helper_id);
                 used_helpers[helper_id].reset(
@@ -868,8 +907,10 @@ private:
             return head(dst, done);
         }
 
-        auto send_boards(endpoint& bus, data_compressor& compressor) noexcept
-          -> work_done {
+        auto send_boards(
+          This& solver,
+          endpoint& bus,
+          data_compressor& compressor) noexcept -> work_done {
             some_true something_done;
 
             if(found_helpers.size() < ready_helpers.size()) {
@@ -878,7 +919,7 @@ private:
 
             for(const auto helper_id :
                 head(shuffle(find_helpers(cover(found_helpers)), randeng), 8)) {
-                if(!send_board_to(bus, compressor, helper_id)) {
+                if(!send_board_to(solver, bus, compressor, helper_id)) {
                     break;
                 }
                 something_done();
@@ -910,9 +951,9 @@ private:
             }
         }
 
-        void helper_alive(This& parent, const identifier_t id) noexcept {
+        void helper_alive(This& solver, const identifier_t id) noexcept {
             if(std::get<1>(known_helpers.insert(id))) {
-                parent.helper_appeared(id);
+                solver.helper_appeared(id);
             }
             ready_helpers.insert(id);
         }
@@ -930,14 +971,16 @@ private:
                      }) != pending.end();
         }
 
-        void reset(This& parent) noexcept {
+        void reset(This& solver) noexcept {
             key_boards.clear();
             pending.clear();
             remaining.clear();
             used_helpers.clear();
             solution_timeout.reset();
 
-            parent.bus_node()
+            queue_length_changed(solver);
+
+            solver.bus_node()
               .log_info("reset sudoku solution")
               .arg(EAGINE_ID(rank), S);
         }

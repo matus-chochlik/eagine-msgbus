@@ -19,7 +19,6 @@
 #include <eagine/main_ctx_object.hpp>
 #include <eagine/serialize/size_and_data.hpp>
 #include <eagine/timeout.hpp>
-#include <eagine/value_tracker.hpp>
 #include <thread>
 
 #ifdef __clang__
@@ -340,7 +339,8 @@ struct asio_connection_state
                           total_sent_messages += packed.count();
                           total_sent_blocks += 1;
 
-                          if(this->log_usage_stats(span_size(2U << 27U))) {
+                          if(this->log_usage_stats(span_size(2U << 27U)))
+                            [[unlikely]] {
                               total_used_size = 0;
                               total_sent_size = 0;
                               send_start_time = clock_type::now();
@@ -548,7 +548,6 @@ public:
             something_done(conn_state().start_send(*this));
         }
         something_done(conn_state().update());
-        _log_message_counts();
         return something_done;
     }
 
@@ -600,30 +599,14 @@ public:
             }
             conn_state().update();
         }
-        this->_log_message_counts();
         conn_state().cleanup(*this);
-    }
-
-protected:
-    void _log_message_counts() noexcept {
-        if constexpr(is_log_level_enabled_v<log_event_severity::stat>) {
-            if(_outgoing_count.has_changed(_outgoing.count())) {
-                this->log_chart_sample(
-                  EAGINE_ID(outMsgCnt), float(_outgoing_count.get()));
-            }
-
-            if(_incoming_count.has_changed(_incoming.count())) {
-                this->log_chart_sample(
-                  EAGINE_ID(incMsgCnt), float(_incoming_count.get()));
-            }
-        }
+        _outgoing.log_stats(*this);
+        _incoming.log_stats(*this);
     }
 
 private:
     connection_outgoing_messages _outgoing{};
     connection_incoming_messages _incoming{};
-    value_change_div_tracker<span_size_t, 16> _outgoing_count{0};
-    value_change_div_tracker<span_size_t, 16> _incoming_count{0};
 };
 //------------------------------------------------------------------------------
 template <connection_addr_kind Kind>
@@ -684,6 +667,11 @@ public:
         some_true something_done{};
         something_done(conn_state().update());
         return something_done;
+    }
+
+    void cleanup() noexcept override {
+        _outgoing->log_stats(*this);
+        _incoming->log_stats(*this);
     }
 
 private:
@@ -801,6 +789,7 @@ public:
     }
 
     void cleanup() noexcept final {
+        base::cleanup();
         conn_state().cleanup(*this);
     }
 
@@ -906,7 +895,6 @@ public:
             }
         }
         something_done(conn_state().update());
-        this->_log_message_counts();
         return something_done;
     }
 
@@ -1130,7 +1118,6 @@ public:
             }
         }
         something_done(conn_state().update());
-        this->_log_message_counts();
         return something_done;
     }
 
@@ -1272,7 +1259,6 @@ public:
             }
         }
         something_done(conn_state().update());
-        this->_log_message_counts();
         return something_done;
     }
 

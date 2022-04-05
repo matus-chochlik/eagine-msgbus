@@ -102,6 +102,20 @@ void message_storage::cleanup(const cleanup_predicate predicate) noexcept {
     });
 }
 //------------------------------------------------------------------------------
+EAGINE_LIB_FUNC
+void message_storage::log_stats(main_ctx_object& user) {
+    if(const auto opt_stats{_buffers.stats()}) {
+        const auto& stats{extract(opt_stats)};
+        user.log_stat("message storage buffer pool stats")
+          .arg(EAGINE_ID(maxBufSize), stats.max_buffer_size())
+          .arg(EAGINE_ID(maxCount), stats.max_buffer_count())
+          .arg(EAGINE_ID(poolGets), stats.number_of_gets())
+          .arg(EAGINE_ID(poolHits), stats.number_of_hits())
+          .arg(EAGINE_ID(poolEats), stats.number_of_eats())
+          .arg(EAGINE_ID(poolDscrds), stats.number_of_discards());
+    }
+}
+//------------------------------------------------------------------------------
 // serialized_message_storage
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
@@ -205,6 +219,20 @@ void serialized_message_storage::cleanup(
     });
 }
 //------------------------------------------------------------------------------
+EAGINE_LIB_FUNC
+void serialized_message_storage::log_stats(main_ctx_object& user) {
+    if(const auto opt_stats{_buffers.stats()}) {
+        const auto& stats{extract(opt_stats)};
+        user.log_stat("serialized message storage buffer pool stats")
+          .arg(EAGINE_ID(maxBufSize), stats.max_buffer_size())
+          .arg(EAGINE_ID(maxCount), stats.max_buffer_count())
+          .arg(EAGINE_ID(poolGets), stats.number_of_gets())
+          .arg(EAGINE_ID(poolHits), stats.number_of_hits())
+          .arg(EAGINE_ID(poolEats), stats.number_of_eats())
+          .arg(EAGINE_ID(poolDscrds), stats.number_of_discards());
+    }
+}
+//------------------------------------------------------------------------------
 // connection_outgoing_messages
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
@@ -249,7 +277,7 @@ auto connection_incoming_messages::fetch_messages(
                   default_deserializer_backend backend(source);
                   const auto errors =
                     deserialize_message(msg_id, message, backend);
-                  if(!errors) {
+                  if(!errors) [[likely]] {
                       user.log_trace("fetched message ${message}")
                         .arg(EAGINE_ID(message), msg_id);
                       msg_ts = data_ts;

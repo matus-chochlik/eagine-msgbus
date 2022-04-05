@@ -21,6 +21,8 @@ class TilingViewModel
     Q_PROPERTY(QVariant filePath READ getFilePath NOTIFY filePathChanged)
     Q_PROPERTY(QVariant resetCount READ getResetCount NOTIFY reinitialized)
     Q_PROPERTY(QVariant progress READ getProgress NOTIFY progressChanged)
+    Q_PROPERTY(QVariant keyCount READ getKeyCount NOTIFY queueLengthChanged)
+    Q_PROPERTY(QVariant boardCount READ getBoardCount NOTIFY queueLengthChanged)
     Q_PROPERTY(bool complete READ isComplete NOTIFY progressChanged)
 public:
     TilingViewModel(TilingBackend&);
@@ -33,6 +35,8 @@ public:
     auto getFilePath() const -> QVariant;
     auto getResetCount() const -> QVariant;
     auto getProgress() const -> QVariant;
+    auto getKeyCount() const -> QVariant;
+    auto getBoardCount() const -> QVariant;
     auto isComplete() const -> bool;
 
     Q_INVOKABLE void reinitialize(int w, int h);
@@ -41,10 +45,12 @@ signals:
     void reinitialized();
     void progressChanged();
     void filePathChanged();
+    void queueLengthChanged();
 private slots:
     void onTilingModelChanged();
     void onTilingReset();
     void onTilingChanged();
+    void onQueueLengthChanged();
     void onTilesAdded(int rmin, int cmin, int rmax, int cmax);
 
 private:

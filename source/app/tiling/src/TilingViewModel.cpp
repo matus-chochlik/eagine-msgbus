@@ -114,6 +114,20 @@ auto TilingViewModel::getProgress() const -> QVariant {
     return {};
 }
 //------------------------------------------------------------------------------
+auto TilingViewModel::getKeyCount() const -> QVariant {
+    if(auto tilingModel{_backend.getTilingModel()}) {
+        return extract(tilingModel).getKeyCount();
+    }
+    return {};
+}
+//------------------------------------------------------------------------------
+auto TilingViewModel::getBoardCount() const -> QVariant {
+    if(auto tilingModel{_backend.getTilingModel()}) {
+        return extract(tilingModel).getBoardCount();
+    }
+    return {};
+}
+//------------------------------------------------------------------------------
 auto TilingViewModel::isComplete() const -> bool {
     if(auto tilingModel{_backend.getTilingModel()}) {
         return extract(tilingModel).isComplete();
@@ -132,6 +146,11 @@ void TilingViewModel::onTilingModelChanged() {
       &TilingModel::fragmentAdded,
       this,
       &TilingViewModel::onTilesAdded);
+    connect(
+      _backend.getTilingModel(),
+      &TilingModel::queueLengthChanged,
+      this,
+      &TilingViewModel::onQueueLengthChanged);
     emit modelReset({});
     emit reinitialized();
     emit progressChanged();
@@ -160,5 +179,9 @@ void TilingViewModel::onTilesAdded(int rmin, int cmin, int rmax, int cmax) {
             }
         }
     }
+}
+//------------------------------------------------------------------------------
+void TilingViewModel::onQueueLengthChanged() {
+    emit queueLengthChanged();
 }
 //------------------------------------------------------------------------------
