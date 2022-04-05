@@ -19,7 +19,6 @@
 #include <eagine/main_ctx_object.hpp>
 #include <eagine/serialize/size_and_data.hpp>
 #include <eagine/timeout.hpp>
-#include <eagine/value_tracker.hpp>
 #include <thread>
 
 #ifdef __clang__
