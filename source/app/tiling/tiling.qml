@@ -57,7 +57,7 @@ ApplicationWindow {
             Menu {
                 title: qsTr("&New tiling")
                 Repeater {
-                    model: [16, 32, 64, 128, 256, 512, 1024]
+                    model: [16, 32, 64, 128, 256, 512, 1024, 2048]
                     MenuItem {
                         text: qsTr("%1x%1").arg(modelData)
                         onTriggered: {

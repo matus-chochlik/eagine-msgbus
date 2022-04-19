@@ -275,7 +275,7 @@ auto context::message_digest_sign_init(
   const sslplus::message_digest_type mdt) noexcept
   -> decltype(_ssl.message_digest_sign_init.fail()) {
     if(_own_pkey) {
-        return _ssl.message_digest_sign_init(mdc, mdt, _own_pkey);
+        return _ssl.message_digest_sign_init(mdc, mdt, _ssl_engine, _own_pkey);
     }
     return _ssl.message_digest_sign_init.fail();
 }
@@ -290,7 +290,8 @@ auto context::message_digest_verify_init(
     if(pos != _remotes.end()) {
         auto& info = std::get<1>(*pos);
         if(info.pubkey) {
-            return _ssl.message_digest_verify_init(mdc, mdt, info.pubkey);
+            return _ssl.message_digest_verify_init(
+              mdc, mdt, _ssl_engine, info.pubkey);
         }
     } else {
         log_debug("could not find remote node ${endpoint} for verification")
