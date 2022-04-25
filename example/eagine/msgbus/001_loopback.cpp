@@ -10,7 +10,6 @@
 #include <eagine/msgbus/endpoint.hpp>
 #include <eagine/msgbus/loopback.hpp>
 #include <eagine/msgbus/subscriber.hpp>
-#include <iostream>
 
 namespace eagine {
 namespace msgbus {

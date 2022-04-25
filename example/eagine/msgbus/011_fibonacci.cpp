@@ -18,7 +18,6 @@
 #include <eagine/serialize/fast_backend.hpp>
 #include <eagine/serialize/read.hpp>
 #include <eagine/serialize/write.hpp>
-#include <iostream>
 #include <queue>
 #include <set>
 
@@ -124,7 +123,10 @@ struct fibonacci_client : static_subscriber<2> {
         fast_deserializer_backend read_backend(source);
         deserialize(tup, read_backend);
         // print
-        std::cout << "fib(" << arg << ") = " << result << std::endl;
+        bus_node()
+          .cio_print("fib(${arg}) = ${fib}")
+          .arg(EAGINE_ID(arg), arg)
+          .arg(EAGINE_ID(fib), result);
         // remove
         _pending.erase(arg);
         return true;

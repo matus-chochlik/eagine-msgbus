@@ -12,7 +12,6 @@
 #include <eagine/msgbus/endpoint.hpp>
 #include <eagine/msgbus/router.hpp>
 #include <eagine/msgbus/subscriber.hpp>
-#include <iostream>
 
 namespace eagine {
 namespace msgbus {

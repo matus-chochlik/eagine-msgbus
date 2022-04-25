@@ -6,37 +6,40 @@
 ///  http://www.boost.org/LICENSE_1_0.txt
 ///
 
+#include <eagine/console/console.hpp>
+#include <eagine/main.hpp>
 #include <eagine/msgbus/signal.hpp>
-#include <iostream>
 
-auto main() -> int {
-    eagine::msgbus::signal<void(const int) noexcept> sig;
-    eagine::callable_ref<void(const int) noexcept> f = sig;
+namespace eagine {
 
-    const auto fa = [](const int i) {
-        std::cout << "A: " << i << std::endl;
+auto main(main_ctx& ctx) -> int {
+    msgbus::signal<void(const int) noexcept> sig;
+    callable_ref<void(const int) noexcept> f = sig;
+
+    const auto fa = [&](const int i) {
+        ctx.cio().print(EAGINE_ID(MsgBus), "A: ${i}").arg(EAGINE_ID(i), i);
     };
-    const auto ka = sig.connect({eagine::construct_from, fa});
+    const auto ka = sig.connect({construct_from, fa});
     f(1);
 
-    const auto fb = [](const int i) {
-        std::cout << "B: " << i << std::endl;
+    const auto fb = [&](const int i) {
+        ctx.cio().print(EAGINE_ID(MsgBus), "B: ${i}").arg(EAGINE_ID(i), i);
     };
-    const auto kb = sig.connect({eagine::construct_from, fb});
+    const auto kb = sig.connect({construct_from, fb});
     f(2);
 
-    const auto fc = [](const int i) {
-        std::cout << "C: " << i << std::endl;
+    const auto fc = [&](const int i) {
+        ctx.cio().print(EAGINE_ID(MsgBus), "C: ${i}").arg(EAGINE_ID(i), i);
     };
-    const auto kc = sig.connect({eagine::construct_from, fc});
+    const auto kc = sig.connect({construct_from, fc});
     f(3);
 
     sig.disconnect(ka);
 
-    const auto fd = [](const int i) {
-        std::cout << "D: " << i << std::endl;
+    const auto fd = [&](const int i) {
+        ctx.cio().print(EAGINE_ID(MsgBus), "D: ${i}").arg(EAGINE_ID(i), i);
     };
-    const auto kd = sig.connect({eagine::construct_from, fd});
+    const auto kd = sig.connect({construct_from, fd});
     f(4);
 
     sig.disconnect(ka);
@@ -51,12 +54,13 @@ auto main() -> int {
     sig.disconnect(kd);
     f(8);
 
-    const auto fe = [](int i) {
-        std::cout << "E: " << i << std::endl;
+    const auto fe = [&](int i) {
+        ctx.cio().print(EAGINE_ID(MsgBus), "E: ${i}").arg(EAGINE_ID(i), i);
     };
-    if(auto be{sig.bind({eagine::construct_from, fe})}) {
+    if(auto be{sig.bind({construct_from, fe})}) {
         f(9);
     }
 
     return 0;
 }
+} // namespace eagine
