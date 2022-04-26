@@ -19,7 +19,6 @@
 #include <eagine/serialize/read.hpp>
 #include <eagine/serialize/write.hpp>
 #include <eagine/system_info.hpp>
-#include <iostream>
 #include <queue>
 #include <set>
 #include <thread>
@@ -161,7 +160,10 @@ public:
         fast_deserializer_backend read_backend(source);
         deserialize(tup, read_backend);
         // print
-        std::cout << "fib(" << arg << ") = " << result << std::endl;
+        bus_node()
+          .cio_print("fib(${arg}) = ${fib}")
+          .arg(EAGINE_ID(arg), arg)
+          .arg(EAGINE_ID(fib), result);
         // remove
         _pending.erase(arg);
         return true;

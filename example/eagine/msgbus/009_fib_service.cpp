@@ -5,6 +5,7 @@
 /// See accompanying file LICENSE_1_0.txt or copy at
 ///  http://www.boost.org/LICENSE_1_0.txt
 ///
+#include <eagine/console/console.hpp>
 #include <eagine/interop/valgrind.hpp>
 #include <eagine/main.hpp>
 #include <eagine/memory/span_algo.hpp>
@@ -20,7 +21,6 @@
 #include <eagine/serialize/fast_backend.hpp>
 #include <eagine/serialize/read.hpp>
 #include <eagine/serialize/write.hpp>
-#include <iostream>
 #include <queue>
 #include <set>
 
@@ -99,8 +99,12 @@ struct fibonacci_client : static_subscriber<2> {
                 arg)
               .set_timeout(std::chrono::minutes(1))
               .on_timeout([this, arg]() { this->_remaining.push(arg); })
-              .then([arg](std::int64_t fib) {
-                  std::cout << "fib(" << arg << ") = " << fib << std::endl;
+              .then([this, arg](std::int64_t fib) {
+                  bus_node()
+                    .cio_print("fib(${arg}) = ${fib}")
+                    .arg(EAGINE_ID(arg), arg)
+                    .arg(EAGINE_ID(fib), fib);
+                  // std::cout << "fib(" << arg << ") = " << fib << std::endl;
               });
         }
         return true;

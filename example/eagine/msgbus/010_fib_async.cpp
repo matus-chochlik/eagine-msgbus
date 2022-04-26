@@ -5,6 +5,7 @@
 /// See accompanying file LICENSE_1_0.txt or copy at
 ///  http://www.boost.org/LICENSE_1_0.txt
 ///
+#include <eagine/console/console.hpp>
 #include <eagine/interop/valgrind.hpp>
 #include <eagine/main.hpp>
 #include <eagine/msgbus/acceptor.hpp>
@@ -12,7 +13,6 @@
 #include <eagine/msgbus/endpoint.hpp>
 #include <eagine/msgbus/router.hpp>
 #include <eagine/msgbus/service.hpp>
-#include <iostream>
 
 namespace eagine {
 namespace msgbus {
@@ -111,10 +111,14 @@ auto main(main_ctx& ctx) -> int {
     for(std::int64_t i = 1; i <= n; ++i) {
         client.fib(i)
           .set_timeout(std::chrono::minutes(1))
-          .then([i](std::int64_t fib) {
-              std::cout << "fib(" << i << ") = " << fib << std::endl;
+          .then([i, &ctx](std::int64_t fib) {
+              ctx.cio()
+                .print(EAGINE_ID(MsgBus), "fib(${arg}) = ${fib}")
+                .arg(EAGINE_ID(arg), i)
+                .arg(EAGINE_ID(fib), fib);
           })
-          .otherwise([]() { std::cout << "failed" << std::endl; });
+          .otherwise(
+            [&ctx]() { ctx.cio().print(EAGINE_ID(MsgBus), "failed"); });
     }
 
     while(!client.is_done()) {
