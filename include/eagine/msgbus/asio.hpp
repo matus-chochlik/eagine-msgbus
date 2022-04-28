@@ -953,7 +953,7 @@ private:
         _connecting = true;
         auto& [host, port] = _addr;
         _resolver.async_resolve(
-          asio::string_view(host.data(), std_size(host.size())),
+          asio::string_view(host.data(), integer(host.size())),
           {},
           [this, port{port}](const std::error_code error, auto resolved) {
               if(!error) {

@@ -1006,8 +1006,7 @@ public:
     /// @pre index >= 0 && index < count()
     auto get(const span_size_t index) noexcept -> node_connection {
         EAGINE_ASSERT((index >= 0) && (index < count()));
-        return _tracker.get_connection(
-          _origin_id, _remote_ids[std_size(index)]);
+        return _tracker.get_connection(_origin_id, _remote_ids[integer(index)]);
     }
 
     /// @brief Returns the node connected through the i-th connection.
@@ -1016,7 +1015,7 @@ public:
     /// @pre index >= 0 && index < count()
     auto remote(const span_size_t index) noexcept -> remote_node {
         EAGINE_ASSERT((index >= 0) && (index < count()));
-        return _tracker.get_node(_remote_ids[std_size(index)]);
+        return _tracker.get_node(_remote_ids[integer(index)]);
     }
 
 private:

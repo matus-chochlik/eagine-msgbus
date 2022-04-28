@@ -90,7 +90,7 @@ public:
 
     static auto name_from(const identifier id) noexcept -> std::string {
         std::string result;
-        result.reserve(std_size(identifier::max_size() + 1));
+        result.reserve(integer(identifier::max_size() + 1));
         id.name().str(result);
         return result;
     }
@@ -292,7 +292,7 @@ public:
       -> auto& {
         if(is_open()) {
             errno = 0;
-            ::mq_send(_ohandle, blk.data(), std_size(blk.size()), priority);
+            ::mq_send(_ohandle, blk.data(), integer(blk.size()), priority);
             _last_errno = errno;
             if((_last_errno != 0) && (_last_errno != EAGAIN)) [[unlikely]] {
                 log_error("failed to send message")
