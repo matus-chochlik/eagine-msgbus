@@ -953,7 +953,7 @@ private:
         _connecting = true;
         auto& [host, port] = _addr;
         _resolver.async_resolve(
-          asio::string_view(host.data(), std_size(host.size())),
+          asio::string_view(host.data(), integer(host.size())),
           {},
           [this, port{port}](const std::error_code error, auto resolved) {
               if(!error) {
@@ -1318,7 +1318,7 @@ public:
 
     ~asio_acceptor() noexcept override {
         try {
-            [[maybe_unused]] std::remove(_addr_str.c_str());
+            [[maybe_unused]] const auto unused{std::remove(_addr_str.c_str())};
         } catch(...) {
         }
     }
@@ -1406,7 +1406,7 @@ private:
     static inline auto _prepare(
       std::shared_ptr<asio_common_state> asio_state,
       string_view addr_str) noexcept -> std::shared_ptr<asio_common_state> {
-        [[maybe_unused]] std::remove(c_str(addr_str));
+        [[maybe_unused]] const auto unused{std::remove(c_str(addr_str))};
         return asio_state;
     }
 };

@@ -50,7 +50,6 @@ struct fibonacci_server : static_subscriber<2> {
       -> bool {
         std::int64_t arg{0};
         std::int64_t result{0};
-        auto tup = std::tie(arg, result);
         // deserialize
         block_data_source source(msg_in.content());
         fast_deserializer_backend read_backend(source);
@@ -61,7 +60,7 @@ struct fibonacci_server : static_subscriber<2> {
         std::array<byte, 64> buffer{};
         block_data_sink sink(cover(buffer));
         fast_serializer_backend write_backend(sink);
-        serialize(tup, write_backend);
+        serialize(std::tie(arg, result), write_backend);
         // send
         message_view msg_out{sink.done()};
         msg_out.set_serializer_id(write_backend.type_id());
@@ -117,10 +116,10 @@ struct fibonacci_client : static_subscriber<2> {
       -> bool {
         std::int64_t arg{0};
         std::int64_t result{0};
-        auto tup = std::tie(arg, result);
         // deserialize
         block_data_source source(msg_in.content());
         fast_deserializer_backend read_backend(source);
+        auto tup = std::tie(arg, result);
         deserialize(tup, read_backend);
         // print
         bus_node()

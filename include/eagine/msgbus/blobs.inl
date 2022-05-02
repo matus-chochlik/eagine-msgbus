@@ -379,13 +379,13 @@ auto blob_manipulator::push_incoming_fragment(
     }
     if(pos != _incoming.end()) {
         auto& pending = *pos;
-        if(!pending.total_size_mismatch(span_size(total_size))) [[likely]] {
+        if(!pending.total_size_mismatch(integer(total_size))) [[likely]] {
             if(pending.msg_id == msg_id) [[likely]] {
                 pending.max_time.reset();
                 if(pending.priority < priority) [[unlikely]] {
                     pending.priority = priority;
                 }
-                if(pending.merge_fragment(span_size(offset), fragment)) {
+                if(pending.merge_fragment(integer(offset), fragment)) {
                     log_debug("merged blob fragment")
                       .arg(EAGINE_ID(source), source_id)
                       .arg(EAGINE_ID(srcBlobId), source_blob_id)
@@ -408,7 +408,7 @@ auto blob_manipulator::push_incoming_fragment(
               .arg(EAGINE_ID(message), EAGINE_ID(ByteSize), total_size);
         }
     } else if(source_id != broadcast_endpoint_id()) {
-        if(auto io{get_io(msg_id, span_size(total_size), *this)}) {
+        if(auto io{get_io(msg_id, integer(total_size), *this)}) {
             _incoming.emplace_back();
             auto& pending = _incoming.back();
             pending.msg_id = msg_id;
@@ -421,7 +421,7 @@ auto blob_manipulator::push_incoming_fragment(
               std::chrono::seconds{60}, memory_access_rate::high)};
             pending.priority = priority;
             pending.done_parts().clear();
-            if(pending.merge_fragment(span_size(offset), fragment)) {
+            if(pending.merge_fragment(integer(offset), fragment)) {
                 log_debug("merged first blob fragment")
                   .arg(EAGINE_ID(source), source_id)
                   .arg(EAGINE_ID(srcBlobId), source_blob_id)
