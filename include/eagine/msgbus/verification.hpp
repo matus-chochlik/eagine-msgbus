@@ -34,7 +34,7 @@ enum class verification_bit : std::uint8_t {
 #if !EAGINE_CXX_REFLECTION
 template <typename Selector>
 constexpr auto enumerator_mapping(
-  const type_identity<verification_bit>,
+  const std::type_identity<verification_bit>,
   const Selector) noexcept {
     return enumerator_map_type<verification_bit, 5>{
       {{"source_id", verification_bit::source_id},

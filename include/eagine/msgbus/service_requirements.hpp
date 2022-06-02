@@ -9,7 +9,6 @@
 #ifndef EAGINE_MSGBUS_SERVICE_REQUIREMENTS_HPP
 #define EAGINE_MSGBUS_SERVICE_REQUIREMENTS_HPP
 
-#include <eagine/type_identity.hpp>
 #include <type_traits>
 
 namespace eagine::msgbus {
@@ -58,7 +57,7 @@ using require_services =
   typename get_required_services<Base, Requirements...>::type;
 
 template <class Base>
-struct get_required_services<Base> : type_identity<Base> {};
+struct get_required_services<Base> : std::type_identity<Base> {};
 
 template <
   class Base,
@@ -67,7 +66,7 @@ template <
   template <class>
   class... Requirements>
 struct get_required_services<Base, Required, Requirements...>
-  : type_identity<
+  : std::type_identity<
       require_service<require_services<Base, Requirements...>, Required>> {};
 //------------------------------------------------------------------------------
 } // namespace eagine::msgbus

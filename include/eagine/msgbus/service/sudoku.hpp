@@ -445,7 +445,7 @@ public:
 
         if(const auto solution_timeout{this->app_config().get(
              "msgbus.sudoku.solver.solution_timeout",
-             type_identity<std::chrono::seconds>{})}) {
+             std::type_identity<std::chrono::seconds>{})}) {
             this->bus_node()
               .log_info("setting solution timeout to ${timeout}")
               .arg(EAGINE_ID(timeout), extract(solution_timeout));

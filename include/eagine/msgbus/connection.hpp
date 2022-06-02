@@ -15,7 +15,6 @@
 #include <eagine/callable_ref.hpp>
 #include <eagine/interface.hpp>
 #include <eagine/message_id.hpp>
-#include <eagine/type_identity.hpp>
 #include <eagine/valid_if/positive.hpp>
 #include <type_traits>
 
@@ -40,7 +39,7 @@ enum class connection_addr_kind {
 #if !EAGINE_CXX_REFLECTION
 template <typename Selector>
 constexpr auto enumerator_mapping(
-  const type_identity<connection_addr_kind>,
+  const std::type_identity<connection_addr_kind>,
   const Selector) noexcept {
     return enumerator_map_type<connection_addr_kind, 3>{
       {{"none", connection_addr_kind::none},
@@ -70,7 +69,7 @@ enum class connection_protocol {
 #if !EAGINE_CXX_REFLECTION
 template <typename Selector>
 constexpr auto enumerator_mapping(
-  const type_identity<connection_protocol>,
+  const std::type_identity<connection_protocol>,
   const Selector) noexcept {
     return enumerator_map_type<connection_protocol, 3>{
       {{"stream", connection_protocol::stream},

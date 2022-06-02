@@ -77,7 +77,7 @@ enum class remote_node_change : std::uint16_t {
 #if !EAGINE_CXX_REFLECTION
 template <typename Selector>
 constexpr auto enumerator_mapping(
-  const type_identity<remote_node_change>,
+  const std::type_identity<remote_node_change>,
   const Selector) noexcept {
     return enumerator_map_type<remote_node_change, 16>{
       {{"kind", remote_node_change::kind},
@@ -147,7 +147,7 @@ enum class remote_instance_change : std::uint16_t {
 #if !EAGINE_CXX_REFLECTION
 template <typename Selector>
 constexpr auto enumerator_mapping(
-  const type_identity<remote_instance_change>,
+  const std::type_identity<remote_instance_change>,
   const Selector) noexcept {
     return enumerator_map_type<remote_instance_change, 5>{
       {{"host_id", remote_instance_change::host_id},
@@ -200,7 +200,7 @@ enum class remote_host_change : std::uint16_t {
 #if !EAGINE_CXX_REFLECTION
 template <typename Selector>
 constexpr auto enumerator_mapping(
-  const type_identity<remote_host_change>,
+  const std::type_identity<remote_host_change>,
   const Selector) noexcept {
     return enumerator_map_type<remote_host_change, 5>{
       {{"hostname", remote_host_change::hostname},

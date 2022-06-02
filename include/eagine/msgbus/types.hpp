@@ -39,7 +39,7 @@ struct router_topology_info {
 
 template <typename Selector>
 constexpr auto data_member_mapping(
-  const type_identity<router_topology_info>,
+  const std::type_identity<router_topology_info>,
   const Selector) noexcept {
     using S = router_topology_info;
     return make_data_member_mapping<
@@ -75,7 +75,7 @@ struct router_statistics {
 
 template <typename Selector>
 constexpr auto data_member_mapping(
-  const type_identity<router_statistics>,
+  const std::type_identity<router_statistics>,
   const Selector) noexcept {
     using S = router_statistics;
     return make_data_member_mapping<
@@ -107,7 +107,7 @@ struct bridge_topology_info {
 
 template <typename Selector>
 constexpr auto data_member_mapping(
-  const type_identity<bridge_topology_info>,
+  const std::type_identity<bridge_topology_info>,
   const Selector) noexcept {
     using S = bridge_topology_info;
     return make_data_member_mapping<
@@ -141,7 +141,7 @@ struct bridge_statistics {
 
 template <typename Selector>
 constexpr auto data_member_mapping(
-  const type_identity<bridge_statistics>,
+  const std::type_identity<bridge_statistics>,
   const Selector) noexcept {
     using S = bridge_statistics;
     return make_data_member_mapping<
@@ -170,7 +170,7 @@ struct endpoint_topology_info {
 
 template <typename Selector>
 constexpr auto data_member_mapping(
-  const type_identity<endpoint_topology_info>,
+  const std::type_identity<endpoint_topology_info>,
   const Selector) noexcept {
     using S = endpoint_topology_info;
     return make_data_member_mapping<S, identifier_t, process_instance_id_t>(
@@ -195,7 +195,7 @@ struct endpoint_statistics {
 
 template <typename Selector>
 constexpr auto data_member_mapping(
-  const type_identity<endpoint_statistics>,
+  const std::type_identity<endpoint_statistics>,
   const Selector) noexcept {
     using S = endpoint_statistics;
     return make_data_member_mapping<
@@ -239,7 +239,7 @@ struct endpoint_info {
 
 template <typename Selector>
 constexpr auto data_member_mapping(
-  const type_identity<endpoint_info>,
+  const std::type_identity<endpoint_info>,
   const Selector) noexcept {
     using S = endpoint_info;
     return make_data_member_mapping<S, std::string, std::string, bool, bool>(
@@ -267,7 +267,7 @@ struct connection_statistics {
 
 template <typename Selector>
 constexpr auto data_member_mapping(
-  const type_identity<connection_statistics>,
+  const std::type_identity<connection_statistics>,
   const Selector) noexcept {
     using S = connection_statistics;
     return make_data_member_mapping<S, identifier_t, identifier_t, float, float>(
@@ -286,7 +286,7 @@ struct message_flow_info {
 
 template <typename Selector>
 constexpr auto data_member_mapping(
-  const type_identity<message_flow_info>,
+  const std::type_identity<message_flow_info>,
   const Selector) noexcept {
     using S = message_flow_info;
     return make_data_member_mapping<S, std::int16_t>(
