@@ -13,6 +13,7 @@
 #include <eagine/system_info.hpp>
 #include <eagine/msgbus/serialize.hpp>
 #include <eagine/msgbus/context.hpp>
+#include <eagine/msgbus/blobs.hpp>
 #include <eagine/logging/entry.hpp>
 #include "implement.inl"
 #include <eagine/msgbus/router.hpp>
