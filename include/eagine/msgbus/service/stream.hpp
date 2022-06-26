@@ -40,7 +40,7 @@ struct stream_info {
 
 template <typename Selector>
 constexpr auto data_member_mapping(
-  type_identity<stream_info>,
+  std::type_identity<stream_info>,
   Selector) noexcept {
     using S = stream_info;
     return make_data_member_mapping<

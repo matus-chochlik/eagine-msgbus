@@ -6,7 +6,7 @@
 ///  http://www.boost.org/LICENSE_1_0.txt
 ///
 #include <eagine/interop/valgrind.hpp>
-#include <eagine/main.hpp>
+#include <eagine/main_ctx.hpp>
 #include <eagine/memory/span_algo.hpp>
 #include <eagine/msgbus/acceptor.hpp>
 #include <eagine/msgbus/actor.hpp>
@@ -225,3 +225,8 @@ auto main(main_ctx& ctx) -> int {
     return 0;
 }
 } // namespace eagine
+
+auto main(int argc, const char** argv) -> int {
+    return eagine::default_main(argc, argv, eagine::main);
+}
+

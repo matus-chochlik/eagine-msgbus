@@ -97,7 +97,7 @@ static inline auto operator<(
 #if !EAGINE_CXX_REFLECTION
 template <typename Selector>
 constexpr auto enumerator_mapping(
-  const type_identity<message_priority>,
+  const std::type_identity<message_priority>,
   const Selector) noexcept {
     return enumerator_map_type<message_priority, 5>{
       {{"critical", message_priority::critical},
@@ -126,7 +126,7 @@ using message_crypto_flags = bitfield<message_crypto_flag>;
 #if !EAGINE_CXX_REFLECTION
 template <typename Selector>
 constexpr auto enumerator_mapping(
-  const type_identity<message_crypto_flag>,
+  const std::type_identity<message_crypto_flag>,
   const Selector) noexcept {
     return enumerator_map_type<message_crypto_flag, 3>{
       {{"asymmetric", message_crypto_flag::asymmetric},
