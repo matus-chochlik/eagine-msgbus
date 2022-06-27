@@ -62,12 +62,12 @@ public:
     }
 
     auto input_usable() noexcept {
-        std::unique_lock lock{_input_mutex};
+        const std::unique_lock lock{_input_mutex};
         return _input.good();
     }
 
     auto output_usable() noexcept {
-        std::unique_lock lock{_output_mutex};
+        const std::unique_lock lock{_output_mutex};
         return _output.good();
     }
 
@@ -76,7 +76,7 @@ public:
     }
 
     void push(const message_id msg_id, const message_view& message) noexcept {
-        std::unique_lock lock{_output_mutex};
+        const std::unique_lock lock{_output_mutex};
         _outgoing.back().push(msg_id, message);
     }
 
@@ -138,7 +138,7 @@ public:
 
     auto fetch_messages(const fetch_handler handler) noexcept {
         auto& queue = [this]() -> message_storage& {
-            std::unique_lock lock{_input_mutex};
+            const std::unique_lock lock{_input_mutex};
             _incoming.swap();
             return _incoming.front();
         }();
@@ -169,7 +169,7 @@ public:
                     _recv_dest.store_content(head(view(_buffer), o));
                 }
 
-                std::unique_lock lock{_input_mutex};
+                const std::unique_lock lock{_input_mutex};
                 _incoming.back().push({class_id, method_id}, _recv_dest);
             }
             _source.pop(extract(pos) + 1);
