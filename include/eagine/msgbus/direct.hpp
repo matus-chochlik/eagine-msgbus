@@ -44,7 +44,7 @@ public:
     void send_to_server(
       const message_id msg_id,
       const message_view& message) noexcept {
-        std::unique_lock lock{_mutex};
+        const std::unique_lock lock{_mutex};
         _client_to_server.back().push(msg_id, message);
     }
 
@@ -53,7 +53,7 @@ public:
       const message_id msg_id,
       const message_view& message) noexcept -> bool {
         if(_client_connected) {
-            std::unique_lock lock{_mutex};
+            const std::unique_lock lock{_mutex};
             _server_to_client.back().push(msg_id, message);
             return true;
         }
@@ -64,7 +64,7 @@ public:
     auto fetch_from_client(const connection::fetch_handler handler) noexcept
       -> std::tuple<bool, bool> {
         auto& c2s = [this]() -> message_storage& {
-            std::unique_lock lock{_mutex};
+            const std::unique_lock lock{_mutex};
             _client_to_server.swap();
             return _client_to_server.front();
         }();
@@ -75,7 +75,7 @@ public:
     auto fetch_from_server(const connection::fetch_handler handler) noexcept
       -> bool {
         auto& s2c = [this]() -> message_storage& {
-            std::unique_lock lock{_mutex};
+            const std::unique_lock lock{_mutex};
             _server_to_client.swap();
             return _server_to_client.front();
         }();
