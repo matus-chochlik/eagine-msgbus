@@ -24,12 +24,26 @@ eagine_add_module(
 )
 
 eagine_add_module(
+	eagine.msgbus PARTITION context
+	IMPORTS
+		types message
+		eagine.core.types
+		eagine.core.memory
+		eagine.core.identifier
+		eagine.core.container
+		eagine.core.main_ctx
+		eagine.sslplus
+)
+
+eagine_add_module(
 	eagine.msgbus
 	PP_NAME MSGBUS
 	INTERFACES msgbus
 	PARTITIONS
 		types
 		message
+		context
 	SOURCES
+		message_impl
 )
 

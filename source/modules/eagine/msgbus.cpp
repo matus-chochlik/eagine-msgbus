@@ -9,3 +9,4 @@ export module eagine.msgbus;
 
 export import :types;
 export import :message;
+export import :context;

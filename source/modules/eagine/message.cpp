@@ -17,6 +17,7 @@ import eagine.core.identifier;
 import eagine.core.reflection;
 import eagine.core.serialization;
 import eagine.core.utility;
+import eagine.core.runtime;
 import eagine.core.main_ctx;
 import :types;
 import <chrono>;
@@ -24,7 +25,46 @@ import <cstdint>;
 import <limits>;
 import <vector>;
 
-namespace eagine::msgbus {
+namespace eagine {
+
+export template <identifier_t Sid, typename Selector>
+struct get_serialize_buffer_size<Sid, message_id, Selector>
+  : get_serialize_buffer_size<Sid, message_id::base, Selector> {};
+//------------------------------------------------------------------------------
+namespace msgbus {
+//------------------------------------------------------------------------------
+/// @brief Alias for default serialization backend for bus messages.
+/// @ingroup msgbus
+/// @see default_deserializer_backend
+export using default_serializer_backend = portable_serializer_backend;
+
+/// @brief Alias for default deserialization backend for bus messages.
+/// @ingroup msgbus
+/// @see default_serializer_backend
+export using default_deserializer_backend = portable_deserializer_backend;
+
+/// @brief Returns count of bytes required for serialization of the specified object.
+/// @ingroup msgbus
+export template <typename T>
+auto default_serialize_buffer_size_for(const T& inst) noexcept {
+    return serialize_buffer_size_for<default_serializer_backend::id_value>(
+      inst, default_selector_t{});
+}
+
+/// @brief Returns a vector for the serialization of the specified object.
+/// @ingroup msgbus
+export template <typename T>
+auto default_serialize_vector_for(const T& inst) noexcept {
+    return get_serialize_vector_for<default_serializer_backend::id_value>(
+      inst, default_selector_t{});
+}
+
+/// @brief Returns a suitable buffer for the serialization of the specified object.
+/// @ingroup msgbus
+export template <typename T>
+auto default_serialize_buffer_for(const T& inst) noexcept {
+    return serialize_buffer_for<default_serializer_backend::id_value>(inst);
+}
 //------------------------------------------------------------------------------
 // TODO
 // #define EAGINE_MSGBUS_ID(METHOD) EAGINE_MSG_ID(eagiMsgBus, METHOD)
@@ -369,6 +409,102 @@ private:
     memory::const_block _data;
 };
 //------------------------------------------------------------------------------
+/// @brief Serializes a bus message header with the specified serializer backend.
+/// @ingroup msgbus
+/// @see serialize_message
+/// @see deserialize_message_header
+export template <typename Backend>
+auto serialize_message_header(
+  const message_id msg_id,
+  const message_view& msg,
+  Backend& backend) noexcept -> serialization_errors
+    requires(std::is_base_of_v<serializer_backend, Backend>)
+{
+
+    auto message_params = std::make_tuple(
+      msg_id.class_(),
+      msg_id.method(),
+      msg.source_id,
+      msg.target_id,
+      msg.serializer_id,
+      msg.sequence_no,
+      msg.hop_count,
+      msg.age_quarter_seconds,
+      msg.priority,
+      msg.crypto_flags);
+    return serialize(message_params, backend);
+}
+//------------------------------------------------------------------------------
+/// @brief Serializes a bus message with the specified serializer backend.
+/// @ingroup msgbus
+/// @see serialize_message_header
+/// @see deserialize_message
+/// @see default_serialize
+export template <typename Backend>
+auto serialize_message(
+  const message_id msg_id,
+  const message_view& msg,
+  Backend& backend) noexcept -> serialization_errors
+    requires(std::is_base_of_v<serializer_backend, Backend>)
+{
+
+    auto errors = serialize_message_header(msg_id, msg, backend);
+
+    if(!errors) {
+        if(auto sink{backend.sink()}) {
+            errors |= extract(sink).write(msg.data());
+        } else {
+            errors |= serialization_error_code::backend_error;
+        }
+    }
+
+    return errors;
+}
+//------------------------------------------------------------------------------
+/// @brief Uses the default backend to serialize a value into a memory block.
+/// @see default_serializer_backend
+/// @see default_serialize_packed
+/// @see default_deserialize
+/// @see serialize
+export template <typename T>
+inline auto default_serialize(const T& value, memory::block blk) noexcept
+  -> serialization_result<memory::const_block> {
+    block_data_sink sink(blk);
+    default_serializer_backend backend(sink);
+    auto errors = serialize(value, backend);
+    return {sink.done(), errors};
+}
+//------------------------------------------------------------------------------
+/// @brief Uses backend and compressor to serialize and pack a value into a memory block.
+/// @see default_serializer_backend
+/// @see default_serialize
+/// @see default_deserialize_packed
+/// @see data_compressor
+/// @see serialize
+export template <typename T>
+auto default_serialize_packed(
+  T& value,
+  memory::block blk,
+  data_compressor compressor) noexcept
+  -> serialization_result<memory::const_block> {
+    packed_block_data_sink sink(std::move(compressor), blk);
+    default_serializer_backend backend(sink);
+    auto errors = serialize(value, backend);
+    return {sink.done(), errors};
+}
+//------------------------------------------------------------------------------
+/// @brief Default-serializes the specified message id into a memory block.
+/// @ingroup msgbus
+/// @see default_serializer_backend
+/// @see default_serialize
+/// @see message_id
+export auto default_serialize_message_type(
+  const message_id msg_id,
+  memory::block blk) noexcept {
+    const auto value{msg_id.id_tuple()};
+    return default_serialize(value, blk);
+}
+//------------------------------------------------------------------------------
 export class context;
 /// @brief Combines message information and an owned message content buffer.
 /// @ingroup msgbus
@@ -516,6 +652,168 @@ public:
 private:
     memory::buffer _buffer{};
 };
+//------------------------------------------------------------------------------
+/// @brief Deserializes a bus message header with the specified deserializer backend.
+/// @ingroup msgbus
+/// @see deserialize_message
+/// @see serialize_message_header
+export template <typename Backend>
+auto deserialize_message_header(
+  identifier& class_id,
+  identifier& method_id,
+  stored_message& msg,
+  Backend& backend) noexcept -> deserialization_errors
+    requires(std::is_base_of_v<deserializer_backend, Backend>)
+{
+
+    auto message_params = std::tie(
+      class_id,
+      method_id,
+      msg.source_id,
+      msg.target_id,
+      msg.serializer_id,
+      msg.sequence_no,
+      msg.hop_count,
+      msg.age_quarter_seconds,
+      msg.priority,
+      msg.crypto_flags);
+    return deserialize(message_params, backend);
+}
+//------------------------------------------------------------------------------
+/// @brief Deserializes a bus message with the specified deserializer backend.
+/// @ingroup msgbus
+/// @see deserialize_message_header
+/// @see serialize_message
+/// @see default_deserialize
+export template <typename Backend>
+auto deserialize_message(
+  identifier& class_id,
+  identifier& method_id,
+  stored_message& msg,
+  Backend& backend) noexcept -> deserialization_errors
+    requires(std::is_base_of_v<deserializer_backend, Backend>)
+{
+
+    auto errors = deserialize_message_header(class_id, method_id, msg, backend);
+
+    if(!errors) {
+        if(auto source{backend.source()}) {
+            msg.fetch_all_from(extract(source));
+        } else {
+            errors |= deserialization_error_code::backend_error;
+        }
+    }
+
+    return errors;
+}
+//------------------------------------------------------------------------------
+/// @brief Deserializes a bus message with the specified deserializer backend.
+/// @ingroup msgbus
+/// @see deserialize_message_header
+/// @see serialize_message
+export template <typename Backend>
+auto deserialize_message(
+  message_id& msg_id,
+  stored_message& msg,
+  Backend& backend) noexcept -> deserialization_errors
+    requires(std::is_base_of_v<deserializer_backend, Backend>)
+{
+
+    identifier class_id{};
+    identifier method_id{};
+    deserialization_errors errors =
+      deserialize_message(class_id, method_id, msg, backend);
+    if(!errors) {
+        msg_id = {class_id, method_id};
+    }
+    return errors;
+}
+//------------------------------------------------------------------------------
+// default_deserialize
+//------------------------------------------------------------------------------
+/// @brief Uses the default backend to deserialize a value from a memory block.
+/// @see default_deserializer_backend
+/// @see default_deserialize_packed
+/// @see default_serialize
+/// @see deserialize
+export template <typename T>
+auto default_deserialize(T& value, const memory::const_block blk) noexcept
+  -> deserialization_result<memory::const_block> {
+    block_data_source source(blk);
+    default_deserializer_backend backend(source);
+    auto errors = deserialize(value, backend);
+    return {source.remaining(), errors};
+}
+//------------------------------------------------------------------------------
+/// @brief Uses backend and compressor to deserialize and unpack a value from a block.
+/// @see default_deserializer_backend
+/// @see default_deserialize
+/// @see default_serialize_packed
+/// @see data_compressor
+/// @see deserialize
+export template <typename T>
+auto default_deserialize_packed(
+  T& value,
+  const memory::const_block blk,
+  data_compressor compressor) noexcept
+  -> deserialization_result<memory::const_block> {
+    packed_block_data_source source(std::move(compressor), blk);
+    default_deserializer_backend backend(source);
+    auto errors = deserialize(value, backend);
+    return {source.remaining(), errors};
+}
+//------------------------------------------------------------------------------
+/// @brief Default-deserializes the specified message id from a memory block.
+/// @ingroup msgbus
+/// @see default_deserializer_backend
+/// @see default_deserialize
+/// @see message_id
+export auto default_deserialize_message_type(
+  message_id& msg_id,
+  const memory::const_block blk) noexcept {
+    std::tuple<identifier, identifier> value{};
+    auto result = default_deserialize(value, blk);
+    if(result) {
+        msg_id = {value};
+    }
+    return result;
+}
+//------------------------------------------------------------------------------
+template <typename Backend, typename Value>
+auto stored_message::do_store_value(
+  const Value& value,
+  const span_size_t max_size) noexcept -> bool {
+    _buffer.resize(max_size);
+    block_data_sink sink(cover(_buffer));
+    Backend backend(sink);
+    auto errors = serialize(value, backend);
+    if(!errors) {
+        set_serializer_id(backend.type_id());
+        _buffer.resize(sink.done().size());
+        return true;
+    }
+    return false;
+}
+//------------------------------------------------------------------------------
+template <typename Value>
+auto stored_message::store_value(
+  const Value& value,
+  const span_size_t max_size) noexcept -> bool {
+    return do_store_value<default_serializer_backend>(value, max_size);
+}
+//------------------------------------------------------------------------------
+template <typename Backend, typename Value>
+auto stored_message::do_fetch_value(Value& value) noexcept -> bool {
+    block_data_source source(view(_buffer));
+    Backend backend(source);
+    auto errors = deserialize(value, backend);
+    return !errors;
+}
+//------------------------------------------------------------------------------
+template <typename Value>
+auto stored_message::fetch_value(Value& value) noexcept -> bool {
+    return do_fetch_value<default_deserializer_backend>(value);
+}
 //------------------------------------------------------------------------------
 /// @brief Class storing message bus messages.
 /// @ingroup msgbus
@@ -858,5 +1156,5 @@ private:
     message_storage _unpacked{};
 };
 //------------------------------------------------------------------------------
-} // namespace eagine::msgbus
-
+} // namespace msgbus
+} // namespace eagine

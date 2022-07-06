@@ -17,9 +17,33 @@ import <type_traits>;
 
 namespace eagine::msgbus {
 //------------------------------------------------------------------------------
+/// @brief Message bus node kind enumeration.
+/// @ingroup msgbus
+export enum class node_kind : std::uint8_t {
+    /// @brief Unknown node kind.
+    unknown,
+    /// @brief Message bus client endpoint.
+    endpoint,
+    /// @brief Message bus bridge.
+    bridge,
+    /// @brief Message bus router.
+    router
+};
+//------------------------------------------------------------------------------
+export template <typename Selector>
+constexpr auto enumerator_mapping(
+  const std::type_identity<node_kind>,
+  const Selector) noexcept {
+    return enumerator_map_type<node_kind, 4>{
+      {{"unknown", node_kind::unknown},
+       {"endpoint", node_kind::endpoint},
+       {"bridge", node_kind::bridge},
+       {"router", node_kind::router}}};
+}
 /// @brief Message bus connection kind bits enumeration.
 /// @ingroup msgbus
 /// @see connection_kinds
+//------------------------------------------------------------------------------
 export enum class connection_kind : std::uint8_t {
     /// @brief Unknown connection kind.
     unknown = 0U,
