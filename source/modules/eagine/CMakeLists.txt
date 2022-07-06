@@ -2,12 +2,34 @@
 # Distributed under the Boost Software License, Version 1.0.
 # See accompanying file LICENSE_1_0.txt or copy at
 #  http://www.boost.org/LICENSE_1_0.txt
+eagine_add_module(
+	eagine.msgbus PARTITION types
+	IMPORTS
+		eagine.core.types
+		eagine.core.reflection
+		eagine.core.identifier
+)
+
+eagine_add_module(
+	eagine.msgbus PARTITION message
+	IMPORTS
+		types
+		eagine.core.types
+		eagine.core.memory
+		eagine.core.identifier
+		eagine.core.reflection
+		eagine.core.serialization
+		eagine.core.utility
+		eagine.core.main_ctx
+)
 
 eagine_add_module(
 	eagine.msgbus
 	PP_NAME MSGBUS
 	INTERFACES msgbus
 	PARTITIONS
+		types
+		message
 	SOURCES
 )
 
