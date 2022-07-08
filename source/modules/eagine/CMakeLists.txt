@@ -11,6 +11,14 @@ eagine_add_module(
 )
 
 eagine_add_module(
+	eagine.msgbus PARTITION signal
+	IMPORTS
+		eagine.core.types
+		eagine.core.container
+		eagine.core.utility
+)
+
+eagine_add_module(
 	eagine.msgbus PARTITION message
 	IMPORTS
 		types
@@ -36,14 +44,27 @@ eagine_add_module(
 )
 
 eagine_add_module(
+	eagine.msgbus PARTITION router_address
+	IMPORTS
+		eagine.core.types
+		eagine.core.memory
+		eagine.core.identifier
+		eagine.core.logging
+		eagine.core.main_ctx
+)
+
+eagine_add_module(
 	eagine.msgbus
 	PP_NAME MSGBUS
 	INTERFACES msgbus
 	PARTITIONS
 		types
+		signal
 		message
 		context
+		router_address
 	SOURCES
 		message_impl
+		context_impl
 )
 

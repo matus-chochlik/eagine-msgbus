@@ -8,5 +8,7 @@
 export module eagine.msgbus;
 
 export import :types;
+export import :signal;
 export import :message;
 export import :context;
+export import :router_address;
