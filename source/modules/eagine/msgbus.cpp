@@ -11,4 +11,8 @@ export import :types;
 export import :signal;
 export import :message;
 export import :context;
+export import :interface;
 export import :router_address;
+export import :blobs;
+export import :loopback;
+export import :direct;

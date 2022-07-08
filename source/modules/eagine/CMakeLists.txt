@@ -65,6 +65,41 @@ eagine_add_module(
 )
 
 eagine_add_module(
+	eagine.msgbus PARTITION blobs
+	IMPORTS
+		types message
+		eagine.core.types
+		eagine.core.debug
+		eagine.core.memory
+		eagine.core.identifier
+		eagine.core.serialization
+		eagine.core.valid_if
+		eagine.core.utility
+		eagine.core.main_ctx
+)
+
+eagine_add_module(
+	eagine.msgbus PARTITION loopback
+	IMPORTS
+		types message interface
+		eagine.core.types
+		eagine.core.memory
+		eagine.core.identifier
+		eagine.core.utility
+)
+
+eagine_add_module(
+	eagine.msgbus PARTITION direct
+	IMPORTS
+		types message interface
+		eagine.core.types
+		eagine.core.memory
+		eagine.core.identifier
+		eagine.core.utility
+		eagine.core.main_ctx
+)
+
+eagine_add_module(
 	eagine.msgbus
 	PP_NAME MSGBUS
 	INTERFACES msgbus
@@ -75,8 +110,12 @@ eagine_add_module(
 		context
 		router_address
 		interface
+		blobs
+		loopback
+		direct
 	SOURCES
 		message_impl
 		context_impl
+		blobs_impl
 )
 
