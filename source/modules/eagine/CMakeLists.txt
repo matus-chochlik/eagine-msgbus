@@ -54,6 +54,17 @@ eagine_add_module(
 )
 
 eagine_add_module(
+	eagine.msgbus PARTITION interface
+	IMPORTS
+		types message
+		eagine.core.types
+		eagine.core.memory
+		eagine.core.identifier
+		eagine.core.valid_if
+		eagine.core.utility
+)
+
+eagine_add_module(
 	eagine.msgbus
 	PP_NAME MSGBUS
 	INTERFACES msgbus
@@ -63,6 +74,7 @@ eagine_add_module(
 		message
 		context
 		router_address
+		interface
 	SOURCES
 		message_impl
 		context_impl

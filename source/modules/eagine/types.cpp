@@ -113,6 +113,80 @@ export auto operator|(
     return {l, r};
 }
 //------------------------------------------------------------------------------
+/// @brief Message bus connection address kind enumeration.
+/// @ingroup msgbus
+/// @see connection_addr_kind_tag
+enum class connection_addr_kind {
+    /// @brief No public address.
+    none,
+    /// @brief Filesystem path.
+    filepath,
+    /// @brief PIv4 address.
+    ipv4
+};
+
+template <typename Selector>
+constexpr auto enumerator_mapping(
+  const std::type_identity<connection_addr_kind>,
+  const Selector) noexcept {
+    return enumerator_map_type<connection_addr_kind, 3>{
+      {{"none", connection_addr_kind::none},
+       {"filepath", connection_addr_kind::filepath},
+       {"ipv4", connection_addr_kind::ipv4}}};
+}
+
+/// @brief Tag template alias for specifying connection address kind.
+/// @ingroup msgbus
+template <connection_addr_kind Kind>
+using connection_addr_kind_tag =
+  std::integral_constant<connection_addr_kind, Kind>;
+//------------------------------------------------------------------------------
+/// @brief Message bus connection protocol.
+/// @ingroup msgbus
+/// @see connection_protocol_tag
+enum class connection_protocol {
+    /// @brief Reliable stream protocol.
+    stream,
+    /// @brief Datagram protocol.
+    datagram,
+    /// @brief Message protocol.
+    message
+};
+
+template <typename Selector>
+constexpr auto enumerator_mapping(
+  const std::type_identity<connection_protocol>,
+  const Selector) noexcept {
+    return enumerator_map_type<connection_protocol, 3>{
+      {{"stream", connection_protocol::stream},
+       {"datagram", connection_protocol::datagram},
+       {"message", connection_protocol::message}}};
+}
+
+/// @brief Tag template alias for specifying connection protocol kind.
+/// @ingroup msgbus
+/// @see stream_protocol_tag
+/// @see datagram_protocol_tag
+template <connection_protocol Proto>
+using connection_protocol_tag =
+  std::integral_constant<connection_protocol, Proto>;
+
+/// @brief Tag type for specifying stream connection protocols.
+/// @ingroup msgbus
+/// @see datagram_protocol_tag
+using stream_protocol_tag =
+  connection_protocol_tag<connection_protocol::stream>;
+
+/// @brief Tag type for specifying datagram connection protocols.
+/// @ingroup msgbus
+/// @see stream_protocol_tag
+using datagram_protocol_tag =
+  connection_protocol_tag<connection_protocol::datagram>;
+//------------------------------------------------------------------------------
+/// @brief The minimum guaranteed block size that can be sent through bus connections.
+/// @ingroup msgbus
+constexpr const span_size_t min_connection_data_size = 4096;
+//------------------------------------------------------------------------------
 /// @brief Alias for message sequence number type.
 /// @ingroup msgbus
 export using message_sequence_t = std::uint32_t;
