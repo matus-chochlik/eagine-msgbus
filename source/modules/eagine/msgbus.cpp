@@ -16,3 +16,4 @@ export import :router_address;
 export import :blobs;
 export import :loopback;
 export import :direct;
+export import :endpoint;

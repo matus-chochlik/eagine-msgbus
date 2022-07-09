@@ -69,11 +69,14 @@ auto default_serialize_buffer_for(const T& inst) noexcept {
     return serialize_buffer_for<default_serializer_backend::id_value>(inst);
 }
 //------------------------------------------------------------------------------
-export template <auto L>
-    requires(identifier_literal_length<L>)
-constexpr auto msgbus_id(const char (&method)[L]) noexcept -> message_id {
-    return message_id{"eagiMsgBus", method};
-}
+export struct msgbus_id : message_id {
+    template <auto L>
+        requires(identifier_literal_length<L>)
+
+    constexpr msgbus_id(const char (&method)[L]) noexcept
+      : message_id{"eagiMsgBus", method} {}
+};
+
 //------------------------------------------------------------------------------
 /// @brief Indicates if the specified message id denotes a special message bus message.
 /// @ingroup msgbus

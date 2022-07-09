@@ -100,6 +100,20 @@ eagine_add_module(
 )
 
 eagine_add_module(
+	eagine.msgbus PARTITION endpoint
+	IMPORTS
+		types blobs signal message
+		interface context
+		eagine.core.types
+		eagine.core.memory
+		eagine.core.identifier
+		eagine.core.container
+		eagine.core.utility
+		eagine.core.valid_if
+		eagine.core.main_ctx
+)
+
+eagine_add_module(
 	eagine.msgbus
 	PP_NAME MSGBUS
 	INTERFACES msgbus
@@ -113,9 +127,11 @@ eagine_add_module(
 		blobs
 		loopback
 		direct
+		endpoint
 	SOURCES
 		message_impl
 		context_impl
 		blobs_impl
+		endpoint_impl
 )
 
