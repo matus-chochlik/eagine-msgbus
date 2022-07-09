@@ -143,6 +143,19 @@ eagine_add_module(
 )
 
 eagine_add_module(
+	eagine.msgbus PARTITION skeleton
+	IMPORTS
+		types message handler_map
+		endpoint
+		eagine.core.types
+		eagine.core.memory
+		eagine.core.identifier
+		eagine.core.serialization
+		eagine.core.utility
+		eagine.core.runtime
+)
+
+eagine_add_module(
 	eagine.msgbus PARTITION remote_node
 	IMPORTS
 		types
@@ -176,6 +189,7 @@ eagine_add_module(
 		direct
 		endpoint
 		invoker
+		skeleton
 		remote_node
 	SOURCES
 		message_impl
