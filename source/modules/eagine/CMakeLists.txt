@@ -156,6 +156,18 @@ eagine_add_module(
 )
 
 eagine_add_module(
+	eagine.msgbus PARTITION subscriber
+	IMPORTS
+		types message handler_map
+		endpoint
+		eagine.core.types
+		eagine.core.memory
+		eagine.core.identifier
+		eagine.core.utility
+		eagine.core.main_ctx
+)
+
+eagine_add_module(
 	eagine.msgbus PARTITION remote_node
 	IMPORTS
 		types
@@ -190,6 +202,7 @@ eagine_add_module(
 		endpoint
 		invoker
 		skeleton
+		subscriber
 		remote_node
 	SOURCES
 		message_impl

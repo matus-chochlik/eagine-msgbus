@@ -20,4 +20,6 @@ export import :loopback;
 export import :direct;
 export import :endpoint;
 export import :invoker;
+export import :skeleton;
+export import :subscriber;
 export import :remote_node;
