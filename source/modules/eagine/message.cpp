@@ -29,7 +29,10 @@ namespace eagine {
 
 export template <identifier_t Sid, typename Selector>
 struct get_serialize_buffer_size<Sid, message_id, Selector>
-  : get_serialize_buffer_size<Sid, message_id::base, Selector> {};
+  : get_serialize_buffer_size<
+      Sid,
+      std::tuple<std::uint64_t, std::uint64_t>,
+      Selector> {};
 //------------------------------------------------------------------------------
 namespace msgbus {
 //------------------------------------------------------------------------------
@@ -66,13 +69,16 @@ auto default_serialize_buffer_for(const T& inst) noexcept {
     return serialize_buffer_for<default_serializer_backend::id_value>(inst);
 }
 //------------------------------------------------------------------------------
-// TODO
-// #define EAGINE_MSGBUS_ID(METHOD) EAGINE_MSG_ID(eagiMsgBus, METHOD)
+export template <auto L>
+    requires(identifier_literal_length<L>)
+constexpr auto msgbus_id(const char (&method)[L]) noexcept -> message_id {
+    return message_id{"eagiMsgBus", method};
+}
 //------------------------------------------------------------------------------
 /// @brief Indicates if the specified message id denotes a special message bus message.
 /// @ingroup msgbus
 export constexpr auto is_special_message(const message_id msg_id) noexcept {
-    return msg_id.has_class(identifier{"eagiMsgBus"});
+    return msg_id.has_class("eagiMsgBus");
 }
 //------------------------------------------------------------------------------
 /// @brief Returns the special broadcast message bus endpoint id.
