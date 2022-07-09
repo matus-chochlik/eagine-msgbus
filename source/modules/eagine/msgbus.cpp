@@ -17,3 +17,4 @@ export import :blobs;
 export import :loopback;
 export import :direct;
 export import :endpoint;
+export import :remote_node;

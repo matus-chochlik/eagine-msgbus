@@ -114,6 +114,22 @@ eagine_add_module(
 )
 
 eagine_add_module(
+	eagine.msgbus PARTITION remote_node
+	IMPORTS
+		types
+		eagine.core.types
+		eagine.core.memory
+		eagine.core.identifier
+		eagine.core.reflection
+		eagine.core.container
+		eagine.core.units
+		eagine.core.utility
+		eagine.core.valid_if
+		eagine.core.runtime
+		eagine.core.main_ctx
+)
+
+eagine_add_module(
 	eagine.msgbus
 	PP_NAME MSGBUS
 	INTERFACES msgbus
@@ -128,10 +144,12 @@ eagine_add_module(
 		loopback
 		direct
 		endpoint
+		remote_node
 	SOURCES
 		message_impl
 		context_impl
 		blobs_impl
 		endpoint_impl
+		remote_node_impl
 )
 
