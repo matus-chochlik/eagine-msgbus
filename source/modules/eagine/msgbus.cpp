@@ -9,6 +9,8 @@ export module eagine.msgbus;
 
 export import :types;
 export import :signal;
+export import :future;
+export import :handler_map;
 export import :message;
 export import :context;
 export import :interface;
@@ -17,4 +19,5 @@ export import :blobs;
 export import :loopback;
 export import :direct;
 export import :endpoint;
+export import :invoker;
 export import :remote_node;

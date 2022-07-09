@@ -19,6 +19,23 @@ eagine_add_module(
 )
 
 eagine_add_module(
+	eagine.msgbus PARTITION future
+	IMPORTS
+		types
+		eagine.core.types
+		eagine.core.container
+		eagine.core.utility
+)
+
+eagine_add_module(
+	eagine.msgbus PARTITION handler_map
+	IMPORTS
+		eagine.core.types
+		eagine.core.memory
+		eagine.core.identifier
+)
+
+eagine_add_module(
 	eagine.msgbus PARTITION message
 	IMPORTS
 		types
@@ -114,6 +131,18 @@ eagine_add_module(
 )
 
 eagine_add_module(
+	eagine.msgbus PARTITION invoker
+	IMPORTS
+		types future handler_map
+		message endpoint
+		eagine.core.types
+		eagine.core.memory
+		eagine.core.identifier
+		eagine.core.serialization
+		eagine.core.utility
+)
+
+eagine_add_module(
 	eagine.msgbus PARTITION remote_node
 	IMPORTS
 		types
@@ -136,6 +165,8 @@ eagine_add_module(
 	PARTITIONS
 		types
 		signal
+		future
+		handler_map
 		message
 		context
 		router_address
@@ -144,6 +175,7 @@ eagine_add_module(
 		loopback
 		direct
 		endpoint
+		invoker
 		remote_node
 	SOURCES
 		message_impl
