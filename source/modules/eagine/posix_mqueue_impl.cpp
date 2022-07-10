@@ -788,7 +788,8 @@ private:
 };
 #endif // EAGINE_POSIX
 //------------------------------------------------------------------------------
-auto make_posix_mqueue_connection_factory(main_ctx_parent parent)
+auto make_posix_mqueue_connection_factory(
+  [[maybe_unused]] main_ctx_parent parent)
   -> std::unique_ptr<connection_factory> {
 #if EAGINE_POSIX
     return std::make_unique<posix_mqueue_connection_factory>(parent);

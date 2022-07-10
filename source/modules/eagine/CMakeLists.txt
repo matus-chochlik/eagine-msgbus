@@ -6,6 +6,8 @@ eagine_add_module(
 	eagine.msgbus PARTITION types
 	IMPORTS
 		eagine.core.types
+		eagine.core.memory
+		eagine.core.string
 		eagine.core.reflection
 		eagine.core.identifier
 )
@@ -235,10 +237,15 @@ eagine_add_module(
 		blobs_impl
 		connection_setup_impl
 		posix_mqueue_impl
+		asio_impl
 		endpoint_impl
 		remote_node_impl
 	IMPORTS
+		eagine.core.debug
+		eagine.core.container
 		eagine.core.valid_if
 		eagine.core.utility
+	PRIVATE_INCLUDE_DIRECTORIES
+		"${PROJECT_SOURCE_DIR}/submodules/asio/asio/include"
 )
 

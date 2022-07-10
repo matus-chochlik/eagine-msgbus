@@ -8,6 +8,8 @@
 export module eagine.msgbus:types;
 
 import eagine.core.types;
+import eagine.core.memory;
+import eagine.core.string;
 import eagine.core.reflection;
 import eagine.core.identifier;
 import <cstdint>;
@@ -55,7 +57,7 @@ export enum class connection_kind : std::uint8_t {
     remote_interprocess = 1U << 2U
 };
 //------------------------------------------------------------------------------
-template <typename Selector>
+export template <typename Selector>
 constexpr auto enumerator_mapping(
   const std::type_identity<connection_kind>,
   const Selector) noexcept {
@@ -116,7 +118,7 @@ export auto operator|(
 /// @brief Message bus connection address kind enumeration.
 /// @ingroup msgbus
 /// @see connection_addr_kind_tag
-enum class connection_addr_kind {
+export enum class connection_addr_kind {
     /// @brief No public address.
     none,
     /// @brief Filesystem path.
@@ -125,7 +127,7 @@ enum class connection_addr_kind {
     ipv4
 };
 
-template <typename Selector>
+export template <typename Selector>
 constexpr auto enumerator_mapping(
   const std::type_identity<connection_addr_kind>,
   const Selector) noexcept {
@@ -137,14 +139,14 @@ constexpr auto enumerator_mapping(
 
 /// @brief Tag template alias for specifying connection address kind.
 /// @ingroup msgbus
-template <connection_addr_kind Kind>
+export template <connection_addr_kind Kind>
 using connection_addr_kind_tag =
   std::integral_constant<connection_addr_kind, Kind>;
 //------------------------------------------------------------------------------
 /// @brief Message bus connection protocol.
 /// @ingroup msgbus
 /// @see connection_protocol_tag
-enum class connection_protocol {
+export enum class connection_protocol {
     /// @brief Reliable stream protocol.
     stream,
     /// @brief Datagram protocol.
@@ -153,7 +155,7 @@ enum class connection_protocol {
     message
 };
 
-template <typename Selector>
+export template <typename Selector>
 constexpr auto enumerator_mapping(
   const std::type_identity<connection_protocol>,
   const Selector) noexcept {
@@ -167,25 +169,25 @@ constexpr auto enumerator_mapping(
 /// @ingroup msgbus
 /// @see stream_protocol_tag
 /// @see datagram_protocol_tag
-template <connection_protocol Proto>
+export template <connection_protocol Proto>
 using connection_protocol_tag =
   std::integral_constant<connection_protocol, Proto>;
 
 /// @brief Tag type for specifying stream connection protocols.
 /// @ingroup msgbus
 /// @see datagram_protocol_tag
-using stream_protocol_tag =
+export using stream_protocol_tag =
   connection_protocol_tag<connection_protocol::stream>;
 
 /// @brief Tag type for specifying datagram connection protocols.
 /// @ingroup msgbus
 /// @see stream_protocol_tag
-using datagram_protocol_tag =
+export using datagram_protocol_tag =
   connection_protocol_tag<connection_protocol::datagram>;
 //------------------------------------------------------------------------------
 /// @brief The minimum guaranteed block size that can be sent through bus connections.
 /// @ingroup msgbus
-constexpr const span_size_t min_connection_data_size = 4096;
+export constexpr const span_size_t min_connection_data_size = 4096;
 //------------------------------------------------------------------------------
 /// @brief Alias for message sequence number type.
 /// @ingroup msgbus
@@ -459,6 +461,21 @@ constexpr auto data_member_mapping(
     using S = message_flow_info;
     return make_data_member_mapping<S, std::int16_t>(
       {"avg_msg_age_ms", &S::avg_msg_age_ms});
+}
+//------------------------------------------------------------------------------
+/// @brief Alias for IPv4 port number value type.
+/// @ingroup msgbus
+export using ipv4_port = unsigned short int;
+
+/// @brief Parses a IPv4 hostname:port pair,
+/// @ingroup msgbus
+export auto parse_ipv4_addr(const string_view addr_str) noexcept
+  -> std::tuple<std::string, ipv4_port> {
+    auto [hostname, port_str] = split_by_last(
+      addr_str ? addr_str : string_view{"localhost"}, string_view(":"));
+    return {
+      to_string(hostname),
+      extract_or(from_string<ipv4_port>(port_str), ipv4_port{34912U})};
 }
 //------------------------------------------------------------------------------
 } // namespace eagine::msgbus

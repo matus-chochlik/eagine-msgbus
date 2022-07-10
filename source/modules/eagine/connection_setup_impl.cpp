@@ -137,21 +137,27 @@ void connection_setup::add_factory(std::unique_ptr<connection_factory> factory) 
 //------------------------------------------------------------------------------
 auto make_posix_mqueue_connection_factory(main_ctx_parent parent)
   -> std::unique_ptr<connection_factory>;
+
+auto make_asio_tcp_ipv4_connection_factory(main_ctx_parent parent)
+  -> std::unique_ptr<connection_factory>;
+
+auto make_asio_udp_ipv4_connection_factory(main_ctx_parent parent)
+  -> std::unique_ptr<connection_factory>;
+
+auto make_asio_local_stream_connection_factory(main_ctx_parent parent)
+  -> std::unique_ptr<connection_factory>;
 //------------------------------------------------------------------------------
 void connection_setup_configure(
   connection_setup& setup,
   application_config& config) {
     if(config.is_set("msgbus.asio_tcp_ipv4")) {
-        // TODO
-        // setup.make_factory<asio_tcp_ipv4_connection_factory>();
+        setup.add_factory(make_asio_tcp_ipv4_connection_factory(setup));
     }
     if(config.is_set("msgbus.asio_udp_ipv4")) {
-        // TODO
-        // setup.make_factory<asio_udp_ipv4_connection_factory>();
+        setup.add_factory(make_asio_udp_ipv4_connection_factory(setup));
     }
     if(config.is_set("msgbus.asio_local_stream")) {
-        // TODO
-        // setup.make_factory<asio_local_stream_connection_factory>();
+        setup.add_factory(make_asio_local_stream_connection_factory(setup));
     }
     if(config.is_set("msgbus.posix_mqueue")) {
         setup.add_factory(make_posix_mqueue_connection_factory(setup));
