@@ -135,6 +135,9 @@ void connection_setup::add_factory(std::unique_ptr<connection_factory> factory) 
     }
 }
 //------------------------------------------------------------------------------
+auto make_posix_mqueue_connection_factory(main_ctx_parent parent)
+  -> std::unique_ptr<connection_factory>;
+//------------------------------------------------------------------------------
 void connection_setup_configure(
   connection_setup& setup,
   application_config& config) {
@@ -151,8 +154,7 @@ void connection_setup_configure(
         // setup.make_factory<asio_local_stream_connection_factory>();
     }
     if(config.is_set("msgbus.posix_mqueue")) {
-        // TODO
-        // setup.make_factory<posix_mqueue_connection_factory>();
+        setup.add_factory(make_posix_mqueue_connection_factory(setup));
     }
     if(config.is_set("msgbus.direct")) {
         setup.add_factory(make_direct_connection_factory(setup));

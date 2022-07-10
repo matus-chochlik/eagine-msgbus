@@ -234,7 +234,11 @@ eagine_add_module(
 		context_impl
 		blobs_impl
 		connection_setup_impl
+		posix_mqueue_impl
 		endpoint_impl
 		remote_node_impl
+	IMPORTS
+		eagine.core.valid_if
+		eagine.core.utility
 )
 
