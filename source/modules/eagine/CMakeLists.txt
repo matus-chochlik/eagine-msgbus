@@ -195,6 +195,20 @@ eagine_add_module(
 )
 
 eagine_add_module(
+	eagine.msgbus PARTITION bridge
+	IMPORTS
+		types message
+		interface context
+		eagine.core.types
+		eagine.core.memory
+		eagine.core.identifier
+		eagine.core.container
+		eagine.core.valid_if
+		eagine.core.utility
+		eagine.core.main_ctx
+)
+
+eagine_add_module(
 	eagine.msgbus PARTITION service
 	IMPORTS
 		types interface message
@@ -245,6 +259,7 @@ eagine_add_module(
 		skeleton
 		subscriber
 		router
+		bridge
 		service
 		remote_node
 	SOURCES
@@ -256,10 +271,12 @@ eagine_add_module(
 		asio_impl
 		endpoint_impl
 		router_impl
+		bridge_impl
 		remote_node_impl
 	IMPORTS
 		eagine.core.debug
 		eagine.core.container
+		eagine.core.serialization
 		eagine.core.valid_if
 		eagine.core.utility
 	PRIVATE_INCLUDE_DIRECTORIES

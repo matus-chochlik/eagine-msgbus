@@ -24,5 +24,6 @@ export import :invoker;
 export import :skeleton;
 export import :subscriber;
 export import :router;
+export import :bridge;
 export import :service;
 export import :remote_node;
