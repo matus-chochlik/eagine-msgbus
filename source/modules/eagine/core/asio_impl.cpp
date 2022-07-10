@@ -16,7 +16,7 @@ module;
 #include <asio/write.hpp>
 #include <cassert>
 
-module eagine.msgbus;
+module eagine.msgbus.core;
 import eagine.core.debug;
 import eagine.core.types;
 import eagine.core.memory;

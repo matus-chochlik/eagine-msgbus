@@ -9,7 +9,7 @@ module;
 
 #include <cassert>
 
-module eagine.msgbus;
+module eagine.msgbus.core;
 import eagine.core.types;
 import eagine.core.memory;
 import eagine.core.identifier;

@@ -9,7 +9,7 @@ module;
 
 #include <cassert>
 
-export module eagine.msgbus:invoker;
+export module eagine.msgbus.core:invoker;
 
 import eagine.core.types;
 import eagine.core.memory;

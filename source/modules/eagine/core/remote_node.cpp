@@ -9,7 +9,7 @@ module;
 
 #include <cassert>
 
-export module eagine.msgbus:remote_node;
+export module eagine.msgbus.core:remote_node;
 
 import eagine.core.types;
 import eagine.core.memory;
