@@ -117,6 +117,16 @@ eagine_add_module(
 )
 
 eagine_add_module(
+	eagine.msgbus PARTITION connection_setup
+	IMPORTS
+		types
+		interface
+		eagine.core.types
+		eagine.core.memory
+		eagine.core.identifier
+)
+
+eagine_add_module(
 	eagine.msgbus PARTITION endpoint
 	IMPORTS
 		types blobs signal message
@@ -212,6 +222,7 @@ eagine_add_module(
 		blobs
 		loopback
 		direct
+		connection_setup
 		endpoint
 		invoker
 		skeleton
@@ -222,6 +233,7 @@ eagine_add_module(
 		message_impl
 		context_impl
 		blobs_impl
+		connection_setup_impl
 		endpoint_impl
 		remote_node_impl
 )

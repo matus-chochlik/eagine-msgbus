@@ -18,6 +18,7 @@ export import :router_address;
 export import :blobs;
 export import :loopback;
 export import :direct;
+export import :connection_setup;
 export import :endpoint;
 export import :invoker;
 export import :skeleton;

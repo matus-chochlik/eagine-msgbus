@@ -21,6 +21,7 @@ import :message;
 import :interface;
 import <atomic>;
 import <map>;
+import <memory>;
 import <mutex>;
 
 namespace eagine::msgbus {
@@ -385,6 +386,11 @@ private:
         return pos->second;
     }
 };
+//------------------------------------------------------------------------------
+export auto make_direct_connection_factory(main_ctx_parent parent)
+  -> std::unique_ptr<direct_connection_factory> {
+    return std::make_unique<direct_connection_factory>(parent);
+}
 //------------------------------------------------------------------------------
 } // namespace eagine::msgbus
 
