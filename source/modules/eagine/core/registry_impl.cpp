@@ -29,8 +29,9 @@ registry::registry(main_ctx_parent parent) noexcept
   , _router{*this} {
     _router.add_acceptor(_acceptor);
 
-    // TODO
-    // this->bus().setup_connectors(_router);
+    if(const auto setup{locate<message_bus_setup>()}) {
+        extract(setup).setup_connectors(_router);
+    }
 }
 //------------------------------------------------------------------------------
 auto registry::_add_entry(const identifier log_id) noexcept

@@ -222,9 +222,19 @@ eagine_add_module(
 )
 
 eagine_add_module(
-	eagine.msgbus.core PARTITION registry
+	eagine.msgbus.core PARTITION setup
 	IMPORTS
 		types interface
+		router_address connection_setup
+		eagine.core.types
+		eagine.core.identifier
+		eagine.core.main_ctx
+)
+
+eagine_add_module(
+	eagine.msgbus.core PARTITION registry
+	IMPORTS
+		types interface setup
 		direct endpoint router
 		eagine.core.types
 		eagine.core.memory
@@ -273,6 +283,7 @@ eagine_add_module(
 		router
 		bridge
 		service
+		setup
 		registry
 		remote_node
 	SOURCES

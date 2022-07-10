@@ -20,6 +20,7 @@ import :direct;
 import :interface;
 import :endpoint;
 import :router;
+import :setup;
 import <vector>;
 
 namespace eagine::msgbus {
