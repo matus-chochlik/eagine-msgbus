@@ -22,4 +22,5 @@ export import :endpoint;
 export import :invoker;
 export import :skeleton;
 export import :subscriber;
+export import :service;
 export import :remote_node;

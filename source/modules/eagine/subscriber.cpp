@@ -272,7 +272,7 @@ public:
     /// @brief Construction from a reference to endpoint and some message maps.
     /// @see endpoint
     /// @see message_handler_map
-    /// @see EAGINE_MSG_MAP
+    /// @see message_map
     template <typename Class, typename... MsgMaps>
     static_subscriber(
       endpoint& bus,

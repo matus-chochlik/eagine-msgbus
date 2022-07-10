@@ -68,10 +68,13 @@ struct static_message_handler_map {
 /// @see EAGINE_MSG_TYPE
 /// @see EAGINE_MEM_FUNC_T
 /// TODO
-#define EAGINE_MSG_MAP(CLASS_ID, METHOD_ID, CLASS, METHOD) \
-    eagine::msgbus::static_message_handler_map<            \
-      EAGINE_MSG_TYPE(CLASS_ID, METHOD_ID),                \
-      EAGINE_MEM_FUNC_T(CLASS, METHOD)>()
+export template <identifier_t ClassId, identifier_t MethodId, auto MemFuncPtr>
+using message_map = static_message_handler_map<
+  static_message_id<ClassId, MethodId>,
+  member_function_constant_t<MemFuncPtr>>;
+
+export template <identifier_t MethodId, auto MemFuncPtr>
+using mgsbus_map = message_map<id_v("eagiMsgBus"), MethodId, MemFuncPtr>;
 //------------------------------------------------------------------------------
 } // namespace eagine::msgbus
 

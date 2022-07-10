@@ -168,6 +168,19 @@ eagine_add_module(
 )
 
 eagine_add_module(
+	eagine.msgbus PARTITION service
+	IMPORTS
+		types interface message
+		invoker skeleton
+		endpoint subscriber
+		eagine.core.types
+		eagine.core.identifier
+		eagine.core.serialization
+		eagine.core.utility
+		eagine.core.main_ctx
+)
+
+eagine_add_module(
 	eagine.msgbus PARTITION remote_node
 	IMPORTS
 		types
@@ -203,6 +216,7 @@ eagine_add_module(
 		invoker
 		skeleton
 		subscriber
+		service
 		remote_node
 	SOURCES
 		message_impl
