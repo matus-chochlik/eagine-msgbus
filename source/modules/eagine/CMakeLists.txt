@@ -180,6 +180,21 @@ eagine_add_module(
 )
 
 eagine_add_module(
+	eagine.msgbus PARTITION router
+	IMPORTS
+		types message blobs
+		interface context
+		eagine.core.types
+		eagine.core.memory
+		eagine.core.identifier
+		eagine.core.container
+		eagine.core.valid_if
+		eagine.core.utility
+		eagine.core.runtime
+		eagine.core.main_ctx
+)
+
+eagine_add_module(
 	eagine.msgbus PARTITION service
 	IMPORTS
 		types interface message
@@ -229,6 +244,7 @@ eagine_add_module(
 		invoker
 		skeleton
 		subscriber
+		router
 		service
 		remote_node
 	SOURCES
@@ -239,6 +255,7 @@ eagine_add_module(
 		posix_mqueue_impl
 		asio_impl
 		endpoint_impl
+		router_impl
 		remote_node_impl
 	IMPORTS
 		eagine.core.debug
