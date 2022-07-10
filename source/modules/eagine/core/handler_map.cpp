@@ -65,9 +65,6 @@ struct static_message_handler_map {
 /// @see eagine::msgbus::static_message_handler_map
 /// @see eagine::msgbus::static_subscriber
 /// @see eagine::msgbus::subscriber
-/// @see EAGINE_MSG_TYPE
-/// @see EAGINE_MEM_FUNC_T
-/// TODO
 export template <identifier_t ClassId, identifier_t MethodId, auto MemFuncPtr>
 using message_map = static_message_handler_map<
   static_message_id<ClassId, MethodId>,
