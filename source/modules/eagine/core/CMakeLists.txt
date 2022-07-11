@@ -183,6 +183,18 @@ eagine_add_module(
 )
 
 eagine_add_module(
+	eagine.msgbus.core PARTITION actor
+	IMPORTS
+		types message handler_map
+		endpoint subscriber
+		eagine.core.types
+		eagine.core.memory
+		eagine.core.identifier
+		eagine.core.utility
+		eagine.core.main_ctx
+)
+
+eagine_add_module(
 	eagine.msgbus.core PARTITION router
 	IMPORTS
 		types message blobs
@@ -304,6 +316,7 @@ eagine_add_module(
 		invoker
 		skeleton
 		subscriber
+		actor
 		router
 		bridge
 		service
