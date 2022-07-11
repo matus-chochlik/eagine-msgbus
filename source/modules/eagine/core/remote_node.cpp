@@ -25,7 +25,8 @@ import :types;
 import <chrono>;
 import <memory>;
 
-namespace eagine::msgbus {
+namespace eagine {
+namespace msgbus {
 //------------------------------------------------------------------------------
 /// @brief Enumeration of changes tracked about remote message bus nodes.
 /// @ingroup msgbus
@@ -1100,6 +1101,14 @@ void remote_node_tracker::for_each_connection(Function func) const {
         }
     }
 }
+} // namespace msgbus
 //------------------------------------------------------------------------------
-} // namespace eagine::msgbus
+export auto adapt_entry_arg(
+  const identifier name,
+  const msgbus::remote_node& value) noexcept;
 
+export auto adapt_entry_arg(
+  const identifier name,
+  const msgbus::remote_host& value) noexcept;
+//------------------------------------------------------------------------------
+} // namespace eagine

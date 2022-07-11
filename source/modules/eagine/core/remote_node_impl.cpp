@@ -15,15 +15,18 @@ import eagine.core.memory;
 import eagine.core.build_info;
 import eagine.core.identifier;
 import eagine.core.container;
+import eagine.core.reflection;
 import eagine.core.units;
 import eagine.core.utility;
 import eagine.core.valid_if;
 import eagine.core.runtime;
+import eagine.core.logging;
 import eagine.core.main_ctx;
 import <set>;
 import <string>;
 
-namespace eagine::msgbus {
+namespace eagine {
+namespace msgbus {
 //------------------------------------------------------------------------------
 class remote_host_impl {
 public:
@@ -1365,5 +1368,107 @@ auto remote_node_tracker::notice_instance(
     }
     return node.notice_alive();
 }
+} // namespace msgbus
 //------------------------------------------------------------------------------
-} // namespace eagine::msgbus
+auto adapt_entry_arg(
+  const identifier name,
+  const msgbus::remote_node& value) noexcept {
+    return [name, value](auto& backend) noexcept {
+        backend.add_unsigned(
+          name, identifier{"uint64"}, extract_or(value.id(), 0U));
+
+        if(const auto opt_id{value.instance_id()}) {
+            backend.add_unsigned(
+              identifier{"instanceId"}, identifier{"uint32"}, extract(opt_id));
+        }
+
+        backend.add_string(
+          identifier{"nodeKind"},
+          identifier{"enum"},
+          enumerator_name(value.kind()));
+
+        backend.add_adapted(
+          identifier{"isRutrNode"}, yes_no_maybe(value.is_router_node()));
+        backend.add_adapted(
+          identifier{"isBrdgNode"}, yes_no_maybe(value.is_bridge_node()));
+        backend.add_adapted(
+          identifier{"isPingable"}, yes_no_maybe(value.is_pingable()));
+        backend.add_adapted(
+          identifier{"isRespnsve"}, yes_no_maybe(value.is_responsive()));
+
+        if(const auto opt_rate{value.ping_success_rate()}) {
+            backend.add_float(
+              identifier{"pingSucces"}, identifier{"Ratio"}, extract(opt_rate));
+        }
+        if(const auto opt_bld{value.instance().build()}) {
+            backend.add_adapted(identifier{"buildInfo"}, extract(opt_bld));
+        }
+
+        if(const auto opt_name{value.display_name()}) {
+            backend.add_string(
+              identifier{"dispName"}, identifier{"string"}, extract(opt_name));
+        }
+
+        if(const auto opt_desc{value.description()}) {
+            backend.add_string(
+              identifier{"descrption"},
+              identifier{"string"},
+              extract(opt_desc));
+        }
+    };
+}
+//------------------------------------------------------------------------------
+auto adapt_entry_arg(
+  const identifier name,
+  const msgbus::remote_host& value) noexcept {
+    return [name, value](auto& backend) {
+        backend.add_unsigned(
+          name, identifier{"uint64"}, extract_or(value.id(), 0U));
+
+        if(const auto opt_name{value.name()}) {
+            backend.add_string(
+              identifier{"hostname"}, identifier{"string"}, extract(opt_name));
+        }
+
+        if(const auto opt_val{value.cpu_concurrent_threads()}) {
+            backend.add_integer(
+              identifier{"cpuThreads"}, identifier{"int64"}, extract(opt_val));
+        }
+        if(const auto opt_val{value.total_ram_size()}) {
+            backend.add_integer(
+              identifier{"totalRAM"}, identifier{"ByteSize"}, extract(opt_val));
+        }
+        if(const auto opt_val{value.free_ram_size()}) {
+            backend.add_integer(
+              identifier{"freeRAM"}, identifier{"ByteSize"}, extract(opt_val));
+        }
+        if(const auto opt_val{value.free_swap_size()}) {
+            backend.add_integer(
+              identifier{"freeSwap"}, identifier{"ByteSize"}, extract(opt_val));
+        }
+        if(const auto opt_val{value.total_swap_size()}) {
+            backend.add_integer(
+              identifier{"totalSwap"},
+              identifier{"ByteSize"},
+              extract(opt_val));
+        }
+        if(const auto opt_val{value.ram_usage()}) {
+            backend.add_float(
+              identifier{"ramUsage"}, identifier{"Ratio"}, extract(opt_val));
+        }
+        if(const auto opt_val{value.swap_usage()}) {
+            backend.add_float(
+              identifier{"swapUsage"}, identifier{"Ratio"}, extract(opt_val));
+        }
+        if(const auto opt_val{value.short_average_load()}) {
+            backend.add_float(
+              identifier{"shortLoad"}, identifier{"Ratio"}, extract(opt_val));
+        }
+        if(const auto opt_val{value.long_average_load()}) {
+            backend.add_float(
+              identifier{"longLoad"}, identifier{"Ratio"}, extract(opt_val));
+        }
+    };
+}
+//------------------------------------------------------------------------------
+} // namespace eagine

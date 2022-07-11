@@ -301,6 +301,7 @@ eagine_add_module(
 	IMPORTS
 		eagine.core.debug
 		eagine.core.container
+		eagine.core.reflection
 		eagine.core.serialization
 		eagine.core.valid_if
 		eagine.core.utility
