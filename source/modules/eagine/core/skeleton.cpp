@@ -15,6 +15,7 @@ import eagine.core.types;
 import eagine.core.memory;
 import eagine.core.identifier;
 import eagine.core.container;
+import eagine.core.serialization;
 import eagine.core.utility;
 import eagine.core.runtime;
 import :types;
@@ -77,7 +78,7 @@ private:
                 [[maybe_unused]] const auto errors =
                   serialize(std::apply(func, args), write_backend);
 
-                EAGINE_ASSERT(!errors);
+                assert(!errors);
                 message_view msg_out{_sink.done()};
                 msg_out.set_serializer_id(write_backend.type_id());
                 msg_ctx.bus_node().respond_to(request, response_id, msg_out);
@@ -99,7 +100,7 @@ private:
         Serializer write_backend(_sink);
 
         [[maybe_unused]] const auto errors = serialize(func(), write_backend);
-        EAGINE_ASSERT(!errors);
+        assert(!errors);
         message_view msg_out{_sink.done()};
         msg_out.set_serializer_id(write_backend.type_id());
         msg_ctx.bus_node().respond_to(request, response_id, msg_out);
@@ -253,7 +254,7 @@ public:
                 [[maybe_unused]] const auto errors =
                   serialize(std::apply(call.func, call.args), write_backend);
 
-                EAGINE_ASSERT(!errors);
+                assert(!errors);
                 message_view msg_out{_sink.done()};
                 msg_out.set_serializer_id(write_backend.type_id());
                 msg_out.set_target_id(call.invoker_id);

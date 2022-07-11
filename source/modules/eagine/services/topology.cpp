@@ -1,0 +1,150 @@
+/// @file
+///
+/// Copyright Matus Chochlik.
+/// Distributed under the Boost Software License, Version 1.0.
+/// See accompanying file LICENSE_1_0.txt or copy at
+///  http://www.boost.org/LICENSE_1_0.txt
+///
+export module eagine.msgbus.services:topology;
+
+import eagine.core.types;
+import eagine.core.memory;
+import eagine.core.identifier;
+import eagine.core.utility;
+import eagine.msgbus.core;
+
+namespace eagine::msgbus {
+//------------------------------------------------------------------------------
+/// @brief Service observing message bus node network topology.
+/// @ingroup msgbus
+/// @see service_composition
+export template <typename Base = subscriber>
+class network_topology : public Base {
+    using This = network_topology;
+
+public:
+    /// @brief Queries the topology information of the specified bus node.
+    /// @see discover_topology
+    void query_topology(const identifier_t node_id) noexcept {
+        message_view message{};
+        message.set_target_id(node_id);
+        const auto msg_id{msgbus_id{"topoQuery"}};
+        this->bus_node().post(msg_id, message);
+    }
+
+    /// @brief Broadcasts network topology query to all message bus nodes.
+    /// @see query_topology
+    void discover_topology() noexcept {
+        query_topology(broadcast_endpoint_id());
+    }
+
+    /// @brief Triggered on receipt of router node topology information.
+    /// @see router_disappeared
+    /// @see bridge_appeared
+    /// @see endpoint_appeared
+    signal<void(const router_topology_info&) noexcept> router_appeared;
+
+    /// @brief Triggered on receipt of bridge node topology information.
+    /// @see bridge_disappeared
+    /// @see router_appeared
+    /// @see endpoint_appeared
+    signal<void(const bridge_topology_info&) noexcept> bridge_appeared;
+
+    /// @brief Triggered on receipt of endpoint node topology information.
+    /// @see endpoint_disappeared
+    /// @see router_appeared
+    /// @see bridge_appeared
+    signal<void(const endpoint_topology_info&) noexcept> endpoint_appeared;
+
+    /// @brief Triggered on receipt of bye-bye message from a router node.
+    /// @see router_appeared
+    /// @see bridge_disappeared
+    /// @see endpoint_disappeared
+    signal<void(const identifier_t) noexcept> router_disappeared;
+
+    /// @brief Triggered on receipt of bye-bye message from a bridge node.
+    /// @see bridge_appeared
+    /// @see router_disappeared
+    /// @see endpoint_disappeared
+    signal<void(const identifier_t) noexcept> bridge_disappeared;
+
+    /// @brief Triggered on receipt of bye-bye message from an endpoint node.
+    /// @see endpoint_appeared
+    /// @see router_disappeared
+    /// @see bridge_disappeared
+    signal<void(const identifier_t) noexcept> endpoint_disappeared;
+
+protected:
+    using Base::Base;
+
+    void add_methods() noexcept {
+        Base::add_methods();
+        Base::add_method(
+          this, msgbus_map<id_v("topoRutrCn"), &This::_handle_router>{});
+        Base::add_method(
+          this, msgbus_map<id_v("topoBrdgCn"), &This::_handle_bridge>{});
+        Base::add_method(
+          this, msgbus_map<id_v("topoEndpt"), &This::_handle_endpoint>{});
+        Base::add_method(
+          this, msgbus_map<id_v("byeByeRutr"), &This::_handle_router_bye>{});
+        Base::add_method(
+          this, msgbus_map<id_v("byeByeBrdg"), &This::_handle_bridge_bye>{});
+        Base::add_method(
+          this, msgbus_map<id_v("byeByeEndp"), &This::_handle_endpoint_bye>{});
+    }
+
+private:
+    auto _handle_router(
+      const message_context&,
+      const stored_message& message) noexcept -> bool {
+        router_topology_info info{};
+        if(default_deserialize(info, message.content())) {
+            router_appeared(info);
+        }
+        return true;
+    }
+
+    auto _handle_bridge(
+      const message_context&,
+      const stored_message& message) noexcept -> bool {
+        bridge_topology_info info{};
+        if(default_deserialize(info, message.content())) {
+            bridge_appeared(info);
+        }
+        return true;
+    }
+
+    auto _handle_endpoint(
+      const message_context&,
+      const stored_message& message) noexcept -> bool {
+        endpoint_topology_info info{};
+        if(default_deserialize(info, message.content())) {
+            endpoint_appeared(info);
+        }
+        return true;
+    }
+
+    auto _handle_router_bye(
+      const message_context&,
+      const stored_message& message) noexcept -> bool {
+        router_disappeared(message.source_id);
+        return true;
+    }
+
+    auto _handle_bridge_bye(
+      const message_context&,
+      const stored_message& message) noexcept -> bool {
+        bridge_disappeared(message.source_id);
+        return true;
+    }
+
+    auto _handle_endpoint_bye(
+      const message_context&,
+      const stored_message& message) noexcept -> bool {
+        endpoint_disappeared(message.source_id);
+        return true;
+    }
+};
+//------------------------------------------------------------------------------
+} // namespace eagine::msgbus
+

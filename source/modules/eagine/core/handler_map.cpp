@@ -71,7 +71,7 @@ using message_map = static_message_handler_map<
   member_function_constant_t<MemFuncPtr>>;
 
 export template <identifier_t MethodId, auto MemFuncPtr>
-using mgsbus_map = message_map<id_v("eagiMsgBus"), MethodId, MemFuncPtr>;
+using msgbus_map = message_map<id_v("eagiMsgBus"), MethodId, MemFuncPtr>;
 //------------------------------------------------------------------------------
 } // namespace eagine::msgbus
 

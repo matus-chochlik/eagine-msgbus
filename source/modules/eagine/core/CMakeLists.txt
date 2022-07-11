@@ -164,6 +164,7 @@ eagine_add_module(
 		eagine.core.types
 		eagine.core.memory
 		eagine.core.identifier
+		eagine.core.container
 		eagine.core.serialization
 		eagine.core.utility
 		eagine.core.runtime
