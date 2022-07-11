@@ -2,6 +2,8 @@
 # Distributed under the Boost Software License, Version 1.0.
 # See accompanying file LICENSE_1_0.txt or copy at
 #  http://www.boost.org/LICENSE_1_0.txt
+configure_file(embedded.cpp.in embedded.cpp @ONLY)
+
 eagine_add_module(
 	eagine.msgbus.core PARTITION types
 	IMPORTS
@@ -260,6 +262,27 @@ eagine_add_module(
 )
 
 eagine_add_module(
+	eagine.msgbus.core PARTITION resources
+	IMPORTS
+		eagine.core.types
+		eagine.core.memory
+		eagine.core.logging
+		eagine.core.main_ctx
+		eagine.core.resource
+)
+
+eagine_add_module(
+	eagine.msgbus.core PARTITION embedded
+	IMPORTS
+		resources
+		eagine.core.types
+		eagine.core.memory
+		eagine.core.identifier
+		eagine.core.resource
+)
+eagine_embed_target_resources(TARGET eagine.msgbus.core.embedded)
+
+eagine_add_module(
 	eagine.msgbus.core
 	PP_NAME MSGBUS_CORE
 	INTERFACES core
@@ -286,6 +309,8 @@ eagine_add_module(
 		setup
 		registry
 		remote_node
+		resources
+		embedded
 	SOURCES
 		message_impl
 		context_impl
