@@ -5,6 +5,10 @@
 /// See accompanying file LICENSE_1_0.txt or copy at
 ///  http://www.boost.org/LICENSE_1_0.txt
 ///
+#if EAGINE_MSGBUS_MODULE
+import eagine.core;
+import eagine.msgbus;
+#else
 #include <eagine/main_ctx.hpp>
 #include <eagine/memory/span_algo.hpp>
 #include <eagine/msgbus/acceptor.hpp>
@@ -12,6 +16,7 @@
 #include <eagine/msgbus/endpoint.hpp>
 #include <eagine/msgbus/router.hpp>
 #include <eagine/msgbus/subscriber.hpp>
+#endif
 
 namespace eagine {
 namespace msgbus {
@@ -19,24 +24,30 @@ namespace msgbus {
 struct str_utils_server
   : main_ctx_object
   , static_subscriber<2> {
-    using this_class = str_utils_server;
     using base = static_subscriber<2>;
     using base::bus_node;
 
     str_utils_server(endpoint& ep)
-      : main_ctx_object{EAGINE_ID(Server), ep}
-      , base(
+      : main_ctx_object{identifier{"Server"}, ep}
+      , base{
           ep,
           this,
-          EAGINE_MSG_MAP(StrUtilReq, UpperCase, this_class, uppercase),
-          EAGINE_MSG_MAP(StrUtilReq, Reverse, this_class, reverse)) {}
+          message_map<
+            id_v("StrUtilReq"),
+            id_v("UpperCase"),
+            &str_utils_server::uppercase>{},
+          message_map<
+            id_v("StrUtilReq"),
+            id_v("Reverse"),
+            &str_utils_server::reverse>{}} {}
 
     auto reverse(const message_context&, const stored_message& msg) noexcept
       -> bool {
         auto str = as_chars(copy(msg.content(), _buf));
-        log_trace("received request: ${content}").arg(EAGINE_ID(content), str);
+        log_trace("received request: ${content}")
+          .arg(identifier{"content"}, str);
         memory::reverse(str);
-        bus_node().post(EAGINE_MSG_ID(StrUtilRes, Reverse), as_bytes(str));
+        bus_node().post(message_id{"StrUtilRes", "Reverse"}, as_bytes(str));
         return true;
     }
 
@@ -44,7 +55,7 @@ struct str_utils_server
       -> bool {
         auto str = as_chars(copy(msg.content(), _buf));
         transform(str, [](char x) { return char(std::toupper(x)); });
-        bus_node().post(EAGINE_MSG_ID(StrUtilRes, UpperCase), as_bytes(str));
+        bus_node().post(message_id{"StrUtilRes", "UpperCase"}, as_bytes(str));
         return true;
     }
 
@@ -60,27 +71,33 @@ struct str_utils_client
     using base::bus_node;
 
     str_utils_client(endpoint& ep)
-      : main_ctx_object{EAGINE_ID(Client), ep}
+      : main_ctx_object{identifier{"Client"}, ep}
       , base(
           ep,
           this,
-          EAGINE_MSG_MAP(StrUtilRes, UpperCase, this_class, print),
-          EAGINE_MSG_MAP(StrUtilRes, Reverse, this_class, print)) {}
+          message_map<
+            id_v("StrUtilRes"),
+            id_v("UpperCase"),
+            &str_utils_client::print>{},
+          message_map<
+            id_v("StrUtilRes"),
+            id_v("Reverse"),
+            &str_utils_client::print>{}) {}
 
     void call_reverse(const string_view str) {
         ++_remaining;
-        bus_node().post(EAGINE_MSG_ID(StrUtilReq, Reverse), as_bytes(str));
+        bus_node().post(message_id{"StrUtilReq", "Reverse"}, as_bytes(str));
     }
 
     void call_uppercase(const string_view str) {
         ++_remaining;
-        bus_node().post(EAGINE_MSG_ID(StrUtilReq, UpperCase), as_bytes(str));
+        bus_node().post(message_id{"StrUtilReq", "UpperCase"}, as_bytes(str));
     }
 
     auto print(const message_context&, const stored_message& msg) noexcept
       -> bool {
         log_info("received response: ${content}")
-          .arg(EAGINE_ID(content), msg.text_content());
+          .arg(identifier{"content"}, msg.text_content());
         --_remaining;
         return true;
     }
@@ -99,8 +116,8 @@ private:
 auto main(main_ctx& ctx) -> int {
     auto acceptor = std::make_unique<msgbus::direct_acceptor>(ctx);
 
-    msgbus::endpoint server_endpoint{EAGINE_ID(ServerEp), ctx};
-    msgbus::endpoint client_endpoint{EAGINE_ID(ClientEp), ctx};
+    msgbus::endpoint server_endpoint{identifier{"ServerEp"}, ctx};
+    msgbus::endpoint client_endpoint{identifier{"ClientEp"}, ctx};
 
     server_endpoint.add_connection(acceptor->make_connection());
     client_endpoint.add_connection(acceptor->make_connection());

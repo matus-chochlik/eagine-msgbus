@@ -13,7 +13,7 @@ import eagine.core.resource;
 import eagine.core.main_ctx;
 import :resources;
 
-namespace eagine {
+namespace eagine::msgbus {
 //------------------------------------------------------------------------------
 export auto router_certificate_pem(main_ctx& ctx) noexcept
   -> memory::const_block {
@@ -36,4 +36,4 @@ export auto endpoint_certificate_pem(main_ctx& ctx) noexcept
       ctx);
 }
 //------------------------------------------------------------------------------
-} // namespace eagine
+} // namespace eagine::msgbus

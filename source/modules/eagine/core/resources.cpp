@@ -12,7 +12,7 @@ import eagine.core.logging;
 import eagine.core.main_ctx;
 import eagine.core.resource;
 
-namespace eagine {
+namespace eagine::msgbus {
 //------------------------------------------------------------------------------
 export auto router_certificate_pem(
   const memory::const_block embedded_blk,
@@ -77,5 +77,5 @@ export auto endpoint_certificate_pem(
       embedded_blk, ctx.scratch_space(), ctx.config(), ctx.log());
 }
 //------------------------------------------------------------------------------
-} // namespace eagine
+} // namespace eagine::msgbus
 
