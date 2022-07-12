@@ -32,10 +32,10 @@ protected:
         Base::add_methods();
 
         Base::add_method(_app_name(
-          message_id{"eagiAppInf", "appName"},
-          &main_ctx::get(),
-          member_function_constant_t<&main_ctx::app_name>{})[message_id{
-          "eagiAppInf", "rqAppName"}]);
+                           {"eagiAppInf", "appName"},
+                           &main_ctx::get(),
+                           member_function_constant_t<&main_ctx::app_name>{})
+                           .map_invoke_by({"eagiAppInf", "rqAppName"}));
     }
 
 private:
@@ -72,8 +72,8 @@ protected:
     void add_methods() noexcept {
         Base::add_methods();
 
-        Base::add_method(_app_name(
-          application_name_received)[message_id{"eagiAppInf", "appName"}]);
+        Base::add_method(_app_name(application_name_received)
+                           .map_fulfill_by({"eagiAppInf", "appName"}));
     }
 
 private:

@@ -15,3 +15,5 @@ export import :ping_pong;
 export import :statistics;
 export import :application_info;
 export import :endpoint_info;
+export import :system_info;
+export import :sudoku;
