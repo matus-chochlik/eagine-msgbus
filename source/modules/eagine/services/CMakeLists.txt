@@ -73,6 +73,16 @@ eagine_add_module(
 )
 
 eagine_add_module(
+	eagine.msgbus.services PARTITION endpoint_info
+	IMPORTS
+		eagine.core.types
+		eagine.core.memory
+		eagine.core.identifier
+		eagine.core.main_ctx
+		eagine.msgbus.core
+)
+
+eagine_add_module(
 	eagine.msgbus.services
 	PP_NAME MSGBUS_SERVICES
 	INTERFACES services
@@ -84,6 +94,7 @@ eagine_add_module(
 		ping_pong
 		statistics
 		application_info
+		endpoint_info
 	SOURCES
 	IMPORTS
 )
