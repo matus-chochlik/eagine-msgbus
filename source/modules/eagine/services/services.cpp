@@ -17,4 +17,5 @@ export import :application_info;
 export import :endpoint_info;
 export import :host_info;
 export import :system_info;
+export import :resource_transfer;
 export import :sudoku;
