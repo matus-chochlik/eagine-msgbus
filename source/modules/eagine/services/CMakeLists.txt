@@ -83,6 +83,17 @@ eagine_add_module(
 )
 
 eagine_add_module(
+	eagine.msgbus.services PARTITION host_info
+	IMPORTS
+		eagine.core.types
+		eagine.core.memory
+		eagine.core.identifier
+		eagine.core.valid_if
+		eagine.core.main_ctx
+		eagine.msgbus.core
+)
+
+eagine_add_module(
 	eagine.msgbus.services PARTITION system_info
 	IMPORTS
 		eagine.core.types
@@ -121,6 +132,7 @@ eagine_add_module(
 		statistics
 		application_info
 		endpoint_info
+		host_info
 		system_info
 		sudoku
 	SOURCES
