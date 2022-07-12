@@ -83,6 +83,20 @@ eagine_add_module(
 )
 
 eagine_add_module(
+	eagine.msgbus.services PARTITION sudoku
+	IMPORTS
+		eagine.core.types
+		eagine.core.memory
+		eagine.core.identifier
+		eagine.core.container
+		eagine.core.serialization
+		eagine.core.utility
+		eagine.core.runtime
+		eagine.core.logging
+		eagine.msgbus.core
+)
+
+eagine_add_module(
 	eagine.msgbus.services
 	PP_NAME MSGBUS_SERVICES
 	INTERFACES services
@@ -95,6 +109,7 @@ eagine_add_module(
 		statistics
 		application_info
 		endpoint_info
+		sudoku
 	SOURCES
 	IMPORTS
 )
