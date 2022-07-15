@@ -104,7 +104,7 @@ export class router
   , public connection_user {
 public:
     router(main_ctx_parent parent) noexcept
-      : main_ctx_object{identifier{"MsgBusRutr"}, parent}
+      : main_ctx_object{"MsgBusRutr", parent}
       , _context{make_context(*this)} {
         _setup_from_config();
 

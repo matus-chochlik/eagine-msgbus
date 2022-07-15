@@ -27,10 +27,9 @@ export auto adapt_entry_arg(
   const std::unique_ptr<connection_factory>& value) noexcept {
     return [name, &value](auto& backend) {
         if(value) {
-            backend.add_identifier(
-              name, identifier{"ConnFactry"}, value->type_id());
+            backend.add_identifier(name, "ConnFactry", value->type_id());
         } else {
-            backend.add_nothing(name, identifier{"ConnFactry"});
+            backend.add_nothing(name, "ConnFactry");
         }
     };
 }
@@ -44,7 +43,7 @@ export auto adapt_entry_arg(
 export class connection_setup : public main_ctx_object {
 public:
     connection_setup(main_ctx_parent parent, const nothing_t) noexcept
-      : main_ctx_object{identifier{"ConnSetup"}, parent} {}
+      : main_ctx_object{"ConnSetup", parent} {}
 
     /// @brief Construction from a parent main context object.
     connection_setup(main_ctx_parent parent) noexcept

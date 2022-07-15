@@ -40,7 +40,7 @@ namespace eagine::msgbus {
 class posix_mqueue : public main_ctx_object {
 public:
     posix_mqueue(main_ctx_parent parent) noexcept
-      : main_ctx_object{identifier{"PosixMQue"}, parent} {}
+      : main_ctx_object{"PosixMQue", parent} {}
 
     /// @brief Move constructible.
     posix_mqueue(posix_mqueue&& temp) noexcept
@@ -88,8 +88,7 @@ public:
                 _s2cname.insert(_s2cname.begin(), '/');
             }
         }
-        log_info("assigned message queue name ${name}")
-          .arg(identifier{"name"}, _s2cname);
+        log_info("assigned message queue name ${name}").arg("name", _s2cname);
         _c2sname = _s2cname;
         _s2cname.push_back('s');
         _c2sname.push_back('c');
@@ -112,7 +111,7 @@ public:
     /// @brief Constructs the queue and sets the specified name.
     /// @see set_name
     posix_mqueue(main_ctx_parent parent, std::string name) noexcept
-      : main_ctx_object{identifier{"PosixMQue"}, parent} {
+      : main_ctx_object{"PosixMQue", parent} {
         set_name(std::move(name));
     }
 
@@ -164,8 +163,7 @@ public:
     /// @see close
     auto unlink() noexcept -> auto& {
         if(get_name()) {
-            log_debug("unlinking message queue ${name}")
-              .arg(identifier{"name"}, get_name());
+            log_debug("unlinking message queue ${name}").arg("name", get_name());
 
             errno = 0;
             ::mq_unlink(_s2cname.c_str());
@@ -180,8 +178,7 @@ public:
     /// @see open
     /// @see close
     auto create() noexcept -> auto& {
-        log_debug("creating new message queue ${name}")
-          .arg(identifier{"name"}, get_name());
+        log_debug("creating new message queue ${name}").arg("name", get_name());
 
         struct ::mq_attr attr {};
         zero(as_bytes(cover_one(attr)));
@@ -210,9 +207,9 @@ public:
         }
         if(_last_errno) {
             log_error("failed to create message queue ${name}")
-              .arg(identifier{"name"}, get_name())
-              .arg(identifier{"errno"}, _last_errno)
-              .arg(identifier{"message"}, error_message(_last_errno));
+              .arg("name", get_name())
+              .arg("errno", _last_errno)
+              .arg("message", error_message(_last_errno));
         }
         return *this;
     }
@@ -223,7 +220,7 @@ public:
     /// @see close
     auto open() noexcept -> auto& {
         log_debug("opening existing message queue ${name}")
-          .arg(identifier{"name"}, get_name());
+          .arg("name", get_name());
 
         errno = 0;
         // NOLINTNEXTLINE(hicpp-vararg)
@@ -248,9 +245,9 @@ public:
         }
         if(_last_errno) {
             log_error("failed to open message queue ${name}")
-              .arg(identifier{"name"}, get_name())
-              .arg(identifier{"errno"}, _last_errno)
-              .arg(identifier{"message"}, error_message(_last_errno));
+              .arg("name", get_name())
+              .arg("errno", _last_errno)
+              .arg("message", error_message(_last_errno));
         }
         return *this;
     }
@@ -261,8 +258,7 @@ public:
     /// @see unlink
     auto close() noexcept -> posix_mqueue& {
         if(is_open()) {
-            log_debug("closing message queue ${name}")
-              .arg(identifier{"name"}, get_name());
+            log_debug("closing message queue ${name}").arg("name", get_name());
 
             ::mq_close(_ihandle);
             ::mq_close(_ohandle);
@@ -304,9 +300,9 @@ public:
             _last_errno = errno;
             if((_last_errno != 0) && (_last_errno != EAGAIN)) [[unlikely]] {
                 log_error("failed to send message")
-                  .arg(identifier{"name"}, get_name())
-                  .arg(identifier{"errno"}, _last_errno)
-                  .arg(identifier{"data"}, as_bytes(blk));
+                  .arg("name", get_name())
+                  .arg("errno", _last_errno)
+                  .arg("data", as_bytes(blk));
             }
         }
         return *this;
@@ -333,8 +329,8 @@ public:
               (_last_errno != 0) && (_last_errno != EAGAIN) &&
               (_last_errno != ETIMEDOUT)) [[unlikely]] {
                 log_error("failed to receive message")
-                  .arg(identifier{"name"}, get_name())
-                  .arg(identifier{"errno"}, _last_errno);
+                  .arg("name", get_name())
+                  .arg("errno", _last_errno);
             }
         }
         return false;
@@ -376,7 +372,7 @@ public:
     }
 
     auto type_id() noexcept -> identifier final {
-        return identifier{"PosixMQue"};
+        return "PosixMQue";
     }
 };
 //------------------------------------------------------------------------------
@@ -397,7 +393,7 @@ public:
     posix_mqueue_connection(
       main_ctx_parent parent,
       std::shared_ptr<posix_mqueue_shared_state> shared_state) noexcept
-      : main_ctx_object{identifier{"MQueConn"}, parent}
+      : main_ctx_object{"MQueConn", parent}
       , _shared_state{std::move(shared_state)} {
         _buffer.resize(_data_queue.data_size());
     }
@@ -461,7 +457,7 @@ protected:
                     assert(_shared_state);
 
                     log_debug("connecting to ${name}")
-                      .arg(identifier{"name"}, connect_queue.get_name());
+                      .arg("name", connect_queue.get_name());
 
                     if(!_data_queue.set_name(_shared_state->make_id())
                           .create()
@@ -481,13 +477,12 @@ protected:
                             something_done();
                         } else {
                             log_error("failed to serialize connection name")
-                              .arg(identifier{"client"}, _data_queue.get_name())
-                              .arg(
-                                identifier{"server"}, connect_queue.get_name());
+                              .arg("client", _data_queue.get_name())
+                              .arg("server", connect_queue.get_name());
                         }
                     } else {
                         log_warning("failed to connect to ${server}")
-                          .arg(identifier{"server"}, connect_queue.get_name());
+                          .arg("server", connect_queue.get_name());
                     }
                     _reconnect_timeout.reset();
                 }
@@ -631,7 +626,7 @@ public:
       main_ctx_parent parent,
       std::string name,
       std::shared_ptr<posix_mqueue_shared_state> shared_state) noexcept
-      : main_ctx_object{identifier{"MQueConnAc"}, parent}
+      : main_ctx_object{"MQueConnAc", parent}
       , _accept_queue{*this, std::move(name)}
       , _shared_state{std::move(shared_state)} {
         _buffer.resize(_accept_queue.data_size());
@@ -672,7 +667,7 @@ public:
             assert((msg_id == msgbus_id{"pmqConnect"}));
 
             log_debug("accepting connection from ${name}")
-              .arg(identifier{"name"}, message.text_content());
+              .arg("name", message.text_content());
 
             if(auto conn{std::make_unique<posix_mqueue_connection>(
                  *this, _shared_state)}) {
@@ -727,7 +722,7 @@ private:
               default_deserializer_backend backend(source);
               const auto errors = deserialize_message(msg_id, message, backend);
               if(is_special_message(msg_id)) [[likely]] {
-                  if(msg_id.has_method(identifier{"pmqConnect"})) [[likely]] {
+                  if(msg_id.has_method("pmqConnect")) [[likely]] {
                       return !errors;
                   }
               }
@@ -752,7 +747,7 @@ class posix_mqueue_connection_factory
 public:
     /// @brief Construction from parent main context object.
     posix_mqueue_connection_factory(main_ctx_parent parent) noexcept
-      : main_ctx_object{identifier{"MQueConnFc"}, parent} {
+      : main_ctx_object{"MQueConnFc", parent} {
         _increase_res_limit();
     }
 

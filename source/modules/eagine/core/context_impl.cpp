@@ -22,13 +22,13 @@ import <map>;
 namespace eagine::msgbus {
 //------------------------------------------------------------------------------
 context::context(main_ctx_parent parent) noexcept
-  : main_ctx_object{identifier{"MsgBusCtxt"}, parent} {
+  : main_ctx_object{"MsgBusCtxt", parent} {
 
     if(ok make_result{_ssl.new_x509_store()}) {
         _ssl_store = std::move(make_result.get());
     } else {
         log_error("failed to create certificate store: ${reason}")
-          .arg(identifier{"reason"}, (!make_result).message());
+          .arg("reason", (!make_result).message());
     }
 
     auto& cfg = app_config();
@@ -40,16 +40,16 @@ context::context(main_ctx_parent parent) noexcept
             _ssl_engine = std::move(open_result.get());
             if(ok init_result{_ssl.init_engine(_ssl_engine)}) {
                 log_info("successfully loaded ssl engine ${name}")
-                  .arg(identifier{"name"}, temp);
+                  .arg("name", temp);
             } else {
                 log_error("failed to init ssl engine ${name}: ${reason}")
-                  .arg(identifier{"name"}, temp)
-                  .arg(identifier{"reason"}, (!init_result).message());
+                  .arg("name", temp)
+                  .arg("reason", (!init_result).message());
             }
         } else {
             log_error("failed to load ssl engine ${name}: ${reason}")
-              .arg(identifier{"name"}, temp)
-              .arg(identifier{"reason"}, (!open_result).message());
+              .arg("name", temp)
+              .arg("reason", (!open_result).message());
         }
     }
     if(cfg.fetch("msgbus.pkey_id", temp)) {
@@ -61,15 +61,15 @@ context::context(main_ctx_parent parent) noexcept
                 }
                 _own_pkey = std::move(pkey_result.get());
                 log_info("successfully loaded ssl key ${keyId}")
-                  .arg(identifier{"keyId"}, temp);
+                  .arg("keyId", temp);
             } else {
                 log_error("failed load ssl key ${keyId}: ${reason}")
-                  .arg(identifier{"keyId"}, temp)
-                  .arg(identifier{"reason"}, (!pkey_result).message());
+                  .arg("keyId", temp)
+                  .arg("reason", (!pkey_result).message());
             }
         } else {
             log_error("failed get ssl ui method: ${reason}")
-              .arg(identifier{"reason"}, (!uim_result).message());
+              .arg("reason", (!uim_result).message());
         }
     }
 }
@@ -111,7 +111,7 @@ auto context::next_sequence_no(const message_id msg_id) noexcept
     if(newone) {
         std::get<1>(*pos) = 0U;
         log_debug("creating sequence for message type ${message}")
-          .arg(identifier{"message"}, msg_id);
+          .arg("message", msg_id);
     }
     return std::get<1>(*pos)++;
 }
@@ -125,14 +125,14 @@ auto context::verify_certificate(const sslplus::x509 cert) noexcept -> bool {
                 return true;
             } else {
                 log_debug("failed to verify x509 certificate")
-                  .arg(identifier{"reason"}, (!verify_res).message());
+                  .arg("reason", (!verify_res).message());
             }
         } else {
             log_debug("failed to init x509 certificate store context");
         }
     } else {
         log_error("failed to create x509 certificate store")
-          .arg(identifier{"reason"}, (!vrfy_ctx).message());
+          .arg("reason", (!vrfy_ctx).message());
     }
     return false;
 }
@@ -159,8 +159,8 @@ auto context::add_own_certificate_pem(const memory::const_block blk) noexcept
             return verify_certificate(_own_cert);
         } else {
             log_error("failed to parse own x509 certificate from pem")
-              .arg(identifier{"reason"}, (!cert).message())
-              .arg(identifier{"pem"}, blk);
+              .arg("reason", (!cert).message())
+              .arg("pem", blk);
         }
     }
     return false;
@@ -179,13 +179,13 @@ auto context::add_ca_certificate_pem(const memory::const_block blk) noexcept
                 return !_own_cert || verify_certificate(_own_cert);
             } else {
                 log_error("failed to add x509 CA certificate to store")
-                  .arg(identifier{"reason"}, (!cert).message())
-                  .arg(identifier{"pem"}, blk);
+                  .arg("reason", (!cert).message())
+                  .arg("pem", blk);
             }
         } else {
             log_error("failed to parse CA x509 certificate from pem")
-              .arg(identifier{"reason"}, (!cert).message())
-              .arg(identifier{"pem"}, blk);
+              .arg("reason", (!cert).message())
+              .arg("pem", blk);
         }
     }
     return false;
@@ -212,24 +212,24 @@ auto context::add_remote_certificate_pem(
                     return true;
                 } else {
                     log_error("failed to get remote node x509 public key")
-                      .arg(identifier{"nodeId"}, node_id)
-                      .arg(identifier{"reason"}, (!pubkey).message())
-                      .arg(identifier{"pem"}, blk);
+                      .arg("nodeId", node_id)
+                      .arg("reason", (!pubkey).message())
+                      .arg("pem", blk);
                 }
             } else {
                 log_debug("failed to verify remote node certificate")
-                  .arg(identifier{"nodeId"}, node_id);
+                  .arg("nodeId", node_id);
             }
         } else {
             log_error("failed to parse remote node x509 certificate from pem")
-              .arg(identifier{"nodeId"}, node_id)
-              .arg(identifier{"reason"}, (!cert).message())
-              .arg(identifier{"pem"}, blk);
+              .arg("nodeId", node_id)
+              .arg("reason", (!cert).message())
+              .arg("pem", blk);
         }
     } else {
         log_error("received empty x509 certificate pem")
-          .arg(identifier{"nodeId"}, node_id)
-          .arg(identifier{"pem"}, blk);
+          .arg("nodeId", node_id)
+          .arg("pem", blk);
     }
     return false;
 }
@@ -290,7 +290,7 @@ auto context::message_digest_verify_init(
         }
     } else {
         log_debug("could not find remote node ${endpoint} for verification")
-          .arg(identifier{"endpoint"}, node_id);
+          .arg("endpoint", node_id);
     }
     return _ssl.message_digest_verify_init.fail();
 }
@@ -313,8 +313,8 @@ auto context::get_own_signature(const memory::const_block nonce) noexcept
                         return sig.get();
                     } else {
                         log_debug("failed to finish ssl signature")
-                          .arg(identifier{"freeSize"}, free.size())
-                          .arg(identifier{"reason"}, (!sig).message());
+                          .arg("freeSize", free.size())
+                          .arg("reason", (!sig).message());
                     }
                 } else {
                     log_debug("failed to update ssl signature");
@@ -324,11 +324,11 @@ auto context::get_own_signature(const memory::const_block nonce) noexcept
             }
         } else {
             log_debug("failed to create ssl message digest")
-              .arg(identifier{"reason"}, (!md_ctx).message());
+              .arg("reason", (!md_ctx).message());
         }
     } else {
         log_debug("failed to get ssl message digest type")
-          .arg(identifier{"reason"}, (!md_type).message());
+          .arg("reason", (!md_type).message());
     }
     return {};
 }
@@ -369,11 +369,11 @@ auto context::verify_remote_signature(
                 }
             } else {
                 log_debug("failed to create ssl message digest")
-                  .arg(identifier{"reason"}, (!md_ctx).message());
+                  .arg("reason", (!md_ctx).message());
             }
         } else {
             log_debug("failed to get ssl message digest type")
-              .arg(identifier{"reason"}, (!md_type).message());
+              .arg("reason", (!md_type).message());
         }
     }
     return result;

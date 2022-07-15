@@ -302,8 +302,8 @@ private:
                 boards.emplace_back(source_id, sequence_no, std::move(board));
             } else {
                 bus.log_warning("too many boards in backlog")
-                  .arg(identifier{"rank"}, S)
-                  .arg(identifier{"count"}, boards.size());
+                  .arg("rank", S)
+                  .arg("count", boards.size());
             }
         }
 
@@ -455,7 +455,7 @@ public:
              std::type_identity<std::chrono::seconds>{})}) {
             this->bus_node()
               .log_info("setting solution timeout to ${timeout}")
-              .arg(identifier{"timeout"}, extract(solution_timeout));
+              .arg("timeout", extract(solution_timeout));
             for_each_sudoku_rank_unit(
               [&](auto& info) {
                   info.solution_timeout.reset(extract(solution_timeout));
@@ -771,11 +771,11 @@ private:
             if(count > 0) [[unlikely]] {
                 solver.bus_node()
                   .log_warning("replacing ${count} timeouted boards")
-                  .arg(identifier{"count"}, count)
-                  .arg(identifier{"enqueued"}, key_boards.size())
-                  .arg(identifier{"pending"}, pending.size())
-                  .arg(identifier{"ready"}, ready_helpers.size())
-                  .arg(identifier{"rank"}, S);
+                  .arg("count", count)
+                  .arg("enqueued", key_boards.size())
+                  .arg("pending", pending.size())
+                  .arg("ready", ready_helpers.size())
+                  .arg("rank", S);
             }
             return count > 0;
         }
@@ -987,9 +987,7 @@ private:
 
             queue_length_changed(solver);
 
-            solver.bus_node()
-              .log_info("reset sudoku solution")
-              .arg(identifier{"rank"}, S);
+            solver.bus_node().log_info("reset sudoku solution").arg("rank", S);
         }
     };
 
@@ -1497,9 +1495,9 @@ private:
             solver.enqueue({x, y}, std::move(board));
             solver.bus_node()
               .log_debug("enqueuing initial board (${x}, ${y})")
-              .arg(identifier{"x"}, x)
-              .arg(identifier{"y"}, y)
-              .arg(identifier{"rank"}, S);
+              .arg("x", x)
+              .arg("y", y)
+              .arg("rank", S);
             cells_done = 0;
         }
 
@@ -1609,9 +1607,9 @@ private:
                 solver.enqueue({x, y}, board.calculate_alternatives());
                 solver.bus_node()
                   .log_debug("enqueuing board (${x}, ${y})")
-                  .arg(identifier{"x"}, x)
-                  .arg(identifier{"y"}, y)
-                  .arg(identifier{"rank"}, S);
+                  .arg("x", x)
+                  .arg("y", y)
+                  .arg("rank", S);
             }
         }
 
@@ -1639,13 +1637,13 @@ private:
                 cells_done += this->cells_per_tile();
                 solver.bus_node()
                   .log_info("solved board (${x}, ${y})")
-                  .arg(identifier{"rank"}, S)
-                  .arg(identifier{"x"}, std::get<0>(coord))
-                  .arg(identifier{"y"}, std::get<1>(coord))
-                  .arg(identifier{"helper"}, helper_id)
+                  .arg("rank", S)
+                  .arg("x", std::get<0>(coord))
+                  .arg("y", std::get<1>(coord))
+                  .arg("helper", helper_id)
                   .arg(
-                    identifier{"progress"},
-                    identifier{"Progress"},
+                    "progress",
+                    "Progress",
                     0.F,
                     float(cells_done),
                     float(this->cell_count()));
@@ -1670,12 +1668,12 @@ private:
             }
             solver.bus_node()
               .log_stat("solution contributions by helpers")
-              .arg(identifier{"rank"}, S)
+              .arg("rank", S)
               .arg_func([this, max_count](logger_backend& backend) {
                   for(const auto& [helper_id, count] : helper_contrib) {
                       backend.add_float(
-                        identifier{"helper"},
-                        identifier{"Histogram"},
+                        "helper",
+                        "Histogram",
                         float(0),
                         float(count),
                         float(max_count));

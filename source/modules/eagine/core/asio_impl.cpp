@@ -187,7 +187,7 @@ struct asio_connection_state
       std::shared_ptr<asio_common_state> asio_state,
       asio_socket_type<Kind, Proto> sock,
       const span_size_t block_size) noexcept
-      : main_ctx_object{identifier{"AsioConnSt"}, parent}
+      : main_ctx_object{"AsioConnSt", parent}
       , common{std::move(asio_state)}
       , socket{std::move(sock)} {
         assert(common);
@@ -202,9 +202,9 @@ struct asio_connection_state
         zero(cover(write_buffer));
 
         log_debug("allocating write buffer of ${size}")
-          .arg(identifier{"size"}, identifier{"ByteSize"}, write_buffer.size());
+          .arg("size", "ByteSize", write_buffer.size());
         log_debug("allocating read buffer of ${size}")
-          .arg(identifier{"size"}, identifier{"ByteSize"}, read_buffer.size());
+          .arg("size", "ByteSize", read_buffer.size());
     }
 
     asio_connection_state(
@@ -246,18 +246,14 @@ struct asio_connection_state
                 .count();
 
             log_stat("message slack ratio: ${slack}")
-              .arg(
-                identifier{"usedSize"}, identifier{"ByteSize"}, total_used_size)
-              .arg(
-                identifier{"sentSize"}, identifier{"ByteSize"}, total_sent_size)
-              .arg(identifier{"msgsPerBlk"}, msgs_per_block)
-              .arg(
-                identifier{"usedPerSec"}, identifier{"ByteSize"}, used_per_sec)
-              .arg(
-                identifier{"sentPerSec"}, identifier{"ByteSize"}, sent_per_sec)
-              .arg(identifier{"addrKind"}, Kind)
-              .arg(identifier{"protocol"}, Proto)
-              .arg(identifier{"slack"}, identifier{"Ratio"}, slack);
+              .arg("usedSize", "ByteSize", total_used_size)
+              .arg("sentSize", "ByteSize", total_sent_size)
+              .arg("msgsPerBlk", msgs_per_block)
+              .arg("usedPerSec", "ByteSize", used_per_sec)
+              .arg("sentPerSec", "ByteSize", sent_per_sec)
+              .arg("addrKind", Kind)
+              .arg("protocol", Proto)
+              .arg("slack", "Ratio", slack);
             return true;
         }
         return false;
@@ -294,12 +290,10 @@ struct asio_connection_state
             const auto blk = view(write_buffer);
 
             log_trace("sending data")
-              .arg(identifier{"packed"}, identifier{"bits"}, packed.bits())
-              .arg(
-                identifier{"usedSize"}, identifier{"ByteSize"}, packed.used())
-              .arg(
-                identifier{"sentSize"}, identifier{"ByteSize"}, packed.total())
-              .arg(identifier{"block"}, blk);
+              .arg("packed", "bits", packed.bits())
+              .arg("usedSize", "ByteSize", packed.used())
+              .arg("sentSize", "ByteSize", packed.total())
+              .arg("block", blk);
 
             do_start_send(
               connection_protocol_tag<Proto>{},
@@ -312,14 +306,8 @@ struct asio_connection_state
                       if(!error) {
                           assert(span_size(length) == packed.total());
                           log_trace("sent data")
-                            .arg(
-                              identifier{"usedSize"},
-                              identifier{"ByteSize"},
-                              packed.used())
-                            .arg(
-                              identifier{"sentSize"},
-                              identifier{"ByteSize"},
-                              packed.total());
+                            .arg("usedSize", "ByteSize", packed.used())
+                            .arg("sentSize", "ByteSize", packed.total());
 
                           total_used_size += packed.used();
                           total_sent_size += packed.total();
@@ -336,7 +324,7 @@ struct asio_connection_state
                           this->handle_sent(group, target_endpoint, packed);
                       } else {
                           log_error("failed to send data: ${error}")
-                            .arg(identifier{"error"}, error.message());
+                            .arg("error", error.message());
                           this->is_sending = false;
                           this->socket.close();
                       }
@@ -384,7 +372,7 @@ struct asio_connection_state
         auto blk = cover(read_buffer);
 
         log_trace("receiving data (size: ${size})")
-          .arg(identifier{"size"}, identifier{"ByteSize"}, blk.size());
+          .arg("size", "ByteSize", blk.size());
 
         is_recving = true;
         do_start_receive(
@@ -396,15 +384,14 @@ struct asio_connection_state
                   memory::const_block rcvd = head(blk, span_size(length));
                   if(!error) {
                       log_trace("received data (size: ${size})")
-                        .arg(identifier{"block"}, rcvd)
-                        .arg(
-                          identifier{"size"}, identifier{"ByteSize"}, length);
+                        .arg("block", rcvd)
+                        .arg("size", "ByteSize", length);
 
                       this->handle_received(rcvd, group);
                   } else {
                       if(rcvd) {
                           log_warning("failed receiving data: ${error}")
-                            .arg(identifier{"error"}, error.message());
+                            .arg("error", error.message());
                           this->handle_received(rcvd, group);
                       } else {
                           if(error == asio::error::eof) {
@@ -413,7 +400,7 @@ struct asio_connection_state
                               log_debug("connection reset by peer");
                           } else {
                               log_error("failed to receive data: ${error}")
-                                .arg(identifier{"error"}, error.message());
+                                .arg("error", error.message());
                           }
                       }
                       this->is_recving = false;
@@ -442,7 +429,7 @@ struct asio_connection_state
         some_true something_done{};
         if(const auto count{common->context.poll()}) {
             log_trace("called ready handlers (count: ${count})")
-              .arg(identifier{"count"}, count);
+              .arg("count", count);
             something_done();
         } else {
             common->context.reset();
@@ -472,7 +459,7 @@ public:
       main_ctx_parent parent,
       std::shared_ptr<asio_common_state> asio_state,
       const span_size_t block_size) noexcept
-      : main_ctx_object{identifier{"AsioConnBs"}, parent}
+      : main_ctx_object{"AsioConnBs", parent}
       , _state{std::make_shared<asio_connection_state<Kind, Proto>>(
           *this,
           std::move(asio_state),
@@ -485,7 +472,7 @@ public:
       std::shared_ptr<asio_common_state> asio_state,
       asio_socket_type<Kind, Proto> socket,
       const span_size_t block_size) noexcept
-      : main_ctx_object{identifier{"AsioConnBs"}, parent}
+      : main_ctx_object{"AsioConnBs", parent}
       , _state{std::make_shared<asio_connection_state<Kind, Proto>>(
           *this,
           std::move(asio_state),
@@ -513,7 +500,7 @@ protected:
     asio_connection_base(
       main_ctx_parent parent,
       std::shared_ptr<asio_connection_state<Kind, Proto>> state)
-      : main_ctx_object{identifier{"AsioConnBs"}, parent}
+      : main_ctx_object{"AsioConnBs", parent}
       , _state{std::move(state)} {}
 };
 //------------------------------------------------------------------------------
@@ -759,7 +746,7 @@ public:
         _pending.clear();
         if(something_done) {
             this->log_debug("accepted datagram endpoints")
-              .arg(identifier{"current"}, _current.size());
+              .arg("current", _current.size());
         }
         return something_done;
     }
@@ -794,8 +781,8 @@ private:
                           std::make_shared<connection_incoming_messages>())
                         .first;
                 this->log_debug("added pending datagram endpoint")
-                  .arg(identifier{"pending"}, _pending.size())
-                  .arg(identifier{"current"}, _current.size());
+                  .arg("pending", _pending.size())
+                  .arg("current", _current.size());
             }
         }
         return std::get<1>(*pos);
@@ -841,7 +828,7 @@ public:
     }
 
     auto type_id() noexcept -> identifier final {
-        return identifier{"AsioTcpIp4"};
+        return "AsioTcpIp4";
     }
 };
 //------------------------------------------------------------------------------
@@ -901,21 +888,15 @@ private:
         ep.port(port);
 
         this->log_debug("connecting to ${host}:${port}")
-          .arg(identifier{"host"}, identifier{"IpV4Host"}, std::get<0>(_addr))
-          .arg(identifier{"port"}, identifier{"IpV4Port"}, std::get<1>(_addr));
+          .arg("host", "IpV4Host", std::get<0>(_addr))
+          .arg("port", "IpV4Port", std::get<1>(_addr));
 
         conn_state().socket.async_connect(
           ep, [this, resolved, port](const std::error_code error) mutable {
               if(!error) {
                   this->log_debug("connected on address ${host}:${port}")
-                    .arg(
-                      identifier{"host"},
-                      identifier{"IpV4Host"},
-                      std::get<0>(_addr))
-                    .arg(
-                      identifier{"port"},
-                      identifier{"IpV4Port"},
-                      std::get<1>(_addr));
+                    .arg("host", "IpV4Host", std::get<0>(_addr))
+                    .arg("port", "IpV4Port", std::get<1>(_addr));
                   this->_connecting = false;
               } else {
                   if(++resolved != asio::ip::tcp::resolver::iterator{}) {
@@ -926,15 +907,9 @@ private:
                           "failed to connect on address "
                           "${address}:${port}: "
                           "${error}")
-                        .arg(identifier{"error"}, error.message())
-                        .arg(
-                          identifier{"host"},
-                          identifier{"IpV4Host"},
-                          std::get<0>(_addr))
-                        .arg(
-                          identifier{"port"},
-                          identifier{"IpV4Port"},
-                          std::get<1>(_addr));
+                        .arg("error", error.message())
+                        .arg("host", "IpV4Host", std::get<0>(_addr))
+                        .arg("port", "IpV4Port", std::get<1>(_addr));
                       this->_connecting = false;
                   }
               }
@@ -952,7 +927,7 @@ private:
                   this->_start_connect(resolved, port);
               } else {
                   this->log_error("failed to resolve address: ${error}")
-                    .arg(identifier{"error"}, error.message());
+                    .arg("error", error.message());
                   this->_connecting = false;
               }
           });
@@ -972,7 +947,7 @@ public:
       std::shared_ptr<asio_common_state> asio_state,
       const string_view addr_str,
       const span_size_t block_size) noexcept
-      : main_ctx_object{identifier{"AsioAccptr"}, parent}
+      : main_ctx_object{"AsioAccptr", parent}
       , _asio_state{std::move(asio_state)}
       , _addr{parse_ipv4_addr(addr_str)}
       , _acceptor{_asio_state->context}
@@ -1025,36 +1000,24 @@ private:
 
     void _start_accept() noexcept {
         log_debug("accepting connection on address ${host}:${port}")
-          .arg(identifier{"host"}, identifier{"IpV4Host"}, std::get<0>(_addr))
-          .arg(identifier{"port"}, identifier{"IpV4Port"}, std::get<1>(_addr));
+          .arg("host", "IpV4Host", std::get<0>(_addr))
+          .arg("port", "IpV4Port", std::get<1>(_addr));
 
         _socket = asio::ip::tcp::socket(this->_asio_state->context);
         _acceptor.async_accept(_socket, [this](const std::error_code error) {
             if(!error) {
                 log_debug("accepted connection on address ${host}:${port}")
-                  .arg(
-                    identifier{"host"},
-                    identifier{"IpV4Host"},
-                    std::get<0>(_addr))
-                  .arg(
-                    identifier{"port"},
-                    identifier{"IpV4Port"},
-                    std::get<1>(_addr));
+                  .arg("host", "IpV4Host", std::get<0>(_addr))
+                  .arg("port", "IpV4Port", std::get<1>(_addr));
                 this->_accepted.emplace_back(std::move(this->_socket));
             } else {
                 log_error(
                   "failed to accept connection on address "
                   "${host}:${port}: "
                   "${error}")
-                  .arg(identifier{"error"}, error.message())
-                  .arg(
-                    identifier{"host"},
-                    identifier{"IpV4Host"},
-                    std::get<0>(_addr))
-                  .arg(
-                    identifier{"port"},
-                    identifier{"IpV4Port"},
-                    std::get<1>(_addr));
+                  .arg("error", error.message())
+                  .arg("host", "IpV4Host", std::get<0>(_addr))
+                  .arg("port", "IpV4Port", std::get<1>(_addr));
             }
             _start_accept();
         });
@@ -1078,7 +1041,7 @@ public:
     }
 
     auto type_id() noexcept -> identifier final {
-        return identifier{"AsioUdpIp4"};
+        return "AsioUdpIp4";
     }
 };
 //------------------------------------------------------------------------------
@@ -1140,8 +1103,8 @@ private:
         this->_establishing = false;
 
         this->log_debug("resolved address ${host}:${port}")
-          .arg(identifier{"host"}, identifier{"IpV4Host"}, std::get<0>(_addr))
-          .arg(identifier{"port"}, identifier{"IpV4Port"}, std::get<1>(_addr));
+          .arg("host", "IpV4Host", std::get<0>(_addr))
+          .arg("port", "IpV4Port", std::get<1>(_addr));
     }
 
     void _start_resolve() noexcept {
@@ -1153,7 +1116,7 @@ private:
                   this->_on_resolve(resolved, port);
               } else {
                   this->log_error("failed to resolve address: ${error}")
-                    .arg(identifier{"error"}, error.message());
+                    .arg("error", error.message());
                   this->_establishing = false;
               }
           });
@@ -1174,7 +1137,7 @@ public:
       std::shared_ptr<asio_common_state> asio_state,
       const string_view addr_str,
       const span_size_t block_size) noexcept
-      : main_ctx_object{identifier{"AsioAccptr"}, parent}
+      : main_ctx_object{"AsioAccptr", parent}
       , _asio_state{std::move(asio_state)}
       , _addr{parse_ipv4_addr(addr_str)}
       , _conn{
@@ -1219,7 +1182,7 @@ public:
     }
 
     auto type_id() noexcept -> identifier final {
-        return identifier{"AsioLclStr"};
+        return "AsioLclStr";
     }
 };
 //------------------------------------------------------------------------------
@@ -1274,19 +1237,18 @@ private:
     void _start_connect() noexcept {
         _connecting = true;
         this->log_debug("connecting to ${address}")
-          .arg(identifier{"address"}, identifier{"FsPath"}, this->_addr_str);
+          .arg("address", "FsPath", this->_addr_str);
 
         conn_state().socket.async_connect(
           conn_state().conn_endpoint,
           [this](const std::error_code error) mutable {
               if(!error) {
                   this->log_debug("connected on address ${address}")
-                    .arg(
-                      identifier{"address"}, identifier{"FsPath"}, _addr_str);
+                    .arg("address", "FsPath", _addr_str);
                   _connecting = false;
               } else {
                   this->log_error("failed to connect: ${error}")
-                    .arg(identifier{"error"}, error);
+                    .arg("error", error);
                   _connecting = false;
               }
           });
@@ -1310,7 +1272,7 @@ public:
       main_ctx_parent parent,
       std::shared_ptr<asio_common_state> asio_state,
       const string_view addr_str, const span_size_t block_size) noexcept
-      : main_ctx_object{identifier{"AsioAccptr"}, parent}
+      : main_ctx_object{"AsioAccptr", parent}
       , _asio_state{_prepare(std::move(asio_state), _fix_addr(addr_str))}
       , _addr_str{to_string(_fix_addr(addr_str))}
       , _acceptor{
@@ -1378,7 +1340,7 @@ private:
 
     void _start_accept() noexcept {
         log_debug("accepting connection on address ${address}")
-          .arg(identifier{"address"}, identifier{"FsPath"}, _addr_str);
+          .arg("address", "FsPath", _addr_str);
 
         _accepting = true;
         _acceptor.async_accept([this](
@@ -1390,11 +1352,11 @@ private:
                   ->log_error(
                     "failed to accept connection on address ${address}: "
                     "${error}")
-                  .arg(identifier{"error"}, error)
-                  .arg(identifier{"address"}, identifier{"FsPath"}, _addr_str);
+                  .arg("error", error)
+                  .arg("address", "FsPath", _addr_str);
             } else {
                 this->log_debug("accepted connection on address ${address}")
-                  .arg(identifier{"address"}, identifier{"FsPath"}, _addr_str);
+                  .arg("address", "FsPath", _addr_str);
                 this->_accepted.emplace_back(std::move(socket));
             }
             _start_accept();
@@ -1435,7 +1397,7 @@ public:
       main_ctx_parent parent,
       std::shared_ptr<asio_common_state> asio_state,
       const span_size_t block_size) noexcept
-      : main_ctx_object{identifier{"AsioConnFc"}, parent}
+      : main_ctx_object{"AsioConnFc", parent}
       , _asio_state{std::move(asio_state)}
       , _block_size{block_size} {}
 

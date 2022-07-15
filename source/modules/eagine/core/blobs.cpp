@@ -134,7 +134,7 @@ public:
       main_ctx_parent parent,
       message_id fragment_msg_id,
       message_id resend_msg_id) noexcept
-      : main_ctx_object{identifier{"BlobManipl"}, parent}
+      : main_ctx_object{"BlobManipl", parent}
       , _fragment_msg_id{std::move(fragment_msg_id)}
       , _resend_msg_id{std::move(resend_msg_id)} {}
 

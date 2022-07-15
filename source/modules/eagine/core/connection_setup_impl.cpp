@@ -29,8 +29,8 @@ void connection_setup::_do_setup_acceptors(
         log_debug(
           "setting up acceptors on address ${address} "
           "with factory type ${factory}")
-          .arg(identifier{"factory"}, factory)
-          .arg(identifier{"address"}, identifier{"MsgBusAddr"}, address);
+          .arg("factory", factory)
+          .arg("address", "MsgBusAddr", address);
 
         if(auto acceptor{factory->make_acceptor(address)}) {
             target.add_acceptor(std::move(acceptor));
@@ -47,8 +47,8 @@ void connection_setup::_do_setup_connectors(
         log_debug(
           "setting up connectors on address ${address} "
           "with factory type ${factory}")
-          .arg(identifier{"factory"}, factory)
-          .arg(identifier{"address"}, identifier{"MsgBusAddr"}, address);
+          .arg("factory", factory)
+          .arg("address", "MsgBusAddr", address);
 
         if(auto connector{factory->make_connector(address)}) {
             target.add_connection(std::move(connector));
@@ -124,9 +124,9 @@ void connection_setup::add_factory(std::unique_ptr<connection_factory> factory) 
         const auto kind{factory->kind()};
 
         log_debug("adding ${kind} connection factory ${factory}")
-          .arg(identifier{"kind"}, kind)
-          .arg(identifier{"addrKind"}, factory->addr_kind())
-          .arg(identifier{"factory"}, factory);
+          .arg("kind", kind)
+          .arg("addrKind", factory->addr_kind())
+          .arg("factory", factory);
 
         _factory_map.visit(
           kind, [factory{std::move(factory)}](auto, auto& factories) mutable {

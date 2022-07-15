@@ -116,7 +116,7 @@ inline auto parent_router::update(
                     something_done();
 
                     user.log_debug("announcing id ${id} to parent router")
-                      .arg(identifier{"id"}, id_base);
+                      .arg("id", id_base);
                 }
             }
             something_done(the_connection->update());
@@ -145,8 +145,8 @@ inline auto parent_router::fetch_messages(
             if(msg_id == msgbus_id{"confirmId"}) {
                 confirmed_id = message.target_id;
                 user.log_debug("confirmed id ${id} by parent router ${source}")
-                  .arg(identifier{"id"}, message.target_id)
-                  .arg(identifier{"source"}, message.source_id);
+                  .arg("id", message.target_id)
+                  .arg("source", message.source_id);
             } else if(
               msg_id.has_method("byeByeEndp") ||
               msg_id.has_method("byeByeRutr") ||
@@ -155,8 +155,8 @@ inline auto parent_router::fetch_messages(
                   .log_debug(
                     "received bye-bye (${method}) from node ${source} "
                     "from parent router")
-                  .arg(identifier{"method"}, msg_id.method())
-                  .arg(identifier{"source"}, message.source_id);
+                  .arg("method", msg_id.method())
+                  .arg("source", message.source_id);
             } else {
                 return handler(msg_id, msg_age, message);
             }
@@ -205,8 +205,8 @@ auto router::add_acceptor(std::shared_ptr<acceptor> an_acceptor) noexcept
   -> bool {
     if(an_acceptor) {
         log_info("adding connection acceptor")
-          .arg(identifier{"kind"}, an_acceptor->kind())
-          .arg(identifier{"type"}, an_acceptor->type_id());
+          .arg("kind", an_acceptor->kind())
+          .arg("type", an_acceptor->type_id());
         _acceptors.emplace_back(std::move(an_acceptor));
         return true;
     }
@@ -217,8 +217,8 @@ auto router::add_connection(std::unique_ptr<connection> a_connection) noexcept
   -> bool {
     if(a_connection) {
         log_info("assigning parent router connection")
-          .arg(identifier{"kind"}, a_connection->kind())
-          .arg(identifier{"type"}, a_connection->type_id());
+          .arg("kind", a_connection->kind())
+          .arg("type", a_connection->type_id());
         _parent_router.reset(std::move(a_connection));
         return true;
     }
@@ -248,9 +248,9 @@ void router::_setup_from_config() {
     _id_sequence = _id_base + 1;
 
     log_info("using router id range ${base} - ${end} (${count})")
-      .arg(identifier{"count"}, id_count)
-      .arg(identifier{"base"}, _id_base)
-      .arg(identifier{"end"}, _id_end);
+      .arg("count", id_count)
+      .arg("base", _id_base)
+      .arg("end", _id_end);
 }
 //------------------------------------------------------------------------------
 auto router::_handle_accept() noexcept -> work_done {
@@ -274,31 +274,28 @@ auto router::_handle_pending() noexcept -> work_done {
     if(!_pending.empty()) {
         identifier_t id = 0;
         bool maybe_router = true;
-        auto handler = [&](
-                         message_id msg_id,
-                         message_age,
-                         const message_view& msg) {
-            // this is a special message requesting endpoint id assignment
-            if(msg_id == msgbus_id{"requestId"}) {
-                id = ~id;
-                return true;
-            }
-            // this is a special message containing endpoint id
-            if(msg_id == msgbus_id{"annEndptId"}) {
-                id = msg.source_id;
-                maybe_router = false;
-                this->log_debug("received endpoint id ${id}")
-                  .arg(identifier{"id"}, id);
-                return true;
-            }
-            // this is a special message containing non-endpoint id
-            if(msg_id == msgbus_id{"announceId"}) {
-                id = msg.source_id;
-                this->log_debug("received id ${id}").arg(identifier{"id"}, id);
-                return true;
-            }
-            return false;
-        };
+        auto handler =
+          [&](message_id msg_id, message_age, const message_view& msg) {
+              // this is a special message requesting endpoint id assignment
+              if(msg_id == msgbus_id{"requestId"}) {
+                  id = ~id;
+                  return true;
+              }
+              // this is a special message containing endpoint id
+              if(msg_id == msgbus_id{"annEndptId"}) {
+                  id = msg.source_id;
+                  maybe_router = false;
+                  this->log_debug("received endpoint id ${id}").arg("id", id);
+                  return true;
+              }
+              // this is a special message containing non-endpoint id
+              if(msg_id == msgbus_id{"announceId"}) {
+                  id = msg.source_id;
+                  this->log_debug("received id ${id}").arg("id", id);
+                  return true;
+              }
+              return false;
+          };
 
         std::size_t idx = 0;
         while(idx < _pending.size()) {
@@ -314,11 +311,11 @@ auto router::_handle_pending() noexcept -> work_done {
                 _assign_id(pending.the_connection);
             } else if(id != 0) {
                 log_info("adopting pending connection from ${cnterpart} ${id}")
-                  .arg(identifier{"kind"}, pending.the_connection->kind())
-                  .arg(identifier{"type"}, pending.the_connection->type_id())
-                  .arg(identifier{"id"}, id)
+                  .arg("kind", pending.the_connection->kind())
+                  .arg("type", pending.the_connection->type_id())
+                  .arg("id", id)
                   .arg(
-                    identifier{"cnterpart"},
+                    "cnterpart",
                     maybe_router ? string_view("non-endpoint")
                                  : string_view("endpoint"));
 
@@ -352,8 +349,8 @@ auto router::_remove_timeouted() noexcept -> work_done {
         if(pending.age() > this->_pending_timeout) {
             something_done();
             log_warning("removing timeouted pending ${type} connection")
-              .arg(identifier{"type"}, pending.the_connection->type_id())
-              .arg(identifier{"age"}, pending.age());
+              .arg("type", pending.the_connection->type_id())
+              .arg("age", pending.age());
             return true;
         }
         return false;
@@ -434,8 +431,8 @@ void router::_assign_id(std::unique_ptr<connection>& conn) noexcept {
     }
     //
     log_debug("assigning id ${id} to accepted ${type} connection")
-      .arg(identifier{"type"}, conn->type_id())
-      .arg(identifier{"id"}, _id_sequence);
+      .arg("type", conn->type_id())
+      .arg("id", _id_sequence);
     // send the special message assigning the endpoint id
     message_view msg{};
     msg.set_target_id(_id_sequence++);
@@ -446,8 +443,8 @@ void router::_handle_connection(
   std::unique_ptr<connection> a_connection) noexcept {
     assert(a_connection);
     log_info("accepted pending connection")
-      .arg(identifier{"kind"}, a_connection->kind())
-      .arg(identifier{"type"}, a_connection->type_id());
+      .arg("kind", a_connection->kind())
+      .arg("type", a_connection->type_id());
     _pending.emplace_back(std::move(a_connection));
 }
 //------------------------------------------------------------------------------
@@ -505,14 +502,14 @@ auto router::_handle_blob(
     if(is_special_message(msg_id)) {
         if(msg_id.has_method("eptCertPem")) {
             log_trace("received endpoint certificate")
-              .arg(identifier{"source"}, message.source_id)
-              .arg(identifier{"pem"}, message.content());
+              .arg("source", message.source_id)
+              .arg("pem", message.content());
             auto pos = _nodes.find(message.source_id);
             if(pos != _nodes.end()) {
                 if(_context->add_remote_certificate_pem(
                      message.source_id, message.content())) {
                     log_debug("verified and stored endpoint certificate")
-                      .arg(identifier{"source"}, message.source_id);
+                      .arg("source", message.source_id);
                 }
             }
             if(message.target_id) {
@@ -558,8 +555,8 @@ auto router::_handle_subscribed(
     message_id sub_msg_id{};
     if(default_deserialize_message_type(sub_msg_id, message.content())) {
         log_debug("endpoint ${source} subscribes to ${message}")
-          .arg(identifier{"source"}, message.source_id)
-          .arg(identifier{"message"}, sub_msg_id);
+          .arg("source", message.source_id)
+          .arg("message", sub_msg_id);
 
         auto& info = _update_endpoint_info(incoming_id, message);
         message_id_list_add(info.subscriptions, sub_msg_id);
@@ -574,8 +571,8 @@ auto router::_handle_not_subscribed(
     message_id sub_msg_id{};
     if(default_deserialize_message_type(sub_msg_id, message.content())) {
         log_debug("endpoint ${source} unsubscribes from ${message}")
-          .arg(identifier{"source"}, message.source_id)
-          .arg(identifier{"message"}, sub_msg_id);
+          .arg("source", message.source_id)
+          .arg("message", sub_msg_id);
 
         auto& info = _update_endpoint_info(incoming_id, message);
         message_id_list_remove(info.subscriptions, sub_msg_id);
@@ -846,9 +843,9 @@ auto router::_handle_special_common(
         return was_handled;
     } else {
         log_warning("unhandled special message ${message} from ${source}")
-          .arg(identifier{"message"}, msg_id)
-          .arg(identifier{"source"}, message.source_id)
-          .arg(identifier{"data"}, message.data());
+          .arg("message", msg_id)
+          .arg("source", message.source_id)
+          .arg("data", message.data());
     }
     return should_be_forwarded;
 }
@@ -859,10 +856,10 @@ auto router::_handle_special(
   const message_view& message) noexcept -> message_handling_result {
     if(is_special_message(msg_id)) [[unlikely]] {
         log_debug("router handling special message ${message} from parent")
-          .arg(identifier{"router"}, _id_base)
-          .arg(identifier{"message"}, msg_id)
-          .arg(identifier{"target"}, message.target_id)
-          .arg(identifier{"source"}, message.source_id);
+          .arg("router", _id_base)
+          .arg("message", msg_id)
+          .arg("target", message.target_id)
+          .arg("source", message.source_id);
 
         if(msg_id.has_method("stillAlive")) {
             _update_endpoint_info(incoming_id, message);
@@ -881,16 +878,16 @@ auto router::_handle_special(
   const message_view& message) noexcept -> message_handling_result {
     if(is_special_message(msg_id)) [[unlikely]] {
         log_debug("router handling special message ${message} from node")
-          .arg(identifier{"router"}, _id_base)
-          .arg(identifier{"message"}, msg_id)
-          .arg(identifier{"target"}, message.target_id)
-          .arg(identifier{"source"}, message.source_id);
+          .arg("router", _id_base)
+          .arg("message", msg_id)
+          .arg("target", message.target_id)
+          .arg("source", message.source_id);
 
         if(msg_id.has_method("notARouter")) {
             if(incoming_id == message.source_id) {
                 node.maybe_router = false;
                 log_debug("node ${source} is not a router")
-                  .arg(identifier{"source"}, message.source_id);
+                  .arg("source", message.source_id);
             }
             return was_handled;
         } else if(msg_id.has_method("clrBlkList")) {
@@ -907,8 +904,8 @@ auto router::_handle_special(
                  blk_msg_id, message.content())) {
                 if(!is_special_message(msg_id)) {
                     log_debug("node ${source} blocking message ${message}")
-                      .arg(identifier{"message"}, blk_msg_id)
-                      .arg(identifier{"source"}, message.source_id);
+                      .arg("message", blk_msg_id)
+                      .arg("source", message.source_id);
                     node.block_message(blk_msg_id);
                     _update_endpoint_info(incoming_id, message);
                     return was_handled;
@@ -919,8 +916,8 @@ auto router::_handle_special(
             if(default_deserialize_message_type(
                  alw_msg_id, message.content())) {
                 log_debug("node ${source} allowing message ${message}")
-                  .arg(identifier{"message"}, alw_msg_id)
-                  .arg(identifier{"source"}, message.source_id);
+                  .arg("message", alw_msg_id)
+                  .arg("source", message.source_id);
                 node.allow_message(alw_msg_id);
                 _update_endpoint_info(incoming_id, message);
                 return was_handled;
@@ -933,8 +930,8 @@ auto router::_handle_special(
           msg_id.has_method("byeByeEndp") || msg_id.has_method("byeByeRutr") ||
           msg_id.has_method("byeByeBrdg")) {
             log_debug("received bye-bye (${method}) from node ${source}")
-              .arg(identifier{"method"}, msg_id.method())
-              .arg(identifier{"source"}, message.source_id);
+              .arg("method", msg_id.method())
+              .arg("source", message.source_id);
             if(!node.maybe_router) {
                 node.do_disconnect = true;
             }
@@ -957,7 +954,7 @@ auto router::_do_route_message(
     bool result = true;
     if(message.too_many_hops()) [[unlikely]] {
         log_warning("message ${message} discarded after too many hops")
-          .arg(identifier{"message"}, msg_id);
+          .arg("message", msg_id);
         ++_stats.dropped_messages;
     } else {
         const auto& nodes = this->_nodes;
@@ -973,15 +970,15 @@ auto router::_do_route_message(
                 if(interval > decltype(interval)::zero()) [[likely]] {
                     const auto msgs_per_sec{1000000.F / interval.count()};
 
-                    log_chart_sample(identifier{"msgsPerSec"}, msgs_per_sec);
+                    log_chart_sample("msgsPerSec", msgs_per_sec);
                     log_stat("forwarded ${count} messages")
-                      .arg(identifier{"count"}, _stats.forwarded_messages)
-                      .arg(identifier{"dropped"}, _stats.dropped_messages)
-                      .arg(identifier{"interval"}, interval)
+                      .arg("count", _stats.forwarded_messages)
+                      .arg("dropped", _stats.dropped_messages)
+                      .arg("interval", interval)
                       .arg(
-                        identifier{"avgMsgAge"},
+                        "avgMsgAge",
                         std::chrono::microseconds(_stats.message_age_us))
-                      .arg(identifier{"msgsPerSec"}, msgs_per_sec);
+                      .arg("msgsPerSec", msgs_per_sec);
                 }
 
                 _forwarded_since_log = now;
@@ -1180,11 +1177,9 @@ void router::cleanup() noexcept {
     }
 
     log_stat("forwarded ${count} messages in total")
-      .arg(identifier{"count"}, _stats.forwarded_messages)
-      .arg(identifier{"dropped"}, _stats.dropped_messages)
-      .arg(
-        identifier{"avgMsgAge"},
-        std::chrono::microseconds(_stats.message_age_us));
+      .arg("count", _stats.forwarded_messages)
+      .arg("dropped", _stats.dropped_messages)
+      .arg("avgMsgAge", std::chrono::microseconds(_stats.message_age_us));
 }
 //------------------------------------------------------------------------------
 void router::finish() noexcept {

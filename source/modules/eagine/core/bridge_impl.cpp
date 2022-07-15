@@ -240,8 +240,7 @@ auto bridge::_handle_id_assigned(const message_view& message) noexcept
   -> message_handling_result {
     if(!has_id()) {
         _id = message.target_id;
-        log_debug("assigned bridge id ${id} by router")
-          .arg(identifier{"id"}, _id);
+        log_debug("assigned bridge id ${id} by router").arg("id", _id);
     }
     return was_handled;
 }
@@ -251,12 +250,12 @@ auto bridge::_handle_id_confirmed(const message_view& message) noexcept
     if(has_id()) {
         if(_id != message.target_id) {
             log_error("mismatching current and confirmed ids")
-              .arg(identifier{"current"}, _id)
-              .arg(identifier{"confirmed"}, message.target_id);
+              .arg("current", _id)
+              .arg("confirmed", message.target_id);
         }
     } else {
         log_warning("confirming unset id ${newId}")
-          .arg(identifier{"confirmed"}, message.target_id);
+          .arg("confirmed", message.target_id);
     }
     return was_handled;
 }
@@ -355,10 +354,10 @@ auto bridge::_handle_special(
   const bool to_connection) noexcept -> message_handling_result {
     if(is_special_message(msg_id)) [[unlikely]] {
         log_debug("bridge handling special message ${message}")
-          .arg(identifier{"bridge"}, _id)
-          .arg(identifier{"message"}, msg_id)
-          .arg(identifier{"target"}, message.target_id)
-          .arg(identifier{"source"}, message.source_id);
+          .arg("bridge", _id)
+          .arg("message", msg_id)
+          .arg("target", message.target_id)
+          .arg("source", message.source_id);
 
         if(msg_id.has_method("assignId")) {
             return _handle_id_assigned(message);
@@ -385,8 +384,8 @@ auto bridge::_do_send(const message_id msg_id, message_view& message) noexcept
     if(_connection) [[likely]] {
         if(_connection->send(msg_id, message)) {
             log_trace("forwarding message ${message} to connection")
-              .arg(identifier{"message"}, msg_id)
-              .arg(identifier{"data"}, message.data());
+              .arg("message", msg_id)
+              .arg("data", message.data());
             return true;
         }
     }
@@ -406,8 +405,8 @@ auto bridge::_do_push(const message_id msg_id, message_view& message) noexcept
         message.add_hop();
         _state->push(msg_id, message);
         log_trace("forwarding message ${message} to stream")
-          .arg(identifier{"message"}, msg_id)
-          .arg(identifier{"data"}, message.data());
+          .arg("message", msg_id)
+          .arg("data", message.data());
         return true;
     }
     return false;
@@ -435,13 +434,13 @@ auto bridge::_forward_messages() noexcept -> work_done {
                     _message_age_sum_c2o /
                     float(_forwarded_messages_c2o + _dropped_messages_c2o + 1);
 
-                  log_chart_sample(identifier{"msgPerSecO"}, msgs_per_sec);
+                  log_chart_sample("msgPerSecO", msgs_per_sec);
                   log_stat("forwarded ${count} messages to output queue")
-                    .arg(identifier{"count"}, _forwarded_messages_c2o)
-                    .arg(identifier{"dropped"}, _dropped_messages_c2o)
-                    .arg(identifier{"interval"}, interval)
-                    .arg(identifier{"avgMsgAge"}, avg_msg_age)
-                    .arg(identifier{"msgsPerSec"}, msgs_per_sec);
+                    .arg("count", _forwarded_messages_c2o)
+                    .arg("dropped", _dropped_messages_c2o)
+                    .arg("interval", interval)
+                    .arg("avgMsgAge", avg_msg_age)
+                    .arg("msgsPerSec", msgs_per_sec);
               }
 
               _forwarded_since_c2o = now;
@@ -480,13 +479,13 @@ auto bridge::_forward_messages() noexcept -> work_done {
                   _stats.message_age_milliseconds =
                     static_cast<std::int32_t>(avg_msg_age * 1000.F);
 
-                  log_chart_sample(identifier{"msgPerSecI"}, msgs_per_sec);
+                  log_chart_sample("msgPerSecI", msgs_per_sec);
                   log_stat("forwarded ${count} messages from input")
-                    .arg(identifier{"count"}, _forwarded_messages_i2c)
-                    .arg(identifier{"dropped"}, _dropped_messages_i2c)
-                    .arg(identifier{"interval"}, interval)
-                    .arg(identifier{"avgMsgAge"}, avg_msg_age)
-                    .arg(identifier{"msgsPerSec"}, msgs_per_sec);
+                    .arg("count", _forwarded_messages_i2c)
+                    .arg("dropped", _dropped_messages_i2c)
+                    .arg("interval", interval)
+                    .arg("avgMsgAge", avg_msg_age)
+                    .arg("msgsPerSec", msgs_per_sec);
               }
 
               _forwarded_since_i2c = now;
@@ -555,7 +554,7 @@ auto bridge::update() noexcept -> work_done {
 
     // if processing the messages assigned the id
     if(has_id() && !had_id) [[unlikely]] {
-        log_debug("announcing id ${id}").arg(identifier{"id"}, _id);
+        log_debug("announcing id ${id}").arg("id", _id);
         message_view msg;
         _send(msgbus_id{"announceId"}, msg);
         something_done();
@@ -598,21 +597,21 @@ void bridge::cleanup() noexcept {
 
     if(_state) {
         log_stat("forwarded ${count} messages in total to output stream")
-          .arg(identifier{"count"}, _state->forwarded_messages())
-          .arg(identifier{"dropped"}, _state->dropped_messages())
-          .arg(identifier{"decodeErr"}, _state->decode_errors())
-          .arg(identifier{"stateCount"}, _state_count);
+          .arg("count", _state->forwarded_messages())
+          .arg("dropped", _state->dropped_messages())
+          .arg("decodeErr", _state->decode_errors())
+          .arg("stateCount", _state_count);
     }
 
     log_stat("forwarded ${count} messages in total to output queue")
-      .arg(identifier{"count"}, _forwarded_messages_c2o)
-      .arg(identifier{"dropped"}, _dropped_messages_c2o)
-      .arg(identifier{"avgMsgAge"}, avg_msg_age_c2o);
+      .arg("count", _forwarded_messages_c2o)
+      .arg("dropped", _dropped_messages_c2o)
+      .arg("avgMsgAge", avg_msg_age_c2o);
 
     log_stat("forwarded ${count} messages in total to connection")
-      .arg(identifier{"count"}, _forwarded_messages_i2c)
-      .arg(identifier{"dropped"}, _dropped_messages_i2c)
-      .arg(identifier{"avgMsgAge"}, avg_msg_age_i2c);
+      .arg("count", _forwarded_messages_i2c)
+      .arg("dropped", _dropped_messages_i2c)
+      .arg("avgMsgAge", avg_msg_age_i2c);
 }
 //------------------------------------------------------------------------------
 void bridge::finish() noexcept {

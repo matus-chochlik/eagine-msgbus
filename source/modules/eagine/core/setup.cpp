@@ -27,12 +27,12 @@ export class message_bus_setup
   , public main_ctx_object {
 public:
     message_bus_setup(main_ctx_parent parent) noexcept
-      : main_ctx_object{identifier{"MessageBus"}, parent}
+      : main_ctx_object{"MessageBus", parent}
       , _addr{parent, nothing}
       , _setup{parent, nothing} {}
 
     static auto static_type_id() noexcept -> identifier {
-        return identifier{"MsgBusSetp"};
+        return "MsgBusSetp";
     }
 
     void configure(application_config& config) {
