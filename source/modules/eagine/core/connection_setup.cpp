@@ -189,10 +189,21 @@ private:
       const string_view address,
       _factory_list& factories);
 
-    auto _make_call_setup_acceptors(acceptor_user&, const string_view address);
+    auto _make_call_setup_acceptors(
+      acceptor_user& target,
+      const string_view address) {
+        return [this, &target, address](auto, auto& factories) {
+            _do_setup_acceptors(target, address, factories);
+        };
+    }
+
     auto _make_call_setup_connectors(
-      connection_user&,
-      const string_view address);
+      connection_user& target,
+      const string_view address) {
+        return [this, &target, address](const auto, auto& factories) {
+            _do_setup_connectors(target, address, factories);
+        };
+    }
 };
 //------------------------------------------------------------------------------
 } // namespace eagine::msgbus

@@ -131,43 +131,6 @@ inline auto parent_router::update(
     return something_done;
 }
 //------------------------------------------------------------------------------
-template <typename Handler>
-inline auto parent_router::fetch_messages(
-  main_ctx_object& user,
-  const Handler& handler) noexcept -> work_done {
-    some_true something_done;
-
-    if(the_connection) {
-        const auto wrapped = [&](
-                               message_id msg_id,
-                               message_age msg_age,
-                               const message_view& message) -> bool {
-            if(msg_id == msgbus_id{"confirmId"}) {
-                confirmed_id = message.target_id;
-                user.log_debug("confirmed id ${id} by parent router ${source}")
-                  .arg("id", message.target_id)
-                  .arg("source", message.source_id);
-            } else if(
-              msg_id.has_method("byeByeEndp") ||
-              msg_id.has_method("byeByeRutr") ||
-              msg_id.has_method("byeByeBrdg")) {
-                user
-                  .log_debug(
-                    "received bye-bye (${method}) from node ${source} "
-                    "from parent router")
-                  .arg("method", msg_id.method())
-                  .arg("source", message.source_id);
-            } else {
-                return handler(msg_id, msg_age, message);
-            }
-            return true;
-        };
-        something_done(
-          the_connection->fetch_messages({construct_from, wrapped}));
-    }
-    return something_done;
-}
-//------------------------------------------------------------------------------
 auto parent_router::send(
   main_ctx_object& user,
   const message_id msg_id,

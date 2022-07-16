@@ -271,6 +271,7 @@ eagine_add_module(
 		eagine.core.utility
 		eagine.core.valid_if
 		eagine.core.runtime
+		eagine.core.logging
 		eagine.core.main_ctx
 )
 

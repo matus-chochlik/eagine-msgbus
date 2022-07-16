@@ -38,7 +38,7 @@ export constexpr auto endpoint_alive_notify_period() noexcept {
 /// @ingroup msgbus
 /// @see static_subscriber
 /// @see subscriber
-export class endpoint
+export class endpoint final
   : public connection_user
   , public main_ctx_object {
 public:
@@ -85,7 +85,7 @@ public:
         return *_context;
     }
 
-    ~endpoint() noexcept override = default;
+    ~endpoint() noexcept final = default;
 
     /// @brief Assigns the unique id of this endpoint.
     /// @see preconfigure_id

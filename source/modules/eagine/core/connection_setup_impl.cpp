@@ -56,14 +56,6 @@ void connection_setup::_do_setup_connectors(
     }
 }
 //------------------------------------------------------------------------------
-auto connection_setup::_make_call_setup_acceptors(
-  acceptor_user& target,
-  const string_view address) {
-    return [this, &target, address](auto, auto& factories) {
-        _do_setup_acceptors(target, address, factories);
-    };
-}
-//------------------------------------------------------------------------------
 void connection_setup::setup_acceptors(
   acceptor_user& target,
   const string_view address) {
@@ -85,14 +77,6 @@ void connection_setup::setup_acceptors(
   const string_view address) {
     std::unique_lock lock{_mutex};
     _factory_map.visit(kind, _make_call_setup_acceptors(target, address));
-}
-//------------------------------------------------------------------------------
-auto connection_setup::_make_call_setup_connectors(
-  connection_user& target,
-  const string_view address) {
-    return [this, &target, address](const auto, auto& factories) {
-        _do_setup_connectors(target, address, factories);
-    };
 }
 //------------------------------------------------------------------------------
 void connection_setup::setup_connectors(
