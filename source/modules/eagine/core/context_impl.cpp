@@ -30,48 +30,6 @@ context::context(main_ctx_parent parent) noexcept
         log_error("failed to create certificate store: ${reason}")
           .arg("reason", (!make_result).message());
     }
-
-    auto& cfg = app_config();
-    std::string temp;
-    if(cfg.fetch("msgbus.ssl_engine", temp)) {
-        _ssl.load_builtin_engines();
-
-        if(ok open_result{_ssl.open_engine(temp)}) {
-            _ssl_engine = std::move(open_result.get());
-            if(ok init_result{_ssl.init_engine(_ssl_engine)}) {
-                log_info("successfully loaded ssl engine ${name}")
-                  .arg("name", temp);
-            } else {
-                log_error("failed to init ssl engine ${name}: ${reason}")
-                  .arg("name", temp)
-                  .arg("reason", (!init_result).message());
-            }
-        } else {
-            log_error("failed to load ssl engine ${name}: ${reason}")
-              .arg("name", temp)
-              .arg("reason", (!open_result).message());
-        }
-    }
-    if(cfg.fetch("msgbus.pkey_id", temp)) {
-        if(const ok uim_result{_ssl.openssl_ui()}) {
-            if(ok pkey_result{
-                 _ssl.load_engine_private_key(_ssl_engine, temp, uim_result)}) {
-                if(_own_pkey) {
-                    _ssl.delete_pkey(std::move(_own_pkey));
-                }
-                _own_pkey = std::move(pkey_result.get());
-                log_info("successfully loaded ssl key ${keyId}")
-                  .arg("keyId", temp);
-            } else {
-                log_error("failed load ssl key ${keyId}: ${reason}")
-                  .arg("keyId", temp)
-                  .arg("reason", (!pkey_result).message());
-            }
-        } else {
-            log_error("failed get ssl ui method: ${reason}")
-              .arg("reason", (!uim_result).message());
-        }
-    }
 }
 //------------------------------------------------------------------------------
 context::~context() noexcept {
@@ -95,11 +53,6 @@ context::~context() noexcept {
 
     if(_ssl_store) {
         _ssl.delete_x509_store(std::move(_ssl_store));
-    }
-
-    if(_ssl_engine) {
-        _ssl.finish_engine(std::move(_ssl_engine));
-        _ssl.delete_engine(std::move(_ssl_engine));
     }
 }
 //------------------------------------------------------------------------------
