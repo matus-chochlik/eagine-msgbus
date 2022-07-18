@@ -106,6 +106,37 @@ eagine_add_module(
 )
 
 eagine_add_module(
+	eagine.msgbus.services PARTITION compiler_info
+	IMPORTS
+		eagine.core.types
+		eagine.core.memory
+		eagine.core.identifier
+		eagine.core.valid_if
+		eagine.core.main_ctx
+		eagine.msgbus.core
+)
+
+eagine_add_module(
+	eagine.msgbus.services PARTITION build_info
+	IMPORTS
+		eagine.core.types
+		eagine.core.memory
+		eagine.core.identifier
+		eagine.core.valid_if
+		eagine.core.main_ctx
+		eagine.msgbus.core
+)
+
+eagine_add_module(
+	eagine.msgbus.services PARTITION common_info
+	IMPORTS
+		application_info build_info compiler_info
+		host_info endpoint_info
+		eagine.core.types
+		eagine.msgbus.core
+)
+
+eagine_add_module(
 	eagine.msgbus.services PARTITION stream
 	IMPORTS
 		discovery ping_pong
@@ -164,6 +195,9 @@ eagine_add_module(
 		endpoint_info
 		host_info
 		system_info
+		compiler_info
+		build_info
+		common_info
 		stream
 		resource_transfer
 		sudoku
