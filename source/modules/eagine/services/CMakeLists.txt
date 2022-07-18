@@ -106,6 +106,19 @@ eagine_add_module(
 )
 
 eagine_add_module(
+	eagine.msgbus.services PARTITION stream
+	IMPORTS
+		discovery ping_pong
+		eagine.core.types
+		eagine.core.memory
+		eagine.core.identifier
+		eagine.core.container
+		eagine.core.utility
+		eagine.core.valid_if
+		eagine.msgbus.core
+)
+
+eagine_add_module(
 	eagine.msgbus.services PARTITION resource_transfer
 	IMPORTS
 		discovery host_info
@@ -151,6 +164,7 @@ eagine_add_module(
 		endpoint_info
 		host_info
 		system_info
+		stream
 		resource_transfer
 		sudoku
 	SOURCES
