@@ -229,6 +229,7 @@ eagine_add_module(
 		types interface message
 		invoker skeleton
 		endpoint subscriber
+		handler_map
 		eagine.core.types
 		eagine.core.identifier
 		eagine.core.serialization

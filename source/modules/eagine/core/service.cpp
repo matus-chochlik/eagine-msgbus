@@ -19,6 +19,7 @@ import :invoker;
 import :skeleton;
 import :endpoint;
 import :subscriber;
+import :handler_map;
 import <type_traits>;
 
 namespace eagine::msgbus {

@@ -440,15 +440,12 @@ public:
 
     void init() noexcept {
         Base::init();
-        this->bus_node().id_assigned.connect(make_callable_ref(
-          this, member_function_constant_t<&sudoku_solver::on_id_assigned>{}));
-        this->bus_node().connection_established.connect(make_callable_ref(
-          this,
-          member_function_constant_t<
-            &sudoku_solver::on_connection_established>{}));
-        this->bus_node().connection_lost.connect(make_callable_ref(
-          this,
-          member_function_constant_t<&sudoku_solver::on_connection_lost>{}));
+        this->bus_node().id_assigned.connect(
+          make_callable_ref<&sudoku_solver::on_id_assigned>(this));
+        this->bus_node().connection_established.connect(
+          make_callable_ref<&sudoku_solver::on_connection_established>(this));
+        this->bus_node().connection_lost.connect(
+          make_callable_ref<&sudoku_solver::on_connection_lost>(this));
 
         if(const auto solution_timeout{this->app_config().get(
              "msgbus.sudoku.solver.solution_timeout",
@@ -1469,18 +1466,14 @@ public:
 protected:
     sudoku_tiling(endpoint& bus) noexcept
       : base{bus} {
-        this->solved_3.connect(make_callable_ref(
-          this,
-          member_function_constant_t<&sudoku_tiling::_handle_solved<3>>{}));
-        this->solved_4.connect(make_callable_ref(
-          this,
-          member_function_constant_t<&sudoku_tiling::_handle_solved<4>>{}));
-        this->solved_5.connect(make_callable_ref(
-          this,
-          member_function_constant_t<&sudoku_tiling::_handle_solved<5>>{}));
-        this->solved_6.connect(make_callable_ref(
-          this,
-          member_function_constant_t<&sudoku_tiling::_handle_solved<6>>{}));
+        this->solved_3.connect(
+          make_callable_ref<&sudoku_tiling::_handle_solved<3>>(this));
+        this->solved_4.connect(
+          make_callable_ref<&sudoku_tiling::_handle_solved<4>>(this));
+        this->solved_5.connect(
+          make_callable_ref<&sudoku_tiling::_handle_solved<5>>(this));
+        this->solved_6.connect(
+          make_callable_ref<&sudoku_tiling::_handle_solved<6>>(this));
     }
 
 private:

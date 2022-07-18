@@ -38,13 +38,11 @@ protected:
     void add_methods() noexcept {
         Base::add_methods();
 
-        Base::add_method(_respond(
-          message_id{"eagiEptInf", "response"},
-          make_callable_ref(
-            this,
-            member_function_constant_t<
-              &endpoint_info_provider::_get_endpoint_info>{}))
-                           [message_id("eagiEptInf", "request")]);
+        Base::add_method(
+          _respond(
+            {"eagiEptInf", "response"},
+            make_callable_ref<&endpoint_info_provider::_get_endpoint_info>(this))
+            .map_invoke_by(("eagiEptInf", "request")));
     }
 
 private:
@@ -83,8 +81,8 @@ protected:
     void add_methods() noexcept {
         Base::add_methods();
 
-        Base::add_method(
-          _info(endpoint_info_received)[message_id{"eagiEptInf", "response"}]);
+        Base::add_method(_info(endpoint_info_received)
+                           .map_fulfill_by({"eagiEptInf", "response"}));
     }
 
 private:

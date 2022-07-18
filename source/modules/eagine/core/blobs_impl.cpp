@@ -494,9 +494,7 @@ auto blob_manipulator::process_incoming(
 auto blob_manipulator::process_incoming(const message_view& message) noexcept
   -> bool {
     return process_incoming(
-      make_callable_ref(
-        this, member_function_constant_t<&blob_manipulator::_make_io>{}),
-      message);
+      make_callable_ref<&blob_manipulator::_make_io>(this), message);
 }
 //------------------------------------------------------------------------------
 auto blob_manipulator::process_resend(const message_view& message) noexcept

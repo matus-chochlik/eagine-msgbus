@@ -38,8 +38,7 @@ auto endpoint::_uptime_seconds() noexcept -> std::int64_t {
 //------------------------------------------------------------------------------
 auto endpoint::_process_blobs() noexcept -> work_done {
     some_true something_done;
-    const auto post_handler{
-      make_callable_ref(this, member_function_constant_t<&endpoint::post>{})};
+    const auto post_handler{make_callable_ref<&endpoint::post>(this)};
 
     something_done(_blobs.update(post_handler));
     const auto opt_max_size = max_data_size();
@@ -412,8 +411,7 @@ void endpoint::flush_outbox() noexcept {
     if(has_id()) {
         log_debug("flushing outbox (size: ${count})")
           .arg("count", _outgoing.count());
-        _outgoing.fetch_all(make_callable_ref(
-          this, member_function_constant_t<&endpoint::_handle_send>{}));
+        _outgoing.fetch_all(make_callable_ref<&endpoint::_handle_send>(this));
 
         if(_connection) [[likely]] {
             _connection->update();
@@ -516,8 +514,8 @@ auto endpoint::update() noexcept -> work_done {
     if(has_id() && !_outgoing.empty()) [[unlikely]] {
         log_debug("sending ${count} messages from outbox")
           .arg("count", _outgoing.count());
-        something_done(_outgoing.fetch_all(make_callable_ref(
-          this, member_function_constant_t<&endpoint::_handle_send>{})));
+        something_done(_outgoing.fetch_all(
+          make_callable_ref<&endpoint::_handle_send>(this)));
     }
 
     return something_done;

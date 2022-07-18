@@ -496,10 +496,9 @@ protected:
         if(_data_queue.is_usable()) {
             while(_data_queue.receive(
               as_chars(cover(_buffer)),
-              posix_mqueue::receive_handler(make_callable_ref(
-                this,
-                member_function_constant_t<
-                  &posix_mqueue_connection::_handle_receive>{})))) {
+              posix_mqueue::receive_handler(
+                make_callable_ref<&posix_mqueue_connection::_handle_receive>(
+                  this)))) {
                 something_done();
             }
         }
@@ -508,10 +507,8 @@ protected:
 
     auto _send() noexcept -> bool {
         if(_data_queue.is_usable()) {
-            return _outgoing.fetch_all(make_callable_ref(
-              this,
-              member_function_constant_t<
-                &posix_mqueue_connection::_handle_send>{}));
+            return _outgoing.fetch_all(
+              make_callable_ref<&posix_mqueue_connection::_handle_send>(this));
         }
         return false;
     }
@@ -702,10 +699,8 @@ private:
         if(_accept_queue.is_usable()) {
             while(_accept_queue.receive(
               as_chars(cover(_buffer)),
-              make_callable_ref(
-                this,
-                member_function_constant_t<
-                  &posix_mqueue_acceptor::_handle_receive>{}))) {
+              make_callable_ref<&posix_mqueue_acceptor::_handle_receive>(
+                this))) {
                 something_done();
             }
         }

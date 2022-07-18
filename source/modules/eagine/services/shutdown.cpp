@@ -5,6 +5,10 @@
 /// See accompanying file LICENSE_1_0.txt or copy at
 ///  http://www.boost.org/LICENSE_1_0.txt
 ///
+module;
+
+#include <cassert>
+
 export module eagine.msgbus.services:shutdown;
 
 import eagine.core.types;
@@ -90,7 +94,7 @@ public:
           ts.time_since_epoch())};
         const auto count{ticks.count()};
         auto serialized{default_serialize(count, cover(temp))};
-        EAGINE_ASSERT(serialized);
+        assert(serialized);
 
         message_view message{extract(serialized)};
         message.set_target_id(target_id);

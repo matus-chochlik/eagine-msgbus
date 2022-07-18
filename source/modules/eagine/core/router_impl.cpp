@@ -747,11 +747,8 @@ auto router::_handle_stats_query(const message_view& message) noexcept
 auto router::_handle_blob_fragment(const message_view& message) noexcept
   -> message_handling_result {
     if(_blobs.process_incoming(
-         make_callable_ref(
-           this, member_function_constant_t<&router::_do_get_blob_io>{}),
-         message)) {
-        _blobs.fetch_all(make_callable_ref(
-          this, member_function_constant_t<&router::_handle_blob>{}));
+         make_callable_ref<&router::_do_get_blob_io>(this), message)) {
+        _blobs.fetch_all(make_callable_ref<&router::_handle_blob>(this));
     }
     return (message.target_id == _id_base) ? was_handled : should_be_forwarded;
 }

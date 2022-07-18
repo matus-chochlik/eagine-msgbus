@@ -509,10 +509,10 @@ protected:
     void init() noexcept {
         base::init();
 
-        this->reported_alive.connect(make_callable_ref(
-          this, member_function_constant_t<&This::_handle_alive>{}));
-        this->subscribed.connect(make_callable_ref(
-          this, member_function_constant_t<&This::_handle_subscribed>{}));
+        this->reported_alive.connect(
+          make_callable_ref<&This::_handle_alive>(this));
+        this->subscribed.connect(
+          make_callable_ref<&This::_handle_subscribed>(this));
         this->unsubscribed.connect(
           member_function_constant_t<&This::_handle_unsubscribed>{});
         this->not_subscribed.connect(

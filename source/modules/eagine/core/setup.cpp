@@ -18,7 +18,8 @@ import :interface;
 import :router_address;
 import :connection_setup;
 
-namespace eagine::msgbus {
+namespace eagine {
+namespace msgbus {
 //------------------------------------------------------------------------------
 /// @brief Class providing access to basic message bus functionality.
 /// @ingroup main_context
@@ -53,7 +54,7 @@ private:
     msgbus::connection_setup _setup;
 };
 //------------------------------------------------------------------------------
-export void enable_message_bus(main_ctx& ctx) {
+export void enable(main_ctx& ctx) {
     auto setters{ctx.setters()};
     assert(setters);
     auto msg_bus{std::make_shared<message_bus_setup>(ctx)};
@@ -61,5 +62,17 @@ export void enable_message_bus(main_ctx& ctx) {
     extract(setters).inject(std::move(msg_bus));
 }
 //------------------------------------------------------------------------------
-} // namespace eagine::msgbus
+export void setup_connectors(main_ctx& ctx, connection_user& target) {
+    const auto mbsetup{ctx.locate<message_bus_setup>()};
+    assert(mbsetup);
+    extract(mbsetup).setup_connectors(target);
+}
+//------------------------------------------------------------------------------
+} // namespace msgbus
+//------------------------------------------------------------------------------
+export void enable_message_bus(main_ctx& ctx) {
+    return msgbus::enable(ctx);
+}
+//------------------------------------------------------------------------------
+} // namespace eagine
 

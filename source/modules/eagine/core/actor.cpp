@@ -100,9 +100,7 @@ protected:
         requires(sizeof...(MsgMaps) == N)
     : _endpoint{_make_endpoint(
         std::move(obj),
-        make_callable_ref(
-          this,
-          member_function_constant_t<&actor::_process_message>{}))}
+        make_callable_ref<&actor::_process_message>(this))}
     , _subscriber{_endpoint, instance, msg_maps...} {
         _subscriber.announce_subscriptions();
     }
@@ -113,9 +111,7 @@ protected:
         requires((sizeof...(MsgMaps) == N) && std::is_base_of_v<actor, Derived>)
     : _endpoint{_move_endpoint(
         std::move(temp._endpoint),
-        make_callable_ref(
-          this,
-          member_function_constant_t<&actor::_process_message>{}))}
+        make_callable_ref<&actor::_process_message>(this))}
     , _subscriber{_endpoint, instance, msg_maps...} {}
 
     ~actor() noexcept override {

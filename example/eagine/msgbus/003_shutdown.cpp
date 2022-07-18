@@ -5,6 +5,13 @@
 /// See accompanying file LICENSE_1_0.txt or copy at
 ///  http://www.boost.org/LICENSE_1_0.txt
 ///
+#if EAGINE_MSGBUS_MODULE
+import eagine.core;
+import eagine.sslplus;
+import eagine.msgbus;
+import <set>;
+import <thread>;
+#else
 #include <eagine/main_ctx.hpp>
 #include <eagine/message_bus.hpp>
 #include <eagine/msgbus/resources.hpp>
@@ -16,6 +23,7 @@
 #include <eagine/timeout.hpp>
 #include <set>
 #include <thread>
+#endif
 
 namespace eagine {
 namespace msgbus {
@@ -30,19 +38,24 @@ class shutdown_trigger
 
 public:
     shutdown_trigger(endpoint& bus)
-      : main_ctx_object{EAGINE_ID(ShtdwnTrgr), bus}
+      : main_ctx_object{"ShtdwnTrgr", bus}
       , base{bus} {
-        subscribed.connect(EAGINE_THIS_MEM_FUNC_REF(on_subscribed));
-        unsubscribed.connect(EAGINE_THIS_MEM_FUNC_REF(on_unsubscribed));
-        not_subscribed.connect(EAGINE_THIS_MEM_FUNC_REF(on_not_subscribed));
+        subscribed.connect(make_callable_ref(
+          this,
+          member_function_constant_t<&shutdown_trigger::on_subscribed>{}));
+        unsubscribed.connect(make_callable_ref(
+          this,
+          member_function_constant_t<&shutdown_trigger::on_unsubscribed>{}));
+        not_subscribed.connect(make_callable_ref(
+          this,
+          member_function_constant_t<&shutdown_trigger::on_not_subscribed>{}));
     }
 
     void on_subscribed(
       const subscriber_info& info,
       const message_id sub_msg) noexcept {
-        if(sub_msg == EAGINE_MSG_ID(Shutdown, shutdown)) {
-            log_info("target ${id} appeared")
-              .arg(EAGINE_ID(id), info.endpoint_id);
+        if(sub_msg == message_id{"Shutdown", "shutdown"}) {
+            log_info("target ${id} appeared").arg("id", info.endpoint_id);
             _targets.insert(info.endpoint_id);
             this->bus_node().post_certificate(info.endpoint_id, 0);
         }
@@ -51,9 +64,8 @@ public:
     void on_unsubscribed(
       const subscriber_info& info,
       const message_id sub_msg) noexcept {
-        if(sub_msg == EAGINE_MSG_ID(Shutdown, shutdown)) {
-            log_info("target ${id} disappeared")
-              .arg(EAGINE_ID(id), info.endpoint_id);
+        if(sub_msg == message_id{"Shutdown", "shutdown"}) {
+            log_info("target ${id} disappeared").arg("id", info.endpoint_id);
             _targets.erase(info.endpoint_id);
         }
     }
@@ -61,9 +73,9 @@ public:
     void on_not_subscribed(
       const subscriber_info& info,
       const message_id sub_msg) noexcept {
-        if(sub_msg == EAGINE_MSG_ID(Shutdown, shutdown)) {
+        if(sub_msg == message_id{"Shutdown", "shutdown"}) {
             log_info("target ${id} does not support shutdown")
-              .arg(EAGINE_ID(id), info.endpoint_id);
+              .arg("id", info.endpoint_id);
             _targets.erase(info.endpoint_id);
         }
     }
@@ -83,12 +95,12 @@ private:
 auto main(main_ctx& ctx) -> int {
     enable_message_bus(ctx);
 
-    msgbus::endpoint bus{EAGINE_ID(ShutdownEx), ctx};
+    msgbus::endpoint bus{"ShutdownEx", ctx};
     bus.add_ca_certificate_pem(ca_certificate_pem(ctx));
     bus.add_certificate_pem(msgbus::endpoint_certificate_pem(ctx));
 
     msgbus::shutdown_trigger trgr{bus};
-    ctx.bus().setup_connectors(trgr);
+    msgbus::setup_connectors(ctx, trgr);
 
     timeout wait_done{std::chrono::seconds(30)};
 

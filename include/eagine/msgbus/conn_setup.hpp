@@ -162,8 +162,9 @@ public:
     void add_factory(std::unique_ptr<connection_factory> factory);
 
     template <typename Factory, typename... Args>
-    void make_factory(Args&&... args) requires(
-      std::is_base_of_v<connection_factory, Factory>) {
+    void make_factory(Args&&... args)
+        requires(std::is_base_of_v<connection_factory, Factory>)
+    {
         add_factory(
           std::make_unique<Factory>(*this, std::forward<Args>(args)...));
     }

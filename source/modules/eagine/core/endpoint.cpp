@@ -195,8 +195,7 @@ public:
     /// @see post
     auto post_callable() noexcept
       -> callable_ref<bool(message_id, const message_view&) noexcept> {
-        return make_callable_ref(
-          this, member_function_constant_t<&endpoint::post>{});
+        return make_callable_ref<&endpoint::post>(this);
     }
 
     /// @brief Signs and enqueues a message with the specified id/type for sending.
@@ -534,8 +533,7 @@ private:
     auto _process_blobs() noexcept -> work_done;
 
     auto _default_store_handler() noexcept -> fetch_handler {
-        return make_callable_ref(
-          this, member_function_constant_t<&endpoint::_store_message>{});
+        return make_callable_ref<&endpoint::_store_message>(this);
     }
 
     fetch_handler _store_handler{_default_store_handler()};

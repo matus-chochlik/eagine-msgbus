@@ -8,3 +8,4 @@
 export module eagine.msgbus;
 
 export import eagine.msgbus.core;
+export import eagine.msgbus.services;
