@@ -55,9 +55,8 @@ class asio_acceptor;
 template <typename Socket>
 class asio_flushing_sockets {
 public:
-    void adopt(Socket& sckt, memory::buffer& buf) noexcept {
-        _waiting.emplace_back(
-          std::chrono::seconds(10), std::move(sckt), std::move(buf));
+    void adopt(Socket& sckt) noexcept {
+        _waiting.emplace_back(std::chrono::seconds(10), std::move(sckt));
     }
 
     auto empty() const noexcept -> bool {
@@ -70,7 +69,7 @@ public:
     }
 
 private:
-    std::vector<std::tuple<timeout, Socket, memory::buffer>> _waiting;
+    std::vector<std::tuple<timeout, Socket>> _waiting;
 };
 //------------------------------------------------------------------------------
 struct asio_common_state {
@@ -90,8 +89,8 @@ struct asio_common_state {
     }
 
     template <typename Socket>
-    void adopt_flushing(Socket& sckt, memory::buffer& buf) noexcept {
-        std::get<asio_flushing_sockets<Socket>>(_flushing).adopt(sckt, buf);
+    void adopt_flushing(Socket& sckt) noexcept {
+        std::get<asio_flushing_sockets<Socket>>(_flushing).adopt(sckt);
     }
 
     void update() noexcept {
@@ -165,13 +164,13 @@ struct asio_connection_state
     using clock_type = std::chrono::steady_clock;
     using clock_time = typename clock_type::time_point;
 
-    std::shared_ptr<asio_common_state> common;
+    const std::shared_ptr<asio_common_state> common;
     asio_socket_type<Kind, Proto> socket;
     endpoint_type conn_endpoint{};
 
-    memory::buffer push_buffer{};
-    memory::buffer read_buffer{};
-    memory::buffer write_buffer{};
+    const memory::buffer push_buffer{};
+    const memory::buffer read_buffer{};
+    const memory::buffer write_buffer{};
     span_size_t total_used_size{0};
     span_size_t total_sent_size{0};
     clock_time send_start_time{clock_type::now()};
@@ -189,16 +188,16 @@ struct asio_connection_state
       const span_size_t block_size) noexcept
       : main_ctx_object{"AsioConnSt", parent}
       , common{std::move(asio_state)}
-      , socket{std::move(sock)} {
+      , socket{std::move(sock)}
+      , push_buffer{block_size, max_span_align()}
+      , read_buffer{block_size, max_span_align()}
+      , write_buffer{block_size, max_span_align()} {
         assert(common);
         common->update();
 
         assert(block_size >= min_connection_data_size);
-        push_buffer.resize(block_size);
         zero(cover(push_buffer));
-        read_buffer.resize(block_size);
         zero(cover(read_buffer));
-        write_buffer.resize(block_size);
         zero(cover(write_buffer));
 
         log_debug("allocating write buffer of ${size}")
@@ -444,7 +443,7 @@ struct asio_connection_state
             update();
         }
         if(is_usable()) {
-            common->adopt_flushing(socket, read_buffer);
+            common->adopt_flushing(socket);
         }
         common->update();
     }
