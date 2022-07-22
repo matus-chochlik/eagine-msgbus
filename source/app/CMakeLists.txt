@@ -23,10 +23,19 @@ endif()
 # bridge
 add_executable(eagine-msgbus-bridge bridge.cpp)
 eagine_add_exe_analysis(eagine-msgbus-bridge)
-target_link_libraries(
-	eagine-msgbus-bridge
-	PUBLIC EAGine::MsgBus
-)
+if(${WITH_MODULES})
+	eagine_target_modules(
+		eagine-msgbus-bridge
+		eagine.core
+		eagine.sslplus
+		eagine.msgbus
+	)
+else()
+	target_link_libraries(
+		eagine-msgbus-bridge
+		PUBLIC EAGine::MsgBus
+	)
+endif()
 
 # pingable
 add_executable(eagine-msgbus-pingable pingable.cpp)

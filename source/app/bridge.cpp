@@ -5,6 +5,12 @@
 ///  http://www.boost.org/LICENSE_1_0.txt
 ///
 
+#if EAGINE_MSGBUS_MODULE
+import eagine.core;
+import eagine.sslplus;
+import eagine.msgbus;
+import <thread>;
+#else
 #include <eagine/config/platform.hpp>
 #include <eagine/logging/root_logger.hpp>
 #include <eagine/main_ctx.hpp>
@@ -19,6 +25,8 @@
 #include <eagine/signal_switch.hpp>
 #include <eagine/sslplus/resources.hpp>
 #include <eagine/watchdog.hpp>
+#include <thread>
+#endif
 
 namespace eagine {
 //------------------------------------------------------------------------------
@@ -33,7 +41,7 @@ class bridge_node
 
 public:
     bridge_node(endpoint& bus)
-      : main_ctx_object{EAGINE_ID(BridgeNode), bus}
+      : main_ctx_object{"BridgeNode", bus}
       , base{bus} {
         if(_shutdown_ignore) {
             log_info("shutdown requests are ignored due to configuration");
@@ -44,9 +52,10 @@ public:
                 log_info("shutdown verification is disabled");
             }
             log_info("shutdown delay is set to ${delay}")
-              .arg(EAGINE_ID(delay), _shutdown_timeout.period());
+              .arg("delay", _shutdown_timeout.period());
 
-            shutdown_requested.connect(EAGINE_THIS_MEM_FUNC_REF(on_shutdown));
+            shutdown_requested.connect(
+              make_callable_ref<&bridge_node::on_shutdown>(this));
         }
         auto& info = provided_endpoint_info();
         info.display_name = "bridge control node";
@@ -87,9 +96,9 @@ private:
       const identifier_t source_id,
       const verification_bits verified) noexcept {
         log_info("received ${age} old shutdown request from ${source}")
-          .arg(EAGINE_ID(age), age)
-          .arg(EAGINE_ID(source), source_id)
-          .arg(EAGINE_ID(verified), verified);
+          .arg("age", age)
+          .arg("source", source_id)
+          .arg("verified", verified);
 
         if(!_shutdown_ignore) {
             if(age <= _shutdown_max_age) {
@@ -123,16 +132,16 @@ auto main(main_ctx& ctx) -> int {
     msgbus::bridge bridge(ctx);
     bridge.add_ca_certificate_pem(ca_certificate_pem(ctx));
     bridge.add_certificate_pem(msgbus::bridge_certificate_pem(ctx));
-    ctx.bus().setup_connectors(bridge);
+    msgbus::setup_connectors(ctx, bridge);
 
     std::uintmax_t cycles_work{0};
     std::uintmax_t cycles_idle{0};
     int idle_streak{0};
     int max_idle_streak{0};
 
-    msgbus::endpoint node_endpoint{EAGINE_ID(BrdgNodeEp), ctx};
+    msgbus::endpoint node_endpoint{"BrdgNodeEp", ctx};
     node_endpoint.add_ca_certificate_pem(ca_certificate_pem(ctx));
-    ctx.bus().setup_connectors(node_endpoint);
+    msgbus::setup_connectors(ctx, node_endpoint);
     {
         msgbus::bridge_node node{node_endpoint};
 
@@ -140,39 +149,38 @@ auto main(main_ctx& ctx) -> int {
         wd.declare_initialized();
 
         while(!(interrupted || node.is_shut_down() || bridge.is_done()))
-            [[likely]] {
-                some_true something_done{};
-                something_done(bridge.update());
-                something_done(node.update());
+          [[likely]] {
+            some_true something_done{};
+            something_done(bridge.update());
+            something_done(node.update());
 
-                if(something_done) {
-                    ++cycles_work;
-                    idle_streak = 0;
-                } else {
-                    ++cycles_idle;
-                    max_idle_streak =
-                      math::maximum(max_idle_streak, ++idle_streak);
-                    std::this_thread::sleep_for(std::chrono::microseconds(
-                      math::minimum(idle_streak, 8000)));
-                }
-                wd.notify_alive();
+            if(something_done) {
+                ++cycles_work;
+                idle_streak = 0;
+            } else {
+                ++cycles_idle;
+                max_idle_streak = math::maximum(max_idle_streak, ++idle_streak);
+                std::this_thread::sleep_for(
+                  std::chrono::microseconds(math::minimum(idle_streak, 8000)));
             }
+            wd.notify_alive();
+        }
         wd.announce_shutdown();
     }
     bridge.finish();
 
     log.stat("message bus bridge finishing")
-      .arg(EAGINE_ID(working), cycles_work)
-      .arg(EAGINE_ID(idling), cycles_idle)
+      .arg("working", cycles_work)
+      .arg("idling", cycles_idle)
       .arg(
-        EAGINE_ID(workRate),
-        EAGINE_ID(Ratio),
+        "workRate",
+        "Ratio",
         float(cycles_work) / (float(cycles_idle) + float(cycles_work)))
       .arg(
-        EAGINE_ID(idleRate),
-        EAGINE_ID(Ratio),
+        "idleRate",
+        "Ratio",
         float(cycles_idle) / (float(cycles_idle) + float(cycles_work)))
-      .arg(EAGINE_ID(maxIdlStrk), max_idle_streak);
+      .arg("maxIdlStrk", max_idle_streak);
 
     return 0;
 }
@@ -185,8 +193,9 @@ auto maybe_cleanup(int result) -> int;
 auto main(int argc, const char** argv) -> int {
     eagine::maybe_start_coprocess(argc, argv);
     eagine::main_ctx_options options;
-    options.app_id = EAGINE_ID(BridgeExe);
-    return eagine::maybe_cleanup(eagine::main_impl(argc, argv, options));
+    options.app_id = "BridgeExe";
+    return eagine::maybe_cleanup(
+      eagine::main_impl(argc, argv, options, &eagine::main));
 }
 
 #if EAGINE_POSIX
