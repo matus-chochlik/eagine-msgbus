@@ -61,11 +61,17 @@ export void enable(main_ctx& ctx) {
     extract(msg_bus).configure(ctx.config());
     extract(setters).inject(std::move(msg_bus));
 }
-//------------------------------------------------------------------------------
+
 export void setup_connectors(main_ctx& ctx, connection_user& target) {
     const auto mbsetup{ctx.locate<message_bus_setup>()};
     assert(mbsetup);
     extract(mbsetup).setup_connectors(target);
+}
+
+export void setup_acceptors(main_ctx& ctx, acceptor_user& target) {
+    const auto mbsetup{ctx.locate<message_bus_setup>()};
+    assert(mbsetup);
+    extract(mbsetup).setup_acceptors(target);
 }
 //------------------------------------------------------------------------------
 } // namespace msgbus

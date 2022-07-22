@@ -42,7 +42,7 @@ protected:
           _respond(
             {"eagiEptInf", "response"},
             make_callable_ref<&endpoint_info_provider::_get_endpoint_info>(this))
-            .map_invoke_by(("eagiEptInf", "request")));
+            .map_invoke_by({"eagiEptInf", "request"}));
     }
 
 private:

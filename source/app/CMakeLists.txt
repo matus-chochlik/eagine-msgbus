@@ -6,10 +6,19 @@
 # router
 add_executable(eagine-msgbus-router router.cpp)
 eagine_add_exe_analysis(eagine-msgbus-router)
-target_link_libraries(
-	eagine-msgbus-router
-	PUBLIC EAGine::MsgBus
-)
+if(${WITH_MODULES})
+	eagine_target_modules(
+		eagine-msgbus-router
+		eagine.core
+		eagine.sslplus
+		eagine.msgbus
+	)
+else()
+	target_link_libraries(
+		eagine-msgbus-router
+		PUBLIC EAGine::MsgBus
+	)
+endif()
 
 # bridge
 add_executable(eagine-msgbus-bridge bridge.cpp)

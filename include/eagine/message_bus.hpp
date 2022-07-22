@@ -55,6 +55,9 @@ namespace msgbus {
 static inline void setup_connectors(main_ctx& ctx, connection_user& target) {
     ctx.bus().setup_connectors(target);
 }
+static inline void setup_acceptors(main_ctx& ctx, acceptor_user& target) {
+    ctx.bus().setup_acceptors(target);
+}
 } // namespace msgbus
 } // namespace eagine
 
