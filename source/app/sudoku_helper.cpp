@@ -5,6 +5,16 @@
 ///  http://www.boost.org/LICENSE_1_0.txt
 ///
 
+#if EAGINE_MSGBUS_MODULE
+import eagine.core;
+import eagine.sslplus;
+import eagine.msgbus;
+import <atomic>;
+import <chrono>;
+import <condition_variable>;
+import <mutex>;
+import <thread>;
+#else
 #include <eagine/main_ctx.hpp>
 #include <eagine/main_fwd.hpp>
 #include <eagine/message_bus.hpp>
@@ -21,6 +31,7 @@
 #include <condition_variable>
 #include <mutex>
 #include <thread>
+#endif
 
 namespace eagine {
 namespace msgbus {
@@ -37,9 +48,10 @@ class sudoku_helper_node
   , public sudoku_helper_base {
 public:
     sudoku_helper_node(endpoint& bus)
-      : main_ctx_object{EAGINE_ID(SudokuNode), bus}
+      : main_ctx_object{"SudokuNode", bus}
       , sudoku_helper_base{bus} {
-        shutdown_requested.connect(EAGINE_THIS_MEM_FUNC_REF(on_shutdown));
+        shutdown_requested.connect(
+          make_callable_ref<&sudoku_helper_node::on_shutdown>(this));
 
         auto& info = provided_endpoint_info();
         info.display_name = "sudoku helper";
@@ -56,9 +68,9 @@ private:
       const identifier_t source_id,
       const verification_bits verified) noexcept {
         log_info("received shutdown request from ${source}")
-          .arg(EAGINE_ID(age), age)
-          .arg(EAGINE_ID(source), source_id)
-          .arg(EAGINE_ID(verified), verified);
+          .arg("age", age)
+          .arg("source", source_id)
+          .arg("verified", verified);
 
         _do_shutdown = true;
     }
@@ -96,7 +108,7 @@ auto main(main_ctx& ctx) -> int {
     auto helper_main = [&]() {
         std::unique_lock init_lock{helper_mutex};
         auto& helper_node =
-          the_reg.emplace<msgbus::sudoku_helper_node>(EAGINE_ID(SdkHlpEndp));
+          the_reg.emplace<msgbus::sudoku_helper_node>("SdkHlpEndp");
         remaining--;
         helper_cond.notify_all();
         init_lock.unlock();
@@ -187,6 +199,6 @@ auto main(main_ctx& ctx) -> int {
 //------------------------------------------------------------------------------
 auto main(int argc, const char** argv) -> int {
     eagine::main_ctx_options options;
-    options.app_id = EAGINE_ID(SudokuHlpr);
-    return eagine::main_impl(argc, argv, options);
+    options.app_id = "SudokuHlpr";
+    return eagine::main_impl(argc, argv, options, &eagine::main);
 }

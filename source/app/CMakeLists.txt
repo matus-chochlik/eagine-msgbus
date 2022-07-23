@@ -91,18 +91,36 @@ endif()
 # sudoku solver helper
 add_executable(eagine-msgbus-sudoku_helper sudoku_helper.cpp)
 eagine_add_exe_analysis(eagine-msgbus-sudoku_helper)
-target_link_libraries(
-	eagine-msgbus-sudoku_helper
-	PUBLIC EAGine::MsgBus
-)
+if(${WITH_MODULES})
+	eagine_target_modules(
+		eagine-msgbus-sudoku_helper
+		eagine.core
+		eagine.sslplus
+		eagine.msgbus
+	)
+else()
+	target_link_libraries(
+		eagine-msgbus-sudoku_helper
+		PUBLIC EAGine::MsgBus
+	)
+endif()
 
 # sudoku tiling generator
 add_executable(eagine-msgbus-sudoku_tiling sudoku_tiling.cpp)
 eagine_add_exe_analysis(eagine-msgbus-sudoku_tiling)
-target_link_libraries(
-	eagine-msgbus-sudoku_tiling
-	PUBLIC EAGine::MsgBus
-)
+if(${WITH_MODULES})
+	eagine_target_modules(
+		eagine-msgbus-sudoku_tiling
+		eagine.core
+		eagine.sslplus
+		eagine.msgbus
+	)
+else()
+	target_link_libraries(
+		eagine-msgbus-sudoku_tiling
+		PUBLIC EAGine::MsgBus
+	)
+endif()
 
 # scripts
 install(
