@@ -21,6 +21,7 @@ import :discovery;
 import :host_info;
 import <filesystem>;
 import <fstream>;
+import <optional>;
 import <random>;
 import <tuple>;
 
@@ -70,8 +71,8 @@ export class file_blob_io final : public blob_io {
 public:
     file_blob_io(
       std::fstream file,
-      optionally_valid<span_size_t> offs,
-      optionally_valid<span_size_t> size) noexcept
+      std::optional<span_size_t> offs,
+      std::optional<span_size_t> size) noexcept
       : _file{std::move(file)} {
         _file.seekg(0, std::ios::end);
         _size = limit_cast<span_size_t>(_file.tellg());
@@ -431,7 +432,7 @@ public:
     /// @see server_has_not_resource
     auto search_resource(
       const identifier_t endpoint_id,
-      const url& locator) noexcept -> optionally_valid<message_sequence_t> {
+      const url& locator) noexcept -> std::optional<message_sequence_t> {
         auto buffer = default_serialize_buffer_for(locator.str());
 
         if(const auto serialized{
@@ -441,7 +442,7 @@ public:
             message.set_target_id(endpoint_id);
             this->bus_node().set_next_sequence_id(msg_id, message);
             this->bus_node().post(msg_id, message);
-            return {message.sequence_no, true};
+            return {message.sequence_no};
         }
         return {};
     }
@@ -450,7 +451,7 @@ public:
     /// @see server_has_resource
     /// @see server_has_not_resource
     auto search_resource(const url& locator) noexcept
-      -> optionally_valid<message_sequence_t> {
+      -> std::optional<message_sequence_t> {
         return search_resource(broadcast_endpoint_id(), locator);
     }
 
@@ -461,7 +462,7 @@ public:
       std::shared_ptr<blob_io> write_io,
       const message_priority priority,
       const std::chrono::seconds max_time)
-      -> optionally_valid<message_sequence_t> {
+      -> std::optional<message_sequence_t> {
         auto buffer = default_serialize_buffer_for(locator.str());
 
         if(endpoint_id == broadcast_endpoint_id()) {
@@ -482,7 +483,7 @@ public:
               message.sequence_no,
               std::move(write_io),
               max_time);
-            return {message.sequence_no, true};
+            return {message.sequence_no};
         }
         return {};
     }
@@ -494,7 +495,7 @@ public:
       std::shared_ptr<blob_io> write_io,
       const message_priority priority,
       const std::chrono::seconds max_time)
-      -> optionally_valid<message_sequence_t> {
+      -> std::optional<message_sequence_t> {
         return query_resource_content(
           server_endpoint_id(locator),
           locator,

@@ -74,10 +74,19 @@ endif()
 # file server
 add_executable(eagine-msgbus-file_server file_server.cpp)
 eagine_add_exe_analysis(eagine-msgbus-file_server)
-target_link_libraries(
-	eagine-msgbus-file_server
-	PUBLIC EAGine::MsgBus
-)
+if(${WITH_MODULES})
+	eagine_target_modules(
+		eagine-msgbus-file_server
+		eagine.core
+		eagine.sslplus
+		eagine.msgbus
+	)
+else()
+	target_link_libraries(
+		eagine-msgbus-file_server
+		PUBLIC EAGine::MsgBus
+	)
+endif()
 
 # sudoku solver helper
 add_executable(eagine-msgbus-sudoku_helper sudoku_helper.cpp)
