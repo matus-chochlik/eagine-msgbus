@@ -40,18 +40,36 @@ endif()
 # pingable
 add_executable(eagine-msgbus-pingable pingable.cpp)
 eagine_add_exe_analysis(eagine-msgbus-pingable)
-target_link_libraries(
-	eagine-msgbus-pingable
-	PUBLIC EAGine::MsgBus
-)
+if(${WITH_MODULES})
+	eagine_target_modules(
+		eagine-msgbus-pingable
+		eagine.core
+		eagine.sslplus
+		eagine.msgbus
+	)
+else()
+	target_link_libraries(
+		eagine-msgbus-pingable
+		PUBLIC EAGine::MsgBus
+	)
+endif()
 
 # pinger
 add_executable(eagine-msgbus-pinger pinger.cpp)
 eagine_add_exe_analysis(eagine-msgbus-pinger)
-target_link_libraries(
-	eagine-msgbus-pinger
-	PUBLIC EAGine::MsgBus
-)
+if(${WITH_MODULES})
+	eagine_target_modules(
+		eagine-msgbus-pinger
+		eagine.core
+		eagine.sslplus
+		eagine.msgbus
+	)
+else()
+	target_link_libraries(
+		eagine-msgbus-pinger
+		PUBLIC EAGine::MsgBus
+	)
+endif()
 
 # file server
 add_executable(eagine-msgbus-file_server file_server.cpp)
