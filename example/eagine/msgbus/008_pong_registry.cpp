@@ -20,11 +20,9 @@ import <thread>;
 #include <eagine/message_bus.hpp>
 #include <eagine/msgbus/registry.hpp>
 #include <eagine/msgbus/service.hpp>
-#include <eagine/msgbus/service/build_info.hpp>
-#include <eagine/msgbus/service/host_info.hpp>
+#include <eagine/msgbus/service/common_info.hpp>
 #include <eagine/msgbus/service/ping_pong.hpp>
 #include <eagine/msgbus/service/shutdown.hpp>
-#include <eagine/msgbus/service/system_info.hpp>
 #include <eagine/msgbus/service_requirements.hpp>
 #include <eagine/timeout.hpp>
 #include <algorithm>
@@ -37,13 +35,8 @@ import <thread>;
 namespace eagine {
 namespace msgbus {
 //------------------------------------------------------------------------------
-using pong_base = service_composition<require_services<
-  subscriber,
-  pingable,
-  build_version_info_provider,
-  system_info_provider,
-  host_info_provider,
-  shutdown_target>>;
+using pong_base = service_composition<
+  require_services<subscriber, pingable, common_info_providers, shutdown_target>>;
 
 class pong_example
   : public main_ctx_object
