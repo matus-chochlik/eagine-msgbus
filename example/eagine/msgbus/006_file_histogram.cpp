@@ -186,5 +186,5 @@ auto main(main_ctx& ctx) -> int {
 auto main(int argc, const char** argv) -> int {
     eagine::main_ctx_options options;
     options.app_id = "FileManExe";
-    return eagine::main_impl(argc, argv, options);
+    return eagine::main_impl(argc, argv, options, &eagine::main);
 }

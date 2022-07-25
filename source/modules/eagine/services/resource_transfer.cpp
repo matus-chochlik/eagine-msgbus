@@ -515,13 +515,13 @@ protected:
         this->subscribed.connect(
           make_callable_ref<&This::_handle_subscribed>(this));
         this->unsubscribed.connect(
-          member_function_constant_t<&This::_handle_unsubscribed>{});
+          make_callable_ref<&This::_handle_unsubscribed>(this));
         this->not_subscribed.connect(
-          member_function_constant_t<&This::_handle_unsubscribed>{});
+          make_callable_ref<&This::_handle_unsubscribed>(this));
         this->host_id_received.connect(
-          member_function_constant_t<&This::_handle_host_id_received>{});
+          make_callable_ref<&This::_handle_host_id_received>(this));
         this->hostname_received.connect(
-          member_function_constant_t<&This::_handle_hostname_received>{});
+          make_callable_ref<&This::_handle_hostname_received>(this));
     }
 
     void add_methods() noexcept {
