@@ -12,7 +12,7 @@ import eagine.msgbus;
 import <chrono>;
 import <thread>;
 import <vector>;
-#endif
+#else
 #include <eagine/identifier_ctr.hpp>
 #include <eagine/main_ctx.hpp>
 #include <eagine/main_fwd.hpp>

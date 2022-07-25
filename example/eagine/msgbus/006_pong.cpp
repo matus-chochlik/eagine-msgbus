@@ -5,6 +5,12 @@
 /// See accompanying file LICENSE_1_0.txt or copy at
 ///  http://www.boost.org/LICENSE_1_0.txt
 ///
+#if EAGINE_MSGBUS_MODULE
+import eagine.core;
+import eagine.sslplus;
+import eagine.msgbus;
+import <thread>;
+#else
 #include <eagine/interop/valgrind.hpp>
 #include <eagine/main_ctx.hpp>
 #include <eagine/msgbus/actor.hpp>
@@ -12,6 +18,7 @@
 #include <eagine/msgbus/router_address.hpp>
 #include <eagine/timeout.hpp>
 #include <thread>
+#endif
 
 namespace eagine {
 namespace msgbus {
@@ -26,10 +33,10 @@ public:
       connection_setup& conn_setup,
       const string_view address)
       : base(
-          {EAGINE_ID(ExamplPong), parent},
+          {"ExamplPong", parent},
           this,
-          EAGINE_MSG_MAP(PingPong, Ping, pong, ping),
-          EAGINE_MSG_MAP(PingPong, Shutdown, pong, shutdown))
+          message_map<id_v("PingPong"), id_v("Ping"), &pong::ping>{},
+          message_map<id_v("PingPong"), id_v("Shutdown"), &pong::shutdown>{})
       , _lmod{running_on_valgrind() ? 1000U : 10000U} {
         this->allow_subscriptions();
         conn_setup.setup_connectors(
@@ -41,11 +48,9 @@ public:
 
     auto ping(const message_context&, const stored_message& msg_in) noexcept
       -> bool {
-        bus_node().respond_to(msg_in, EAGINE_MSG_ID(PingPong, Pong));
+        bus_node().respond_to(msg_in, {"PingPong", "Pong"});
         if(++_sent % _lmod == 0) {
-            bus_node()
-              .log_info("sent ${count} pongs")
-              .arg(EAGINE_ID(count), _sent);
+            bus_node().log_info("sent ${count} pongs").arg("count", _sent);
         }
         _timeout.reset();
         return true;
@@ -60,7 +65,7 @@ public:
 
     void update() noexcept {
         if(!_sent && _ready_timeout) {
-            bus_node().broadcast(EAGINE_MSG_ID(PingPong, Ready));
+            bus_node().broadcast({"PingPong", "Ready"});
             _ready_timeout.reset();
         } else {
             std::this_thread::yield();
