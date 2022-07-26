@@ -6,6 +6,14 @@
 /// See accompanying file LICENSE_1_0.txt or copy at
 ///  http://www.boost.org/LICENSE_1_0.txt
 ///
+#if EAGINE_MSGBUS_MODULE
+import eagine.core;
+import eagine.sslplus;
+import eagine.msgbus;
+import <algorithm>;
+import <thread>;
+import <vector>;
+#else
 #include <eagine/flat_set.hpp>
 #include <eagine/main_ctx.hpp>
 #include <eagine/main_fwd.hpp>
@@ -19,6 +27,7 @@
 #include <algorithm>
 #include <thread>
 #include <vector>
+#endif
 
 namespace eagine {
 namespace msgbus {
@@ -31,17 +40,18 @@ class data_provider_example
 
 public:
     data_provider_example(endpoint& bus)
-      : main_ctx_object{EAGINE_ID(Provider), bus}
+      : main_ctx_object{"Provider", bus}
       , base{bus} {
         this->stream_relay_assigned.connect(
-          EAGINE_THIS_MEM_FUNC_REF(_handle_relay_assigned));
+          make_callable_ref<&data_provider_example::_handle_relay_assigned>(
+            this));
         this->stream_relay_reset.connect(
-          EAGINE_THIS_MEM_FUNC_REF(_handle_relay_reset));
+          make_callable_ref<&data_provider_example::_handle_relay_reset>(this));
 
         _stream_ids.push_back([this] {
             msgbus::stream_info info{};
-            info.kind = EAGINE_ID(Test);
-            info.encoding = EAGINE_ID(Test);
+            info.kind = "Test";
+            info.encoding = "Test";
             info.description = "Test stream 1";
             return this->add_stream(std::move(info));
         }());
@@ -66,8 +76,7 @@ protected:
 
 private:
     void _handle_relay_assigned(const identifier_t relay_id) noexcept {
-        log_info("stream relay ${relay} assigned")
-          .arg(EAGINE_ID(relay), relay_id);
+        log_info("stream relay ${relay} assigned").arg("relay", relay_id);
     }
 
     void _handle_relay_reset() noexcept {
@@ -86,14 +95,17 @@ class data_consumer_example
 
 public:
     data_consumer_example(endpoint& bus)
-      : main_ctx_object{EAGINE_ID(Consumer), bus}
+      : main_ctx_object{"Consumer", bus}
       , base{bus} {
         this->stream_relay_assigned.connect(
-          EAGINE_THIS_MEM_FUNC_REF(_handle_relay_assigned));
+          make_callable_ref<&data_consumer_example::_handle_relay_assigned>(
+            this));
         this->stream_appeared.connect(
-          EAGINE_THIS_MEM_FUNC_REF(_handle_stream_appeared));
+          make_callable_ref<&data_consumer_example::_handle_stream_appeared>(
+            this));
         this->stream_disappeared.connect(
-          EAGINE_THIS_MEM_FUNC_REF(_handle_stream_disappeared));
+          make_callable_ref<&data_consumer_example::_handle_stream_disappeared>(
+            this));
     }
 
     auto is_done() const noexcept -> bool {
@@ -102,8 +114,7 @@ public:
 
 private:
     void _handle_relay_assigned(const identifier_t relay_id) noexcept {
-        log_info("stream relay ${relay} assigned")
-          .arg(EAGINE_ID(relay), relay_id);
+        log_info("stream relay ${relay} assigned").arg("relay", relay_id);
     }
 
     void _handle_stream_appeared(
@@ -111,9 +122,9 @@ private:
       const stream_info& info,
       const msgbus::verification_bits) noexcept {
         log_info("stream ${stream} appeared at ${provider}")
-          .arg(EAGINE_ID(provider), provider_id)
-          .arg(EAGINE_ID(stream), info.id)
-          .arg(EAGINE_ID(desc), info.description);
+          .arg("provider", provider_id)
+          .arg("stream", info.id)
+          .arg("desc", info.description);
         _current_streams.insert({provider_id, info.id});
         _had_streams = true;
     }
@@ -123,9 +134,9 @@ private:
       const stream_info& info,
       const msgbus::verification_bits) noexcept {
         log_info("stream ${stream} disappeared from ${provider}")
-          .arg(EAGINE_ID(provider), provider_id)
-          .arg(EAGINE_ID(stream), info.id)
-          .arg(EAGINE_ID(desc), info.description);
+          .arg("provider", provider_id)
+          .arg("stream", info.id)
+          .arg("desc", info.description);
         _current_streams.erase({provider_id, info.id});
     }
 
@@ -142,7 +153,7 @@ auto main(main_ctx& ctx) -> int {
 
     auto& relay =
       the_reg.emplace<msgbus::service_composition<msgbus::stream_relay<>>>(
-        EAGINE_ID(RelayEndpt));
+        "RelayEndpt");
 
     const auto on_stream_announced = [&ctx](
                                        identifier_t provider_id,
@@ -150,9 +161,9 @@ auto main(main_ctx& ctx) -> int {
                                        msgbus::verification_bits) noexcept {
         ctx.log()
           .info("stream ${stream} announced by ${provider}")
-          .arg(EAGINE_ID(provider), provider_id)
-          .arg(EAGINE_ID(stream), info.id)
-          .arg(EAGINE_ID(desc), info.description);
+          .arg("provider", provider_id)
+          .arg("stream", info.id)
+          .arg("desc", info.description);
     };
     relay.stream_announced.connect({construct_from, on_stream_announced});
 
@@ -162,20 +173,20 @@ auto main(main_ctx& ctx) -> int {
                                        msgbus::verification_bits) {
         ctx.log()
           .info("stream ${stream} retracted by ${provider}")
-          .arg(EAGINE_ID(provider), provider_id)
-          .arg(EAGINE_ID(stream), info.id)
-          .arg(EAGINE_ID(desc), info.description);
+          .arg("provider", provider_id)
+          .arg("stream", info.id)
+          .arg("desc", info.description);
     };
     relay.stream_retracted.connect({construct_from, on_stream_retracted});
 
     auto& provider =
       the_reg
         .emplace<msgbus::service_composition<msgbus::data_provider_example<>>>(
-          EAGINE_ID(PrvdrEndpt));
+          "PrvdrEndpt");
     auto& consumer =
       the_reg
         .emplace<msgbus::service_composition<msgbus::data_consumer_example<>>>(
-          EAGINE_ID(CnsmrEndpt));
+          "CnsmrEndpt");
 
     while(!interrupted && !(provider.is_done() && consumer.is_done())) {
         if(!the_reg.update_all()) {
@@ -190,6 +201,6 @@ auto main(main_ctx& ctx) -> int {
 
 auto main(int argc, const char** argv) -> int {
     eagine::main_ctx_options options;
-    options.app_id = EAGINE_ID(StreamExe);
-    return eagine::main_impl(argc, argv, options);
+    options.app_id = "StreamExe";
+    return eagine::main_impl(argc, argv, options, &eagine::main);
 }
