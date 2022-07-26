@@ -20,6 +20,7 @@ module eagine.msgbus.core;
 import eagine.core.debug;
 import eagine.core.types;
 import eagine.core.memory;
+import eagine.core.string;
 import eagine.core.identifier;
 import eagine.core.container;
 import eagine.core.serialization;
@@ -129,7 +130,7 @@ private:
     }
 
     std::tuple<
-#if BOOST_ASIO_HAS_LOCAL_SOCKETS
+#if defined(ASIO_HAS_LOCAL_SOCKETS)
       asio_flushing_sockets<asio::local::stream_protocol::socket>,
 #endif
       asio_flushing_sockets<asio::ip::tcp::socket>,
@@ -1164,7 +1165,7 @@ private:
 };
 //------------------------------------------------------------------------------
 // Local/Stream
-#if BOOST_ASIO_HAS_LOCAL_SOCKETS
+#if ASIO_HAS_LOCAL_SOCKETS
 //------------------------------------------------------------------------------
 template <typename Base>
 class asio_connection_info<
@@ -1247,7 +1248,7 @@ private:
                   _connecting = false;
               } else {
                   this->log_error("failed to connect: ${error}")
-                    .arg("error", error);
+                    .arg("error", error.message());
                   _connecting = false;
               }
           });
@@ -1351,7 +1352,7 @@ private:
                   ->log_error(
                     "failed to accept connection on address ${address}: "
                     "${error}")
-                  .arg("error", error)
+                  .arg("error", error.message())
                   .arg("address", "FsPath", _addr_str);
             } else {
                 this->log_debug("accepted connection on address ${address}")
@@ -1375,7 +1376,7 @@ private:
     }
 };
 //------------------------------------------------------------------------------
-#endif // BOOST_ASIO_HAS_LOCAL_SOCKETS
+#endif // ASIO_HAS_LOCAL_SOCKETS
 //------------------------------------------------------------------------------
 // Factory
 //------------------------------------------------------------------------------
@@ -1460,7 +1461,7 @@ auto make_asio_udp_ipv4_connection_factory(main_ctx_parent parent)
 auto make_asio_local_stream_connection_factory(
   [[maybe_unused]] main_ctx_parent parent)
   -> std::unique_ptr<connection_factory> {
-#if BOOST_ASIO_HAS_LOCAL_SOCKETS
+#if defined(ASIO_HAS_LOCAL_SOCKETS)
     return std::make_unique<asio_connection_factory<
       connection_addr_kind::filepath,
       connection_protocol::stream>>(parent);
