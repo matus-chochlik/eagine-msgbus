@@ -657,7 +657,8 @@ public:
       -> optional_reference_wrapper<const compiler_info>;
 
     /// @brief Returns the build information about the program running in the instance.
-    auto build() const noexcept -> optional_reference_wrapper<const build_info>;
+    auto build_version() const noexcept
+      -> optional_reference_wrapper<const version_info>;
 
 private:
     process_instance_id_t _inst_id{0U};
@@ -687,7 +688,7 @@ public:
     auto set_host_id(const host_id_t) noexcept -> remote_instance_state&;
     auto set_app_name(const std::string&) noexcept -> remote_instance_state&;
     auto assign(compiler_info) noexcept -> remote_instance_state&;
-    auto assign(build_info) noexcept -> remote_instance_state&;
+    auto assign(version_info) noexcept -> remote_instance_state&;
 };
 //------------------------------------------------------------------------------
 /// @brief Class providing information about a remote bus node.
@@ -1124,7 +1125,7 @@ export auto adapt_entry_arg(
         if(const auto opt_rate{value.ping_success_rate()}) {
             backend.add_float("pingSucces", "Ratio", extract(opt_rate));
         }
-        if(const auto opt_bld{value.instance().build()}) {
+        if(const auto opt_bld{value.instance().build_version()}) {
             backend.add_adapted("buildInfo", extract(opt_bld));
         }
 

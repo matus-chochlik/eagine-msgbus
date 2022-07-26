@@ -55,15 +55,15 @@ class build_version_info_consumer : public Base {
 public:
     /// @brief Queries endpoint's build version information.
     /// @see build_info_received
-    void query_build_info(const identifier_t endpoint_id) noexcept {
-        _build.invoke_on(
+    void query_build_version_info(const identifier_t endpoint_id) noexcept {
+        _build_version.invoke_on(
           this->bus_node(), endpoint_id, {"eagiBldInf", "request"});
     }
 
     /// @brief Triggered on receipt of endpoint's build version information.
     /// @see query_build_info
-    signal<void(const result_context&, const build_info&) noexcept>
-      build_info_received;
+    signal<void(const result_context&, const version_info&) noexcept>
+      build_version_info_received;
 
 protected:
     using Base::Base;
@@ -71,12 +71,12 @@ protected:
     void add_methods() noexcept {
         Base::add_methods();
 
-        Base::add_method(_build(build_info_received)
+        Base::add_method(_build_version(build_version_info_received)
                            .map_fulfill_by({"eagiBldInf", "response"}));
     }
 
 private:
-    default_callback_invoker<version_info() noexcept, 32> _build;
+    default_callback_invoker<version_info() noexcept, 32> _build_version;
 };
 //------------------------------------------------------------------------------
 } // namespace eagine::msgbus

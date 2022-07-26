@@ -52,7 +52,7 @@ public:
     timeout is_alive{adjusted_duration(std::chrono::seconds{180})};
     string_view app_name;
     optionally_valid<compiler_info> cmplr_info;
-    optionally_valid<build_info> bld_info;
+    optionally_valid<version_info> ver_info;
     host_id_t host_id{0U};
 
     remote_instance_changes changes{};
@@ -172,12 +172,12 @@ auto remote_instance::compiler() const noexcept
     return {nothing};
 }
 //------------------------------------------------------------------------------
-auto remote_instance::build() const noexcept
-  -> optional_reference_wrapper<const build_info> {
+auto remote_instance::build_version() const noexcept
+  -> optional_reference_wrapper<const version_info> {
     if(auto impl{_impl()}) {
         auto& i = extract(impl);
-        if(i.bld_info) {
-            return {extract(i.bld_info)};
+        if(i.ver_info) {
+            return {extract(i.ver_info)};
         }
     }
     return {nothing};
@@ -264,12 +264,12 @@ auto remote_instance_state::assign(compiler_info info) noexcept
     return *this;
 }
 //------------------------------------------------------------------------------
-auto remote_instance_state::assign(build_info info) noexcept
+auto remote_instance_state::assign(version_info info) noexcept
   -> remote_instance_state& {
     if(auto impl{_impl()}) {
         auto& i = extract(impl);
-        if(!i.bld_info) {
-            i.bld_info = {std::move(info), true};
+        if(!i.ver_info) {
+            i.ver_info = {std::move(info), true};
             i.changes |= remote_instance_change::build_info;
         }
     }

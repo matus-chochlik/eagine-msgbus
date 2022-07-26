@@ -181,6 +181,23 @@ eagine_add_module(
 )
 
 eagine_add_module(
+	eagine.msgbus.services PARTITION tracker
+	IMPORTS
+		common_info discovery host_info ping_pong
+		statistics system_info topology
+		eagine.core.types
+		eagine.core.memory
+		eagine.core.build_info
+		eagine.core.identifier
+		eagine.core.container
+		eagine.core.utility
+		eagine.core.units
+		eagine.core.valid_if
+		eagine.core.main_ctx
+		eagine.msgbus.core
+)
+
+eagine_add_module(
 	eagine.msgbus.services
 	PP_NAME MSGBUS_SERVICES
 	INTERFACES services
@@ -201,6 +218,7 @@ eagine_add_module(
 		stream
 		resource_transfer
 		sudoku
+		tracker
 	SOURCES
 	IMPORTS
 )
