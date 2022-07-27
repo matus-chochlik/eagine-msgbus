@@ -510,18 +510,13 @@ protected:
     void init() noexcept {
         base::init();
 
-        this->reported_alive.connect(
-          make_callable_ref<&This::_handle_alive>(this));
-        this->subscribed.connect(
-          make_callable_ref<&This::_handle_subscribed>(this));
-        this->unsubscribed.connect(
-          make_callable_ref<&This::_handle_unsubscribed>(this));
-        this->not_subscribed.connect(
-          make_callable_ref<&This::_handle_unsubscribed>(this));
-        this->host_id_received.connect(
-          make_callable_ref<&This::_handle_host_id_received>(this));
-        this->hostname_received.connect(
-          make_callable_ref<&This::_handle_hostname_received>(this));
+        connect<&This::_handle_alive>(this, this->reported_alive);
+        connect<&This::_handle_subscribed>(this, this->subscribed);
+        connect<&This::_handle_unsubscribed>(this, this->unsubscribed);
+        connect<&This::_handle_unsubscribed>(this, this->not_subscribed);
+        connect<&This::_handle_host_id_received>(this, this->host_id_received);
+        connect<&This::_handle_hostname_received>(
+          this, this->hostname_received);
     }
 
     void add_methods() noexcept {

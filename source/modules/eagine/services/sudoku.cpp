@@ -440,12 +440,13 @@ public:
 
     void init() noexcept {
         Base::init();
-        this->bus_node().id_assigned.connect(
-          make_callable_ref<&sudoku_solver::on_id_assigned>(this));
-        this->bus_node().connection_established.connect(
-          make_callable_ref<&sudoku_solver::on_connection_established>(this));
-        this->bus_node().connection_lost.connect(
-          make_callable_ref<&sudoku_solver::on_connection_lost>(this));
+
+        connect<&sudoku_solver::on_id_assigned>(
+          this, this->bus_node().id_assigned);
+        connect<&sudoku_solver::on_connection_established>(
+          this, this->bus_node().connection_established);
+        connect<&sudoku_solver::on_connection_lost>(
+          this, this->bus_node().connection_lost);
 
         if(const auto solution_timeout{this->app_config().get(
              "msgbus.sudoku.solver.solution_timeout",
@@ -1466,14 +1467,10 @@ public:
 protected:
     sudoku_tiling(endpoint& bus) noexcept
       : base{bus} {
-        this->solved_3.connect(
-          make_callable_ref<&sudoku_tiling::_handle_solved<3>>(this));
-        this->solved_4.connect(
-          make_callable_ref<&sudoku_tiling::_handle_solved<4>>(this));
-        this->solved_5.connect(
-          make_callable_ref<&sudoku_tiling::_handle_solved<5>>(this));
-        this->solved_6.connect(
-          make_callable_ref<&sudoku_tiling::_handle_solved<6>>(this));
+        connect<&sudoku_tiling::_handle_solved<3>>(this, this->solved_3);
+        connect<&sudoku_tiling::_handle_solved<4>>(this, this->solved_4);
+        connect<&sudoku_tiling::_handle_solved<5>>(this, this->solved_5);
+        connect<&sudoku_tiling::_handle_solved<6>>(this, this->solved_6);
     }
 
 private:

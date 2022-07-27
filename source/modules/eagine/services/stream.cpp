@@ -113,18 +113,14 @@ protected:
     void init() noexcept {
         base::init();
 
-        this->reported_alive.connect(
-          make_callable_ref<&stream_endpoint::_handle_stream_relay_alive>(
-            this));
-        this->subscribed.connect(
-          make_callable_ref<&stream_endpoint::_handle_stream_relay_subscribed>(
-            this));
-        this->unsubscribed.connect(
-          make_callable_ref<&stream_endpoint::_handle_stream_relay_unsubscribed>(
-            this));
-        this->not_subscribed.connect(
-          make_callable_ref<&stream_endpoint::_handle_stream_relay_unsubscribed>(
-            this));
+        connect<&stream_endpoint::_handle_stream_relay_alive>(
+          this, this->reported_alive);
+        connect<&stream_endpoint::_handle_stream_relay_subscribed>(
+          this, this->subscribed);
+        connect<&stream_endpoint::_handle_stream_relay_unsubscribed>(
+          this, this->unsubscribed);
+        connect<&stream_endpoint::_handle_stream_relay_unsubscribed>(
+          this, this->not_subscribed);
     }
 
     auto update() noexcept -> work_done {
@@ -244,12 +240,10 @@ protected:
     void init() noexcept {
         base::init();
 
-        this->stream_relay_assigned.connect(
-          make_callable_ref<&stream_provider::_handle_stream_relay_assigned>(
-            this));
-        this->stream_relay_reset.connect(
-          make_callable_ref<&stream_provider::_handle_stream_relay_reset>(
-            this));
+        connect<&stream_provider::_handle_stream_relay_assigned>(
+          this, this->stream_relay_assigned);
+        connect<&stream_provider::_handle_stream_relay_reset>(
+          this, this->stream_relay_reset);
     }
 
     void add_methods() noexcept {
