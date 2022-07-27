@@ -13,7 +13,7 @@ SelectedItemViewModel::SelectedItemViewModel(
   MonitorBackend& backend,
   NodeListViewModel& nodeListViewModel)
   : QObject{nullptr}
-  , eagine::main_ctx_object{EAGINE_ID(MonitorVM), backend}
+  , eagine::main_ctx_object{"MonitorVM", backend}
   , _backend{backend}
   , _nodeListViewModel{nodeListViewModel}
   , _hostViewModel{_backend, *this}

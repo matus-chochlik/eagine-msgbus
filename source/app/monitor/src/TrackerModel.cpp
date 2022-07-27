@@ -11,23 +11,25 @@
 //------------------------------------------------------------------------------
 TrackerModel::TrackerModel(MonitorBackend& backend)
   : QObject{nullptr}
-  , eagine::main_ctx_object{EAGINE_ID(Tracker), backend}
+  , eagine::main_ctx_object{"Tracker", backend}
   , _backend{backend}
-  , _bus{EAGINE_ID(TrckrEndpt), *this}
+  , _bus{"TrckrEndpt", *this}
   , _tracker{_bus} {
     bus().setup_connectors(_tracker);
 
-    _tracker.host_changed.connect(EAGINE_THIS_MEM_FUNC_REF(handleHostChanged));
+    _tracker.host_changed.connect(
+      make_callable_ref<&TrackerModel::handleHostChanged>(this));
     _tracker.instance_changed.connect(
-      EAGINE_THIS_MEM_FUNC_REF(handleInstanceChanged));
-    _tracker.node_changed.connect(EAGINE_THIS_MEM_FUNC_REF(handleNodeChanged));
+      make_callable_ref<&TrackerModel::handleInstanceChanged>(this));
+    _tracker.node_changed.connect(
+      make_callable_ref<&TrackerModel::handleNodeChanged>(this));
 
     _tracker.router_disappeared.connect(
-      EAGINE_THIS_MEM_FUNC_REF(handleNodeDisappeared));
+      make_callable_ref<&TrackerModel::handleNodeDisappeared>(this));
     _tracker.bridge_disappeared.connect(
-      EAGINE_THIS_MEM_FUNC_REF(handleNodeDisappeared));
+      make_callable_ref<&TrackerModel::handleNodeDisappeared>(this));
     _tracker.endpoint_disappeared.connect(
-      EAGINE_THIS_MEM_FUNC_REF(handleNodeDisappeared));
+      make_callable_ref<&TrackerModel::handleNodeDisappeared>(this));
 }
 //------------------------------------------------------------------------------
 auto TrackerModel::hostParameters(eagine::identifier_t hostId) noexcept

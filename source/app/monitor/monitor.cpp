@@ -61,6 +61,6 @@ auto main(int argc, const char** argv) -> int {
     eagine::argc_copy = argc;
     eagine::argv_copy = argv;
     eagine::main_ctx_options options;
-    options.app_id = EAGINE_ID(MonitorExe);
-    return eagine::main_impl(argc, argv, options);
+    options.app_id = "MonitorExe";
+    return eagine::main_impl(argc, argv, options, eagine::main);
 }

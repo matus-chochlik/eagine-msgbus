@@ -12,7 +12,7 @@ HostViewModel::HostViewModel(
   MonitorBackend& backend,
   SelectedItemViewModel& selectedItemViewModel)
   : QObject{nullptr}
-  , eagine::main_ctx_object{EAGINE_ID(HostVM), backend}
+  , eagine::main_ctx_object{"HostVM", backend}
   , _backend{backend}
   , _parameters{backend} {
     connect(

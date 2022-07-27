@@ -9,7 +9,7 @@
 //------------------------------------------------------------------------------
 TilingTheme::TilingTheme(eagine::main_ctx_parent parent)
   : QObject{nullptr}
-  , eagine::main_ctx_object{EAGINE_ID(Theme), parent} {
+  , eagine::main_ctx_object{"Theme", parent} {
     setTileSize(extract_or(
       app_config().get<int>("msgbus.sudoku.solver.gui.tile_size"), 16));
 }

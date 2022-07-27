@@ -9,7 +9,7 @@
 //------------------------------------------------------------------------------
 TilingBackend::TilingBackend(eagine::main_ctx_parent parent)
   : QObject{nullptr}
-  , eagine::main_ctx_object{EAGINE_ID(Backend), parent}
+  , eagine::main_ctx_object{"Backend", parent}
   , _tilingModel{std::make_shared<TilingModel>(*this)}
   , _tilingTheme{*this}
   , _tilingViewModel{*this}

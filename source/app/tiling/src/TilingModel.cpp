@@ -13,9 +13,9 @@
 //------------------------------------------------------------------------------
 TilingModel::TilingModel(TilingBackend& backend)
   : QObject{nullptr}
-  , eagine::main_ctx_object{EAGINE_ID(TilngModel), backend}
+  , eagine::main_ctx_object{"TilngModel", backend}
   , _backend{backend}
-  , _bus{EAGINE_ID(TilngEndpt), *this}
+  , _bus{"TilngEndpt", *this}
   , _tiling{_bus} {
     bus().setup_connectors(_tiling);
 
@@ -23,11 +23,12 @@ TilingModel::TilingModel(TilingBackend& backend)
     info.display_name = "sudoku tiling generator";
     info.description = "sudoku tiling solver/generator GUI application";
 
-    _tiling.helper_appeared.connect(EAGINE_THIS_MEM_FUNC_REF(onHelperAppeared));
+    _tiling.helper_appeared.connect(
+      make_callable_ref<&TilingModel::onHelperAppeared>(this));
     _tiling.tiles_generated_4.connect(
-      EAGINE_THIS_MEM_FUNC_REF(onFragmentAdded));
+      make_callable_ref<&TilingModel::onFragmentAdded>(this));
     _tiling.queue_length_changed.connect(
-      EAGINE_THIS_MEM_FUNC_REF(onQueueLengthChanged));
+      make_callable_ref<&TilingModel::onQueueLengthChanged>(this));
 }
 //------------------------------------------------------------------------------
 void TilingModel::initialize() {

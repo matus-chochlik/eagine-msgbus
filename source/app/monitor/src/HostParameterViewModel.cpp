@@ -11,7 +11,7 @@
 //------------------------------------------------------------------------------
 HostParameterViewModel::HostParameterViewModel(MonitorBackend& backend)
   : QAbstractItemModel{nullptr}
-  , eagine::main_ctx_object{EAGINE_ID(HostParaVM), backend}
+  , eagine::main_ctx_object{"HostParaVM", backend}
   , _backend{backend}
   , _shortLoadModel{*this, shortLoadRole} {}
 //------------------------------------------------------------------------------

@@ -10,7 +10,7 @@
 //------------------------------------------------------------------------------
 MonitorViewModel::MonitorViewModel(MonitorBackend& backend)
   : QObject{nullptr}
-  , eagine::main_ctx_object{EAGINE_ID(MonitorVM), backend}
+  , eagine::main_ctx_object{"MonitorVM", backend}
   , _backend{backend}
   , _nodeListViewModel{_backend}
   , _selectedItemViewModel{_backend, _nodeListViewModel} {}

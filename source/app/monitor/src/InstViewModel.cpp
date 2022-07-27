@@ -12,7 +12,7 @@ InstViewModel::InstViewModel(
   MonitorBackend& backend,
   SelectedItemViewModel& selectedItemViewModel)
   : QObject{nullptr}
-  , eagine::main_ctx_object{EAGINE_ID(InstVM), backend}
+  , eagine::main_ctx_object{"InstVM", backend}
   , _backend{backend} {
     connect(
       &_backend,
