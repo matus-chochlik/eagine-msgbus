@@ -5,6 +5,13 @@
 ///  http://www.boost.org/LICENSE_1_0.txt
 ///
 
+#if EAGINE_MSGBUS_MODULE
+import eagine.core;
+import eagine.sslplus;
+import eagine.msgbus;
+import <iostream>;
+import <thread>;
+#else
 #include <eagine/main_ctx.hpp>
 #include <eagine/main_fwd.hpp>
 #include <eagine/message_bus.hpp>
@@ -16,6 +23,7 @@
 #include <eagine/signal_switch.hpp>
 #include <iostream>
 #include <thread>
+#endif
 
 namespace eagine {
 namespace msgbus {
@@ -26,19 +34,19 @@ using sudoku_tiling_base =
 class sudoku_tiling_node : public service_node<sudoku_tiling_base> {
 public:
     sudoku_tiling_node(main_ctx_parent parent)
-      : service_node<sudoku_tiling_base>{EAGINE_ID(TilingNode), parent} {
+      : service_node<sudoku_tiling_base>{"TilingNode", parent} {
         tiles_generated_3.connect(
-          EAGINE_THIS_MEM_FUNC_REF(_handle_generated<3>));
+          make_callable_ref<&sudoku_tiling_node::_handle_generated<3>>(this));
         tiles_generated_4.connect(
-          EAGINE_THIS_MEM_FUNC_REF(_handle_generated<4>));
+          make_callable_ref<&sudoku_tiling_node::_handle_generated<4>>(this));
         tiles_generated_5.connect(
-          EAGINE_THIS_MEM_FUNC_REF(_handle_generated<5>));
+          make_callable_ref<&sudoku_tiling_node::_handle_generated<5>>(this));
 
         auto& info = provided_endpoint_info();
         info.display_name = "sudoku tiling generator";
         info.description = "sudoku solver tiling generator application";
 
-        bus().setup_connectors(*this);
+        setup_connectors(main_context(), *this);
     }
 
 private:
@@ -100,7 +108,7 @@ auto main(main_ctx& ctx) -> int {
             enqueue(default_sudoku_board_traits<5>());
             break;
         default:
-            ctx.log().error("invalid rank: ${rank}").arg(EAGINE_ID(rank), rank);
+            ctx.log().error("invalid rank: ${rank}").arg("rank", rank);
             return -1;
     }
 
@@ -152,6 +160,6 @@ auto main(main_ctx& ctx) -> int {
 //------------------------------------------------------------------------------
 auto main(int argc, const char** argv) -> int {
     eagine::main_ctx_options options;
-    options.app_id = EAGINE_ID(SudokuTlng);
-    return eagine::main_impl(argc, argv, options);
+    options.app_id = "SudokuTlng";
+    return eagine::main_impl(argc, argv, options, &eagine::main);
 }

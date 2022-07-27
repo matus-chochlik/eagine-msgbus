@@ -5,6 +5,15 @@
 /// See accompanying file LICENSE_1_0.txt or copy at
 ///  http://www.boost.org/LICENSE_1_0.txt
 ///
+#if EAGINE_MSGBUS_MODULE
+import eagine.core;
+import eagine.sslplus;
+import eagine.msgbus;
+import <atomic>;
+import <iostream>;
+import <mutex>;
+import <thread>;
+#else
 #include <eagine/main_ctx.hpp>
 #include <eagine/msgbus/acceptor.hpp>
 #include <eagine/msgbus/direct.hpp>
@@ -17,6 +26,7 @@
 #include <iostream>
 #include <mutex>
 #include <thread>
+#endif
 
 namespace eagine {
 namespace msgbus {
@@ -29,9 +39,9 @@ public:
 
     example_solver(endpoint& bus)
       : base{bus} {
-        solved_3.connect(EAGINE_THIS_MEM_FUNC_REF(print<3>));
-        solved_4.connect(EAGINE_THIS_MEM_FUNC_REF(print<4>));
-        solved_5.connect(EAGINE_THIS_MEM_FUNC_REF(print<5>));
+        solved_3.connect(make_callable_ref<&example_solver::print<3>>(this));
+        solved_4.connect(make_callable_ref<&example_solver::print<4>>(this));
+        solved_5.connect(make_callable_ref<&example_solver::print<5>>(this));
     }
 
     template <unsigned S>
@@ -51,7 +61,7 @@ auto main(main_ctx& ctx) -> int {
 
     auto acceptor = std::make_unique<msgbus::direct_acceptor>(ctx);
 
-    msgbus::endpoint solver_endpoint(EAGINE_ID(Solver), ctx);
+    msgbus::endpoint solver_endpoint("Solver", ctx);
     solver_endpoint.add_connection(acceptor->make_connection());
     msgbus::example_solver solver(solver_endpoint);
 
@@ -87,7 +97,7 @@ auto main(main_ctx& ctx) -> int {
           [&worker_mutex,
            &start,
            &done,
-           helper_obj{main_ctx_object{EAGINE_ID(Helper), ctx}},
+           helper_obj{main_ctx_object{"Helper", ctx}},
            connection{acceptor->make_connection()}]() mutable {
               worker_mutex.lock();
               msgbus::endpoint helper_endpoint{std::move(helper_obj)};

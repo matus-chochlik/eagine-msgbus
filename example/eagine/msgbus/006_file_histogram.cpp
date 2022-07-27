@@ -5,6 +5,14 @@
 /// See accompanying file LICENSE_1_0.txt or copy at
 ///  http://www.boost.org/LICENSE_1_0.txt
 ///
+#if EAGINE_MSGBUS_MODULE
+import eagine.core;
+import eagine.sslplus;
+import eagine.msgbus;
+import <chrono>;
+import <thread>;
+import <vector>;
+#else
 #include <eagine/identifier_ctr.hpp>
 #include <eagine/main_ctx.hpp>
 #include <eagine/main_fwd.hpp>
@@ -16,6 +24,7 @@
 #include <chrono>
 #include <thread>
 #include <vector>
+#endif
 
 namespace eagine {
 namespace msgbus {
@@ -43,13 +52,13 @@ public:
       const message_info&) noexcept final {
         _finished = true;
         _log.info("blob byte counts")
-          .arg(EAGINE_ID(url), EAGINE_ID(URL), _locator.str())
+          .arg("url", "URL", _locator.str())
           .arg_func([this](logger_backend& backend) {
               for(const auto i : integer_range(std_size(256))) {
                   if(_byte_counts[i]) {
                       backend.add_float(
                         byte_to_identifier(byte(i)),
-                        EAGINE_ID(Histogram),
+                        "Histogram",
                         float(0),
                         float(_byte_counts[i]),
                         float(_max_count));
@@ -120,8 +129,8 @@ auto main(main_ctx& ctx) -> int {
         return true;
     };
 
-    msgbus::manipulator_node node{EAGINE_ID(FileManip), ctx};
-    ctx.bus().setup_connectors(node);
+    msgbus::manipulator_node node{"FileManip", ctx};
+    msgbus::setup_connectors(ctx, node);
 
     const auto on_server_appeared = [&](identifier_t endpoint_id) {
         for(const auto& blob_io : blobs) {
@@ -176,6 +185,6 @@ auto main(main_ctx& ctx) -> int {
 
 auto main(int argc, const char** argv) -> int {
     eagine::main_ctx_options options;
-    options.app_id = EAGINE_ID(FileManExe);
-    return eagine::main_impl(argc, argv, options);
+    options.app_id = "FileManExe";
+    return eagine::main_impl(argc, argv, options, eagine::main);
 }

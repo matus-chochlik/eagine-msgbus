@@ -5,6 +5,13 @@
 /// See accompanying file LICENSE_1_0.txt or copy at
 ///  http://www.boost.org/LICENSE_1_0.txt
 ///
+#if EAGINE_MSGBUS_MODULE
+import eagine.core;
+import eagine.sslplus;
+import eagine.msgbus;
+import <chrono>;
+import <thread>;
+#else
 #include <eagine/file_contents.hpp>
 #include <eagine/main_ctx.hpp>
 #include <eagine/message_bus.hpp>
@@ -12,26 +19,27 @@
 #include <eagine/timeout.hpp>
 #include <chrono>
 #include <thread>
+#endif
 
 namespace eagine {
 
 auto main(main_ctx& ctx) -> int {
     enable_message_bus(ctx);
 
-    msgbus::endpoint bus{EAGINE_ID(Temporary), ctx};
-    ctx.bus().setup_connectors(bus);
+    msgbus::endpoint bus{"Temporary", ctx};
+    msgbus::setup_connectors(ctx, bus);
 
     if(ctx.args().none()) {
         file_contents data(ctx.exe_path());
 
         bus.broadcast_blob(
-          EAGINE_MSG_ID(Example, Content), data, std::chrono::minutes(5));
+          message_id{"Example", "Content"}, data, std::chrono::minutes(5));
     } else {
         for(auto& arg : ctx.args()) {
             if(file_contents data{arg}) {
 
                 bus.broadcast_blob(
-                  EAGINE_MSG_ID(Example, Content),
+                  message_id{"Example", "Content"},
                   data,
                   std::chrono::minutes(5));
             }

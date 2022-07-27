@@ -5,6 +5,15 @@
 ///  http://www.boost.org/LICENSE_1_0.txt
 ///
 
+#if EAGINE_MSGBUS_MODULE
+import eagine.core;
+import eagine.sslplus;
+import eagine.msgbus;
+import <chrono>;
+import <filesystem>;
+import <memory>;
+import <thread>;
+#else
 #include <eagine/main_ctx.hpp>
 #include <eagine/main_fwd.hpp>
 #include <eagine/message_bus.hpp>
@@ -19,6 +28,7 @@
 #include <eagine/watchdog.hpp>
 #include <chrono>
 #include <thread>
+#endif
 
 namespace eagine {
 namespace msgbus {
@@ -36,11 +46,11 @@ class file_server_node
 
 public:
     auto on_shutdown() noexcept {
-        return EAGINE_THIS_MEM_FUNC_REF(_handle_shutdown);
+        return make_callable_ref<&file_server_node::_handle_shutdown>(this);
     }
 
     file_server_node(endpoint& bus)
-      : main_ctx_object{EAGINE_ID(FileServer), bus}
+      : main_ctx_object{"FileServer", bus}
       , base{bus} {
         shutdown_requested.connect(on_shutdown());
         auto& info = provided_endpoint_info();
@@ -58,9 +68,9 @@ private:
       const identifier_t source_id,
       const verification_bits verified) noexcept {
         log_info("received shutdown request from ${source}")
-          .arg(EAGINE_ID(age), age)
-          .arg(EAGINE_ID(source), source_id)
-          .arg(EAGINE_ID(verified), verified);
+          .arg("age", age)
+          .arg("source", source_id)
+          .arg("verified", verified);
 
         _done = true;
     }
@@ -78,7 +88,7 @@ auto main(main_ctx& ctx) -> int {
     msgbus::router_address address{ctx};
     msgbus::connection_setup conn_setup(ctx);
 
-    msgbus::endpoint bus{main_ctx_object{EAGINE_ID(FilSvrEndp), ctx}};
+    msgbus::endpoint bus{main_ctx_object{"FilSvrEndp", ctx}};
 
     msgbus::file_server_node the_file_server{bus};
     conn_setup.setup_connectors(the_file_server, address);
@@ -111,6 +121,6 @@ auto main(main_ctx& ctx) -> int {
 
 auto main(int argc, const char** argv) -> int {
     eagine::main_ctx_options options;
-    options.app_id = EAGINE_ID(FileServer);
-    return eagine::main_impl(argc, argv, options);
+    options.app_id = "FileServer";
+    return eagine::main_impl(argc, argv, options, &eagine::main);
 }

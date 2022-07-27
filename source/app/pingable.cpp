@@ -5,6 +5,14 @@
 ///  http://www.boost.org/LICENSE_1_0.txt
 ///
 
+#if EAGINE_MSGBUS_MODULE
+import eagine.core;
+import eagine.sslplus;
+import eagine.msgbus;
+import <chrono>;
+import <cstdint>;
+import <thread>;
+#else
 #include <eagine/main_ctx.hpp>
 #include <eagine/main_fwd.hpp>
 #include <eagine/message_bus.hpp>
@@ -17,6 +25,7 @@
 #include <chrono>
 #include <cstdint>
 #include <thread>
+#endif
 
 namespace eagine {
 namespace msgbus {
@@ -29,17 +38,17 @@ class pingable_node : public service_node<pingable_base> {
 
 public:
     auto on_shutdown_slot() noexcept {
-        return EAGINE_THIS_MEM_FUNC_REF(on_shutdown);
+        return make_callable_ref<&pingable_node::on_shutdown>(this);
     }
 
     pingable_node(main_ctx_parent parent) noexcept
-      : base{EAGINE_ID(PngablNode), parent} {
+      : base{"PngablNode", parent} {
         shutdown_requested.connect(on_shutdown_slot());
         auto& info = provided_endpoint_info();
         info.display_name = "pingable node";
         info.description = "simple generic pingable node";
 
-        bus().setup_connectors(*this);
+        msgbus::setup_connectors(main_context(), *this);
     }
 
     auto respond_to_ping(
@@ -47,7 +56,7 @@ public:
       const message_sequence_t,
       const verification_bits) noexcept -> bool final {
         if((++_sent % _mod) == 0) [[unlikely]] {
-            log_info("sent ${sent} pongs").arg(EAGINE_ID(sent), _sent);
+            log_info("sent ${sent} pongs").arg("sent", _sent);
         }
         return true;
     }
@@ -57,9 +66,9 @@ public:
       const identifier_t source_id,
       const verification_bits verified) noexcept {
         log_info("received shutdown request from ${source}")
-          .arg(EAGINE_ID(age), age)
-          .arg(EAGINE_ID(source), source_id)
-          .arg(EAGINE_ID(verified), verified);
+          .arg("age", age)
+          .arg("source", source_id)
+          .arg("verified", verified);
 
         _done = true;
     }
@@ -94,8 +103,7 @@ auto main(main_ctx& ctx) -> int {
     enable_message_bus(ctx);
     ctx.preinitialize();
 
-    msgbus::pingable_node the_pingable{
-      main_ctx_object{EAGINE_ID(PngablEndp), ctx}};
+    msgbus::pingable_node the_pingable{main_ctx_object{"PngablEndp", ctx}};
 
     if(const auto id_arg{ctx.args().find("--pingable-id").next()}) {
         identifier_t id{0};
@@ -117,6 +125,6 @@ auto main(main_ctx& ctx) -> int {
 
 auto main(int argc, const char** argv) -> int {
     eagine::main_ctx_options options;
-    options.app_id = EAGINE_ID(PongExe);
-    return eagine::main_impl(argc, argv, options);
+    options.app_id = "PongExe";
+    return eagine::main_impl(argc, argv, options, &eagine::main);
 }

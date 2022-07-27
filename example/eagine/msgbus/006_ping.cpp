@@ -5,6 +5,12 @@
 /// See accompanying file LICENSE_1_0.txt or copy at
 ///  http://www.boost.org/LICENSE_1_0.txt
 ///
+#if EAGINE_MSGBUS_MODULE
+import eagine.core;
+import eagine.sslplus;
+import eagine.msgbus;
+import <thread>;
+#else
 #include <eagine/interop/valgrind.hpp>
 #include <eagine/main_ctx.hpp>
 #include <eagine/msgbus/actor.hpp>
@@ -13,6 +19,7 @@
 #include <eagine/timeout.hpp>
 #include <eagine/valid_if/positive.hpp>
 #include <thread>
+#endif
 
 namespace eagine {
 namespace msgbus {
@@ -28,10 +35,10 @@ public:
       const string_view address,
       const valid_if_positive<std::size_t>& max)
       : base(
-          {EAGINE_ID(ExamplPing), parent},
+          {"ExamplPing", parent},
           this,
-          EAGINE_MSG_MAP(PingPong, Pong, ping, pong),
-          EAGINE_MSG_MAP(PingPong, Ready, ping, ready))
+          message_map<id_v("PingPong"), id_v("Pong"), &ping::pong>{},
+          message_map<id_v("PingPong"), id_v("Ready"), &ping::ready>{})
       , _lmod{running_on_valgrind() ? 1000U : 10000U}
       , _max{extract_or(max, running_on_valgrind() ? 10000U : 100000U)} {
         this->allow_subscriptions();
@@ -45,9 +52,7 @@ public:
 
     auto pong(const message_context&, const stored_message&) noexcept -> bool {
         if(++_rcvd % _lmod == 0) {
-            bus_node()
-              .log_info("received ${count} pongs")
-              .arg(EAGINE_ID(count), _rcvd);
+            bus_node().log_info("received ${count} pongs").arg("count", _rcvd);
         }
         if(_rcvd < _max) {
             _timeout.reset();
@@ -62,17 +67,15 @@ public:
     }
 
     void shutdown() noexcept {
-        bus_node().broadcast(EAGINE_MSG_ID(PingPong, Shutdown));
+        bus_node().broadcast({"PingPong", "Shutdown"});
         bus_node().log_info("sent shutdown message");
     }
 
     void update() noexcept {
         if(_ready && (_sent <= _max * 2) && (_sent < _rcvd + _lmod)) {
-            bus_node().broadcast(EAGINE_MSG_ID(PingPong, Ping));
+            bus_node().broadcast({"PingPong", "Ping"});
             if(++_sent % _lmod == 0) {
-                bus_node()
-                  .log_info("sent ${count} pings")
-                  .arg(EAGINE_ID(count), _sent);
+                bus_node().log_info("sent ${count} pings").arg("count", _sent);
             }
         } else {
             std::this_thread::yield();
@@ -120,8 +123,8 @@ auto main(main_ctx& ctx) -> int {
 
     ctx.log()
       .info("execution time ${time}, ${pps} pings per second")
-      .arg(EAGINE_ID(time), elapsed)
-      .arg(EAGINE_ID(pps), ping.pings_per_second(elapsed));
+      .arg("time", elapsed)
+      .arg("pps", ping.pings_per_second(elapsed));
 
     ping.shutdown();
 

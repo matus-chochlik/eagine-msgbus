@@ -5,6 +5,13 @@
 /// See accompanying file LICENSE_1_0.txt or copy at
 ///  http://www.boost.org/LICENSE_1_0.txt
 ///
+#if EAGINE_MSGBUS_MODULE
+import eagine.core;
+import eagine.sslplus;
+import eagine.msgbus;
+import <queue>;
+import <set>;
+#else
 #include <eagine/console/console.hpp>
 #include <eagine/interop/valgrind.hpp>
 #include <eagine/main_ctx.hpp>
@@ -23,12 +30,12 @@
 #include <eagine/serialize/write.hpp>
 #include <queue>
 #include <set>
+#endif
 
 namespace eagine {
 namespace msgbus {
 //------------------------------------------------------------------------------
 struct fibonacci_server : static_subscriber<2> {
-    using this_class = fibonacci_server;
     using base = static_subscriber<2>;
     using base::bus_node;
 
@@ -36,12 +43,18 @@ struct fibonacci_server : static_subscriber<2> {
       : base(
           ep,
           this,
-          EAGINE_MSG_MAP(Fibonacci, FindServer, this_class, is_ready),
-          EAGINE_MSG_MAP(Fibonacci, Calculate, this_class, calculate)) {}
+          message_map<
+            id_v("Fibonacci"),
+            id_v("FindServer"),
+            &fibonacci_server::is_ready>{},
+          message_map<
+            id_v("Fibonacci"),
+            id_v("Calculate"),
+            &fibonacci_server::calculate>{}) {}
 
     auto is_ready(const message_context&, const stored_message& msg_in) noexcept
       -> bool {
-        bus_node().respond_to(msg_in, EAGINE_MSG_ID(Fibonacci, IsReady));
+        bus_node().respond_to(msg_in, {"Fibonacci", "IsReady"});
         return true;
     }
 
@@ -58,13 +71,12 @@ struct fibonacci_server : static_subscriber<2> {
           block_data_sink,
           block_data_source,
           64>()
-          .call(bus_node(), msg_in, EAGINE_MSG_ID(Fibonacci, Result), {&fib});
+          .call(bus_node(), msg_in, {"Fibonacci", "Result"}, {&fib});
         return true;
     }
 };
 //------------------------------------------------------------------------------
 struct fibonacci_client : static_subscriber<2> {
-    using this_class = fibonacci_client;
     using base = static_subscriber<2>;
     using base::bus_node;
 
@@ -72,8 +84,14 @@ struct fibonacci_client : static_subscriber<2> {
       : base(
           ep,
           this,
-          EAGINE_MSG_MAP(Fibonacci, IsReady, this_class, dispatch),
-          EAGINE_MSG_MAP(Fibonacci, Result, this_class, fulfill)) {}
+          message_map<
+            id_v("Fibonacci"),
+            id_v("IsReady"),
+            &fibonacci_client::dispatch>{},
+          message_map<
+            id_v("Fibonacci"),
+            id_v("Result"),
+            &fibonacci_client::fulfill>{}) {}
 
     void enqueue(const std::int64_t arg) {
         _remaining.push(arg);
@@ -81,7 +99,7 @@ struct fibonacci_client : static_subscriber<2> {
 
     void update() {
         if(!_remaining.empty()) {
-            bus_node().broadcast(EAGINE_MSG_ID(Fibonacci, FindServer));
+            bus_node().broadcast({"Fibonacci", "FindServer"});
         }
     }
 
@@ -93,18 +111,14 @@ struct fibonacci_client : static_subscriber<2> {
 
             _calc_invoker
               .invoke_on(
-                bus_node(),
-                msg_in.source_id,
-                EAGINE_MSG_ID(Fibonacci, Calculate),
-                arg)
+                bus_node(), msg_in.source_id, {"Fibonacci", "Calculate"}, arg)
               .set_timeout(std::chrono::minutes(1))
               .on_timeout([this, arg]() { this->_remaining.push(arg); })
               .then([this, arg](std::int64_t fib) {
                   bus_node()
                     .cio_print("fib(${arg}) = ${fib}")
-                    .arg(EAGINE_ID(arg), arg)
-                    .arg(EAGINE_ID(fib), fib);
-                  // std::cout << "fib(" << arg << ") = " << fib << std::endl;
+                    .arg("arg", arg)
+                    .arg("fib", fib);
               });
         }
         return true;
@@ -139,8 +153,8 @@ auto main(main_ctx& ctx) -> int {
 
     auto acceptor = std::make_unique<msgbus::direct_acceptor>(ctx);
 
-    msgbus::endpoint server_endpoint(EAGINE_ID(Server), ctx);
-    msgbus::endpoint client_endpoint(EAGINE_ID(Client), ctx);
+    msgbus::endpoint server_endpoint("Server", ctx);
+    msgbus::endpoint client_endpoint("Client", ctx);
 
     server_endpoint.add_connection(acceptor->make_connection());
     client_endpoint.add_connection(acceptor->make_connection());

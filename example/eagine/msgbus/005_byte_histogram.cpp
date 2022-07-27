@@ -5,6 +5,14 @@
 /// See accompanying file LICENSE_1_0.txt or copy at
 ///  http://www.boost.org/LICENSE_1_0.txt
 ///
+#if EAGINE_MSGBUS_MODULE
+import eagine.core;
+import eagine.sslplus;
+import eagine.msgbus;
+import <array>;
+import <chrono>;
+import <thread>;
+#else
 #include <eagine/file_contents.hpp>
 #include <eagine/identifier_ctr.hpp>
 #include <eagine/main_ctx.hpp>
@@ -15,6 +23,7 @@
 #include <eagine/timeout.hpp>
 #include <array>
 #include <thread>
+#endif
 
 namespace eagine {
 
@@ -37,12 +46,12 @@ auto main(main_ctx& ctx) -> int {
 
             ctx.log()
               .info("received blob message ${message}")
-              .arg(EAGINE_ID(message), mc.msg_id())
+              .arg("message", mc.msg_id())
               .arg_func([&byte_counts, max_count](logger_backend& backend) {
-                  for(std::size_t i = 0; i < 256; ++i) {
+                  for(const auto i : integer_range(std_size(256))) {
                       backend.add_float(
                         byte_to_identifier(byte(i)),
-                        EAGINE_ID(Histogram),
+                        "Histogram",
                         float(0),
                         float(byte_counts[i]),
                         float(max_count));
@@ -53,9 +62,9 @@ auto main(main_ctx& ctx) -> int {
         return true;
     };
 
-    msgbus::endpoint bus{main_ctx_object{EAGINE_ID(Temporary), ctx}};
+    msgbus::endpoint bus{main_ctx_object{"Temporary", ctx}};
 
-    ctx.bus().setup_connectors(bus);
+    msgbus::setup_connectors(ctx, bus);
 
     timeout idle_too_long{std::chrono::seconds{30}};
     while(!idle_too_long) {

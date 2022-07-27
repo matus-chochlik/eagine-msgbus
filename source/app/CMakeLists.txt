@@ -6,58 +6,121 @@
 # router
 add_executable(eagine-msgbus-router router.cpp)
 eagine_add_exe_analysis(eagine-msgbus-router)
-target_link_libraries(
-	eagine-msgbus-router
-	PUBLIC EAGine::MsgBus
-)
+if(${WITH_MODULES})
+	eagine_target_modules(
+		eagine-msgbus-router
+		eagine.core
+		eagine.sslplus
+		eagine.msgbus
+	)
+else()
+	target_link_libraries(
+		eagine-msgbus-router
+		PUBLIC EAGine::MsgBus
+	)
+endif()
 
 # bridge
 add_executable(eagine-msgbus-bridge bridge.cpp)
 eagine_add_exe_analysis(eagine-msgbus-bridge)
-target_link_libraries(
-	eagine-msgbus-bridge
-	PUBLIC EAGine::MsgBus
-)
+if(${WITH_MODULES})
+	eagine_target_modules(
+		eagine-msgbus-bridge
+		eagine.core
+		eagine.sslplus
+		eagine.msgbus
+	)
+else()
+	target_link_libraries(
+		eagine-msgbus-bridge
+		PUBLIC EAGine::MsgBus
+	)
+endif()
 
 # pingable
 add_executable(eagine-msgbus-pingable pingable.cpp)
 eagine_add_exe_analysis(eagine-msgbus-pingable)
-target_link_libraries(
-	eagine-msgbus-pingable
-	PUBLIC EAGine::MsgBus
-)
+if(${WITH_MODULES})
+	eagine_target_modules(
+		eagine-msgbus-pingable
+		eagine.core
+		eagine.sslplus
+		eagine.msgbus
+	)
+else()
+	target_link_libraries(
+		eagine-msgbus-pingable
+		PUBLIC EAGine::MsgBus
+	)
+endif()
 
 # pinger
 add_executable(eagine-msgbus-pinger pinger.cpp)
 eagine_add_exe_analysis(eagine-msgbus-pinger)
-target_link_libraries(
-	eagine-msgbus-pinger
-	PUBLIC EAGine::MsgBus
-)
+if(${WITH_MODULES})
+	eagine_target_modules(
+		eagine-msgbus-pinger
+		eagine.core
+		eagine.sslplus
+		eagine.msgbus
+	)
+else()
+	target_link_libraries(
+		eagine-msgbus-pinger
+		PUBLIC EAGine::MsgBus
+	)
+endif()
 
 # file server
 add_executable(eagine-msgbus-file_server file_server.cpp)
 eagine_add_exe_analysis(eagine-msgbus-file_server)
-target_link_libraries(
-	eagine-msgbus-file_server
-	PUBLIC EAGine::MsgBus
-)
+if(${WITH_MODULES})
+	eagine_target_modules(
+		eagine-msgbus-file_server
+		eagine.core
+		eagine.sslplus
+		eagine.msgbus
+	)
+else()
+	target_link_libraries(
+		eagine-msgbus-file_server
+		PUBLIC EAGine::MsgBus
+	)
+endif()
 
 # sudoku solver helper
 add_executable(eagine-msgbus-sudoku_helper sudoku_helper.cpp)
 eagine_add_exe_analysis(eagine-msgbus-sudoku_helper)
-target_link_libraries(
-	eagine-msgbus-sudoku_helper
-	PUBLIC EAGine::MsgBus
-)
+if(${WITH_MODULES})
+	eagine_target_modules(
+		eagine-msgbus-sudoku_helper
+		eagine.core
+		eagine.sslplus
+		eagine.msgbus
+	)
+else()
+	target_link_libraries(
+		eagine-msgbus-sudoku_helper
+		PUBLIC EAGine::MsgBus
+	)
+endif()
 
 # sudoku tiling generator
 add_executable(eagine-msgbus-sudoku_tiling sudoku_tiling.cpp)
 eagine_add_exe_analysis(eagine-msgbus-sudoku_tiling)
-target_link_libraries(
-	eagine-msgbus-sudoku_tiling
-	PUBLIC EAGine::MsgBus
-)
+if(${WITH_MODULES})
+	eagine_target_modules(
+		eagine-msgbus-sudoku_tiling
+		eagine.core
+		eagine.sslplus
+		eagine.msgbus
+	)
+else()
+	target_link_libraries(
+		eagine-msgbus-sudoku_tiling
+		PUBLIC EAGine::MsgBus
+	)
+endif()
 
 # scripts
 install(

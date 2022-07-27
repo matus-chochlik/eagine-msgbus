@@ -5,6 +5,11 @@
 /// See accompanying file LICENSE_1_0.txt or copy at
 ///  http://www.boost.org/LICENSE_1_0.txt
 ///
+#if EAGINE_MSGBUS_MODULE
+import eagine.core;
+import eagine.sslplus;
+import eagine.msgbus;
+#else
 #include <eagine/console/console.hpp>
 #include <eagine/interop/valgrind.hpp>
 #include <eagine/main_ctx.hpp>
@@ -13,6 +18,7 @@
 #include <eagine/msgbus/endpoint.hpp>
 #include <eagine/msgbus/router.hpp>
 #include <eagine/msgbus/service.hpp>
+#endif
 
 namespace eagine {
 namespace msgbus {
@@ -28,7 +34,11 @@ protected:
     void add_methods() {
         Base::add_methods();
         Base::add_method(
-          this, EAGINE_MSG_MAP(Fibonacci, Calculate, This, calculate));
+          this,
+          message_map<
+            id_v("Fibonacci"),
+            id_v("Calculate"),
+            &fibonacci_server_impl::calculate>{});
     }
 
 private:
@@ -42,8 +52,7 @@ private:
     auto calculate(
       const message_context&,
       const stored_message& msg_in) noexcept {
-        _calc_skeleton.enqueue(
-          msg_in, EAGINE_MSG_ID(Fibonacci, Result), {&fib});
+        _calc_skeleton.enqueue(msg_in, {"Fibonacci", "Result"}, {&fib});
         return true;
     }
 
@@ -69,7 +78,7 @@ protected:
 
     void add_methods() {
         Base::add_methods();
-        Base::add_method(_calc_invoker[EAGINE_MSG_ID(Fibonacci, Result)]);
+        Base::add_method(_calc_invoker.map_fulfill_by({"Fibonacci", "Result"}));
     }
 
 private:
@@ -78,7 +87,7 @@ private:
 public:
     auto fib(const std::int64_t arg) -> future<std::int64_t> {
         return _calc_invoker.invoke(
-          bus_node(), EAGINE_MSG_ID(Fibonacci, Calculate), arg);
+          bus_node(), {"Fibonacci", "Calculate"}, arg);
     }
 
     auto is_done() const -> bool {
@@ -93,8 +102,8 @@ auto main(main_ctx& ctx) -> int {
 
     auto acceptor = std::make_unique<msgbus::direct_acceptor>(ctx);
 
-    msgbus::endpoint server_endpoint(EAGINE_ID(Server), ctx);
-    msgbus::endpoint client_endpoint(EAGINE_ID(Client), ctx);
+    msgbus::endpoint server_endpoint("Server", ctx);
+    msgbus::endpoint client_endpoint("Client", ctx);
 
     server_endpoint.add_connection(acceptor->make_connection());
     client_endpoint.add_connection(acceptor->make_connection());
@@ -112,12 +121,11 @@ auto main(main_ctx& ctx) -> int {
           .set_timeout(std::chrono::minutes(1))
           .then([i, &ctx](std::int64_t fib) {
               ctx.cio()
-                .print(EAGINE_ID(MsgBus), "fib(${arg}) = ${fib}")
-                .arg(EAGINE_ID(arg), i)
-                .arg(EAGINE_ID(fib), fib);
+                .print("MsgBus", "fib(${arg}) = ${fib}")
+                .arg("arg", i)
+                .arg("fib", fib);
           })
-          .otherwise(
-            [&ctx]() { ctx.cio().print(EAGINE_ID(MsgBus), "failed"); });
+          .otherwise([&ctx]() { ctx.cio().print("MsgBus", "failed"); });
     }
 
     while(!client.is_done()) {

@@ -5,6 +5,12 @@
 /// See accompanying file LICENSE_1_0.txt or copy at
 ///  http://www.boost.org/LICENSE_1_0.txt
 ///
+#if EAGINE_MSGBUS_MODULE
+import eagine.core;
+import eagine.sslplus;
+import eagine.msgbus;
+import <thread>;
+#else
 #include <eagine/identifier_ctr.hpp>
 #include <eagine/logging/type/remote_node.hpp>
 #include <eagine/main_ctx.hpp>
@@ -17,6 +23,7 @@
 #include <eagine/msgbus/service/tracker.hpp>
 #include <eagine/msgbus/service_requirements.hpp>
 #include <eagine/timeout.hpp>
+#endif
 
 namespace eagine {
 namespace msgbus {
@@ -31,18 +38,19 @@ class tracker_example
 
 public:
     tracker_example(endpoint& bus)
-      : main_ctx_object{EAGINE_ID(TrkrExampl), bus}
+      : main_ctx_object{"TrkrExampl", bus}
       , base{bus} {
         object_description("Node tracker", "Node tracker example");
-        this->node_changed.connect(EAGINE_THIS_MEM_FUNC_REF(on_node_change));
+        this->node_changed.connect(
+          make_callable_ref<&tracker_example::on_node_change>(this));
     }
 
     void on_node_change(
       remote_node& node,
       const remote_node_changes changes) noexcept {
         log_info("node change ${nodeId}")
-          .arg(EAGINE_ID(changes), changes)
-          .arg(EAGINE_ID(nodeId), extract(node.id()));
+          .arg("changes", changes)
+          .arg("nodeId", extract(node.id()));
     }
 
     auto is_done() const noexcept -> bool {
@@ -55,8 +63,8 @@ public:
         if(_checkup_needed) {
             this->for_each_node([&](auto, auto& node) {
                 this->log_info("node ${nodeId} status")
-                  .arg(EAGINE_ID(nodeId), node)
-                  .arg(EAGINE_ID(host), node.host());
+                  .arg("nodeId", node)
+                  .arg("host", node.host());
             });
         }
 
@@ -81,7 +89,7 @@ auto main(main_ctx& ctx) -> int {
     msgbus::router_address address{ctx};
     msgbus::connection_setup conn_setup(ctx);
 
-    msgbus::endpoint bus{EAGINE_ID(TrckrEndpt), ctx};
+    msgbus::endpoint bus{"TrckrEndpt", ctx};
 
     msgbus::tracker_example the_tracker{bus};
     conn_setup.setup_connectors(the_tracker, address);
@@ -103,6 +111,6 @@ auto main(main_ctx& ctx) -> int {
 
 auto main(int argc, const char** argv) -> int {
     eagine::main_ctx_options options;
-    options.app_id = EAGINE_ID(PingExe);
-    return eagine::main_impl(argc, argv, options);
+    options.app_id = "PingExe";
+    return eagine::main_impl(argc, argv, options, &eagine::main);
 }

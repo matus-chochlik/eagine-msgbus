@@ -67,6 +67,19 @@ struct static_message_handler_map {
 /// @see eagine::msgbus::static_message_handler_map
 /// @see eagine::msgbus::static_subscriber
 /// @see eagine::msgbus::subscriber
+template <identifier_t ClassId, identifier_t MethodId, auto MemFuncPtr>
+using message_map = static_message_handler_map<
+  static_message_id<ClassId, MethodId>,
+  member_function_constant_t<MemFuncPtr>>;
+
+template <identifier_t MethodId, auto MemFuncPtr>
+using msgbus_map = message_map<id_v("eagiMsgBus"), MethodId, MemFuncPtr>;
+//------------------------------------------------------------------------------
+/// @brief Constructs an instance of static message handler map.
+/// @ingroup msgbus
+/// @see eagine::msgbus::static_message_handler_map
+/// @see eagine::msgbus::static_subscriber
+/// @see eagine::msgbus::subscriber
 /// @see EAGINE_MSG_TYPE
 /// @see EAGINE_MEM_FUNC_T
 #define EAGINE_MSG_MAP(CLASS_ID, METHOD_ID, CLASS, METHOD) \

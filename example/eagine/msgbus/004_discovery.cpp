@@ -5,6 +5,12 @@
 /// See accompanying file LICENSE_1_0.txt or copy at
 ///  http://www.boost.org/LICENSE_1_0.txt
 ///
+#if EAGINE_MSGBUS_MODULE
+import eagine.core;
+import eagine.sslplus;
+import eagine.msgbus;
+import <thread>;
+#else
 #include <eagine/main_ctx.hpp>
 #include <eagine/message_bus.hpp>
 #include <eagine/msgbus/resources.hpp>
@@ -15,6 +21,7 @@
 #include <eagine/signal_switch.hpp>
 #include <eagine/sslplus/resources.hpp>
 #include <thread>
+#endif
 
 namespace eagine {
 namespace msgbus {
@@ -29,25 +36,29 @@ class subscription_logger
 
 public:
     subscription_logger(endpoint& bus)
-      : main_ctx_object{EAGINE_ID(SubscrLog), bus}
+      : main_ctx_object{"SubscrLog", bus}
       , base{bus} {
-        reported_alive.connect(EAGINE_THIS_MEM_FUNC_REF(is_alive));
-        subscribed.connect(EAGINE_THIS_MEM_FUNC_REF(on_subscribed));
-        unsubscribed.connect(EAGINE_THIS_MEM_FUNC_REF(on_unsubscribed));
-        shutdown_requested.connect(EAGINE_THIS_MEM_FUNC_REF(on_shutdown));
+        reported_alive.connect(
+          make_callable_ref<&subscription_logger::is_alive>(this));
+        subscribed.connect(
+          make_callable_ref<&subscription_logger::on_subscribed>(this));
+        unsubscribed.connect(
+          make_callable_ref<&subscription_logger::on_unsubscribed>(this));
+        shutdown_requested.connect(
+          make_callable_ref<&subscription_logger::on_shutdown>(this));
     }
 
     void is_alive(const subscriber_info& info) noexcept {
         log_info("endpoint ${subscrbr} is alive")
-          .arg(EAGINE_ID(subscrbr), info.endpoint_id);
+          .arg("subscrbr", info.endpoint_id);
     }
 
     void on_subscribed(
       const subscriber_info& info,
       const message_id sub_msg) noexcept {
         log_info("endpoint ${subscrbr} subscribed to ${message}")
-          .arg(EAGINE_ID(subscrbr), info.endpoint_id)
-          .arg(EAGINE_ID(message), sub_msg);
+          .arg("subscrbr", info.endpoint_id)
+          .arg("message", sub_msg);
         this->bus_node().query_certificate_of(info.endpoint_id);
     }
 
@@ -55,8 +66,8 @@ public:
       const subscriber_info& info,
       const message_id sub_msg) noexcept {
         log_info("endpoint ${subscrbr} unsubscribed from ${message}")
-          .arg(EAGINE_ID(subscrbr), info.endpoint_id)
-          .arg(EAGINE_ID(message), sub_msg);
+          .arg("subscrbr", info.endpoint_id)
+          .arg("message", sub_msg);
     }
 
     void on_shutdown(
@@ -64,9 +75,9 @@ public:
       const identifier_t subscriber_id,
       const verification_bits verified) noexcept {
         log_info("received ${age} old shutdown request from ${subscrbr}")
-          .arg(EAGINE_ID(age), age)
-          .arg(EAGINE_ID(subscrbr), subscriber_id)
-          .arg(EAGINE_ID(verified), verified);
+          .arg("age", age)
+          .arg("subscrbr", subscriber_id)
+          .arg("verified", verified);
 
         // TODO: verification
         if(age < std::chrono::seconds(2)) {
@@ -88,13 +99,13 @@ auto main(main_ctx& ctx) -> int {
     const signal_switch interrupted;
     enable_message_bus(ctx);
 
-    msgbus::endpoint bus{EAGINE_ID(DiscoverEx), ctx};
+    msgbus::endpoint bus{"DiscoverEx", ctx};
     bus.add_ca_certificate_pem(ca_certificate_pem(ctx));
     bus.add_certificate_pem(msgbus::endpoint_certificate_pem(ctx));
 
     msgbus::subscription_logger sub_log{bus};
 
-    ctx.bus().setup_connectors(sub_log);
+    msgbus::setup_connectors(ctx, sub_log);
     timeout waited_too_long{std::chrono::minutes(1)};
 
     while(!(interrupted || sub_log.is_done() || waited_too_long)) {

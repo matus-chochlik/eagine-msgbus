@@ -5,6 +5,14 @@
 /// See accompanying file LICENSE_1_0.txt or copy at
 ///  http://www.boost.org/LICENSE_1_0.txt
 ///
+#if EAGINE_MSGBUS_MODULE
+import eagine.core;
+import eagine.sslplus;
+import eagine.msgbus;
+import <iostream>;
+import <set>;
+import <thread>;
+#else
 #include <eagine/main_ctx.hpp>
 #include <eagine/message_bus.hpp>
 #include <eagine/msgbus/resources.hpp>
@@ -17,6 +25,7 @@
 #include <iostream>
 #include <set>
 #include <thread>
+#endif
 
 namespace eagine {
 namespace msgbus {
@@ -31,13 +40,16 @@ class topology_printer
 
 public:
     topology_printer(endpoint& bus)
-      : main_ctx_object{EAGINE_ID(TopoPrint), bus}
+      : main_ctx_object{"TopoPrint", bus}
       , base{bus} {
-        router_appeared.connect(EAGINE_THIS_MEM_FUNC_REF(on_router_appeared));
-        bridge_appeared.connect(EAGINE_THIS_MEM_FUNC_REF(on_bridge_appeared));
+        router_appeared.connect(
+          make_callable_ref<&topology_printer::on_router_appeared>(this));
+        bridge_appeared.connect(
+          make_callable_ref<&topology_printer::on_bridge_appeared>(this));
         endpoint_appeared.connect(
-          EAGINE_THIS_MEM_FUNC_REF(on_endpoint_appeared));
-        shutdown_requested.connect(EAGINE_THIS_MEM_FUNC_REF(on_shutdown));
+          make_callable_ref<&topology_printer::on_endpoint_appeared>(this));
+        shutdown_requested.connect(
+          make_callable_ref<&topology_printer::on_shutdown>(this));
     }
 
     void print_topology() {
@@ -78,8 +90,8 @@ public:
 
     void on_router_appeared(const router_topology_info& info) noexcept {
         log_info("found router connection ${router} - ${remote}")
-          .arg(EAGINE_ID(remote), info.remote_id)
-          .arg(EAGINE_ID(router), info.router_id);
+          .arg("remote", info.remote_id)
+          .arg("router", info.router_id);
 
         _routers.emplace(info.router_id);
         _connections.emplace(info.router_id, info.remote_id);
@@ -88,22 +100,20 @@ public:
     void on_bridge_appeared(const bridge_topology_info& info) noexcept {
         if(info.opposite_id) {
             log_info("found bridge connection ${bridge} - ${remote}")
-              .arg(EAGINE_ID(remote), info.opposite_id)
-              .arg(EAGINE_ID(bridge), info.bridge_id);
+              .arg("remote", info.opposite_id)
+              .arg("bridge", info.bridge_id);
 
             _bridges.emplace(info.opposite_id);
             _connections.emplace(info.bridge_id, info.opposite_id);
         } else {
-            _log.info("found bridge ${bridge}")
-              .arg(EAGINE_ID(bridge), info.bridge_id);
+            _log.info("found bridge ${bridge}").arg("bridge", info.bridge_id);
         }
 
         _bridges.emplace(info.bridge_id);
     }
 
     void on_endpoint_appeared(const endpoint_topology_info& info) noexcept {
-        log_info("found endpoint ${endpoint}")
-          .arg(EAGINE_ID(endpoint), info.endpoint_id);
+        log_info("found endpoint ${endpoint}").arg("endpoint", info.endpoint_id);
 
         _endpoints.emplace(info.endpoint_id);
     }
@@ -113,9 +123,9 @@ public:
       const identifier_t subscriber_id,
       const verification_bits verified) noexcept {
         _log.info("received ${age} old shutdown request from ${subscrbr}")
-          .arg(EAGINE_ID(age), age)
-          .arg(EAGINE_ID(subscrbr), subscriber_id)
-          .arg(EAGINE_ID(verified), verified);
+          .arg("age", age)
+          .arg("subscrbr", subscriber_id)
+          .arg("verified", verified);
     }
 
 private:
@@ -132,13 +142,13 @@ auto main(main_ctx& ctx) -> int {
     const signal_switch interrupted;
     enable_message_bus(ctx);
 
-    msgbus::endpoint bus{EAGINE_ID(TopologyEx), ctx};
+    msgbus::endpoint bus{"TopologyEx", ctx};
     bus.add_ca_certificate_pem(ca_certificate_pem(ctx));
     bus.add_certificate_pem(msgbus::endpoint_certificate_pem(ctx));
 
     msgbus::topology_printer topo_prn{bus};
+    msgbus::setup_connectors(ctx, topo_prn);
 
-    ctx.bus().setup_connectors(topo_prn);
     timeout waited_enough{std::chrono::seconds(30)};
     resetting_timeout resend_query{std::chrono::seconds(5), nothing};
 

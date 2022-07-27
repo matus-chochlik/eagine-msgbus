@@ -6,3 +6,6 @@
 ///  http://www.boost.org/LICENSE_1_0.txt
 ///
 export module eagine.msgbus;
+
+export import eagine.msgbus.core;
+export import eagine.msgbus.services;

@@ -3,6 +3,50 @@
 # See accompanying file LICENSE_1_0.txt or copy at
 #  http://www.boost.org/LICENSE_1_0.txt
 #
+add_custom_target(eagine-msgbus-examples ALL)
+set_target_properties(
+	eagine-msgbus-examples
+	PROPERTIES FOLDER "Example/MsgBus"
+)
+
+function(eagine_install_example TARGET_NAME)
+	install(
+		TARGETS ${TARGET_NAME}
+		DESTINATION share/eagine/example/msgbus
+	)
+endfunction()
+
+function(eagine_example_common EXAMPLE_NAME)
+	add_executable(
+		eagine-${EXAMPLE_NAME}
+		EXCLUDE_FROM_ALL
+		"${EXAMPLE_NAME}.cpp"
+		${ARGN}
+	)
+	add_dependencies(eagine-msgbus-examples eagine-${EXAMPLE_NAME})
+	if(${WITH_MODULES})
+		eagine_target_modules(
+			eagine-${EXAMPLE_NAME}
+			eagine.core
+			eagine.sslplus
+			eagine.msgbus
+		)
+	else()
+		eagine_add_exe_analysis(eagine-${EXAMPLE_NAME})
+		target_link_libraries(
+			eagine-${EXAMPLE_NAME}
+			PUBLIC EAGine::MsgBus
+			PRIVATE ${ARGN}
+		)
+	endif()
+
+	set_target_properties(
+		eagine-${EXAMPLE_NAME}
+		PROPERTIES FOLDER "Example/MsgBus"
+	)
+	eagine_install_example(eagine-${EXAMPLE_NAME})
+endfunction()
+
 eagine_example_common(001_log_certs)
 eagine_example_common(001_signal)
 eagine_example_common(001_loopback)

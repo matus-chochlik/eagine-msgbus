@@ -51,7 +51,14 @@ static inline void enable_message_bus(main_ctx& ctx) {
     extract(msg_bus).configure(ctx.config());
     extract(setters).inject(std::move(msg_bus));
 }
-
+namespace msgbus {
+static inline void setup_connectors(main_ctx& ctx, connection_user& target) {
+    ctx.bus().setup_connectors(target);
+}
+static inline void setup_acceptors(main_ctx& ctx, acceptor_user& target) {
+    ctx.bus().setup_acceptors(target);
+}
+} // namespace msgbus
 } // namespace eagine
 
 #endif // EAGINE_MESSAGE_BUS_HPP

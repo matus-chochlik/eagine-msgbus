@@ -5,6 +5,14 @@
 /// See accompanying file LICENSE_1_0.txt or copy at
 ///  http://www.boost.org/LICENSE_1_0.txt
 ///
+#if EAGINE_MSGBUS_MODULE
+import eagine.core;
+import eagine.sslplus;
+import eagine.msgbus;
+import <queue>;
+import <set>;
+import <thread>;
+#else
 #include <eagine/interop/valgrind.hpp>
 #include <eagine/main_ctx.hpp>
 #include <eagine/memory/span_algo.hpp>
@@ -22,6 +30,7 @@
 #include <queue>
 #include <set>
 #include <thread>
+#endif
 
 namespace eagine {
 namespace msgbus {
@@ -34,11 +43,20 @@ public:
 
     fibonacci_server(main_ctx_parent parent, connection_setup& conn_setup)
       : base(
-          main_ctx_object{EAGINE_ID(FibServer), parent},
+          main_ctx_object{"FibServer", parent},
           this,
-          EAGINE_MSG_MAP(Fibonacci, FindServer, this_class, is_ready),
-          EAGINE_MSG_MAP(Fibonacci, Calculate, this_class, calculate),
-          EAGINE_MSG_MAP(Fibonacci, Shutdown, this_class, shutdown)) {
+          message_map<
+            id_v("Fibonacci"),
+            id_v("FindServer"),
+            &fibonacci_server::is_ready>{},
+          message_map<
+            id_v("Fibonacci"),
+            id_v("Calculate"),
+            &fibonacci_server::calculate>{},
+          message_map<
+            id_v("Fibonacci"),
+            id_v("Shutdown"),
+            &fibonacci_server::shutdown>{}) {
         conn_setup.setup_connectors(*this, connection_kind::in_process);
     }
 
@@ -46,9 +64,18 @@ public:
       : base(
           std::move(temp),
           this,
-          EAGINE_MSG_MAP(Fibonacci, FindServer, this_class, is_ready),
-          EAGINE_MSG_MAP(Fibonacci, Calculate, this_class, calculate),
-          EAGINE_MSG_MAP(Fibonacci, Shutdown, this_class, shutdown)) {}
+          message_map<
+            id_v("Fibonacci"),
+            id_v("FindServer"),
+            &fibonacci_server::is_ready>{},
+          message_map<
+            id_v("Fibonacci"),
+            id_v("Calculate"),
+            &fibonacci_server::calculate>{},
+          message_map<
+            id_v("Fibonacci"),
+            id_v("Shutdown"),
+            &fibonacci_server::shutdown>{}) {}
     fibonacci_server(const fibonacci_server&) = delete;
     auto operator=(fibonacci_server&& temp) = delete;
     auto operator=(const fibonacci_server&) = delete;
@@ -62,7 +89,7 @@ public:
 
     auto is_ready(const message_context&, const stored_message& msg_in) noexcept
       -> bool {
-        bus_node().respond_to(msg_in, EAGINE_MSG_ID(Fibonacci, IsReady));
+        bus_node().respond_to(msg_in, {"Fibonacci", "IsReady"});
         return true;
     }
 
@@ -88,8 +115,7 @@ public:
         // send
         message_view msg_out{sink.done()};
         msg_out.set_serializer_id(write_backend.type_id());
-        bus_node().respond_to(
-          msg_in, EAGINE_MSG_ID(Fibonacci, Result), msg_out);
+        bus_node().respond_to(msg_in, {"Fibonacci", "Result"}, msg_out);
         return true;
     }
 
@@ -109,10 +135,16 @@ public:
 
     fibonacci_client(main_ctx_parent parent, connection_setup& conn_setup)
       : base(
-          main_ctx_object{EAGINE_ID(FibClient), parent},
+          main_ctx_object{"FibClient", parent},
           this,
-          EAGINE_MSG_MAP(Fibonacci, IsReady, this_class, dispatch),
-          EAGINE_MSG_MAP(Fibonacci, Result, this_class, print)) {
+          message_map<
+            id_v("Fibonacci"),
+            id_v("IsReady"),
+            &fibonacci_client::dispatch>{},
+          message_map<
+            id_v("Fibonacci"),
+            id_v("Result"),
+            &fibonacci_client::print>{}) {
         conn_setup.setup_connectors(*this, connection_kind::in_process);
     }
 
@@ -121,12 +153,12 @@ public:
     }
 
     void shutdown() {
-        bus_node().broadcast(EAGINE_MSG_ID(Fibonacci, Shutdown));
+        bus_node().broadcast({"Fibonacci", "Shutdown"});
     }
 
     void update() {
         if(!_remaining.empty()) {
-            bus_node().broadcast(EAGINE_MSG_ID(Fibonacci, FindServer));
+            bus_node().broadcast({"Fibonacci", "FindServer"});
         }
     }
 
@@ -143,8 +175,7 @@ public:
             serialize(arg, write_backend);
             message_view msg_out{sink.done()};
             msg_out.set_serializer_id(write_backend.type_id());
-            bus_node().respond_to(
-              msg_in, EAGINE_MSG_ID(Fibonacci, Calculate), msg_out);
+            bus_node().respond_to(msg_in, {"Fibonacci", "Calculate"}, msg_out);
         }
         return true;
     }
@@ -161,8 +192,8 @@ public:
         // print
         bus_node()
           .cio_print("fib(${arg}) = ${fib}")
-          .arg(EAGINE_ID(arg), arg)
-          .arg(EAGINE_ID(fib), result);
+          .arg("arg", arg)
+          .arg("fib", result);
         // remove
         _pending.erase(arg);
         return true;

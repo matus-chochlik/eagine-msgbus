@@ -4,7 +4,13 @@
 /// See accompanying file LICENSE_1_0.txt or copy at
 ///  http://www.boost.org/LICENSE_1_0.txt
 ///
-
+#if EAGINE_MSGBUS_MODULE
+import eagine.core;
+import eagine.sslplus;
+import eagine.msgbus;
+import <thread>;
+import <cstdint>;
+#else
 #include <eagine/logging/root_logger.hpp>
 #include <eagine/main_ctx.hpp>
 #include <eagine/main_fwd.hpp>
@@ -22,6 +28,7 @@
 #include <eagine/sslplus/resources.hpp>
 #include <eagine/watchdog.hpp>
 #include <cstdint>
+#endif
 
 namespace eagine {
 //------------------------------------------------------------------------------
@@ -40,7 +47,7 @@ class router_node
 
 public:
     router_node(endpoint& bus)
-      : main_ctx_object{EAGINE_ID(RouterNode), bus}
+      : main_ctx_object{"RouterNode", bus}
       , base{bus} {
         if(_shutdown_ignore) {
             log_info("shutdown requests are ignored due to configuration");
@@ -51,9 +58,10 @@ public:
                 log_info("shutdown verification is disabled");
             }
             log_info("shutdown delay is set to ${delay}")
-              .arg(EAGINE_ID(delay), _shutdown_timeout.period());
+              .arg("delay", _shutdown_timeout.period());
 
-            shutdown_requested.connect(EAGINE_THIS_MEM_FUNC_REF(on_shutdown));
+            shutdown_requested.connect(
+              make_callable_ref<&router_node::on_shutdown>(this));
         }
         auto& info = provided_endpoint_info();
         info.display_name = "router control node";
@@ -94,9 +102,9 @@ private:
       const identifier_t source_id,
       const verification_bits verified) noexcept {
         log_info("received ${age} old shutdown request from ${source}")
-          .arg(EAGINE_ID(age), age)
-          .arg(EAGINE_ID(source), source_id)
-          .arg(EAGINE_ID(verified), verified);
+          .arg("age", age)
+          .arg("source", source_id)
+          .arg("verified", verified);
 
         if(!_shutdown_ignore) {
             if(age <= _shutdown_max_age) {
@@ -132,7 +140,7 @@ auto main(main_ctx& ctx) -> int {
     msgbus::router router(ctx);
     router.add_ca_certificate_pem(ca_certificate_pem(ctx));
     router.add_certificate_pem(msgbus::router_certificate_pem(ctx));
-    ctx.bus().setup_acceptors(router);
+    msgbus::setup_acceptors(ctx, router);
     router.add_acceptor(std::move(local_acceptor));
 
     std::uintmax_t cycles_work{0};
@@ -140,7 +148,7 @@ auto main(main_ctx& ctx) -> int {
     int idle_streak{0};
     int max_idle_streak{0};
 
-    msgbus::endpoint node_endpoint{EAGINE_ID(RutrNodeEp), ctx};
+    msgbus::endpoint node_endpoint{"RutrNodeEp", ctx};
     node_endpoint.add_certificate_pem(msgbus::endpoint_certificate_pem(ctx));
     node_endpoint.add_connection(std::move(node_connection));
     {
@@ -149,41 +157,39 @@ auto main(main_ctx& ctx) -> int {
         auto& wd = ctx.watchdog();
         wd.declare_initialized();
 
-        while(!(interrupted || node.is_shut_down()))
-            [[likely]] {
-                some_true something_done{};
-                something_done(router.update(8));
-                something_done(node.update());
+        while(!(interrupted || node.is_shut_down())) [[likely]] {
+            some_true something_done{};
+            something_done(router.update(8));
+            something_done(node.update());
 
-                if(something_done) {
-                    ++cycles_work;
-                    idle_streak = 0;
-                } else {
-                    ++cycles_idle;
-                    max_idle_streak =
-                      math::maximum(max_idle_streak, ++idle_streak);
-                    std::this_thread::sleep_for(std::chrono::microseconds(
-                      math::minimum(idle_streak, 8000)));
-                }
-                wd.notify_alive();
+            if(something_done) {
+                ++cycles_work;
+                idle_streak = 0;
+            } else {
+                ++cycles_idle;
+                max_idle_streak = math::maximum(max_idle_streak, ++idle_streak);
+                std::this_thread::sleep_for(
+                  std::chrono::microseconds(math::minimum(idle_streak, 8000)));
             }
+            wd.notify_alive();
+        }
         wd.announce_shutdown();
     }
 
     router.finish();
 
     log.stat("message bus router finishing")
-      .arg(EAGINE_ID(working), cycles_work)
-      .arg(EAGINE_ID(idling), cycles_idle)
+      .arg("working", cycles_work)
+      .arg("idling", cycles_idle)
       .arg(
-        EAGINE_ID(workRate),
-        EAGINE_ID(Ratio),
+        "workRate",
+        "Ratio",
         float(cycles_work) / (float(cycles_idle) + float(cycles_work)))
       .arg(
-        EAGINE_ID(idleRate),
-        EAGINE_ID(Ratio),
+        "idleRate",
+        "Ratio",
         float(cycles_idle) / (float(cycles_idle) + float(cycles_work)))
-      .arg(EAGINE_ID(maxIdlStrk), max_idle_streak);
+      .arg("maxIdlStrk", max_idle_streak);
 
     return 0;
 }
@@ -192,6 +198,6 @@ auto main(main_ctx& ctx) -> int {
 
 auto main(int argc, const char** argv) -> int {
     eagine::main_ctx_options options;
-    options.app_id = EAGINE_ID(RouterExe);
-    return eagine::main_impl(argc, argv, options);
+    options.app_id = "RouterExe";
+    return eagine::main_impl(argc, argv, options, &eagine::main);
 }

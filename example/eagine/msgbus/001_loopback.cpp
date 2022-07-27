@@ -5,11 +5,16 @@
 /// See accompanying file LICENSE_1_0.txt or copy at
 ///  http://www.boost.org/LICENSE_1_0.txt
 ///
+#if EAGINE_MSGBUS_MODULE
+import eagine.core;
+import eagine.msgbus;
+#else
 #include <eagine/main_ctx.hpp>
 #include <eagine/memory/span_algo.hpp>
 #include <eagine/msgbus/endpoint.hpp>
 #include <eagine/msgbus/loopback.hpp>
 #include <eagine/msgbus/subscriber.hpp>
+#endif
 
 namespace eagine {
 namespace msgbus {
@@ -22,18 +27,22 @@ struct str_utils_server
     using base::bus_node;
 
     str_utils_server(endpoint& ep)
-      : main_ctx_object{EAGINE_ID(Server), ep}
+      : main_ctx_object{identifier{"Server"}, ep}
       , base(
           ep,
           this,
-          EAGINE_MSG_MAP(StrUtilReq, Reverse, this_class, reverse)) {}
+          message_map<
+            id_v("StrUtilReq"),
+            id_v("Reverse"),
+            &this_class::reverse>{}) {}
 
     auto reverse(const message_context&, const stored_message& msg) noexcept
       -> bool {
         auto str = as_chars(copy(msg.content(), _buf));
-        log_trace("received request: ${content}").arg(EAGINE_ID(content), str);
+        log_trace("received request: ${content}")
+          .arg(identifier{"content"}, str);
         memory::reverse(str);
-        bus_node().post(EAGINE_MSG_ID(StrUtilRes, Reverse), as_bytes(str));
+        bus_node().post(message_id{"StrUtilRes", "Reverse"}, as_bytes(str));
         return true;
     }
 
@@ -49,19 +58,21 @@ struct str_utils_client
     using base::bus_node;
 
     str_utils_client(endpoint& ep)
-      : main_ctx_object{EAGINE_ID(Client), ep}
-      , base{ep, this, EAGINE_MSG_MAP(StrUtilRes, Reverse, this_class, print)} {
-    }
+      : main_ctx_object{identifier{"Client"}, ep}
+      , base{
+          ep,
+          this,
+          message_map<id_v("StrUtilRes"), id_v("Reverse"), &this_class::print>{}} {}
 
     void call_reverse(const string_view str) {
         ++_remaining;
-        bus_node().post(EAGINE_MSG_ID(StrUtilReq, Reverse), as_bytes(str));
+        bus_node().post(message_id{"StrUtilReq", "Reverse"}, as_bytes(str));
     }
 
     auto print(const message_context&, const stored_message& msg) noexcept
       -> bool {
         log_info("received response: ${content}")
-          .arg(EAGINE_ID(content), msg.text_content());
+          .arg(identifier{"content"}, msg.text_content());
         --_remaining;
         return true;
     }
@@ -78,8 +89,8 @@ private:
 
 auto main(main_ctx& ctx) -> int {
 
-    msgbus::endpoint bus{EAGINE_ID(Loopback), ctx};
-    bus.set_id(EAGINE_ID(BusExample));
+    msgbus::endpoint bus{identifier{"Loopback"}, ctx};
+    bus.set_id(identifier{"BusExample"});
     bus.add_connection(std::make_unique<msgbus::loopback_connection>());
 
     msgbus::str_utils_server server(bus);
