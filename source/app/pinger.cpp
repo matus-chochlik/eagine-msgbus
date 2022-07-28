@@ -104,27 +104,19 @@ public:
       , _max{extract_or(max, 100000)} {
         this->object_description("Pinger", "Message bus ping");
 
-        bus_node().id_assigned.connect(
-          make_callable_ref<&pinger_node::on_id_assigned>(this));
-        bus_node().connection_lost.connect(
-          make_callable_ref<&pinger_node::on_connection_lost>(this));
-        bus_node().connection_established.connect(
-          make_callable_ref<&pinger_node::on_connection_established>(this));
+        connect<&pinger_node::on_id_assigned>(this, bus_node().id_assigned);
+        connect<&pinger_node::on_connection_lost>(
+          this, bus_node().connection_lost);
+        connect<&pinger_node::on_connection_established>(
+          this, bus_node().connection_established);
 
-        subscribed.connect(
-          make_callable_ref<&pinger_node::on_subscribed>(this));
-        unsubscribed.connect(
-          make_callable_ref<&pinger_node::on_unsubscribed>(this));
-        not_subscribed.connect(
-          make_callable_ref<&pinger_node::on_not_subscribed>(this));
-        ping_responded.connect(
-          make_callable_ref<&pinger_node::on_ping_response>(this));
-        ping_timeouted.connect(
-          make_callable_ref<&pinger_node::on_ping_timeout>(this));
-        host_id_received.connect(
-          make_callable_ref<&pinger_node::on_host_id_received>(this));
-        hostname_received.connect(
-          make_callable_ref<&pinger_node::on_hostname_received>(this));
+        connect<&pinger_node::on_subscribed>(this, subscribed);
+        connect<&pinger_node::on_unsubscribed>(this, unsubscribed);
+        connect<&pinger_node::on_not_subscribed>(this, not_subscribed);
+        connect<&pinger_node::on_ping_response>(this, ping_responded);
+        connect<&pinger_node::on_ping_timeout>(this, ping_timeouted);
+        connect<&pinger_node::on_host_id_received>(this, host_id_received);
+        connect<&pinger_node::on_hostname_received>(this, hostname_received);
 
         auto& info = provided_endpoint_info();
         info.display_name = "pinger";

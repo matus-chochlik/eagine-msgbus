@@ -23,12 +23,12 @@ TilingModel::TilingModel(TilingBackend& backend)
     info.display_name = "sudoku tiling generator";
     info.description = "sudoku tiling solver/generator GUI application";
 
-    _tiling.helper_appeared.connect(
-      make_callable_ref<&TilingModel::onHelperAppeared>(this));
-    _tiling.tiles_generated_4.connect(
-      make_callable_ref<&TilingModel::onFragmentAdded>(this));
-    _tiling.queue_length_changed.connect(
-      make_callable_ref<&TilingModel::onQueueLengthChanged>(this));
+    eagine::msgbus::connect<&TilingModel::onHelperAppeared>(
+      this, _tiling.helper_appeared);
+    eagine::msgbus::connect<&TilingModel::onFragmentAdded>(
+      this, _tiling.tiles_generated_4);
+    eagine::msgbus::connect<&TilingModel::onQueueLengthChanged>(
+      this, _tiling.queue_length_changed);
 }
 //------------------------------------------------------------------------------
 void TilingModel::initialize() {

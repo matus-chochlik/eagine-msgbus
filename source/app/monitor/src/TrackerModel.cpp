@@ -17,19 +17,19 @@ TrackerModel::TrackerModel(MonitorBackend& backend)
   , _tracker{_bus} {
     bus().setup_connectors(_tracker);
 
-    _tracker.host_changed.connect(
-      make_callable_ref<&TrackerModel::handleHostChanged>(this));
-    _tracker.instance_changed.connect(
-      make_callable_ref<&TrackerModel::handleInstanceChanged>(this));
-    _tracker.node_changed.connect(
-      make_callable_ref<&TrackerModel::handleNodeChanged>(this));
+    eagine::msgbus::connect<&TrackerModel::handleHostChanged>(
+      this, _tracker.host_changed);
+    eagine::msgbus::connect<&TrackerModel::handleInstanceChanged>(
+      this, _tracker.instance_changed);
+    eagine::msgbus::connect<&TrackerModel::handleNodeChanged>(
+      this, _tracker.node_changed);
 
-    _tracker.router_disappeared.connect(
-      make_callable_ref<&TrackerModel::handleNodeDisappeared>(this));
-    _tracker.bridge_disappeared.connect(
-      make_callable_ref<&TrackerModel::handleNodeDisappeared>(this));
-    _tracker.endpoint_disappeared.connect(
-      make_callable_ref<&TrackerModel::handleNodeDisappeared>(this));
+    eagine::msgbus::connect<&TrackerModel::handleNodeDisappeared>(
+      this, _tracker.router_disappeared);
+    eagine::msgbus::connect<&TrackerModel::handleNodeDisappeared>(
+      this, _tracker.bridge_disappeared);
+    eagine::msgbus::connect<&TrackerModel::handleNodeDisappeared>(
+      this, _tracker.endpoint_disappeared);
 }
 //------------------------------------------------------------------------------
 auto TrackerModel::hostParameters(eagine::identifier_t hostId) noexcept

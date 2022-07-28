@@ -37,13 +37,9 @@ class pingable_node : public service_node<pingable_base> {
     using base = service_node<pingable_base>;
 
 public:
-    auto on_shutdown_slot() noexcept {
-        return make_callable_ref<&pingable_node::on_shutdown>(this);
-    }
-
     pingable_node(main_ctx_parent parent) noexcept
       : base{"PngablNode", parent} {
-        shutdown_requested.connect(on_shutdown_slot());
+        connect<&pingable_node::on_shutdown>(this, shutdown_requested);
         auto& info = provided_endpoint_info();
         info.display_name = "pingable node";
         info.description = "simple generic pingable node";

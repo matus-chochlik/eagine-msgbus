@@ -159,6 +159,11 @@ template <typename... Params>
     return {connect(slot), this};
 }
 //------------------------------------------------------------------------------
+template <auto MemFuncPtr, typename C, typename... Params>
+auto connect(C* that, signal<void(Params...) noexcept>& sig) noexcept {
+    return sig.connect(make_callable_ref<MemFuncPtr>(that));
+}
+//------------------------------------------------------------------------------
 } // namespace eagine::msgbus
 
 #endif // EAGINE_MSGBUS_SIGNAL_HPP

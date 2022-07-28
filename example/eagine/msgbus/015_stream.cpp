@@ -42,11 +42,10 @@ public:
     data_provider_example(endpoint& bus)
       : main_ctx_object{"Provider", bus}
       , base{bus} {
-        this->stream_relay_assigned.connect(
-          make_callable_ref<&data_provider_example::_handle_relay_assigned>(
-            this));
-        this->stream_relay_reset.connect(
-          make_callable_ref<&data_provider_example::_handle_relay_reset>(this));
+        connect<&data_provider_example::_handle_relay_assigned>(
+          this, this->stream_relay_assigned);
+        connect<&data_provider_example::_handle_relay_reset>(
+          this, this->stream_relay_reset);
 
         _stream_ids.push_back([this] {
             msgbus::stream_info info{};
@@ -97,15 +96,12 @@ public:
     data_consumer_example(endpoint& bus)
       : main_ctx_object{"Consumer", bus}
       , base{bus} {
-        this->stream_relay_assigned.connect(
-          make_callable_ref<&data_consumer_example::_handle_relay_assigned>(
-            this));
-        this->stream_appeared.connect(
-          make_callable_ref<&data_consumer_example::_handle_stream_appeared>(
-            this));
-        this->stream_disappeared.connect(
-          make_callable_ref<&data_consumer_example::_handle_stream_disappeared>(
-            this));
+        connect<&data_consumer_example::_handle_relay_assigned>(
+          this, this->stream_relay_assigned);
+        connect<&data_consumer_example::_handle_stream_appeared>(
+          this, this->stream_appeared);
+        connect<&data_consumer_example::_handle_stream_disappeared>(
+          this, this->stream_disappeared);
     }
 
     auto is_done() const noexcept -> bool {

@@ -35,12 +35,12 @@ class sudoku_tiling_node : public service_node<sudoku_tiling_base> {
 public:
     sudoku_tiling_node(main_ctx_parent parent)
       : service_node<sudoku_tiling_base>{"TilingNode", parent} {
-        tiles_generated_3.connect(
-          make_callable_ref<&sudoku_tiling_node::_handle_generated<3>>(this));
-        tiles_generated_4.connect(
-          make_callable_ref<&sudoku_tiling_node::_handle_generated<4>>(this));
-        tiles_generated_5.connect(
-          make_callable_ref<&sudoku_tiling_node::_handle_generated<5>>(this));
+        connect<&sudoku_tiling_node::_handle_generated<3>>(
+          this, tiles_generated_3);
+        connect<&sudoku_tiling_node::_handle_generated<4>>(
+          this, tiles_generated_4);
+        connect<&sudoku_tiling_node::_handle_generated<5>>(
+          this, tiles_generated_5);
 
         auto& info = provided_endpoint_info();
         info.display_name = "sudoku tiling generator";

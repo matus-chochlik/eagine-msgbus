@@ -45,14 +45,10 @@ class file_server_node
     using base = file_server_node_base;
 
 public:
-    auto on_shutdown() noexcept {
-        return make_callable_ref<&file_server_node::_handle_shutdown>(this);
-    }
-
     file_server_node(endpoint& bus)
       : main_ctx_object{"FileServer", bus}
       , base{bus} {
-        shutdown_requested.connect(on_shutdown());
+        connect<&file_server_node::_handle_shutdown>(this, shutdown_requested);
         auto& info = provided_endpoint_info();
         info.display_name = "file server node";
         info.description = "message bus file server";

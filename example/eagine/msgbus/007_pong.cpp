@@ -44,8 +44,7 @@ public:
     pong_example(endpoint& bus)
       : main_ctx_object{"PongExampl", bus}
       , base{bus} {
-        shutdown_requested.connect(
-          make_callable_ref<&pong_example::on_shutdown>(this));
+        connect<&pong_example::on_shutdown>(this, shutdown_requested);
     }
 
     auto respond_to_ping(

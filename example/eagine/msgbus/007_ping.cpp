@@ -101,27 +101,18 @@ public:
       , _max{extract_or(max, 100000)} {
         object_description("Pinger", "Ping example");
 
-        bus.id_assigned.connect(
-          make_callable_ref<&ping_example::on_id_assigned>(this));
-        bus.connection_lost.connect(
-          make_callable_ref<&ping_example::on_connection_lost>(this));
-        bus.connection_established.connect(
-          make_callable_ref<&ping_example::on_connection_established>(this));
+        connect<&ping_example::on_id_assigned>(this, bus.id_assigned);
+        connect<&ping_example::on_connection_lost>(this, bus.connection_lost);
+        connect<&ping_example::on_connection_established>(
+          this, bus.connection_established);
 
-        subscribed.connect(
-          make_callable_ref<&ping_example::on_subscribed>(this));
-        unsubscribed.connect(
-          make_callable_ref<&ping_example::on_unsubscribed>(this));
-        not_subscribed.connect(
-          make_callable_ref<&ping_example::on_not_subscribed>(this));
-        ping_responded.connect(
-          make_callable_ref<&ping_example::on_ping_response>(this));
-        ping_timeouted.connect(
-          make_callable_ref<&ping_example::on_ping_timeout>(this));
-        host_id_received.connect(
-          make_callable_ref<&ping_example::on_host_id_received>(this));
-        hostname_received.connect(
-          make_callable_ref<&ping_example::on_hostname_received>(this));
+        connect<&ping_example::on_subscribed>(this, subscribed);
+        connect<&ping_example::on_unsubscribed>(this, unsubscribed);
+        connect<&ping_example::on_not_subscribed>(this, not_subscribed);
+        connect<&ping_example::on_ping_response>(this, ping_responded);
+        connect<&ping_example::on_ping_timeout>(this, ping_timeouted);
+        connect<&ping_example::on_host_id_received>(this, host_id_received);
+        connect<&ping_example::on_hostname_received>(this, hostname_received);
     }
 
     void on_id_assigned(const identifier_t endpoint_id) noexcept {

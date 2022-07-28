@@ -39,9 +39,9 @@ public:
 
     example_solver(endpoint& bus)
       : base{bus} {
-        solved_3.connect(make_callable_ref<&example_solver::print<3>>(this));
-        solved_4.connect(make_callable_ref<&example_solver::print<4>>(this));
-        solved_5.connect(make_callable_ref<&example_solver::print<5>>(this));
+        connect<&example_solver::print<3>>(this, solved_3);
+        connect<&example_solver::print<4>>(this, solved_4);
+        connect<&example_solver::print<5>>(this, solved_5);
     }
 
     template <unsigned S>

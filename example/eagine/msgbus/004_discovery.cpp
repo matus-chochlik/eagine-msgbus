@@ -38,14 +38,10 @@ public:
     subscription_logger(endpoint& bus)
       : main_ctx_object{"SubscrLog", bus}
       , base{bus} {
-        reported_alive.connect(
-          make_callable_ref<&subscription_logger::is_alive>(this));
-        subscribed.connect(
-          make_callable_ref<&subscription_logger::on_subscribed>(this));
-        unsubscribed.connect(
-          make_callable_ref<&subscription_logger::on_unsubscribed>(this));
-        shutdown_requested.connect(
-          make_callable_ref<&subscription_logger::on_shutdown>(this));
+        connect<&subscription_logger::is_alive>(this, reported_alive);
+        connect<&subscription_logger::on_subscribed>(this, subscribed);
+        connect<&subscription_logger::on_unsubscribed>(this, unsubscribed);
+        connect<&subscription_logger::on_shutdown>(this, shutdown_requested);
     }
 
     void is_alive(const subscriber_info& info) noexcept {
