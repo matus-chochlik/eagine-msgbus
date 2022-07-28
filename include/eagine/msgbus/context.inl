@@ -14,13 +14,13 @@ namespace eagine::msgbus {
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
 context::context(main_ctx_parent parent) noexcept
-  : main_ctx_object{EAGINE_ID(MsgBusCtxt), parent} {
+  : main_ctx_object{"MsgBusCtxt", parent} {
 
     if(ok make_result{_ssl.new_x509_store()}) {
         _ssl_store = std::move(make_result.get());
     } else {
         log_error("failed to create certificate store: ${reason}")
-          .arg(EAGINE_ID(reason), (!make_result).message());
+          .arg("reason", (!make_result).message());
     }
 }
 //------------------------------------------------------------------------------
@@ -58,7 +58,7 @@ auto context::next_sequence_no(const message_id msg_id) noexcept
     if(newone) {
         std::get<1>(*pos) = 0U;
         log_debug("creating sequence for message type ${message}")
-          .arg(EAGINE_ID(message), msg_id);
+          .arg("message", msg_id);
     }
     return std::get<1>(*pos)++;
 }
@@ -73,14 +73,14 @@ auto context::verify_certificate(const sslplus::x509 cert) noexcept -> bool {
                 return true;
             } else {
                 log_debug("failed to verify x509 certificate")
-                  .arg(EAGINE_ID(reason), (!verify_res).message());
+                  .arg("reason", (!verify_res).message());
             }
         } else {
             log_debug("failed to init x509 certificate store context");
         }
     } else {
         log_error("failed to create x509 certificate store")
-          .arg(EAGINE_ID(reason), (!vrfy_ctx).message());
+          .arg("reason", (!vrfy_ctx).message());
     }
     return false;
 }
@@ -109,8 +109,8 @@ auto context::add_own_certificate_pem(const memory::const_block blk) noexcept
             return verify_certificate(_own_cert);
         } else {
             log_error("failed to parse own x509 certificate from pem")
-              .arg(EAGINE_ID(reason), (!cert).message())
-              .arg(EAGINE_ID(pem), blk);
+              .arg("reason", (!cert).message())
+              .arg("pem", blk);
         }
     }
     return false;
@@ -130,13 +130,13 @@ auto context::add_ca_certificate_pem(const memory::const_block blk) noexcept
                 return !_own_cert || verify_certificate(_own_cert);
             } else {
                 log_error("failed to add x509 CA certificate to store")
-                  .arg(EAGINE_ID(reason), (!cert).message())
-                  .arg(EAGINE_ID(pem), blk);
+                  .arg("reason", (!cert).message())
+                  .arg("pem", blk);
             }
         } else {
             log_error("failed to parse CA x509 certificate from pem")
-              .arg(EAGINE_ID(reason), (!cert).message())
-              .arg(EAGINE_ID(pem), blk);
+              .arg("reason", (!cert).message())
+              .arg("pem", blk);
         }
     }
     return false;
@@ -164,24 +164,24 @@ auto context::add_remote_certificate_pem(
                     return true;
                 } else {
                     log_error("failed to get remote node x509 public key")
-                      .arg(EAGINE_ID(nodeId), node_id)
-                      .arg(EAGINE_ID(reason), (!pubkey).message())
-                      .arg(EAGINE_ID(pem), blk);
+                      .arg("nodeId", node_id)
+                      .arg("reason", (!pubkey).message())
+                      .arg("pem", blk);
                 }
             } else {
                 log_debug("failed to verify remote node certificate")
-                  .arg(EAGINE_ID(nodeId), node_id);
+                  .arg("nodeId", node_id);
             }
         } else {
             log_error("failed to parse remote node x509 certificate from pem")
-              .arg(EAGINE_ID(nodeId), node_id)
-              .arg(EAGINE_ID(reason), (!cert).message())
-              .arg(EAGINE_ID(pem), blk);
+              .arg("nodeId", node_id)
+              .arg("reason", (!cert).message())
+              .arg("pem", blk);
         }
     } else {
         log_error("received empty x509 certificate pem")
-          .arg(EAGINE_ID(nodeId), node_id)
-          .arg(EAGINE_ID(pem), blk);
+          .arg("nodeId", node_id)
+          .arg("pem", blk);
     }
     return false;
 }
@@ -248,7 +248,7 @@ auto context::message_digest_verify_init(
         }
     } else {
         log_debug("could not find remote node ${endpoint} for verification")
-          .arg(EAGINE_ID(endpoint), node_id);
+          .arg("endpoint", node_id);
     }
     return _ssl.message_digest_verify_init.fail();
 }
@@ -271,8 +271,8 @@ auto context::get_own_signature(const memory::const_block nonce) noexcept
                         return sig.get();
                     } else {
                         log_debug("failed to finish ssl signature")
-                          .arg(EAGINE_ID(freeSize), free.size())
-                          .arg(EAGINE_ID(reason), (!sig).message());
+                          .arg("freeSize", free.size())
+                          .arg("reason", (!sig).message());
                     }
                 } else {
                     log_debug("failed to update ssl signature");
@@ -282,11 +282,11 @@ auto context::get_own_signature(const memory::const_block nonce) noexcept
             }
         } else {
             log_debug("failed to create ssl message digest")
-              .arg(EAGINE_ID(reason), (!md_ctx).message());
+              .arg("reason", (!md_ctx).message());
         }
     } else {
         log_debug("failed to get ssl message digest type")
-          .arg(EAGINE_ID(reason), (!md_type).message());
+          .arg("reason", (!md_type).message());
     }
     return {};
 }
@@ -328,11 +328,11 @@ auto context::verify_remote_signature(
                 }
             } else {
                 log_debug("failed to create ssl message digest")
-                  .arg(EAGINE_ID(reason), (!md_ctx).message());
+                  .arg("reason", (!md_ctx).message());
             }
         } else {
             log_debug("failed to get ssl message digest type")
-              .arg(EAGINE_ID(reason), (!md_type).message());
+              .arg("reason", (!md_type).message());
         }
     }
     return result;

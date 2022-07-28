@@ -14,13 +14,13 @@ namespace eagine {
 auto main(main_ctx& ctx) -> int {
     ctx.log()
       .info("embedded router certificate")
-      .arg(EAGINE_ID(arg), msgbus::router_certificate_pem(ctx));
+      .arg("arg", msgbus::router_certificate_pem(ctx));
     ctx.log()
       .info("embedded bridge certificate")
-      .arg(EAGINE_ID(arg), msgbus::bridge_certificate_pem(ctx));
+      .arg("arg", msgbus::bridge_certificate_pem(ctx));
     ctx.log()
       .info("embedded endpoint certificate")
-      .arg(EAGINE_ID(arg), msgbus::endpoint_certificate_pem(ctx));
+      .arg("arg", msgbus::endpoint_certificate_pem(ctx));
     return 0;
 }
 //------------------------------------------------------------------------------

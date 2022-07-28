@@ -28,7 +28,7 @@ class direct_connection_state final : public main_ctx_object {
 public:
     /// @brief Construction from a parent main context object.
     direct_connection_state(main_ctx_parent parent) noexcept
-      : main_ctx_object{EAGINE_ID(DrctConnSt), parent} {}
+      : main_ctx_object{"DrctConnSt", parent} {}
 
     /// @brief Says that the client has connected.
     auto client_connect() noexcept {
@@ -107,7 +107,7 @@ public:
 
     /// @brief Construction from a parent main context object.
     direct_connection_address(main_ctx_parent parent)
-      : main_ctx_object{EAGINE_ID(DrctConnAd), parent} {}
+      : main_ctx_object{"DrctConnAd", parent} {}
 
     /// @brief Creates and returns the shared state for a new client connection.
     /// @see process_all
@@ -151,7 +151,7 @@ public:
     }
 
     auto type_id() noexcept -> identifier final {
-        return EAGINE_ID(Direct);
+        return "Direct";
     }
 };
 //------------------------------------------------------------------------------
@@ -290,12 +290,12 @@ public:
     direct_acceptor(
       main_ctx_parent parent,
       std::shared_ptr<direct_connection_address> address) noexcept
-      : main_ctx_object{EAGINE_ID(DrctAccptr), parent}
+      : main_ctx_object{"DrctAccptr", parent}
       , _address{std::move(address)} {}
 
     /// @brief Construction from a parent main context object with implicit address.
     direct_acceptor(main_ctx_parent parent) noexcept
-      : main_ctx_object{EAGINE_ID(DrctAccptr), parent}
+      : main_ctx_object{"DrctAccptr", parent}
       , _address{std::make_shared<direct_connection_address>(*this)} {}
 
     auto process_accepted(const accept_handler handler) noexcept
@@ -337,7 +337,7 @@ public:
 
     /// @brief Construction from a parent main context object with implicit address.
     direct_connection_factory(main_ctx_parent parent) noexcept
-      : main_ctx_object{EAGINE_ID(DrctConnFc), parent}
+      : main_ctx_object{"DrctConnFc", parent}
       , _default_addr{_make_addr()} {}
 
     auto make_acceptor(const string_view addr_str) noexcept

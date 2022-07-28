@@ -35,7 +35,7 @@ namespace eagine::msgbus {
 /// @brief Indicates if the specified message id denotes a special message bus message.
 /// @ingroup msgbus
 static constexpr auto is_special_message(const message_id msg_id) noexcept {
-    return msg_id.has_class(EAGINE_ID(eagiMsgBus));
+    return msg_id.has_class("eagiMsgBus");
 }
 //------------------------------------------------------------------------------
 /// @brief Returns the special broadcast message bus endpoint id.

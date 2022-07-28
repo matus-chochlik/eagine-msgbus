@@ -25,7 +25,7 @@ class bridge
 
 public:
     bridge(main_ctx_parent parent) noexcept
-      : main_ctx_object(EAGINE_ID(MsgBusBrdg), parent)
+      : main_ctx_object("MsgBusBrdg", parent)
       , _context{make_context(*this)} {
         _setup_from_config();
     }

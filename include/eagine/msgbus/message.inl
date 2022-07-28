@@ -38,8 +38,8 @@ auto stored_message::store_and_sign(
                             return true;
                         } else {
                             user.log_debug("failed to finish ssl signature")
-                              .arg(EAGINE_ID(freeSize), free.size())
-                              .arg(EAGINE_ID(reason), (!sig).message());
+                              .arg("freeSize", free.size())
+                              .arg("reason", (!sig).message());
                         }
                     } else {
                         user.log_debug("failed to update ssl signature");
@@ -49,15 +49,15 @@ auto stored_message::store_and_sign(
                 }
             } else {
                 user.log_debug("failed to create ssl message digest")
-                  .arg(EAGINE_ID(reason), (!md_ctx).message());
+                  .arg("reason", (!md_ctx).message());
             }
         } else {
             user.log_debug("not enough space for message signature")
-              .arg(EAGINE_ID(maxSize), max_size);
+              .arg("maxSize", max_size);
         }
     } else {
         user.log_debug("failed to get ssl message digest type")
-          .arg(EAGINE_ID(reason), (!md_type).message());
+          .arg("reason", (!md_type).message());
     }
     copy_into(data, _buffer);
     return true;
@@ -107,12 +107,12 @@ void message_storage::log_stats(main_ctx_object& user) {
     if(const auto opt_stats{_buffers.stats()}) {
         const auto& stats{extract(opt_stats)};
         user.log_stat("message storage buffer pool stats")
-          .arg(EAGINE_ID(maxBufSize), stats.max_buffer_size())
-          .arg(EAGINE_ID(maxCount), stats.max_buffer_count())
-          .arg(EAGINE_ID(poolGets), stats.number_of_gets())
-          .arg(EAGINE_ID(poolHits), stats.number_of_hits())
-          .arg(EAGINE_ID(poolEats), stats.number_of_eats())
-          .arg(EAGINE_ID(poolDscrds), stats.number_of_discards());
+          .arg("maxBufSize", stats.max_buffer_size())
+          .arg("maxCount", stats.max_buffer_count())
+          .arg("poolGets", stats.number_of_gets())
+          .arg("poolHits", stats.number_of_hits())
+          .arg("poolEats", stats.number_of_eats())
+          .arg("poolDscrds", stats.number_of_discards());
     }
 }
 //------------------------------------------------------------------------------
@@ -224,12 +224,12 @@ void serialized_message_storage::log_stats(main_ctx_object& user) {
     if(const auto opt_stats{_buffers.stats()}) {
         const auto& stats{extract(opt_stats)};
         user.log_stat("serialized message storage buffer pool stats")
-          .arg(EAGINE_ID(maxBufSize), stats.max_buffer_size())
-          .arg(EAGINE_ID(maxCount), stats.max_buffer_count())
-          .arg(EAGINE_ID(poolGets), stats.number_of_gets())
-          .arg(EAGINE_ID(poolHits), stats.number_of_hits())
-          .arg(EAGINE_ID(poolEats), stats.number_of_eats())
-          .arg(EAGINE_ID(poolDscrds), stats.number_of_discards());
+          .arg("maxBufSize", stats.max_buffer_size())
+          .arg("maxCount", stats.max_buffer_count())
+          .arg("poolGets", stats.number_of_gets())
+          .arg("poolHits", stats.number_of_hits())
+          .arg("poolEats", stats.number_of_eats())
+          .arg("poolDscrds", stats.number_of_discards());
     }
 }
 //------------------------------------------------------------------------------
@@ -247,14 +247,14 @@ auto connection_outgoing_messages::enqueue(
     const auto errors{serialize_message(msg_id, message, backend)};
     if(!errors) [[likely]] {
         user.log_trace("enqueuing message ${message} to be sent")
-          .arg(EAGINE_ID(message), msg_id);
+          .arg("message", msg_id);
         _serialized.push(sink.done());
         return true;
     }
     user.log_error("failed to serialize message ${message}")
-      .arg(EAGINE_ID(message), msg_id)
-      .arg(EAGINE_ID(errors), errors)
-      .arg(EAGINE_ID(content), message.content());
+      .arg("message", msg_id)
+      .arg("errors", errors)
+      .arg("content", message.content());
     return false;
 }
 //------------------------------------------------------------------------------
@@ -279,13 +279,13 @@ auto connection_incoming_messages::fetch_messages(
                     deserialize_message(msg_id, message, backend);
                   if(!errors) [[likely]] {
                       user.log_trace("fetched message ${message}")
-                        .arg(EAGINE_ID(message), msg_id);
+                        .arg("message", msg_id);
                       msg_ts = data_ts;
                       return true;
                   } else {
                       user.log_error("failed to deserialize message")
-                        .arg(EAGINE_ID(errorBits), errors.bits())
-                        .arg(EAGINE_ID(block), blk);
+                        .arg("errorBits", errors.bits())
+                        .arg("block", blk);
                       return false;
                   }
               });

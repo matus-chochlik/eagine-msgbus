@@ -21,7 +21,7 @@ auto registered_entry::update_service() noexcept -> work_done {
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
 registry::registry(main_ctx_parent parent) noexcept
-  : main_ctx_object{EAGINE_ID(MsgBusRgtr), parent}
+  : main_ctx_object{"MsgBusRgtr", parent}
   , _acceptor{std::make_shared<direct_acceptor>(*this)}
   , _router{*this} {
     _router.add_acceptor(_acceptor);

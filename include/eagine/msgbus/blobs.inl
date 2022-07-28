@@ -294,8 +294,8 @@ auto blob_manipulator::make_io(const span_size_t total_size) noexcept
         return std::make_unique<buffer_blob_io>(_buffers.get(total_size));
     }
     log_warning("blob is too big ${total_size}")
-      .arg(EAGINE_ID(total), EAGINE_ID(ByteSize), total_size)
-      .arg(EAGINE_ID(offset), _max_blob_size);
+      .arg("total", "ByteSize", total_size)
+      .arg("offset", _max_blob_size);
     return {};
 }
 //------------------------------------------------------------------------------
@@ -315,9 +315,9 @@ auto blob_manipulator::expect_incoming(
   std::shared_ptr<blob_io> io,
   const std::chrono::seconds max_time) noexcept -> bool {
     log_debug("expecting incoming fragment")
-      .arg(EAGINE_ID(source), source_id)
-      .arg(EAGINE_ID(tgtBlobId), target_blob_id)
-      .arg(EAGINE_ID(timeout), max_time);
+      .arg("source", source_id)
+      .arg("tgtBlobId", target_blob_id)
+      .arg("timeout", max_time);
 
     _incoming.emplace_back();
     auto& pending = _incoming.back();
@@ -370,11 +370,11 @@ auto blob_manipulator::push_incoming_fragment(
             pending.priority = priority;
             pending.total_size = limit_cast<span_size_t>(total_size);
             log_debug("updating expected blob fragment")
-              .arg(EAGINE_ID(source), source_id)
-              .arg(EAGINE_ID(srcBlobId), source_blob_id)
-              .arg(EAGINE_ID(tgtBlobId), target_blob_id)
-              .arg(EAGINE_ID(total), EAGINE_ID(ByteSize), total_size)
-              .arg(EAGINE_ID(size), EAGINE_ID(ByteSize), fragment.size());
+              .arg("source", source_id)
+              .arg("srcBlobId", source_blob_id)
+              .arg("tgtBlobId", target_blob_id)
+              .arg("total", "ByteSize", total_size)
+              .arg("size", "ByteSize", fragment.size());
         }
     }
     if(pos != _incoming.end()) {
@@ -387,25 +387,25 @@ auto blob_manipulator::push_incoming_fragment(
                 }
                 if(pending.merge_fragment(integer(offset), fragment)) {
                     log_debug("merged blob fragment")
-                      .arg(EAGINE_ID(source), source_id)
-                      .arg(EAGINE_ID(srcBlobId), source_blob_id)
-                      .arg(EAGINE_ID(parts), pending.done_parts().size())
-                      .arg(EAGINE_ID(offset), offset)
-                      .arg(EAGINE_ID(size), fragment.size());
+                      .arg("source", source_id)
+                      .arg("srcBlobId", source_blob_id)
+                      .arg("parts", pending.done_parts().size())
+                      .arg("offset", offset)
+                      .arg("size", fragment.size());
                 } else {
                     log_warning("failed to merge blob fragment")
-                      .arg(EAGINE_ID(offset), offset)
-                      .arg(EAGINE_ID(size), fragment.size());
+                      .arg("offset", offset)
+                      .arg("size", fragment.size());
                 }
             } else {
                 log_debug("message id mismatch in blob fragment message")
-                  .arg(EAGINE_ID(pending), pending.msg_id)
-                  .arg(EAGINE_ID(message), msg_id);
+                  .arg("pending", pending.msg_id)
+                  .arg("message", msg_id);
             }
         } else {
             log_debug("total size mismatch in blob fragment message")
-              .arg(EAGINE_ID(pending), EAGINE_ID(ByteSize), pending.total_size)
-              .arg(EAGINE_ID(message), EAGINE_ID(ByteSize), total_size);
+              .arg("pending", "ByteSize", pending.total_size)
+              .arg("message", "ByteSize", total_size);
         }
     } else if(source_id != broadcast_endpoint_id()) {
         if(auto io{get_io(msg_id, integer(total_size), *this)}) {
@@ -423,20 +423,20 @@ auto blob_manipulator::push_incoming_fragment(
             pending.done_parts().clear();
             if(pending.merge_fragment(integer(offset), fragment)) {
                 log_debug("merged first blob fragment")
-                  .arg(EAGINE_ID(source), source_id)
-                  .arg(EAGINE_ID(srcBlobId), source_blob_id)
-                  .arg(EAGINE_ID(tgtBlobId), target_blob_id)
-                  .arg(EAGINE_ID(parts), pending.done_parts().size())
-                  .arg(EAGINE_ID(offset), offset)
-                  .arg(EAGINE_ID(size), fragment.size());
+                  .arg("source", source_id)
+                  .arg("srcBlobId", source_blob_id)
+                  .arg("tgtBlobId", target_blob_id)
+                  .arg("parts", pending.done_parts().size())
+                  .arg("offset", offset)
+                  .arg("size", fragment.size());
             }
         } else {
             log_warning("failed to create blob I/O object")
-              .arg(EAGINE_ID(source), source_id)
-              .arg(EAGINE_ID(srcBlobId), source_blob_id)
-              .arg(EAGINE_ID(tgtBlobId), target_blob_id)
-              .arg(EAGINE_ID(offset), offset)
-              .arg(EAGINE_ID(size), fragment.size());
+              .arg("source", source_id)
+              .arg("srcBlobId", source_blob_id)
+              .arg("tgtBlobId", target_blob_id)
+              .arg("offset", offset)
+              .arg("size", fragment.size());
         }
     }
     return true;
@@ -477,19 +477,19 @@ auto blob_manipulator::process_incoming(
                   message.priority);
             } else {
                 log_error("invalid blob fragment size ${size}")
-                  .arg(EAGINE_ID(size), fragment.size())
-                  .arg(EAGINE_ID(offset), offset)
-                  .arg(EAGINE_ID(total), EAGINE_ID(ByteSize), total_size);
+                  .arg("size", fragment.size())
+                  .arg("offset", offset)
+                  .arg("total", "ByteSize", total_size);
             }
         } else {
             log_error("invalid blob fragment offset ${offset}")
-              .arg(EAGINE_ID(offset), offset)
-              .arg(EAGINE_ID(total), EAGINE_ID(ByteSize), total_size);
+              .arg("offset", offset)
+              .arg("total", "ByteSize", total_size);
         }
     } else {
         log_error("failed to deserialize header of blob")
-          .arg(EAGINE_ID(errors), errors)
-          .arg(EAGINE_ID(data), message.content());
+          .arg("errors", errors)
+          .arg("data", message.content());
     }
     return false;
 }
@@ -509,10 +509,10 @@ auto blob_manipulator::process_resend(const message_view& message) noexcept
         const auto bgn = limit_cast<span_size_t>(std::get<1>(params));
         const auto end = limit_cast<span_size_t>(std::get<2>(params));
         log_debug("received resend request from ${target}")
-          .arg(EAGINE_ID(target), message.source_id)
-          .arg(EAGINE_ID(srcBlobId), source_blob_id)
-          .arg(EAGINE_ID(begin), bgn)
-          .arg(EAGINE_ID(end), end);
+          .arg("target", message.source_id)
+          .arg("srcBlobId", source_blob_id)
+          .arg("begin", bgn)
+          .arg("end", end);
         const auto pos = std::find_if(
           _outgoing.begin(), _outgoing.end(), [source_blob_id](auto& pending) {
               return pending.source_blob_id == source_blob_id;
@@ -652,19 +652,19 @@ auto blob_manipulator::process_outgoing(
                     something_done(do_send(_fragment_msg_id, message));
 
                     log_debug("sent blob fragment")
-                      .arg(EAGINE_ID(source), pending.source_id)
-                      .arg(EAGINE_ID(srcBlobId), pending.source_blob_id)
-                      .arg(EAGINE_ID(parts), pending.todo_parts().size())
-                      .arg(EAGINE_ID(offset), offset)
-                      .arg(EAGINE_ID(size), EAGINE_ID(ByteSize), written_size);
+                      .arg("source", pending.source_id)
+                      .arg("srcBlobId", pending.source_blob_id)
+                      .arg("parts", pending.todo_parts().size())
+                      .arg("offset", offset)
+                      .arg("size", "ByteSize", written_size);
                 } else {
                     log_error("failed to write fragment of blob ${message}")
-                      .arg(EAGINE_ID(message), pending.msg_id);
+                      .arg("message", pending.msg_id);
                 }
             } else {
                 log_error("failed to serialize header of blob ${message}")
-                  .arg(EAGINE_ID(errors), errors)
-                  .arg(EAGINE_ID(message), pending.msg_id);
+                  .arg("errors", errors)
+                  .arg("message", pending.msg_id);
             }
         }
     }
@@ -678,10 +678,10 @@ auto blob_manipulator::handle_complete() noexcept -> span_size_t {
     auto predicate = [this](auto& pending) {
         if(pending.received_everything()) {
             log_debug("handling complete blob ${id}")
-              .arg(EAGINE_ID(source), pending.source_id)
-              .arg(EAGINE_ID(srcBlobId), pending.source_blob_id)
-              .arg(EAGINE_ID(message), pending.msg_id)
-              .arg(EAGINE_ID(size), EAGINE_ID(ByteSize), pending.total_size);
+              .arg("source", pending.source_id)
+              .arg("srcBlobId", pending.source_blob_id)
+              .arg("message", pending.msg_id)
+              .arg("size", "ByteSize", pending.total_size);
 
             message_info info{};
             info.set_source_id(pending.source_id);
@@ -705,10 +705,10 @@ auto blob_manipulator::fetch_all(
     auto predicate = [this, &handle_fetch](auto& pending) {
         if(pending.received_everything()) {
             log_debug("fetching complete blob ${id}")
-              .arg(EAGINE_ID(source), pending.source_id)
-              .arg(EAGINE_ID(srcBlobId), pending.source_blob_id)
-              .arg(EAGINE_ID(message), pending.msg_id)
-              .arg(EAGINE_ID(size), EAGINE_ID(ByteSize), pending.total_size);
+              .arg("source", pending.source_id)
+              .arg("srcBlobId", pending.source_blob_id)
+              .arg("message", pending.msg_id)
+              .arg("size", "ByteSize", pending.total_size);
 
             if(auto buf_io{pending.buffer_io()}) {
                 auto blob = extract(buf_io).release_buffer();

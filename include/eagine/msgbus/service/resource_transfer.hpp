@@ -275,9 +275,8 @@ private:
                     if(file.is_open()) {
                         ctx.bus_node()
                           .log_info("sending file ${filePath} to ${target}")
-                          .arg(EAGINE_ID(target), endpoint_id)
-                          .arg(
-                            EAGINE_ID(filePath), EAGINE_ID(FsPath), file_path);
+                          .arg("target", endpoint_id)
+                          .arg("filePath", "FsPath", file_path);
                         read_io = std::make_unique<file_blob_io>(
                           std::move(file),
                           from_string<span_size_t>(extract_or(
@@ -328,7 +327,7 @@ private:
             const url locator{std::move(url_str)};
             ctx.bus_node()
               .log_info("received content request for ${url}")
-              .arg(EAGINE_ID(url), EAGINE_ID(URL), locator.str());
+              .arg("url", "URL", locator.str());
 
             auto [read_io, max_time, priority] =
               _get_resource(ctx, locator, message.source_id, message.priority);
@@ -348,12 +347,12 @@ private:
                   EAGINE_MSG_ID(eagiRsrces, notFound), response);
                 ctx.bus_node()
                   .log_info("failed to get I/O object for content request")
-                  .arg(EAGINE_ID(url), EAGINE_ID(URL), locator.str());
+                  .arg("url", "URL", locator.str());
             }
         } else {
             ctx.bus_node()
               .log_error("failed to deserialize resource content request")
-              .arg(EAGINE_ID(content), message.const_content());
+              .arg("content", message.const_content());
         }
         return true;
     }

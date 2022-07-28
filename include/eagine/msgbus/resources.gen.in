@@ -11,21 +11,21 @@ namespace eagine::msgbus {
 EAGINE_LIB_FUNC
 auto router_certificate_pem(main_ctx& ctx) noexcept -> memory::const_block {
     return router_certificate_pem(
-      eagine::embed(EAGINE_ID(eagiRtrCrt), "@EAGINE_EMBED_ROUTER_CERT@"),
+      eagine::embed(identifier{"eagiRtrCrt"}, "@EAGINE_EMBED_ROUTER_CERT@"),
       ctx);
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
 auto bridge_certificate_pem(main_ctx& ctx) noexcept -> memory::const_block {
     return bridge_certificate_pem(
-      eagine::embed(EAGINE_ID(eagiBrgCrt), "@EAGINE_EMBED_BRIDGE_CERT@"),
+      eagine::embed(identifier{"eagiBrgCrt"}, "@EAGINE_EMBED_BRIDGE_CERT@"),
       ctx);
 }
 //------------------------------------------------------------------------------
 EAGINE_LIB_FUNC
 auto endpoint_certificate_pem(main_ctx& ctx) noexcept -> memory::const_block {
     return endpoint_certificate_pem(
-      eagine::embed(EAGINE_ID(eagiEptCrt), "@EAGINE_EMBED_ENDPOINT_CERT@"),
+      eagine::embed(identifier{"eagiEptCrt"}, "@EAGINE_EMBED_ENDPOINT_CERT@"),
       ctx);
 }
 //------------------------------------------------------------------------------

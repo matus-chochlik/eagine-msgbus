@@ -102,7 +102,7 @@ class router
   , public connection_user {
 public:
     router(main_ctx_parent parent) noexcept
-      : main_ctx_object{EAGINE_ID(MsgBusRutr), parent}
+      : main_ctx_object{"MsgBusRutr", parent}
       , _context{make_context(*this)} {
         _setup_from_config();
 

@@ -20,7 +20,7 @@ namespace eagine::msgbus {
 class router_address : public main_ctx_object {
 public:
     router_address(main_ctx_parent parent, const nothing_t) noexcept
-      : main_ctx_object{EAGINE_ID(RouterAddr), parent} {}
+      : main_ctx_object{"RouterAddr", parent} {}
 
     /// @brief Construction from parent main context object.
     router_address(main_ctx_parent parent) noexcept
@@ -33,8 +33,7 @@ public:
             log_debug("configured router address(es) ${addr}")
               .arg_func([&](logger_backend& backend) {
                   for(auto& addr : _addrs) {
-                      backend.add_string(
-                        EAGINE_ID(address), EAGINE_ID(string), addr);
+                      backend.add_string("address", "string", addr);
                   }
               });
         }
