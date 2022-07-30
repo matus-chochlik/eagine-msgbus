@@ -149,20 +149,20 @@ protected:
         Base::add_method(
           this,
           message_map<
-            id_v("eagiRsrces"),
-            id_v("qryResurce"),
+            "eagiRsrces",
+            "qryResurce",
             &This::_handle_has_resource_query>{});
         Base::add_method(
           this,
           message_map<
-            id_v("eagiRsrces"),
-            id_v("getContent"),
+            "eagiRsrces",
+            "getContent",
             &This::_handle_resource_content_request>{});
         Base::add_method(
           this,
           message_map<
-            id_v("eagiRsrces"),
-            id_v("fragResend"),
+            "eagiRsrces",
+            "fragResend",
             &This::_handle_resource_resend_request>{});
     }
 
@@ -524,34 +524,31 @@ protected:
 
         base::add_method(
           this,
-          message_map<
-            id_v("eagiRsrces"),
-            id_v("hasResurce"),
-            &This::_handle_has_resource>{});
+          message_map<"eagiRsrces", "hasResurce", &This::_handle_has_resource>{});
         base::add_method(
           this,
           message_map<
-            id_v("eagiRsrces"),
-            id_v("hasNotRsrc"),
+            "eagiRsrces",
+            "hasNotRsrc",
             &This::_handle_has_not_resource>{});
 
         base::add_method(
           this,
           message_map<
-            id_v("eagiRsrces"),
-            id_v("fragment"),
+            "eagiRsrces",
+            "fragment",
             &This::_handle_resource_fragment>{});
         base::add_method(
           this,
           message_map<
-            id_v("eagiRsrces"),
-            id_v("notFound"),
+            "eagiRsrces",
+            "notFound",
             &This::_handle_resource_not_found>{});
         base::add_method(
           this,
           message_map<
-            id_v("eagiRsrces"),
-            id_v("fragResend"),
+            "eagiRsrces",
+            "fragResend",
             &This::_handle_resource_resend_request>{});
     }
 

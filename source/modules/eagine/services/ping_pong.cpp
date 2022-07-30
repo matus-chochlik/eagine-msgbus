@@ -40,7 +40,7 @@ protected:
 
     void add_methods() noexcept {
         Base::add_methods();
-        Base::add_method(this, msgbus_map<id_v("ping"), &This::_handle_ping>{});
+        Base::add_method(this, msgbus_map<"ping", &This::_handle_ping>{});
     }
 
 private:
@@ -162,7 +162,7 @@ protected:
 
     void add_methods() noexcept {
         Base::add_methods();
-        Base::add_method(this, msgbus_map<id_v("pong"), &This::_handle_pong>{});
+        Base::add_method(this, msgbus_map<"pong", &This::_handle_pong>{});
     }
 
 private:

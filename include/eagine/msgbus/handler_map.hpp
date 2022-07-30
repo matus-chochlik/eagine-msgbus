@@ -67,13 +67,13 @@ struct static_message_handler_map {
 /// @see eagine::msgbus::static_message_handler_map
 /// @see eagine::msgbus::static_subscriber
 /// @see eagine::msgbus::subscriber
-template <identifier_t ClassId, identifier_t MethodId, auto MemFuncPtr>
+template <identifier_value ClassId, identifier_value MethodId, auto MemFuncPtr>
 using message_map = static_message_handler_map<
   static_message_id<ClassId, MethodId>,
   member_function_constant_t<MemFuncPtr>>;
 
-template <identifier_t MethodId, auto MemFuncPtr>
-using msgbus_map = message_map<id_v("eagiMsgBus"), MethodId, MemFuncPtr>;
+template <identifier_value MethodId, auto MemFuncPtr>
+using msgbus_map = message_map<"eagiMsgBus", MethodId, MemFuncPtr>;
 //------------------------------------------------------------------------------
 /// @brief Constructs an instance of static message handler map.
 /// @ingroup msgbus

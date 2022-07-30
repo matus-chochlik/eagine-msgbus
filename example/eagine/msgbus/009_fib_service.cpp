@@ -43,14 +43,9 @@ struct fibonacci_server : static_subscriber<2> {
       : base(
           ep,
           this,
-          message_map<
-            id_v("Fibonacci"),
-            id_v("FindServer"),
-            &fibonacci_server::is_ready>{},
-          message_map<
-            id_v("Fibonacci"),
-            id_v("Calculate"),
-            &fibonacci_server::calculate>{}) {}
+          message_map<"Fibonacci", "FindServer", &fibonacci_server::is_ready>{},
+          message_map<"Fibonacci", "Calculate", &fibonacci_server::calculate>{}) {
+    }
 
     auto is_ready(const message_context&, const stored_message& msg_in) noexcept
       -> bool {
@@ -84,14 +79,8 @@ struct fibonacci_client : static_subscriber<2> {
       : base(
           ep,
           this,
-          message_map<
-            id_v("Fibonacci"),
-            id_v("IsReady"),
-            &fibonacci_client::dispatch>{},
-          message_map<
-            id_v("Fibonacci"),
-            id_v("Result"),
-            &fibonacci_client::fulfill>{}) {}
+          message_map<"Fibonacci", "IsReady", &fibonacci_client::dispatch>{},
+          message_map<"Fibonacci", "Result", &fibonacci_client::fulfill>{}) {}
 
     void enqueue(const std::int64_t arg) {
         _remaining.push(arg);

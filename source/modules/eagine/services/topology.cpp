@@ -80,17 +80,17 @@ protected:
     void add_methods() noexcept {
         Base::add_methods();
         Base::add_method(
-          this, msgbus_map<id_v("topoRutrCn"), &This::_handle_router>{});
+          this, msgbus_map<"topoRutrCn", &This::_handle_router>{});
         Base::add_method(
-          this, msgbus_map<id_v("topoBrdgCn"), &This::_handle_bridge>{});
+          this, msgbus_map<"topoBrdgCn", &This::_handle_bridge>{});
         Base::add_method(
-          this, msgbus_map<id_v("topoEndpt"), &This::_handle_endpoint>{});
+          this, msgbus_map<"topoEndpt", &This::_handle_endpoint>{});
         Base::add_method(
-          this, msgbus_map<id_v("byeByeRutr"), &This::_handle_router_bye>{});
+          this, msgbus_map<"byeByeRutr", &This::_handle_router_bye>{});
         Base::add_method(
-          this, msgbus_map<id_v("byeByeBrdg"), &This::_handle_bridge_bye>{});
+          this, msgbus_map<"byeByeBrdg", &This::_handle_bridge_bye>{});
         Base::add_method(
-          this, msgbus_map<id_v("byeByeEndp"), &This::_handle_endpoint_bye>{});
+          this, msgbus_map<"byeByeEndp", &This::_handle_endpoint_bye>{});
     }
 
 private:

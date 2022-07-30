@@ -39,8 +39,7 @@ protected:
     void add_methods() noexcept {
         Base::add_methods();
         Base::add_method(
-          this,
-          message_map<id_v("Ability"), id_v("query"), &This::_handle_query>{});
+          this, message_map<"Ability", "query", &This::_handle_query>{});
     }
 
 private:
@@ -92,11 +91,7 @@ protected:
     void add_methods() noexcept {
         Base::add_methods();
         Base::add_method(
-          this,
-          message_map<
-            id_v("Ability"),
-            id_v("response"),
-            &This::_handle_response>{});
+          this, message_map<"Ability", "response", &This::_handle_response>{});
     }
 
 private:

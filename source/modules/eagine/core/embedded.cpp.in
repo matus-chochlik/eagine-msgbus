@@ -18,19 +18,19 @@ namespace eagine::msgbus {
 export auto router_certificate_pem(main_ctx& ctx) noexcept
   -> memory::const_block {
     return router_certificate_pem(
-      eagine::embed<id_v("eagiRtrCrt")>("@EAGINE_EMBED_ROUTER_CERT@"), ctx);
+      eagine::embed<"eagiRtrCrt">("@EAGINE_EMBED_ROUTER_CERT@"), ctx);
 }
 //------------------------------------------------------------------------------
 export auto bridge_certificate_pem(main_ctx& ctx) noexcept
   -> memory::const_block {
     return bridge_certificate_pem(
-      eagine::embed<id_v("eagiBrgCrt")>("@EAGINE_EMBED_BRIDGE_CERT@"), ctx);
+      eagine::embed<"eagiBrgCrt">("@EAGINE_EMBED_BRIDGE_CERT@"), ctx);
 }
 //------------------------------------------------------------------------------
 export auto endpoint_certificate_pem(main_ctx& ctx) noexcept
   -> memory::const_block {
     return endpoint_certificate_pem(
-      eagine::embed<id_v("eagiEptCrt")>("@EAGINE_EMBED_ENDPOINT_CERT@"), ctx);
+      eagine::embed<"eagiEptCrt">("@EAGINE_EMBED_ENDPOINT_CERT@"), ctx);
 }
 //------------------------------------------------------------------------------
 } // namespace eagine::msgbus

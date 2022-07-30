@@ -35,8 +35,8 @@ protected:
         Base::add_method(
           this,
           message_map<
-            id_v("Fibonacci"),
-            id_v("Calculate"),
+            "Fibonacci",
+            "Calculate",
             &fibonacci_server_impl::calculate>{});
         _workers.populate();
     }

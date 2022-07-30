@@ -32,14 +32,8 @@ struct str_utils_server
       , base{
           ep,
           this,
-          message_map<
-            id_v("StrUtilReq"),
-            id_v("UpperCase"),
-            &str_utils_server::uppercase>{},
-          message_map<
-            id_v("StrUtilReq"),
-            id_v("Reverse"),
-            &str_utils_server::reverse>{}} {}
+          message_map<"StrUtilReq", "UpperCase", &str_utils_server::uppercase>{},
+          message_map<"StrUtilReq", "Reverse", &str_utils_server::reverse>{}} {}
 
     auto reverse(const message_context&, const stored_message& msg) noexcept
       -> bool {
@@ -75,14 +69,8 @@ struct str_utils_client
       , base(
           ep,
           this,
-          message_map<
-            id_v("StrUtilRes"),
-            id_v("UpperCase"),
-            &str_utils_client::print>{},
-          message_map<
-            id_v("StrUtilRes"),
-            id_v("Reverse"),
-            &str_utils_client::print>{}) {}
+          message_map<"StrUtilRes", "UpperCase", &str_utils_client::print>{},
+          message_map<"StrUtilRes", "Reverse", &str_utils_client::print>{}) {}
 
     void call_reverse(const string_view str) {
         ++_remaining;

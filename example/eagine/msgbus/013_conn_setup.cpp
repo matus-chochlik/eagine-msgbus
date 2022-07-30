@@ -45,18 +45,9 @@ public:
       : base(
           main_ctx_object{"FibServer", parent},
           this,
-          message_map<
-            id_v("Fibonacci"),
-            id_v("FindServer"),
-            &fibonacci_server::is_ready>{},
-          message_map<
-            id_v("Fibonacci"),
-            id_v("Calculate"),
-            &fibonacci_server::calculate>{},
-          message_map<
-            id_v("Fibonacci"),
-            id_v("Shutdown"),
-            &fibonacci_server::shutdown>{}) {
+          message_map<"Fibonacci", "FindServer", &fibonacci_server::is_ready>{},
+          message_map<"Fibonacci", "Calculate", &fibonacci_server::calculate>{},
+          message_map<"Fibonacci", "Shutdown", &fibonacci_server::shutdown>{}) {
         conn_setup.setup_connectors(*this, connection_kind::in_process);
     }
 
@@ -64,18 +55,10 @@ public:
       : base(
           std::move(temp),
           this,
-          message_map<
-            id_v("Fibonacci"),
-            id_v("FindServer"),
-            &fibonacci_server::is_ready>{},
-          message_map<
-            id_v("Fibonacci"),
-            id_v("Calculate"),
-            &fibonacci_server::calculate>{},
-          message_map<
-            id_v("Fibonacci"),
-            id_v("Shutdown"),
-            &fibonacci_server::shutdown>{}) {}
+          message_map<"Fibonacci", "FindServer", &fibonacci_server::is_ready>{},
+          message_map<"Fibonacci", "Calculate", &fibonacci_server::calculate>{},
+          message_map<"Fibonacci", "Shutdown", &fibonacci_server::shutdown>{}) {
+    }
     fibonacci_server(const fibonacci_server&) = delete;
     auto operator=(fibonacci_server&& temp) = delete;
     auto operator=(const fibonacci_server&) = delete;
@@ -137,14 +120,8 @@ public:
       : base(
           main_ctx_object{"FibClient", parent},
           this,
-          message_map<
-            id_v("Fibonacci"),
-            id_v("IsReady"),
-            &fibonacci_client::dispatch>{},
-          message_map<
-            id_v("Fibonacci"),
-            id_v("Result"),
-            &fibonacci_client::print>{}) {
+          message_map<"Fibonacci", "IsReady", &fibonacci_client::dispatch>{},
+          message_map<"Fibonacci", "Result", &fibonacci_client::print>{}) {
         conn_setup.setup_connectors(*this, connection_kind::in_process);
     }
 

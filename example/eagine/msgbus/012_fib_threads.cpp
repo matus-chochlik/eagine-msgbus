@@ -45,18 +45,10 @@ public:
       : base(
           std::move(obj),
           this,
-          message_map<
-            id_v("Fibonacci"),
-            id_v("FindServer"),
-            &fibonacci_server::is_ready>{},
-          message_map<
-            id_v("Fibonacci"),
-            id_v("Calculate"),
-            &fibonacci_server::calculate>{},
-          message_map<
-            id_v("Fibonacci"),
-            id_v("Shutdown"),
-            &fibonacci_server::shutdown>{}) {}
+          message_map<"Fibonacci", "FindServer", &fibonacci_server::is_ready>{},
+          message_map<"Fibonacci", "Calculate", &fibonacci_server::calculate>{},
+          message_map<"Fibonacci", "Shutdown", &fibonacci_server::shutdown>{}) {
+    }
 
     auto shutdown(const message_context&, const stored_message&) noexcept
       -> bool {
@@ -113,14 +105,8 @@ public:
       : base(
           std::move(obj),
           this,
-          message_map<
-            id_v("Fibonacci"),
-            id_v("IsReady"),
-            &fibonacci_client::dispatch>{},
-          message_map<
-            id_v("Fibonacci"),
-            id_v("Result"),
-            &fibonacci_client::print>{}) {}
+          message_map<"Fibonacci", "IsReady", &fibonacci_client::dispatch>{},
+          message_map<"Fibonacci", "Result", &fibonacci_client::print>{}) {}
 
     void enqueue(const std::int64_t arg) {
         _remaining.push(arg);

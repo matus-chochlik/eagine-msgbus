@@ -74,11 +74,11 @@ protected:
     void add_methods() noexcept {
         Base::add_methods();
         Base::add_method(
-          this, msgbus_map<id_v("statsRutr"), &This::_handle_router>{});
+          this, msgbus_map<"statsRutr", &This::_handle_router>{});
         Base::add_method(
-          this, msgbus_map<id_v("statsBrdg"), &This::_handle_bridge>{});
+          this, msgbus_map<"statsBrdg", &This::_handle_bridge>{});
         Base::add_method(
-          this, msgbus_map<id_v("statsEndpt"), &This::_handle_endpoint>{});
+          this, msgbus_map<"statsEndpt", &This::_handle_endpoint>{});
     }
 
 private:

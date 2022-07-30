@@ -252,16 +252,13 @@ protected:
         base::add_method(
           this,
           message_map<
-            id_v("eagiStream"),
-            id_v("startSend"),
+            "eagiStream",
+            "startSend",
             &This::_handle_start_send_data>{});
 
         base::add_method(
           this,
-          message_map<
-            id_v("eagiStream"),
-            id_v("stopSend"),
-            &This::_handle_stop_send_data>{});
+          message_map<"eagiStream", "stopSend", &This::_handle_stop_send_data>{});
     }
 
 private:
@@ -409,15 +406,12 @@ protected:
         base::add_methods();
         base::add_method(
           this,
-          message_map<
-            id_v("eagiStream"),
-            id_v("appeared"),
-            &This::_handle_stream_appeared>{});
+          message_map<"eagiStream", "appeared", &This::_handle_stream_appeared>{});
         base::add_method(
           this,
           message_map<
-            id_v("eagiStream"),
-            id_v("disapeared"),
+            "eagiStream",
+            "disapeared",
             &This::_handle_stream_disappeared>{});
     }
 
@@ -512,28 +506,16 @@ protected:
 
         base::add_method(
           this,
-          message_map<
-            id_v("eagiStream"),
-            id_v("announce"),
-            &This::_handle_stream_announce>{});
+          message_map<"eagiStream", "announce", &This::_handle_stream_announce>{});
         base::add_method(
           this,
-          message_map<
-            id_v("eagiStream"),
-            id_v("retract"),
-            &This::_handle_stream_retract>{});
+          message_map<"eagiStream", "retract", &This::_handle_stream_retract>{});
         base::add_method(
           this,
-          message_map<
-            id_v("eagiStream"),
-            id_v("startFrwrd"),
-            &This::_handle_start_forward>{});
+          message_map<"eagiStream", "startFrwrd", &This::_handle_start_forward>{});
         base::add_method(
           this,
-          message_map<
-            id_v("eagiStream"),
-            id_v("stopFrwrd"),
-            &This::_handle_stop_forward>{});
+          message_map<"eagiStream", "stopFrwrd", &This::_handle_stop_forward>{});
     }
 
     auto update() noexcept -> work_done {

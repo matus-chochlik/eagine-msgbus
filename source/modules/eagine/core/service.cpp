@@ -80,9 +80,9 @@ protected:
     void add_methods() noexcept {
         Base::add_methods();
         Base::add_method(
-          this, msgbus_map<id_v("qrySubscrp"), &This::_handle_sup_query>());
+          this, msgbus_map<"qrySubscrp", &This::_handle_sup_query>());
         Base::add_method(
-          this, msgbus_map<id_v("qrySubscrb"), &This::_handle_sub_query>());
+          this, msgbus_map<"qrySubscrb", &This::_handle_sub_query>());
     }
 
 private:
