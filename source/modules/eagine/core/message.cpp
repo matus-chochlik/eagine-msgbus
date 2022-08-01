@@ -70,9 +70,7 @@ auto default_serialize_buffer_for(const T& inst) noexcept {
 }
 //------------------------------------------------------------------------------
 export struct msgbus_id : message_id {
-    template <auto L>
-        requires(identifier_literal_length<L>)
-    constexpr msgbus_id(const char (&method)[L]) noexcept
+    constexpr msgbus_id(identifier_value method) noexcept
       : message_id{"eagiMsgBus", method} {}
 };
 
@@ -430,8 +428,7 @@ auto serialize_message_header(
   Backend& backend) noexcept -> serialization_errors
     requires(std::is_base_of_v<serializer_backend, Backend>)
 {
-
-    auto message_params = std::make_tuple(
+    const auto message_params = std::make_tuple(
       msg_id.class_(),
       msg_id.method(),
       msg.source_id,
@@ -457,7 +454,6 @@ auto serialize_message(
   Backend& backend) noexcept -> serialization_errors
     requires(std::is_base_of_v<serializer_backend, Backend>)
 {
-
     auto errors = serialize_message_header(msg_id, msg, backend);
 
     if(!errors) [[likely]] {
@@ -481,7 +477,7 @@ inline auto default_serialize(const T& value, memory::block blk) noexcept
   -> serialization_result<memory::const_block> {
     block_data_sink sink(blk);
     default_serializer_backend backend(sink);
-    auto errors = serialize(value, backend);
+    const auto errors = serialize(value, backend);
     return {sink.done(), errors};
 }
 //------------------------------------------------------------------------------
@@ -499,7 +495,7 @@ auto default_serialize_packed(
   -> serialization_result<memory::const_block> {
     packed_block_data_sink sink(std::move(compressor), blk);
     default_serializer_backend backend(sink);
-    auto errors = serialize(value, backend);
+    const auto errors = serialize(value, backend);
     return {sink.done(), errors};
 }
 //------------------------------------------------------------------------------
