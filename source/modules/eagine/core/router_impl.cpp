@@ -426,9 +426,9 @@ auto router::_process_blobs() noexcept -> work_done {
             const auto& conn = std::get<1>(nd).the_connection;
             if(conn && conn->is_usable()) [[likely]] {
                 if(auto opt_max_size{conn->max_data_size()}) {
-                    auto handle_send = [node_id, &conn](
-                                         message_id msg_id,
-                                         const message_view& message) {
+                    const auto handle_send = [node_id, &conn](
+                                               message_id msg_id,
+                                               const message_view& message) {
                         if(node_id == message.target_id) {
                             return conn->send(msg_id, message);
                         }
@@ -643,7 +643,8 @@ auto router::_handle_topology_query(const message_view& message) noexcept
         info.remote_id = remote_id;
         info.instance_id = _instance_id;
         info.connect_kind = conn->kind();
-        if(auto serialized{default_serialize(info, cover(temp))}) {
+        if(const auto serialized{default_serialize(info, cover(temp))})
+          [[likely]] {
             message_view response{extract(serialized)};
             response.setup_response(message);
             response.set_source_id(_id_base);
@@ -691,7 +692,7 @@ auto router::_update_stats() noexcept -> work_done {
               [&](const identifier_t remote_id, const auto& conn) {
                   auto buf{default_serialize_buffer_for(_flow_info)};
                   if(const auto serialized{
-                       default_serialize(_flow_info, cover(buf))}) {
+                       default_serialize(_flow_info, cover(buf))}) [[likely]] {
                       message_view response{extract(serialized)};
                       response.set_source_id(_id_base);
                       response.set_target_id(remote_id);
@@ -716,7 +717,8 @@ auto router::_handle_stats_query(const message_view& message) noexcept
     _update_stats();
 
     auto rs_buf{default_serialize_buffer_for(_stats)};
-    if(auto serialized{default_serialize(_stats, cover(rs_buf))}) [[likely]] {
+    if(const auto serialized{default_serialize(_stats, cover(rs_buf))})
+      [[likely]] {
         message_view response{extract(serialized)};
         response.setup_response(message);
         response.set_source_id(_id_base);
@@ -729,7 +731,8 @@ auto router::_handle_stats_query(const message_view& message) noexcept
         conn_stats.remote_id = remote_id;
         if(conn->query_statistics(conn_stats)) {
             auto cs_buf{default_serialize_buffer_for(conn_stats)};
-            if(auto serialized{default_serialize(conn_stats, cover(cs_buf))}) {
+            if(const auto serialized{
+                 default_serialize(conn_stats, cover(cs_buf))}) [[likely]] {
                 message_view response{extract(serialized)};
                 response.setup_response(message);
                 response.set_source_id(_id_base);
@@ -1066,7 +1069,7 @@ auto router::_route_parent_messages(
 //------------------------------------------------------------------------------
 auto router::_route_messages() noexcept -> work_done {
     some_true something_done{};
-    const auto now = std::chrono::steady_clock::now();
+    const auto now{std::chrono::steady_clock::now()};
     const auto message_age_inc{now - _prev_route_time};
     _prev_route_time = now;
 
