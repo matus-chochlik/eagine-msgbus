@@ -104,9 +104,9 @@ inline auto parent_router::update(
   const identifier_t id_base) noexcept -> work_done {
     some_true something_done{};
 
-    if(the_connection) {
+    if(the_connection) [[likely]] {
         something_done(the_connection->update());
-        if(the_connection->is_usable()) {
+        if(the_connection->is_usable()) [[likely]] {
             if(!confirmed_id) [[unlikely]] {
                 if(confirm_id_timeout) {
                     message_view announcement{};
@@ -121,7 +121,7 @@ inline auto parent_router::update(
             }
             something_done(the_connection->update());
         } else {
-            if(confirmed_id) [[unlikely]] {
+            if(confirmed_id) {
                 confirmed_id = 0;
                 something_done();
                 user.log_debug("lost connection to parent router");
@@ -135,7 +135,7 @@ auto parent_router::send(
   main_ctx_object& user,
   const message_id msg_id,
   const message_view& message) const noexcept -> bool {
-    if(the_connection) {
+    if(the_connection) [[likely]] {
         if(!the_connection->send(msg_id, message)) [[unlikely]] {
             user.log_debug("failed to send message to parent router");
             return false;
@@ -153,13 +153,13 @@ auto router::_uptime_seconds() noexcept -> std::int64_t {
 }
 //------------------------------------------------------------------------------
 void router::add_certificate_pem(const memory::const_block blk) noexcept {
-    if(_context) {
+    if(_context) [[likely]] {
         _context->add_own_certificate_pem(blk);
     }
 }
 //------------------------------------------------------------------------------
 void router::add_ca_certificate_pem(const memory::const_block blk) noexcept {
-    if(_context) {
+    if(_context) [[likely]] {
         _context->add_ca_certificate_pem(blk);
     }
 }
@@ -516,7 +516,8 @@ auto router::_handle_subscribed(
   const identifier_t incoming_id,
   const message_view& message) noexcept -> message_handling_result {
     message_id sub_msg_id{};
-    if(default_deserialize_message_type(sub_msg_id, message.content())) {
+    if(default_deserialize_message_type(sub_msg_id, message.content()))
+      [[likely]] {
         log_debug("endpoint ${source} subscribes to ${message}")
           .arg("source", message.source_id)
           .arg("message", sub_msg_id);
@@ -532,7 +533,8 @@ auto router::_handle_not_subscribed(
   const identifier_t incoming_id,
   const message_view& message) noexcept -> message_handling_result {
     message_id sub_msg_id{};
-    if(default_deserialize_message_type(sub_msg_id, message.content())) {
+    if(default_deserialize_message_type(sub_msg_id, message.content()))
+      [[likely]] {
         log_debug("endpoint ${source} unsubscribes from ${message}")
           .arg("source", message.source_id)
           .arg("message", sub_msg_id);
@@ -712,7 +714,7 @@ auto router::_handle_stats_query(const message_view& message) noexcept
     _update_stats();
 
     auto rs_buf{default_serialize_buffer_for(_stats)};
-    if(auto serialized{default_serialize(_stats, cover(rs_buf))}) {
+    if(auto serialized{default_serialize(_stats, cover(rs_buf))}) [[likely]] {
         message_view response{extract(serialized)};
         response.setup_response(message);
         response.set_source_id(_id_base);
@@ -738,7 +740,7 @@ auto router::_handle_stats_query(const message_view& message) noexcept
     for(auto& [nd_id, nd] : this->_nodes) {
         respond(nd_id, nd.the_connection);
     }
-    if(_parent_router.confirmed_id) {
+    if(_parent_router.confirmed_id) [[likely]] {
         respond(_parent_router.confirmed_id, _parent_router.the_connection);
     }
     return should_be_forwarded;
@@ -801,7 +803,7 @@ auto router::_handle_special_common(
         return should_be_forwarded;
     } else if(msg_id.has_method("msgFlowInf") || msg_id.has_method("annEndptId")) {
         return was_handled;
-    } else {
+    } else [[unlikely]] {
         log_warning("unhandled special message ${message} from ${source}")
           .arg("message", msg_id)
           .arg("source", message.source_id)
@@ -948,13 +950,13 @@ auto router::_do_route_message(
 
         if(is_targeted) {
             bool has_routed = false;
-            auto pos = _endpoint_idx.find(message.target_id);
+            const auto pos = _endpoint_idx.find(message.target_id);
             if(pos != _endpoint_idx.end()) {
                 // if the message should go through the parent router
                 if(pos->second == _id_base) {
                     has_routed |= _parent_router.send(*this, msg_id, message);
                 } else {
-                    auto node_pos = nodes.find(pos->second);
+                    const auto node_pos = nodes.find(pos->second);
                     if(node_pos != nodes.end()) {
                         auto& node_out = node_pos->second;
                         if(node_out.is_allowed(msg_id)) {
@@ -1015,7 +1017,7 @@ auto router::_route_messages() noexcept -> work_done {
     _prev_route_time = now;
 
     for(auto& nd : _nodes) {
-        auto handler =
+        const auto handler =
           [&](message_id msg_id, message_age msg_age, message_view message) {
               auto& [incoming_id, node_in] = nd;
               _message_age_sum +=

@@ -96,12 +96,12 @@ struct parent_router {
       -> work_done {
         some_true something_done;
 
-        if(the_connection) {
+        if(the_connection) [[likely]] {
             const auto wrapped = [&](
                                    message_id msg_id,
                                    message_age msg_age,
                                    const message_view& message) -> bool {
-                if(msg_id == msgbus_id{"confirmId"}) {
+                if(msg_id == msgbus_id{"confirmId"}) [[unlikely]] {
                     confirmed_id = message.target_id;
                     user
                       .log_debug(
@@ -111,7 +111,7 @@ struct parent_router {
                 } else if(
                   msg_id.has_method("byeByeEndp") ||
                   msg_id.has_method("byeByeRutr") ||
-                  msg_id.has_method("byeByeBrdg")) {
+                  msg_id.has_method("byeByeBrdg")) [[unlikely]] {
                     user
                       .log_debug(
                         "received bye-bye (${method}) from node ${source} "
