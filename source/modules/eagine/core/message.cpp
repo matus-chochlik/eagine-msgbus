@@ -264,7 +264,7 @@ export struct message_info {
                 return age_quarter_seconds > 10 * 4;
             case message_priority::low:
                 return age_quarter_seconds > 20 * 4;
-            case message_priority::normal:
+            [[likely]] case message_priority::normal:
                 return age_quarter_seconds > 30 * 4;
             case message_priority::high:
                 return age_quarter_seconds == std::numeric_limits<age_t>::max();
@@ -280,7 +280,8 @@ export struct message_info {
     auto add_age(const message_age age) noexcept -> auto& {
         const auto added_quarter_seconds = (age.count() + 20) / 25;
         if(const auto new_age{convert_if_fits<age_t>(
-             int(age_quarter_seconds) + int(added_quarter_seconds))}) {
+             int(age_quarter_seconds) + int(added_quarter_seconds))})
+          [[likely]] {
             age_quarter_seconds = extract(new_age);
         } else {
             age_quarter_seconds = std::numeric_limits<age_t>::max();
@@ -459,8 +460,8 @@ auto serialize_message(
 
     auto errors = serialize_message_header(msg_id, msg, backend);
 
-    if(!errors) {
-        if(auto sink{backend.sink()}) {
+    if(!errors) [[likely]] {
+        if(auto sink{backend.sink()}) [[likely]] {
             errors |= extract(sink).write(msg.data());
         } else {
             errors |= serialization_error_code::backend_error;
@@ -705,8 +706,8 @@ auto deserialize_message(
 
     auto errors = deserialize_message_header(class_id, method_id, msg, backend);
 
-    if(!errors) {
-        if(auto source{backend.source()}) {
+    if(!errors) [[likely]] {
+        if(auto source{backend.source()}) [[likely]] {
             msg.fetch_all_from(extract(source));
         } else {
             errors |= deserialization_error_code::backend_error;
@@ -732,7 +733,7 @@ auto deserialize_message(
     identifier method_id{};
     deserialization_errors errors =
       deserialize_message(class_id, method_id, msg, backend);
-    if(!errors) {
+    if(!errors) [[likely]] {
         msg_id = {class_id, method_id};
     }
     return errors;
@@ -782,7 +783,7 @@ export auto default_deserialize_message_type(
   const memory::const_block blk) noexcept {
     std::tuple<identifier, identifier> value{};
     auto result = default_deserialize(value, blk);
-    if(result) {
+    if(result) [[likely]] {
         msg_id = {value};
     }
     return result;
@@ -796,7 +797,7 @@ auto stored_message::do_store_value(
     block_data_sink sink(cover(_buffer));
     Backend backend(sink);
     auto errors = serialize(value, backend);
-    if(!errors) {
+    if(!errors) [[likely]] {
         set_serializer_id(backend.type_id());
         _buffer.resize(sink.done().size());
         return true;
@@ -866,13 +867,13 @@ public:
         (void)(insert_time);
         bool rollback = false;
         try {
-            if(!function(msg_id, insert_time, message)) {
+            if(!function(msg_id, insert_time, message)) [[unlikely]] {
                 rollback = true;
             }
         } catch(...) {
             rollback = true;
         }
-        if(rollback) {
+        if(rollback) [[unlikely]] {
             _buffers.eat(message.release_buffer());
             _messages.pop_back();
             return false;

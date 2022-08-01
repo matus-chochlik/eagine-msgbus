@@ -190,7 +190,7 @@ auto serialized_message_storage::pack_into(memory::block dest) noexcept
 
     for(auto& [message, timestamp] : _messages) {
         (void)(timestamp);
-        if(packing.is_full()) {
+        if(packing.is_full()) [[unlikely]] {
             break;
         }
         if(const auto packed{
