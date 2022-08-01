@@ -72,7 +72,6 @@ auto default_serialize_buffer_for(const T& inst) noexcept {
 export struct msgbus_id : message_id {
     template <auto L>
         requires(identifier_literal_length<L>)
-
     constexpr msgbus_id(const char (&method)[L]) noexcept
       : message_id{"eagiMsgBus", method} {}
 };
@@ -113,7 +112,8 @@ export using message_timestamp = std::chrono::steady_clock::time_point;
 /// @brief Alias for message age type.
 /// @ingroup msgbus
 /// @see message_timestamp
-export using message_age = std::chrono::duration<float>;
+export using message_age =
+  std::chrono::duration<std::int16_t, std::ratio<1, 100>>;
 //------------------------------------------------------------------------------
 /// @brief Message priority enumeration.
 /// @ingroup msgbus
@@ -278,7 +278,7 @@ export struct message_info {
     /// @see age
     /// @see too_old
     auto add_age(const message_age age) noexcept -> auto& {
-        const float added_quarter_seconds = (age.count() + 0.20F) * 4.F;
+        const auto added_quarter_seconds = (age.count() + 20) / 25;
         if(const auto new_age{convert_if_fits<age_t>(
              int(age_quarter_seconds) + int(added_quarter_seconds))}) {
             age_quarter_seconds = extract(new_age);
@@ -292,7 +292,7 @@ export struct message_info {
     /// @see too_old
     /// @see add_age
     auto age() const noexcept -> message_age {
-        return message_age{float(age_quarter_seconds) * 0.25F};
+        return message_age{age_quarter_seconds * 25};
     }
 
     /// @brief Sets the priority of this message.

@@ -82,7 +82,8 @@ auto message_storage::fetch_all(const fetch_handler handler) noexcept -> bool {
     bool fetched_some = false;
     bool keep_some = false;
     for(auto& [msg_id, message, insert_time] : _messages) {
-        const message_age msg_age{_clock_t::now() - insert_time};
+        const auto msg_age{std::chrono::duration_cast<message_age>(
+          _clock_t::now() - insert_time)};
         if(handler(msg_id, msg_age, message)) {
             _buffers.eat(message.release_buffer());
             msg_id = {};
@@ -102,7 +103,8 @@ auto message_storage::fetch_all(const fetch_handler handler) noexcept -> bool {
 //------------------------------------------------------------------------------
 void message_storage::cleanup(const cleanup_predicate predicate) noexcept {
     std::erase_if(_messages, [predicate](auto& t) {
-        const message_age msg_age{_clock_t::now() - std::get<2>(t)};
+        const auto msg_age{std::chrono::duration_cast<message_age>(
+          _clock_t::now() - std::get<2>(t))};
         return predicate(msg_age);
     });
 }
