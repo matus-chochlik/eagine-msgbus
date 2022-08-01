@@ -75,7 +75,7 @@ struct routed_node {
 
     auto is_allowed(const message_id) const noexcept -> bool;
 
-    auto send(main_ctx_object&, const message_id, const message_view&)
+    auto send(const main_ctx_object&, const message_id, const message_view&)
       const noexcept -> bool;
 };
 //------------------------------------------------------------------------------
@@ -129,7 +129,7 @@ struct parent_router {
         return something_done;
     }
 
-    auto send(main_ctx_object&, const message_id, const message_view&)
+    auto send(const main_ctx_object&, const message_id, const message_view&)
       const noexcept -> bool;
 };
 //------------------------------------------------------------------------------
@@ -206,7 +206,7 @@ private:
     auto _handle_accept() noexcept -> work_done;
     auto _handle_pending() noexcept -> work_done;
     auto _remove_timeouted() noexcept -> work_done;
-    auto _is_disconnected(const identifier_t endpoint_id) noexcept -> bool;
+    auto _is_disconnected(const identifier_t) const noexcept -> bool;
     auto _mark_disconnected(const identifier_t endpoint_id) noexcept -> void;
     auto _remove_disconnected() noexcept -> work_done;
     void _assign_id(std::unique_ptr<connection>& conn) noexcept;
@@ -281,8 +281,24 @@ private:
     auto _do_route_message(
       const message_id msg_id,
       const identifier_t incoming_id,
-      message_view& message) noexcept -> bool;
+      message_view& message,
+      router_statistics&,
+      std::chrono::steady_clock::time_point&) const noexcept -> bool;
 
+    auto _route_message(
+      const message_id msg_id,
+      const identifier_t incoming_id,
+      message_view& message) noexcept -> bool {
+        return _do_route_message(
+          msg_id, incoming_id, message, _stats, _forwarded_since_log);
+    }
+
+    auto _route_node_messages(
+      const std::chrono::steady_clock::duration,
+      const identifier_t incoming_id,
+      routed_node&) noexcept -> work_done;
+    auto _route_parent_messages(
+      const std::chrono::steady_clock::duration) noexcept -> work_done;
     auto _route_messages() noexcept -> work_done;
     auto _update_connections() noexcept -> work_done;
 
@@ -302,8 +318,8 @@ private:
       std::chrono::steady_clock::now()};
     std::chrono::steady_clock::time_point _forwarded_since_stat{
       std::chrono::steady_clock::now()};
+    std::chrono::steady_clock::duration _message_age_sum{};
     std::int64_t _prev_forwarded_messages{0};
-    float _message_age_sum{0.F};
     router_statistics _stats{};
     message_flow_info _flow_info{};
 

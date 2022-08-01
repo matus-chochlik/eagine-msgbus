@@ -68,7 +68,7 @@ auto routed_node::is_allowed(const message_id msg_id) const noexcept -> bool {
 }
 //------------------------------------------------------------------------------
 auto routed_node::send(
-  main_ctx_object& user,
+  const main_ctx_object& user,
   const message_id msg_id,
   const message_view& message) const noexcept -> bool {
     if(the_connection) [[likely]] {
@@ -132,7 +132,7 @@ inline auto parent_router::update(
 }
 //------------------------------------------------------------------------------
 auto parent_router::send(
-  main_ctx_object& user,
+  const main_ctx_object& user,
   const message_id msg_id,
   const message_view& message) const noexcept -> bool {
     if(the_connection) [[likely]] {
@@ -332,20 +332,20 @@ auto router::_remove_timeouted() noexcept -> work_done {
     return something_done;
 }
 //------------------------------------------------------------------------------
-auto router::_is_disconnected(const identifier_t endpoint_id) noexcept -> bool {
-    auto pos = _recently_disconnected.find(endpoint_id);
-    if(pos != _recently_disconnected.end()) {
-        if(pos->second.is_expired()) {
-            _recently_disconnected.erase(pos);
-        } else {
-            return true;
-        }
-    }
-    return false;
+auto router::_is_disconnected(const identifier_t endpoint_id) const noexcept
+  -> bool {
+    const auto pos = _recently_disconnected.find(endpoint_id);
+    return (pos != _recently_disconnected.end()) && !pos->second.is_expired();
 }
 //------------------------------------------------------------------------------
 auto router::_mark_disconnected(const identifier_t endpoint_id) noexcept
   -> void {
+    const auto pos = _recently_disconnected.find(endpoint_id);
+    if(pos != _recently_disconnected.end()) {
+        if(pos->second.is_expired()) {
+            _recently_disconnected.erase(pos);
+        }
+    }
     _recently_disconnected.erase_if(
       [](auto& p) { return std::get<1>(p).is_expired(); });
     _recently_disconnected.emplace(endpoint_id, std::chrono::seconds{15});
@@ -378,6 +378,7 @@ auto router::_remove_disconnected() noexcept -> work_done {
         }
         return false;
     }) > 0);
+
     return something_done;
 }
 //------------------------------------------------------------------------------
@@ -415,7 +416,7 @@ auto router::_process_blobs() noexcept -> work_done {
     some_true something_done{};
     const auto resend_request =
       [&](message_id msg_id, message_view request) -> bool {
-        return this->_do_route_message(msg_id, _id_base, request);
+        return this->_route_message(msg_id, _id_base, request);
     };
     something_done(_blobs.update({construct_from, resend_request}));
 
@@ -506,7 +507,7 @@ auto router::_handle_ping(const message_view& message) noexcept
         message_view response{};
         response.setup_response(message);
         response.set_source_id(_id_base);
-        this->_do_route_message(msgbus_id{"pong"}, _id_base, response);
+        this->_route_message(msgbus_id{"pong"}, _id_base, response);
         return was_handled;
     }
     return should_be_forwarded;
@@ -561,7 +562,7 @@ auto router::_handle_subscribers_query(const message_view& message) noexcept
                     response.setup_response(message);
                     response.set_source_id(message.target_id);
                     response.set_sequence_no(info.instance_id);
-                    this->_do_route_message(
+                    this->_route_message(
                       msgbus_id{"subscribTo"}, _id_base, response);
                 }
                 if(message_id_list_contains(info.unsubscriptions, sub_msg_id)) {
@@ -569,7 +570,7 @@ auto router::_handle_subscribers_query(const message_view& message) noexcept
                     response.setup_response(message);
                     response.set_source_id(message.target_id);
                     response.set_sequence_no(info.instance_id);
-                    this->_do_route_message(
+                    this->_route_message(
                       msgbus_id{"notSubTo"}, _id_base, response);
                 }
             }
@@ -593,7 +594,7 @@ auto router::_handle_subscriptions_query(const message_view& message) noexcept
                     response.setup_response(message);
                     response.set_source_id(message.target_id);
                     response.set_sequence_no(info.instance_id);
-                    this->_do_route_message(
+                    this->_route_message(
                       msgbus_id{"subscribTo"}, _id_base, response);
                 }
             }
@@ -646,8 +647,7 @@ auto router::_handle_topology_query(const message_view& message) noexcept
             message_view response{extract(serialized)};
             response.setup_response(message);
             response.set_source_id(_id_base);
-            this->_do_route_message(
-              msgbus_id{"topoRutrCn"}, _id_base, response);
+            this->_route_message(msgbus_id{"topoRutrCn"}, _id_base, response);
         }
     };
 
@@ -674,7 +674,9 @@ auto router::_update_stats() noexcept -> work_done {
         _prev_forwarded_messages = _stats.forwarded_messages;
 
         const auto avg_msg_age_us = static_cast<std::int32_t>(
-          (1000000.F * _message_age_sum) /
+          float(std::chrono::duration_cast<std::chrono::microseconds>(
+                  _message_age_sum)
+                  .count()) /
           float(_stats.forwarded_messages + _stats.dropped_messages + 1));
         const auto avg_msg_age_ms = avg_msg_age_us / 1000;
 
@@ -718,7 +720,7 @@ auto router::_handle_stats_query(const message_view& message) noexcept
         message_view response{extract(serialized)};
         response.setup_response(message);
         response.set_source_id(_id_base);
-        this->_do_route_message(msgbus_id{"statsRutr"}, _id_base, response);
+        this->_route_message(msgbus_id{"statsRutr"}, _id_base, response);
     }
 
     const auto respond = [&](const identifier_t remote_id, const auto& conn) {
@@ -731,7 +733,7 @@ auto router::_handle_stats_query(const message_view& message) noexcept
                 message_view response{extract(serialized)};
                 response.setup_response(message);
                 response.set_source_id(_id_base);
-                this->_do_route_message(
+                this->_route_message(
                   msgbus_id{"statsConn"}, _id_base, response);
             }
         }
@@ -911,39 +913,42 @@ auto router::_handle_special(
 auto router::_do_route_message(
   const message_id msg_id,
   const identifier_t incoming_id,
-  message_view& message) noexcept -> bool {
+  message_view& message,
+  router_statistics& stats,
+  std::chrono::steady_clock::time_point& forwarded_since_log) const noexcept
+  -> bool {
 
     bool result = true;
     if(message.too_many_hops()) [[unlikely]] {
         log_warning("message ${message} discarded after too many hops")
           .arg("message", msg_id);
-        ++_stats.dropped_messages;
+        ++stats.dropped_messages;
     } else {
         const auto& nodes = this->_nodes;
         message.add_hop();
         const bool is_targeted = (message.target_id != broadcast_endpoint_id());
 
-        const auto forward_to = [&](auto& node_out) {
-            if(++_stats.forwarded_messages % 1000000 == 0) [[unlikely]] {
+        const auto forward_to = [&](const auto& node_out) {
+            if(++stats.forwarded_messages % 1'000'000 == 0) [[unlikely]] {
                 const auto now{std::chrono::steady_clock::now()};
                 const std::chrono::duration<float> interval{
-                  now - _forwarded_since_log};
+                  now - forwarded_since_log};
 
-                if(interval > decltype(interval)::zero()) [[likely]] {
-                    const auto msgs_per_sec{1000000.F / interval.count()};
+                if(interval > interval.zero()) [[likely]] {
+                    const auto msgs_per_sec{1'000'000.F / interval.count()};
 
                     log_chart_sample("msgsPerSec", msgs_per_sec);
                     log_stat("forwarded ${count} messages")
-                      .arg("count", _stats.forwarded_messages)
-                      .arg("dropped", _stats.dropped_messages)
+                      .arg("count", stats.forwarded_messages)
+                      .arg("dropped", stats.dropped_messages)
                       .arg("interval", interval)
                       .arg(
                         "avgMsgAge",
-                        std::chrono::microseconds(_stats.message_age_us))
+                        std::chrono::microseconds(stats.message_age_us))
                       .arg("msgsPerSec", msgs_per_sec);
                 }
 
-                _forwarded_since_log = now;
+                forwarded_since_log = now;
             }
             return node_out.send(*this, msg_id, message);
         };
@@ -1009,53 +1014,73 @@ auto router::_do_route_message(
     return result;
 }
 //------------------------------------------------------------------------------
+auto router::_route_node_messages(
+  const std::chrono::steady_clock::duration message_age_inc,
+  const identifier_t incoming_id,
+  routed_node& node_in) noexcept -> work_done {
+    const auto handler = [&](
+                           const message_id msg_id,
+                           const message_age msg_age,
+                           message_view message) {
+        _message_age_sum += message.add_age(msg_age).age() + message_age_inc;
+        if(
+          this->_handle_special(msg_id, incoming_id, node_in, message) ==
+          was_handled) {
+            return true;
+        }
+        if(message.too_old()) [[unlikely]] {
+            ++_stats.dropped_messages;
+            return true;
+        }
+        return this->_route_message(msg_id, incoming_id, message);
+    };
+
+    const auto& conn_in = node_in.the_connection;
+    if(conn_in && conn_in->is_usable()) [[likely]] {
+        return conn_in->fetch_messages({construct_from, handler});
+    }
+    return false;
+}
+//------------------------------------------------------------------------------
+auto router::_route_parent_messages(
+  const std::chrono::steady_clock::duration message_age_inc) noexcept
+  -> work_done {
+    const auto handler = [&](
+                           const message_id msg_id,
+                           const message_age msg_age,
+                           message_view message) {
+        _message_age_sum += message.add_age(msg_age).age() + message_age_inc;
+        if(
+          this->_handle_special(msg_id, _parent_router.confirmed_id, message) ==
+          was_handled) {
+            return true;
+        }
+        if(message.too_old()) [[unlikely]] {
+            ++_stats.dropped_messages;
+            return true;
+        }
+        return this->_route_message(msg_id, _id_base, message);
+    };
+    return _parent_router.fetch_messages(*this, handler);
+}
+//------------------------------------------------------------------------------
 auto router::_route_messages() noexcept -> work_done {
     some_true something_done{};
     const auto now = std::chrono::steady_clock::now();
-    const auto message_age_inc =
-      std::chrono::duration<float>{now - _prev_route_time}.count();
+    const auto message_age_inc{now - _prev_route_time};
     _prev_route_time = now;
 
-    for(auto& nd : _nodes) {
-        const auto handler =
-          [&](message_id msg_id, message_age msg_age, message_view message) {
-              auto& [incoming_id, node_in] = nd;
-              _message_age_sum +=
-                message.add_age(msg_age).age().count() + message_age_inc;
-              if(
-                this->_handle_special(msg_id, incoming_id, node_in, message) ==
-                was_handled) {
-                  return true;
-              }
-              if(message.too_old()) [[unlikely]] {
-                  ++_stats.dropped_messages;
-                  return true;
-              }
-              return this->_do_route_message(msg_id, incoming_id, message);
-          };
-
-        const auto& conn_in = std::get<1>(nd).the_connection;
-        if(conn_in && conn_in->is_usable()) [[likely]] {
-            something_done(conn_in->fetch_messages({construct_from, handler}));
+    for(auto& entry : _nodes) {
+        auto& node_in = std::get<1>(entry);
+        something_done(
+          _route_node_messages(message_age_inc, std::get<0>(entry), node_in));
+        const auto& conn = node_in.the_connection;
+        if(conn) [[likely]] {
+            something_done(conn->update());
         }
     }
 
-    const auto handler =
-      [&](message_id msg_id, message_age msg_age, message_view message) {
-          _message_age_sum +=
-            message.add_age(msg_age).age().count() + message_age_inc;
-          if(
-            this->_handle_special(
-              msg_id, _parent_router.confirmed_id, message) == was_handled) {
-              return true;
-          }
-          if(message.too_old()) [[unlikely]] {
-              ++_stats.dropped_messages;
-              return true;
-          }
-          return this->_do_route_message(msg_id, _id_base, message);
-      };
-    something_done(_parent_router.fetch_messages(*this, handler));
+    something_done(_route_parent_messages(message_age_inc));
 
     return something_done;
 }
@@ -1063,19 +1088,12 @@ auto router::_route_messages() noexcept -> work_done {
 auto router::_update_connections() noexcept -> work_done {
     some_true something_done{};
 
-    for(auto& entry : _nodes) {
-        const auto& conn = std::get<1>(entry).the_connection;
-        if(conn) [[likely]] {
-            something_done(conn->update());
-        }
-    }
-
     something_done(_parent_router.update(*this, _id_base));
 
-    if(_nodes.empty() && _pending.empty()) {
-        std::this_thread::yield();
-    } else {
+    if(!_nodes.empty() || !_pending.empty()) [[likely]] {
         _no_connection_timeout.reset();
+    } else {
+        std::this_thread::yield();
     }
     return something_done;
 }
