@@ -20,6 +20,7 @@ import :message;
 import :interface;
 import :blobs;
 import :context;
+import <latch>;
 import <map>;
 import <vector>;
 
@@ -56,10 +57,26 @@ struct router_endpoint_info {
     }
 };
 //------------------------------------------------------------------------------
+struct connection_update : latched_work_unit {
+    connection_update() noexcept = default;
+    connection_update(connection& conn, std::latch& done) noexcept
+      : latched_work_unit{done}
+      , _conn{&conn} {}
+
+    auto do_it() noexcept -> bool {
+        _conn->update();
+        return true;
+    }
+
+private:
+    connection* _conn{nullptr};
+};
+//------------------------------------------------------------------------------
 struct routed_node {
     std::unique_ptr<connection> the_connection{};
     std::vector<message_id> message_block_list{};
     std::vector<message_id> message_allow_list{};
+    connection_update update_connection{};
     bool maybe_router{true};
     bool do_disconnect{false};
 
@@ -161,7 +178,15 @@ public:
     auto add_connection(std::unique_ptr<connection>) noexcept -> bool;
 
     auto do_maintenance() noexcept -> work_done;
-    auto do_work() noexcept -> work_done;
+    auto do_work_by_workers() noexcept -> work_done;
+    auto do_work_by_router() noexcept -> work_done;
+    auto do_work() noexcept -> work_done {
+        if(_use_workers()) {
+            return do_work_by_workers();
+        } else {
+            return do_work_by_router();
+        }
+    }
 
     auto update(const valid_if_positive<int>& count) noexcept -> work_done;
     auto update() noexcept -> work_done {
@@ -280,6 +305,8 @@ private:
       routed_node&,
       const message_view&) noexcept -> message_handling_result;
 
+    auto _use_workers() const noexcept -> bool;
+
     auto _forward_to(
       const routed_node& node_out,
       const message_id msg_id,
@@ -304,7 +331,8 @@ private:
     auto _route_parent_messages(
       const std::chrono::steady_clock::duration) noexcept -> work_done;
     auto _route_messages() noexcept -> work_done;
-    auto _update_connections() noexcept -> work_done;
+    auto _update_connections_by_workers(std::latch&) noexcept -> work_done;
+    auto _update_connections_by_router() noexcept -> work_done;
 
     shared_context _context{};
     const std::chrono::seconds _pending_timeout{

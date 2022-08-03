@@ -20,6 +20,7 @@ import eagine.core.valid_if;
 import eagine.core.runtime;
 import eagine.core.main_ctx;
 import <array>;
+import <latch>;
 import <thread>;
 
 namespace eagine::msgbus {
@@ -234,7 +235,7 @@ auto router::_handle_accept() noexcept -> work_done {
 auto router::_handle_pending() noexcept -> work_done {
     some_true something_done{};
 
-    if(!_pending.empty()) {
+    if(!_pending.empty()) [[unlikely]] {
         identifier_t id = 0;
         bool maybe_router = true;
         auto handler =
@@ -936,6 +937,10 @@ auto router::_handle_special(
     return should_be_forwarded;
 }
 //------------------------------------------------------------------------------
+auto router::_use_workers() const noexcept -> bool {
+    return _nodes.size() > 2;
+}
+//------------------------------------------------------------------------------
 auto router::_forward_to(
   const routed_node& node_out,
   const message_id msg_id,
@@ -1093,13 +1098,8 @@ auto router::_route_messages() noexcept -> work_done {
     _prev_route_time = now;
 
     for(auto& entry : _nodes) {
-        auto& node_in = std::get<1>(entry);
-        something_done(
-          _route_node_messages(message_age_inc, std::get<0>(entry), node_in));
-        const auto& conn = node_in.the_connection;
-        if(conn) [[likely]] {
-            something_done(conn->update());
-        }
+        something_done(_route_node_messages(
+          message_age_inc, std::get<0>(entry), std::get<1>(entry)));
     }
 
     something_done(_route_parent_messages(message_age_inc));
@@ -1107,9 +1107,36 @@ auto router::_route_messages() noexcept -> work_done {
     return something_done;
 }
 //------------------------------------------------------------------------------
-auto router::_update_connections() noexcept -> work_done {
+auto router::_update_connections_by_workers(std::latch& completed) noexcept
+  -> work_done {
+    some_true something_done{};
+    auto& workers = main_context().workers();
+
+    for(auto& entry : _nodes) {
+        auto& node_in = std::get<1>(entry);
+        if(node_in.the_connection) [[likely]] {
+            node_in.update_connection = {*node_in.the_connection, completed};
+            workers.enqueue(node_in.update_connection);
+        }
+    }
+    something_done(_parent_router.update(*this, _id_base));
+
+    if(!_nodes.empty() || !_pending.empty()) [[likely]] {
+        _no_connection_timeout.reset();
+    }
+
+    return something_done;
+}
+//------------------------------------------------------------------------------
+auto router::_update_connections_by_router() noexcept -> work_done {
     some_true something_done{};
 
+    for(auto& entry : _nodes) {
+        const auto& conn = std::get<1>(entry).the_connection;
+        if(conn) [[likely]] {
+            something_done(conn->update());
+        }
+    }
     something_done(_parent_router.update(*this, _id_base));
 
     if(!_nodes.empty() || !_pending.empty()) [[likely]] {
@@ -1131,13 +1158,26 @@ auto router::do_maintenance() noexcept -> work_done {
     return something_done;
 }
 //------------------------------------------------------------------------------
-auto router::do_work() noexcept -> work_done {
+auto router::do_work_by_workers() noexcept -> work_done {
+    some_true something_done{};
+
+    something_done(_handle_pending());
+    something_done(_route_messages());
+    std::latch completed{limit_cast<std::ptrdiff_t>(_nodes.size())};
+    something_done(_update_connections_by_workers(completed));
+    something_done(_handle_accept());
+    completed.wait();
+
+    return something_done;
+}
+//------------------------------------------------------------------------------
+auto router::do_work_by_router() noexcept -> work_done {
     some_true something_done{};
 
     something_done(_handle_pending());
     something_done(_handle_accept());
     something_done(_route_messages());
-    something_done(_update_connections());
+    something_done(_update_connections_by_router());
 
     return something_done;
 }
@@ -1148,9 +1188,15 @@ auto router::update(const valid_if_positive<int>& count) noexcept -> work_done {
     something_done(do_maintenance());
 
     int n = extract_or(count, 2);
-    do {
-        something_done(do_work());
-    } while((n-- > 0) && something_done);
+    if(_use_workers()) {
+        do {
+            something_done(do_work_by_workers());
+        } while((n-- > 0) && something_done);
+    } else {
+        do {
+            something_done(do_work_by_router());
+        } while((n-- > 0) && something_done);
+    }
 
     return something_done;
 }
