@@ -59,7 +59,7 @@ public:
     auto send_to_client(
       const message_id msg_id,
       const message_view& message) noexcept -> bool {
-        if(_client_connected) {
+        if(_client_connected) [[likely]] {
             const std::unique_lock lock{_mutex};
             _server_to_client.back().push(msg_id, message);
             return true;
