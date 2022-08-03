@@ -211,6 +211,8 @@ private:
     auto _remove_disconnected() noexcept -> work_done;
     void _assign_id(std::unique_ptr<connection>& conn) noexcept;
     void _handle_connection(std::unique_ptr<connection> conn) noexcept;
+    auto _should_log_router_stats() noexcept -> bool;
+    void _log_router_stats() noexcept;
 
     auto _process_blobs() noexcept -> work_done;
     auto _do_get_blob_io(
@@ -278,20 +280,22 @@ private:
       routed_node&,
       const message_view&) noexcept -> message_handling_result;
 
-    auto _do_route_message(
+    auto _forward_to(
+      const routed_node& node_out,
+      const message_id msg_id,
+      message_view& message) noexcept -> bool;
+    auto _route_targeted_message(
       const message_id msg_id,
       const identifier_t incoming_id,
-      message_view& message,
-      router_statistics&,
-      std::chrono::steady_clock::time_point&) const noexcept -> bool;
-
+      message_view& message) noexcept -> bool;
+    auto _route_broadcast_message(
+      const message_id msg_id,
+      const identifier_t incoming_id,
+      message_view& message) noexcept -> bool;
     auto _route_message(
       const message_id msg_id,
       const identifier_t incoming_id,
-      message_view& message) noexcept -> bool {
-        return _do_route_message(
-          msg_id, incoming_id, message, _stats, _forwarded_since_log);
-    }
+      message_view& message) noexcept -> bool;
 
     auto _route_node_messages(
       const std::chrono::steady_clock::duration,

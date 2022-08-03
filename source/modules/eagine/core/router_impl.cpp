@@ -412,6 +412,29 @@ void router::_handle_connection(
     _pending.emplace_back(std::move(a_connection));
 }
 //------------------------------------------------------------------------------
+auto router::_should_log_router_stats() noexcept -> bool {
+    return ++_stats.forwarded_messages % 1'000'000 == 0;
+}
+//------------------------------------------------------------------------------
+void router::_log_router_stats() noexcept {
+    const auto now{std::chrono::steady_clock::now()};
+    const std::chrono::duration<float> interval{now - _forwarded_since_log};
+
+    if(interval > interval.zero()) [[likely]] {
+        const auto msgs_per_sec{1'000'000.F / interval.count()};
+
+        log_chart_sample("msgsPerSec", msgs_per_sec);
+        log_stat("forwarded ${count} messages")
+          .arg("count", _stats.forwarded_messages)
+          .arg("dropped", _stats.dropped_messages)
+          .arg("interval", interval)
+          .arg("avgMsgAge", std::chrono::microseconds(_stats.message_age_us))
+          .arg("msgsPerSec", msgs_per_sec);
+    }
+
+    _forwarded_since_log = now;
+}
+//------------------------------------------------------------------------------
 auto router::_process_blobs() noexcept -> work_done {
     some_true something_done{};
     const auto resend_request =
@@ -913,106 +936,102 @@ auto router::_handle_special(
     return should_be_forwarded;
 }
 //------------------------------------------------------------------------------
-auto router::_do_route_message(
+auto router::_forward_to(
+  const routed_node& node_out,
+  const message_id msg_id,
+  message_view& message) noexcept -> bool {
+    if(_should_log_router_stats()) [[unlikely]] {
+        _log_router_stats();
+    }
+    return node_out.send(*this, msg_id, message);
+}
+//------------------------------------------------------------------------------
+auto router::_route_targeted_message(
   const message_id msg_id,
   const identifier_t incoming_id,
-  message_view& message,
-  router_statistics& stats,
-  std::chrono::steady_clock::time_point& forwarded_since_log) const noexcept
-  -> bool {
-
-    bool result = true;
-    if(message.too_many_hops()) [[unlikely]] {
-        log_warning("message ${message} discarded after too many hops")
-          .arg("message", msg_id);
-        ++stats.dropped_messages;
-    } else {
-        const auto& nodes = this->_nodes;
-        message.add_hop();
-        const bool is_targeted = (message.target_id != broadcast_endpoint_id());
-
-        const auto forward_to = [&](const auto& node_out) {
-            if(++stats.forwarded_messages % 1'000'000 == 0) [[unlikely]] {
-                const auto now{std::chrono::steady_clock::now()};
-                const std::chrono::duration<float> interval{
-                  now - forwarded_since_log};
-
-                if(interval > interval.zero()) [[likely]] {
-                    const auto msgs_per_sec{1'000'000.F / interval.count()};
-
-                    log_chart_sample("msgsPerSec", msgs_per_sec);
-                    log_stat("forwarded ${count} messages")
-                      .arg("count", stats.forwarded_messages)
-                      .arg("dropped", stats.dropped_messages)
-                      .arg("interval", interval)
-                      .arg(
-                        "avgMsgAge",
-                        std::chrono::microseconds(stats.message_age_us))
-                      .arg("msgsPerSec", msgs_per_sec);
-                }
-
-                forwarded_since_log = now;
-            }
-            return node_out.send(*this, msg_id, message);
-        };
-
-        if(is_targeted) {
-            bool has_routed = false;
-            const auto pos = _endpoint_idx.find(message.target_id);
-            if(pos != _endpoint_idx.end()) {
-                // if the message should go through the parent router
-                if(pos->second == _id_base) {
-                    has_routed |= _parent_router.send(*this, msg_id, message);
-                } else {
-                    const auto node_pos = nodes.find(pos->second);
-                    if(node_pos != nodes.end()) {
-                        auto& node_out = node_pos->second;
-                        if(node_out.is_allowed(msg_id)) {
-                            has_routed = forward_to(node_out);
-                        }
-                    }
-                }
-            }
-
-            if(!has_routed) {
-                for(const auto& [outgoing_id, node_out] : nodes) {
-                    if(outgoing_id == message.target_id) {
-                        if(node_out.is_allowed(msg_id)) {
-                            has_routed = forward_to(node_out);
-                        }
-                    }
-                }
-            }
-
-            if(!_is_disconnected(message.target_id)) [[likely]] {
-                if(!has_routed) {
-                    for(const auto& [outgoing_id, node_out] : nodes) {
-                        if(node_out.maybe_router) {
-                            if(incoming_id != outgoing_id) {
-                                has_routed |= forward_to(node_out);
-                            }
-                        }
-                    }
-                    // if the message didn't come from the parent router
-                    if(incoming_id != _id_base) {
-                        has_routed |=
-                          _parent_router.send(*this, msg_id, message);
-                    }
-                }
-            }
-            result &= has_routed;
+  message_view& message) noexcept -> bool {
+    bool has_routed = false;
+    const auto pos{_endpoint_idx.find(message.target_id)};
+    const auto& nodes = this->_nodes;
+    if(pos != _endpoint_idx.end()) {
+        // if the message should go through the parent router
+        if(pos->second == _id_base) {
+            has_routed |= _parent_router.send(*this, msg_id, message);
         } else {
-            for(const auto& [outgoing_id, node_out] : nodes) {
-                if(incoming_id != outgoing_id) {
-                    if(node_out.is_allowed(msg_id)) {
-                        result |= forward_to(node_out);
-                    }
+            const auto node_pos = nodes.find(pos->second);
+            if(node_pos != nodes.end()) {
+                auto& node_out = node_pos->second;
+                if(node_out.is_allowed(msg_id)) {
+                    has_routed = _forward_to(node_out, msg_id, message);
                 }
-            }
-            if(incoming_id != _id_base) {
-                result |= _parent_router.send(*this, msg_id, message);
             }
         }
+    }
+
+    if(!has_routed) {
+        for(const auto& [outgoing_id, node_out] : nodes) {
+            if(outgoing_id == message.target_id) {
+                if(node_out.is_allowed(msg_id)) {
+                    has_routed = _forward_to(node_out, msg_id, message);
+                }
+            }
+        }
+    }
+
+    if(!_is_disconnected(message.target_id)) [[likely]] {
+        if(!has_routed) {
+            for(const auto& [outgoing_id, node_out] : nodes) {
+                if(node_out.maybe_router) {
+                    if(incoming_id != outgoing_id) {
+                        has_routed |= _forward_to(node_out, msg_id, message);
+                    }
+                }
+            }
+            // if the message didn't come from the parent router
+            if(incoming_id != _id_base) {
+                has_routed |= _parent_router.send(*this, msg_id, message);
+            }
+        }
+    }
+    return has_routed;
+}
+//------------------------------------------------------------------------------
+auto router::_route_broadcast_message(
+  const message_id msg_id,
+  const identifier_t incoming_id,
+  message_view& message) noexcept -> bool {
+    const auto& nodes = this->_nodes;
+    for(const auto& [outgoing_id, node_out] : nodes) {
+        if(incoming_id != outgoing_id) {
+            if(node_out.is_allowed(msg_id)) {
+                _forward_to(node_out, msg_id, message);
+            }
+        }
+    }
+    if(incoming_id != _id_base) {
+        _parent_router.send(*this, msg_id, message);
+    }
+    return true;
+}
+//------------------------------------------------------------------------------
+auto router::_route_message(
+  const message_id msg_id,
+  const identifier_t incoming_id,
+  message_view& message) noexcept -> bool {
+
+    bool result = true;
+    if(!message.too_many_hops()) [[likely]] {
+        message.add_hop();
+
+        if(message.target_id != broadcast_endpoint_id()) {
+            result |= _route_targeted_message(msg_id, incoming_id, message);
+        } else {
+            result |= _route_broadcast_message(msg_id, incoming_id, message);
+        }
+    } else {
+        log_warning("message ${message} discarded after too many hops")
+          .arg("message", msg_id);
+        ++_stats.dropped_messages;
     }
     return result;
 }
