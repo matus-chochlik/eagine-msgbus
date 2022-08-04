@@ -62,16 +62,16 @@ struct sudoku_rank_tuple
     }
 };
 //------------------------------------------------------------------------------
-template <typename Function, typename... RankTuple>
-static inline void for_each_sudoku_rank_unit(Function func, RankTuple&... t) {
+export template <typename Function, typename... RankTuple>
+void for_each_sudoku_rank_unit(Function func, RankTuple&... t) {
     func(std::get<3>(t)...);
     func(std::get<4>(t)...);
     func(std::get<5>(t)...);
     func(std::get<6>(t)...);
 }
 //------------------------------------------------------------------------------
-template <unsigned S>
-static inline auto sudoku_search_msg(const unsigned_constant<S>) noexcept {
+export template <unsigned S>
+auto sudoku_search_msg(const unsigned_constant<S>) noexcept {
     if constexpr(S == 3) {
         return message_id{"eagiSudoku", "search3"};
     }
@@ -86,8 +86,8 @@ static inline auto sudoku_search_msg(const unsigned_constant<S>) noexcept {
     }
 }
 //------------------------------------------------------------------------------
-template <unsigned S>
-static inline auto sudoku_alive_msg(const unsigned_constant<S>) noexcept {
+export template <unsigned S>
+auto sudoku_alive_msg(const unsigned_constant<S>) noexcept {
     if constexpr(S == 3) {
         return message_id{"eagiSudoku", "alive3"};
     }
@@ -102,8 +102,8 @@ static inline auto sudoku_alive_msg(const unsigned_constant<S>) noexcept {
     }
 }
 //------------------------------------------------------------------------------
-template <unsigned S>
-static inline auto sudoku_query_msg(const unsigned_constant<S>) noexcept {
+export template <unsigned S>
+auto sudoku_query_msg(const unsigned_constant<S>) noexcept {
     if constexpr(S == 3) {
         return message_id{"eagiSudoku", "query3"};
     }
@@ -118,9 +118,8 @@ static inline auto sudoku_query_msg(const unsigned_constant<S>) noexcept {
     }
 }
 //------------------------------------------------------------------------------
-template <unsigned S>
-static inline auto sudoku_solved_msg(const unsigned_constant<S>) noexcept
-  -> message_id {
+export template <unsigned S>
+auto sudoku_solved_msg(const unsigned_constant<S>) noexcept -> message_id {
     if constexpr(S == 3) {
         return message_id{"eagiSudoku", "solved3"};
     }
@@ -135,9 +134,8 @@ static inline auto sudoku_solved_msg(const unsigned_constant<S>) noexcept
     }
 }
 //------------------------------------------------------------------------------
-template <unsigned S>
-static inline auto sudoku_candidate_msg(const unsigned_constant<S>) noexcept
-  -> message_id {
+export template <unsigned S>
+auto sudoku_candidate_msg(const unsigned_constant<S>) noexcept -> message_id {
     if constexpr(S == 3) {
         return message_id{"eagiSudoku", "candidate3"};
     }
@@ -152,9 +150,8 @@ static inline auto sudoku_candidate_msg(const unsigned_constant<S>) noexcept
     }
 }
 //------------------------------------------------------------------------------
-template <unsigned S>
-static inline auto sudoku_done_msg(const unsigned_constant<S>) noexcept
-  -> message_id {
+export template <unsigned S>
+auto sudoku_done_msg(const unsigned_constant<S>) noexcept -> message_id {
     if constexpr(S == 3) {
         return message_id{"eagiSudoku", "done3"};
     }
@@ -169,8 +166,8 @@ static inline auto sudoku_done_msg(const unsigned_constant<S>) noexcept
     }
 }
 //------------------------------------------------------------------------------
-template <unsigned S>
-static inline auto sudoku_response_msg(
+export template <unsigned S>
+auto sudoku_response_msg(
   const unsigned_constant<S> rank,
   const bool is_solved) noexcept -> message_id {
     return is_solved ? sudoku_solved_msg(rank) : sudoku_candidate_msg(rank);
