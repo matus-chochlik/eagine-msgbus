@@ -202,10 +202,10 @@ auto endpoint::_handle_topology_query(const message_view& message) noexcept
     info.endpoint_id = _endpoint_id;
     info.instance_id = _instance_id;
     auto temp{default_serialize_buffer_for(info)};
-    if(const auto serialized{default_serialize(info, cover(temp))}) {
+    if(const auto serialized{default_serialize(info, cover(temp))}) [[likely]] {
         message_view response{extract(serialized)};
         response.setup_response(message);
-        if(post(msgbus_id{"topoEndpt"}, response)) {
+        if(post(msgbus_id{"topoEndpt"}, response)) [[likely]] {
             return was_handled;
         }
     }
@@ -221,10 +221,11 @@ auto endpoint::_handle_stats_query(const message_view& message) noexcept
     _stats.uptime_seconds = _uptime_seconds();
 
     auto temp{default_serialize_buffer_for(_stats)};
-    if(const auto serialized{default_serialize(_stats, cover(temp))}) {
+    if(const auto serialized{default_serialize(_stats, cover(temp))})
+      [[likely]] {
         message_view response{extract(serialized)};
         response.setup_response(message);
-        if(post(msgbus_id{"statsEndpt"}, response)) {
+        if(post(msgbus_id{"statsEndpt"}, response)) [[likely]] {
             return was_handled;
         }
     }
@@ -239,7 +240,7 @@ auto endpoint::_handle_special(
   const message_view& message) noexcept -> message_handling_result {
 
     assert(_context);
-    if(is_special_message(msg_id)) [[unlikely]] {
+    if(is_special_message(msg_id)) {
         log_debug("endpoint handling special message ${message}")
           .arg("message", msg_id)
           .arg("endpoint", _endpoint_id)
@@ -309,7 +310,8 @@ auto endpoint::_store_message(
   const message_view& message) noexcept -> bool {
     ++_stats.received_messages;
     if(_handle_special(msg_id, message) == should_be_stored) {
-        if((message.target_id == _endpoint_id) || !is_valid_id(message.target_id)) {
+        if((message.target_id == _endpoint_id) || !is_valid_id(message.target_id))
+          [[likely]] {
             if(auto found{_find_incoming(msg_id)}) {
                 log_trace("stored message ${message}").arg("message", msg_id);
                 extract(found).queue.push(message).add_age(msg_age);
@@ -338,7 +340,7 @@ auto endpoint::_accept_message(
     if(_handle_special(msg_id, message) == was_handled) {
         return true;
     }
-    if(auto found{_find_incoming(msg_id)}) {
+    if(auto found{_find_incoming(msg_id)}) [[likely]] {
         if((message.target_id == _endpoint_id) || !is_valid_id(message.target_id)) {
             log_trace("accepted message ${message}").arg("message", msg_id);
             extract(found).queue.push(message);
@@ -502,7 +504,7 @@ auto endpoint::update() noexcept -> work_done {
         }
     }
 
-    if(_should_notify_alive) {
+    if(_should_notify_alive) [[unlikely]] {
         say_still_alive();
     }
 
@@ -560,7 +562,7 @@ void endpoint::post_meta_message(
   const message_id msg_id) noexcept {
     auto temp{default_serialize_buffer_for(msg_id)};
     if(const auto serialized{
-         default_serialize_message_type(msg_id, cover(temp))}) {
+         default_serialize_message_type(msg_id, cover(temp))}) [[likely]] {
         message_view meta_msg{extract(serialized)};
         meta_msg.set_sequence_no(_instance_id);
         post(meta_msg_id, meta_msg);
@@ -577,7 +579,7 @@ void endpoint::post_meta_message_to(
   const message_id msg_id) noexcept {
     auto temp{default_serialize_buffer_for(msg_id)};
     if(const auto serialized{
-         default_serialize_message_type(msg_id, cover(temp))}) {
+         default_serialize_message_type(msg_id, cover(temp))}) [[likely]] {
         message_view meta_msg{extract(serialized)};
         meta_msg.set_target_id(target_id);
         meta_msg.set_sequence_no(_instance_id);
@@ -695,7 +697,7 @@ void endpoint::query_certificate_of(const identifier_t endpoint_id) noexcept {
 auto endpoint::process_one(
   const message_id msg_id,
   const method_handler handler) noexcept -> bool {
-    if(const auto found{_find_incoming(msg_id)}) {
+    if(const auto found{_find_incoming(msg_id)}) [[likely]] {
         const message_context msg_ctx{*this, msg_id};
         return extract(found).queue.process_one(msg_ctx, handler);
     }
@@ -705,7 +707,7 @@ auto endpoint::process_one(
 auto endpoint::process_all(
   const message_id msg_id,
   const method_handler handler) noexcept -> span_size_t {
-    if(const auto found{_find_incoming(msg_id)}) {
+    if(const auto found{_find_incoming(msg_id)}) [[likely]] {
         const message_context msg_ctx{*this, msg_id};
         return extract(found).queue.process_all(msg_ctx, handler);
     }
