@@ -246,47 +246,54 @@ auto endpoint::_handle_special(
           .arg("target", message.target_id)
           .arg("source", message.source_id);
 
+        switch(msg_id.method_id()) {
+            case id_v("blobFrgmnt"):
+                return _handle_blob_fragment(message);
+            case id_v("blobResend"):
+                return _handle_blob_resend(message);
+            case id_v("assignId"):
+                return _handle_assign_id(message);
+            case id_v("confirmId"):
+                return _handle_confirm_id(message);
+            case id_v("msgFlowInf"):
+                return _handle_flow_info(message);
+            case id_v("eptCertQry"):
+                return _handle_certificate_query(message);
+            case id_v("eptCertPem"):
+                return _handle_endpoint_certificate(message);
+            case id_v("eptSigNnce"):
+                return _handle_sign_nonce_request(message);
+            case id_v("eptNnceSig"):
+                return _handle_signed_nonce(message);
+            case id_v("rtrCertPem"):
+                return _handle_router_certificate(message);
+            case id_v("topoQuery"):
+                return _handle_topology_query(message);
+            case id_v("statsQuery"):
+                return _handle_stats_query(message);
+            case id_v("ping"):
+            case id_v("pong"):
+            case id_v("subscribTo"):
+            case id_v("unsubFrom"):
+            case id_v("notSubTo"):
+            case id_v("qrySubscrp"):
+            case id_v("qrySubscrb"):
+            case id_v("byeByeEndp"):
+            case id_v("byeByeRutr"):
+            case id_v("byeByeBrdg"):
+            case id_v("stillAlive"):
+            case id_v("topoRutrCn"):
+            case id_v("topoBrdgCn"):
+            case id_v("topoEndpt"):
+            case id_v(""):
+                return should_be_stored;
+        }
+
         if(has_id() && (message.source_id == _endpoint_id)) [[unlikely]] {
             ++_stats.dropped_messages;
             log_warning("received own special message ${message}")
               .arg("message", msg_id);
             return was_handled;
-        } else if(msg_id.has_method("blobFrgmnt")) {
-            return _handle_blob_fragment(message);
-        } else if(msg_id.has_method("blobResend")) {
-            return _handle_blob_resend(message);
-        } else if(msg_id.has_method("assignId")) {
-            return _handle_assign_id(message);
-        } else if(msg_id.has_method("confirmId")) {
-            return _handle_confirm_id(message);
-        } else if(
-          msg_id.has_method("ping") || msg_id.has_method("pong") ||
-          msg_id.has_method("subscribTo") || msg_id.has_method("unsubFrom") ||
-          msg_id.has_method("notSubTo") || msg_id.has_method("qrySubscrp") ||
-          msg_id.has_method("qrySubscrb")) {
-            return should_be_stored;
-        } else if(msg_id.has_method("msgFlowInf")) {
-            return _handle_flow_info(message);
-        } else if(msg_id.has_method("eptCertQry")) {
-            return _handle_certificate_query(message);
-        } else if(msg_id.has_method("eptCertPem")) {
-            return _handle_endpoint_certificate(message);
-        } else if(msg_id.has_method("eptSigNnce")) {
-            return _handle_sign_nonce_request(message);
-        } else if(msg_id.has_method("eptNnceSig")) {
-            return _handle_signed_nonce(message);
-        } else if(msg_id.has_method("rtrCertPem")) {
-            return _handle_router_certificate(message);
-        } else if(
-          msg_id.has_method("byeByeEndp") || msg_id.has_method("byeByeRutr") ||
-          msg_id.has_method("byeByeBrdg") || msg_id.has_method("stillAlive") ||
-          msg_id.has_method("topoRutrCn") || msg_id.has_method("topoBrdgCn") ||
-          msg_id.has_method("topoEndpt")) {
-            return should_be_stored;
-        } else if(msg_id.has_method("topoQuery")) {
-            return _handle_topology_query(message);
-        } else if(msg_id.has_method("statsQuery")) {
-            return _handle_stats_query(message);
         }
         log_warning("unhandled special message ${message} from ${source}")
           .arg("message", msg_id)
@@ -343,19 +350,15 @@ auto endpoint::_accept_message(
 //------------------------------------------------------------------------------
 void endpoint::add_certificate_pem(const memory::const_block blk) noexcept {
     assert(_context);
-    if(_context) {
-        if(_context->add_own_certificate_pem(blk)) {
-            broadcast_certificate();
-        }
+    if(_context->add_own_certificate_pem(blk)) {
+        broadcast_certificate();
     }
 }
 //------------------------------------------------------------------------------
 void endpoint::add_ca_certificate_pem(const memory::const_block blk) noexcept {
     assert(_context);
-    if(_context) {
-        if(_context->add_ca_certificate_pem(blk)) {
-            broadcast_certificate();
-        }
+    if(_context->add_ca_certificate_pem(blk)) {
+        broadcast_certificate();
     }
 }
 //------------------------------------------------------------------------------
@@ -379,28 +382,21 @@ auto endpoint::add_connection(std::unique_ptr<connection> conn) noexcept
 }
 //------------------------------------------------------------------------------
 auto endpoint::is_usable() const noexcept -> bool {
-    if(_connection) [[likely]] {
-        if(_connection->is_usable()) {
-            return true;
-        }
-    }
-    return false;
+    return _connection && _connection->is_usable();
 }
 //------------------------------------------------------------------------------
 auto endpoint::max_data_size() const noexcept
   -> valid_if_positive<span_size_t> {
     span_size_t result{0};
-    if(_connection) [[likely]] {
-        if(_connection->is_usable()) {
-            if(const auto opt_max_size = _connection->max_data_size()) {
-                const auto max_size = extract(opt_max_size);
-                if(result > 0) {
-                    if(result > max_size) {
-                        result = max_size;
-                    }
-                } else {
+    if(is_usable()) [[likely]] {
+        if(const auto opt_max_size{_connection->max_data_size()}) {
+            const auto max_size{extract(opt_max_size)};
+            if(result > 0) {
+                if(result > max_size) {
                     result = max_size;
                 }
+            } else {
+                result = max_size;
             }
         }
     }
