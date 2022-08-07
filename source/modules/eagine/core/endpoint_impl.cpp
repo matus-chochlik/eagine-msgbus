@@ -286,7 +286,6 @@ auto endpoint::_handle_special(
             case id_v("topoRutrCn"):
             case id_v("topoBrdgCn"):
             case id_v("topoEndpt"):
-            case id_v(""):
                 return should_be_stored;
         }
 
@@ -312,7 +311,7 @@ auto endpoint::_store_message(
     if(_handle_special(msg_id, message) == should_be_stored) {
         if((message.target_id == _endpoint_id) || !is_valid_id(message.target_id))
           [[likely]] {
-            if(auto found{_find_incoming(msg_id)}) {
+            if(auto found{_find_incoming(msg_id)}) [[likely]] {
                 log_trace("stored message ${message}").arg("message", msg_id);
                 extract(found).queue.push(message).add_age(msg_age);
             } else {
@@ -406,7 +405,7 @@ auto endpoint::max_data_size() const noexcept
 }
 //------------------------------------------------------------------------------
 void endpoint::flush_outbox() noexcept {
-    if(has_id()) {
+    if(has_id()) [[likely]] {
         log_debug("flushing outbox (size: ${count})")
           .arg("count", _outgoing.count());
         _outgoing.fetch_all(make_callable_ref<&endpoint::_handle_send>(this));
@@ -458,7 +457,7 @@ auto endpoint::update() noexcept -> work_done {
         log_warning("endpoint has no connection");
     }
 
-    const bool had_id = has_id();
+    const bool had_id{has_id()};
     if(_connection) [[likely]] {
         if(!_had_working_connection) [[unlikely]] {
             _had_working_connection = true;

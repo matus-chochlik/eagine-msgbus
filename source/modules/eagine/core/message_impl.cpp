@@ -188,13 +188,13 @@ auto serialized_message_storage::pack_into(memory::block dest) noexcept
   -> message_pack_info {
     message_packing_context packing{dest};
 
-    for(auto& [message, timestamp] : _messages) {
+    for(const auto& [message, timestamp] : _messages) {
         (void)(timestamp);
         if(packing.is_full()) [[unlikely]] {
             break;
         }
         if(const auto packed{
-             store_data_with_size(view(message), packing.dest())}) {
+             store_data_with_size(view(message), packing.dest())}) [[likely]] {
             packing.add(packed.size());
         }
         packing.next();
