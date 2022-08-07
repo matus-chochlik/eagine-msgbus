@@ -87,6 +87,10 @@ private:
       const bool) noexcept -> message_handling_result;
 
     auto _do_push(const message_id, message_view&) noexcept -> bool;
+    auto _should_log_bridge_stats_c2o() noexcept -> bool;
+    auto _should_log_bridge_stats_i2c() noexcept -> bool;
+    void _log_bridge_stats_c2o() noexcept;
+    void _log_bridge_stats_i2c() noexcept;
     auto _forward_messages() noexcept -> work_done;
 
     struct user_impl : connection_user {
