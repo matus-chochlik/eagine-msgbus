@@ -359,20 +359,23 @@ auto bridge::_handle_special(
           .arg("target", message.target_id)
           .arg("source", message.source_id);
 
-        if(msg_id.has_method("assignId")) {
-            return _handle_id_assigned(message);
-        } else if(msg_id.has_method("confirmId")) {
-            return _handle_id_confirmed(message);
-        } else if(msg_id.has_method("ping")) {
-            return _handle_ping(message, to_connection);
-        } else if(msg_id.has_method("topoBrdgCn")) {
-            return _handle_topo_bridge_conn(message, to_connection);
-        } else if(msg_id.has_method("topoQuery")) {
-            return _handle_topology_query(message, to_connection);
-        } else if(msg_id.has_method("statsQuery")) {
-            return _handle_stats_query(message, to_connection);
-        } else if(msg_id.has_method("msgFlowInf")) {
-            return was_handled;
+        switch(msg_id.method_id()) {
+            case id_v("assignId"):
+                return _handle_id_assigned(message);
+            case id_v("confirmId"):
+                return _handle_id_confirmed(message);
+            case id_v("ping"):
+                return _handle_ping(message, to_connection);
+            case id_v("topoBrdgCn"):
+                return _handle_topo_bridge_conn(message, to_connection);
+            case id_v("topoQuery"):
+                return _handle_topology_query(message, to_connection);
+            case id_v("statsQuery"):
+                return _handle_stats_query(message, to_connection);
+            case id_v("msgFlowInf"):
+                return was_handled;
+            default:
+                break;
         }
     }
     return should_be_forwarded;
