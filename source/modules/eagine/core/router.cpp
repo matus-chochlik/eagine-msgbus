@@ -63,7 +63,7 @@ struct connection_update : latched_work_unit {
       : latched_work_unit{done}
       , _conn{&conn} {}
 
-    auto do_it() noexcept -> bool {
+    auto do_it() noexcept -> bool final {
         _conn->update();
         return true;
     }
@@ -262,8 +262,20 @@ private:
       const identifier_t incoming_id,
       const message_view&) noexcept -> message_handling_result;
 
+    auto _handle_not_not_a_router(
+      const identifier_t incoming_id,
+      routed_node& node,
+      const message_view&) noexcept -> message_handling_result;
     auto _handle_not_subscribed(
       const identifier_t incoming_id,
+      const message_view&) noexcept -> message_handling_result;
+    auto _handle_msg_allow(
+      const identifier_t incoming_id,
+      routed_node& node,
+      const message_view&) noexcept -> message_handling_result;
+    auto _handle_msg_block(
+      const identifier_t incoming_id,
+      routed_node& node,
       const message_view&) noexcept -> message_handling_result;
 
     auto _handle_subscribers_query(const message_view&) noexcept
@@ -282,6 +294,9 @@ private:
 
     auto _update_stats() noexcept -> work_done;
     auto _handle_stats_query(const message_view&) noexcept
+      -> message_handling_result;
+
+    auto _handle_bye_bye(routed_node& node, const message_view&) noexcept
       -> message_handling_result;
 
     auto _handle_blob_fragment(const message_view&) noexcept

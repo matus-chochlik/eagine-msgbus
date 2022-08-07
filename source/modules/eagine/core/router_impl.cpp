@@ -56,7 +56,7 @@ routed_node::routed_node() noexcept {
 }
 //------------------------------------------------------------------------------
 auto routed_node::is_allowed(const message_id msg_id) const noexcept -> bool {
-    if(is_special_message(msg_id)) [[unlikely]] {
+    if(is_special_message(msg_id)) {
         return true;
     }
     if(!message_allow_list.empty()) {
@@ -554,6 +554,18 @@ auto router::_handle_subscribed(
     return should_be_forwarded;
 }
 //------------------------------------------------------------------------------
+auto router::_handle_not_not_a_router(
+  const identifier_t incoming_id,
+  routed_node& node,
+  const message_view& message) noexcept -> message_handling_result {
+    if(incoming_id == message.source_id) {
+        node.maybe_router = false;
+        log_debug("node ${source} is not a router")
+          .arg("source", message.source_id);
+    }
+    return was_handled;
+}
+//------------------------------------------------------------------------------
 auto router::_handle_not_subscribed(
   const identifier_t incoming_id,
   const message_view& message) noexcept -> message_handling_result {
@@ -571,9 +583,43 @@ auto router::_handle_not_subscribed(
     return should_be_forwarded;
 }
 //------------------------------------------------------------------------------
+auto router::_handle_msg_allow(
+  const identifier_t incoming_id,
+  routed_node& node,
+  const message_view& message) noexcept -> message_handling_result {
+    message_id alw_msg_id{};
+    if(default_deserialize_message_type(alw_msg_id, message.content())) {
+        log_debug("node ${source} allowing message ${message}")
+          .arg("message", alw_msg_id)
+          .arg("source", message.source_id);
+        node.allow_message(alw_msg_id);
+        _update_endpoint_info(incoming_id, message);
+        return was_handled;
+    }
+    return should_be_forwarded;
+}
+//------------------------------------------------------------------------------
+auto router::_handle_msg_block(
+  const identifier_t incoming_id,
+  routed_node& node,
+  const message_view& message) noexcept -> message_handling_result {
+    message_id blk_msg_id{};
+    if(default_deserialize_message_type(blk_msg_id, message.content())) {
+        if(!is_special_message(blk_msg_id)) {
+            log_debug("node ${source} blocking message ${message}")
+              .arg("message", blk_msg_id)
+              .arg("source", message.source_id);
+            node.block_message(blk_msg_id);
+            _update_endpoint_info(incoming_id, message);
+            return was_handled;
+        }
+    }
+    return should_be_forwarded;
+}
+//------------------------------------------------------------------------------
 auto router::_handle_subscribers_query(const message_view& message) noexcept
   -> message_handling_result {
-    const auto pos = _endpoint_infos.find(message.target_id);
+    const auto pos{_endpoint_infos.find(message.target_id)};
     if(pos != _endpoint_infos.end()) {
         auto& info = pos->second;
         if(info.instance_id) {
@@ -775,6 +821,18 @@ auto router::_handle_stats_query(const message_view& message) noexcept
     return should_be_forwarded;
 }
 //------------------------------------------------------------------------------
+auto router::_handle_bye_bye(
+  routed_node& node,
+  const message_view& message) noexcept -> message_handling_result {
+    if(!node.maybe_router) {
+        node.do_disconnect = true;
+    }
+    _endpoint_idx.erase(message.source_id);
+    _endpoint_infos.erase(message.source_id);
+
+    return should_be_forwarded;
+}
+//------------------------------------------------------------------------------
 auto router::_handle_blob_fragment(const message_view& message) noexcept
   -> message_handling_result {
     if(_blobs.process_incoming(
@@ -798,45 +856,48 @@ auto router::_handle_special_common(
   const identifier_t incoming_id,
   const message_view& message) noexcept -> message_handling_result {
 
-    if(msg_id.has_method("ping")) {
-        return _handle_ping(message);
-    } else if(msg_id.has_method("pong")) {
-        return should_be_forwarded;
-    } else if(msg_id.has_method("subscribTo")) {
-        return _handle_subscribed(incoming_id, message);
-    } else if(msg_id.has_method("unsubFrom") || msg_id.has_method("notSubTo")) {
-        return _handle_not_subscribed(incoming_id, message);
-    } else if(msg_id.has_method("qrySubscrb")) {
-        return _handle_subscribers_query(message);
-    } else if(msg_id.has_method("qrySubscrp")) {
-        return _handle_subscriptions_query(message);
-    } else if(msg_id.has_method("blobFrgmnt")) {
-        return _handle_blob_fragment(message);
-    } else if(msg_id.has_method("blobResend")) {
-        return _handle_blob_resend(message);
-    } else if(msg_id.has_method("rtrCertQry")) {
-        return _handle_router_certificate_query(message);
-    } else if(msg_id.has_method("eptCertQry")) {
-        return _handle_endpoint_certificate_query(message);
-    } else if(msg_id.has_method("requestId")) {
-        return was_handled;
-    } else if(msg_id.has_method("topoQuery")) {
-        return _handle_topology_query(message);
-    } else if(msg_id.has_method("statsQuery")) {
-        return _handle_stats_query(message);
-    } else if(
-      msg_id.has_method("topoRutrCn") || msg_id.has_method("topoBrdgCn") ||
-      msg_id.has_method("topoEndpt") || msg_id.has_method("statsRutr") ||
-      msg_id.has_method("statsBrdg") || msg_id.has_method("statsEndpt") ||
-      msg_id.has_method("statsConn")) {
-        return should_be_forwarded;
-    } else if(msg_id.has_method("msgFlowInf") || msg_id.has_method("annEndptId")) {
-        return was_handled;
-    } else [[unlikely]] {
-        log_warning("unhandled special message ${message} from ${source}")
-          .arg("message", msg_id)
-          .arg("source", message.source_id)
-          .arg("data", message.data());
+    switch(msg_id.method_id()) {
+        case id_v("ping"):
+            return _handle_ping(message);
+        case id_v("subscribTo"):
+            return _handle_subscribed(incoming_id, message);
+        case id_v("unsubFrom"):
+        case id_v("notSubTo"):
+            return _handle_not_subscribed(incoming_id, message);
+        case id_v("qrySubscrb"):
+            return _handle_subscribers_query(message);
+        case id_v("qrySubscrp"):
+            return _handle_subscriptions_query(message);
+        case id_v("blobFrgmnt"):
+            return _handle_blob_fragment(message);
+        case id_v("blobResend"):
+            return _handle_blob_resend(message);
+        case id_v("rtrCertQry"):
+            return _handle_router_certificate_query(message);
+        case id_v("eptCertQry"):
+            return _handle_endpoint_certificate_query(message);
+        case id_v("topoQuery"):
+            return _handle_topology_query(message);
+        case id_v("statsQuery"):
+            return _handle_stats_query(message);
+        case id_v("pong"):
+        case id_v("topoRutrCn"):
+        case id_v("topoBrdgCn"):
+        case id_v("topoEndpt"):
+        case id_v("statsRutr"):
+        case id_v("statsBrdg"):
+        case id_v("statsEndpt"):
+        case id_v("statsConn"):
+            return should_be_forwarded;
+        case id_v("requestId"):
+        case id_v("msgFlowInf"):
+        case id_v("annEndptId"):
+            return was_handled;
+        [[unlikely]] default:
+            log_warning("unhandled special message ${message} from ${source}")
+              .arg("message", msg_id)
+              .arg("source", message.source_id)
+              .arg("data", message.data());
     }
     return should_be_forwarded;
 }
@@ -845,14 +906,14 @@ auto router::_handle_special(
   const message_id msg_id,
   const identifier_t incoming_id,
   const message_view& message) noexcept -> message_handling_result {
-    if(is_special_message(msg_id)) [[unlikely]] {
+    if(is_special_message(msg_id)) {
         log_debug("router handling special message ${message} from parent")
           .arg("router", _id_base)
           .arg("message", msg_id)
           .arg("target", message.target_id)
           .arg("source", message.source_id);
 
-        if(msg_id.has_method("stillAlive")) {
+        if(msg_id.has_method("stillAlive")) [[unlikely]] {
             _update_endpoint_info(incoming_id, message);
             return should_be_forwarded;
         } else {
@@ -867,71 +928,40 @@ auto router::_handle_special(
   const identifier_t incoming_id,
   routed_node& node,
   const message_view& message) noexcept -> message_handling_result {
-    if(is_special_message(msg_id)) [[unlikely]] {
+    if(is_special_message(msg_id)) {
         log_debug("router handling special message ${message} from node")
           .arg("router", _id_base)
           .arg("message", msg_id)
           .arg("target", message.target_id)
           .arg("source", message.source_id);
 
-        if(msg_id.has_method("notARouter")) {
-            if(incoming_id == message.source_id) {
-                node.maybe_router = false;
-                log_debug("node ${source} is not a router")
-                  .arg("source", message.source_id);
-            }
-            return was_handled;
-        } else if(msg_id.has_method("clrBlkList")) {
-            log_debug("clearing router block_list");
-            node.message_block_list.clear();
-            return was_handled;
-        } else if(msg_id.has_method("clrAlwList")) {
-            log_debug("clearing router allow_list");
-            node.message_allow_list.clear();
-            return was_handled;
-        } else if(msg_id.has_method("msgBlkList")) {
-            message_id blk_msg_id{};
-            if(default_deserialize_message_type(
-                 blk_msg_id, message.content())) {
-                if(!is_special_message(msg_id)) {
-                    log_debug("node ${source} blocking message ${message}")
-                      .arg("message", blk_msg_id)
-                      .arg("source", message.source_id);
-                    node.block_message(blk_msg_id);
-                    _update_endpoint_info(incoming_id, message);
-                    return was_handled;
-                }
-            }
-        } else if(msg_id.has_method("msgAlwList")) {
-            message_id alw_msg_id{};
-            if(default_deserialize_message_type(
-                 alw_msg_id, message.content())) {
-                log_debug("node ${source} allowing message ${message}")
-                  .arg("message", alw_msg_id)
-                  .arg("source", message.source_id);
-                node.allow_message(alw_msg_id);
-                _update_endpoint_info(incoming_id, message);
+        switch(msg_id.method_id()) {
+            case id_v("notARouter"):
+                return _handle_not_not_a_router(incoming_id, node, message);
+            case id_v("clrBlkList"):
+                log_debug("clearing router block_list");
+                node.message_block_list.clear();
                 return was_handled;
-            }
-        } else if(msg_id.has_method("stillAlive")) {
-            _update_endpoint_info(incoming_id, message);
-
-            return should_be_forwarded;
-        } else if(
-          msg_id.has_method("byeByeEndp") || msg_id.has_method("byeByeRutr") ||
-          msg_id.has_method("byeByeBrdg")) {
-            log_debug("received bye-bye (${method}) from node ${source}")
-              .arg("method", msg_id.method())
-              .arg("source", message.source_id);
-            if(!node.maybe_router) {
-                node.do_disconnect = true;
-            }
-            _endpoint_idx.erase(message.source_id);
-            _endpoint_infos.erase(message.source_id);
-
-            return should_be_forwarded;
-        } else {
-            return _handle_special_common(msg_id, incoming_id, message);
+            case id_v("clrAlwList"):
+                log_debug("clearing router allow_list");
+                node.message_allow_list.clear();
+                return was_handled;
+            case id_v("stillAlive"):
+                _update_endpoint_info(incoming_id, message);
+                return should_be_forwarded;
+            case id_v("msgAlwList"):
+                return _handle_msg_allow(incoming_id, node, message);
+            case id_v("msgBlkList"):
+                return _handle_msg_block(incoming_id, node, message);
+            case id_v("byeByeEndp"):
+            case id_v("byeByeRutr"):
+            case id_v("byeByeBrdg"):
+                log_debug("received bye-bye (${method}) from node ${source}")
+                  .arg("method", msg_id.method())
+                  .arg("source", message.source_id);
+                return _handle_bye_bye(node, message);
+            default:
+                return _handle_special_common(msg_id, incoming_id, message);
         }
     }
     return should_be_forwarded;
