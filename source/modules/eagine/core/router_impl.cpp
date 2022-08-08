@@ -169,6 +169,7 @@ auto router::add_acceptor(std::shared_ptr<acceptor> an_acceptor) noexcept
   -> bool {
     if(an_acceptor) {
         log_info("adding connection acceptor")
+          .tag("addAccptor")
           .arg("kind", an_acceptor->kind())
           .arg("type", an_acceptor->type_id());
         _acceptors.emplace_back(std::move(an_acceptor));
@@ -181,6 +182,7 @@ auto router::add_connection(std::unique_ptr<connection> a_connection) noexcept
   -> bool {
     if(a_connection) {
         log_info("assigning parent router connection")
+          .tag("setCnnctin")
           .arg("kind", a_connection->kind())
           .arg("type", a_connection->type_id());
         _parent_router.reset(std::move(a_connection));
@@ -212,6 +214,7 @@ void router::_setup_from_config() {
     _id_sequence = _id_base + 1;
 
     log_info("using router id range ${base} - ${end} (${count})")
+      .tag("idRange")
       .arg("count", id_count)
       .arg("base", _id_base)
       .arg("end", _id_end);
@@ -275,6 +278,7 @@ auto router::_handle_pending() noexcept -> work_done {
                 _assign_id(pending.the_connection);
             } else if(id != 0) {
                 log_info("adopting pending connection from ${cnterpart} ${id}")
+                  .tag("adPendConn")
                   .arg("kind", pending.the_connection->kind())
                   .arg("type", pending.the_connection->type_id())
                   .arg("id", id)
@@ -313,6 +317,7 @@ auto router::_remove_timeouted() noexcept -> work_done {
         if(pending.age() > this->_pending_timeout) {
             something_done();
             log_warning("removing timeouted pending ${type} connection")
+              .tag("rmPendConn")
               .arg("type", pending.the_connection->type_id())
               .arg("age", pending.age());
             return true;
@@ -408,6 +413,7 @@ void router::_handle_connection(
   std::unique_ptr<connection> a_connection) noexcept {
     assert(a_connection);
     log_info("accepted pending connection")
+      .tag("acPendConn")
       .arg("kind", a_connection->kind())
       .arg("type", a_connection->type_id());
     _pending.emplace_back(std::move(a_connection));
@@ -426,6 +432,7 @@ void router::_log_router_stats() noexcept {
 
         log_chart_sample("msgsPerSec", msgs_per_sec);
         log_stat("forwarded ${count} messages")
+          .tag("msgStats")
           .arg("count", _stats.forwarded_messages)
           .arg("dropped", _stats.dropped_messages)
           .arg("interval", interval)
@@ -895,6 +902,7 @@ auto router::_handle_special_common(
             return was_handled;
         [[unlikely]] default:
             log_warning("unhandled special message ${message} from ${source}")
+              .tag("unhndldSpc")
               .arg("message", msg_id)
               .arg("source", message.source_id)
               .arg("data", message.data());
@@ -939,11 +947,11 @@ auto router::_handle_special(
             case id_v("notARouter"):
                 return _handle_not_not_a_router(incoming_id, node, message);
             case id_v("clrBlkList"):
-                log_debug("clearing router block_list");
+                log_info("clearing router block_list").tag("clrBlkList");
                 node.message_block_list.clear();
                 return was_handled;
             case id_v("clrAlwList"):
-                log_debug("clearing router allow_list");
+                log_info("clearing router allow_list").tag("clrAlwList");
                 node.message_allow_list.clear();
                 return was_handled;
             case id_v("stillAlive"):
@@ -1065,6 +1073,7 @@ auto router::_route_message(
         }
     } else {
         log_warning("message ${message} discarded after too many hops")
+          .tag("tooMnyHops")
           .arg("message", msg_id);
         ++_stats.dropped_messages;
     }
@@ -1255,6 +1264,7 @@ void router::cleanup() noexcept {
     }
 
     log_stat("forwarded ${count} messages in total")
+      .tag("fwdMsgTotl")
       .arg("count", _stats.forwarded_messages)
       .arg("dropped", _stats.dropped_messages)
       .arg("avgMsgAge", std::chrono::microseconds(_stats.message_age_us));

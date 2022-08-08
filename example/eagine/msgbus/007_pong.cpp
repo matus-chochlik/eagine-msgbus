@@ -52,7 +52,7 @@ public:
       const message_sequence_t,
       const verification_bits) noexcept -> bool final {
         if((++_sent % _mod) == 0) [[unlikely]] {
-            log_info("sent ${sent} pongs").arg("sent", _sent);
+            log_info("sent ${sent} pongs").tag("sentPongs").arg("sent", _sent);
         }
         return true;
     }

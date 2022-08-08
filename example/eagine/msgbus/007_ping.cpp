@@ -121,12 +121,12 @@ public:
     }
 
     void on_connection_established(const bool usable) noexcept {
-        log_info("connection established");
+        log_info("connection established").tag("newConn");
         _do_ping = usable;
     }
 
     void on_connection_lost() noexcept {
-        log_info("connection lost");
+        log_info("connection lost").tag("connLost");
         _do_ping = false;
     }
 
@@ -136,6 +136,7 @@ public:
         if(sub_msg == this->ping_msg_id()) {
             if(_targets.try_emplace(info.endpoint_id, ping_stats{}).second) {
                 log_info("new pingable ${id} appeared")
+                  .tag("newPngable")
                   .arg("id", info.endpoint_id);
             }
         }
@@ -195,6 +196,7 @@ public:
 
                 log_chart_sample("msgsPerSec", msgs_per_sec);
                 log_info("received ${rcvd} pongs")
+                  .tag("rcvdPongs")
                   .arg("rcvd", _rcvd)
                   .arg("interval", interval)
                   .arg("msgsPerSec", msgs_per_sec)
@@ -236,7 +238,9 @@ public:
                 if((_rcvd < _max) && (_sent < lim)) {
                     this->ping(pingable_id, std::chrono::seconds(3 + _rep));
                     if((++_sent % _mod) == 0) [[unlikely]] {
-                        log_info("sent ${sent} pings").arg("sent", _sent);
+                        log_info("sent ${sent} pings")
+                          .tag("sentPings")
+                          .arg("sent", _sent);
                     }
 
                     if(entry.should_check_info) [[unlikely]] {
@@ -261,7 +265,7 @@ public:
         something_done(base::update());
         if(_do_ping) {
             if(_should_query_pingable) [[unlikely]] {
-                log_info("searching for pingables");
+                log_info("searching for pingables").tag("search");
                 query_pingables();
             }
             for([[maybe_unused]] const auto i : integer_range(_rep)) {
