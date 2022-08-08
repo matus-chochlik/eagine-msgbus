@@ -369,7 +369,7 @@ auto router::_remove_disconnected() noexcept -> work_done {
             conn.reset();
         } else {
             if(!conn->is_usable()) [[unlikely]] {
-                log_debug("removing disconnected connection");
+                log_debug("removing disconnected connection").tag("rmDiscConn");
                 if(conn) {
                     conn->cleanup();
                 }
@@ -916,6 +916,7 @@ auto router::_handle_special(
   const message_view& message) noexcept -> message_handling_result {
     if(is_special_message(msg_id)) {
         log_debug("router handling special message ${message} from parent")
+          .tag("hndlSpcMsg")
           .arg("router", _id_base)
           .arg("message", msg_id)
           .arg("target", message.target_id)
@@ -1264,7 +1265,7 @@ void router::cleanup() noexcept {
     }
 
     log_stat("forwarded ${count} messages in total")
-      .tag("fwdMsgTotl")
+      .tag("msgStats")
       .arg("count", _stats.forwarded_messages)
       .arg("dropped", _stats.dropped_messages)
       .arg("avgMsgAge", std::chrono::microseconds(_stats.message_age_us));

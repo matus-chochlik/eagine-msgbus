@@ -354,6 +354,7 @@ auto bridge::_handle_special(
   const bool to_connection) noexcept -> message_handling_result {
     if(is_special_message(msg_id)) [[unlikely]] {
         log_debug("bridge handling special message ${message}")
+          .tag("hndlSpcMsg")
           .arg("bridge", _id)
           .arg("message", msg_id)
           .arg("target", message.target_id)
@@ -435,6 +436,7 @@ void bridge::_log_bridge_stats_c2o() noexcept {
 
         log_chart_sample("msgPerSecO", msgs_per_sec);
         log_stat("forwarded ${count} messages to output queue")
+          .tag("msgStats")
           .arg("count", _forwarded_messages_c2o)
           .arg("dropped", _dropped_messages_c2o)
           .arg("interval", interval)
@@ -460,6 +462,7 @@ void bridge::_log_bridge_stats_i2c() noexcept {
 
         log_chart_sample("msgPerSecI", msgs_per_sec);
         log_stat("forwarded ${count} messages from input")
+          .tag("msgStats")
           .arg("count", _forwarded_messages_i2c)
           .arg("dropped", _dropped_messages_i2c)
           .arg("interval", interval)
@@ -615,6 +618,7 @@ void bridge::cleanup() noexcept {
 
     if(_state) {
         log_stat("forwarded ${count} messages in total to output stream")
+          .tag("msgStats")
           .arg("count", _state->forwarded_messages())
           .arg("dropped", _state->dropped_messages())
           .arg("decodeErr", _state->decode_errors())
@@ -622,11 +626,13 @@ void bridge::cleanup() noexcept {
     }
 
     log_stat("forwarded ${count} messages in total to output queue")
+      .tag("msgStats")
       .arg("count", _forwarded_messages_c2o)
       .arg("dropped", _dropped_messages_c2o)
       .arg("avgMsgAge", avg_msg_age_c2o);
 
     log_stat("forwarded ${count} messages in total to connection")
+      .tag("msgStats")
       .arg("count", _forwarded_messages_i2c)
       .arg("dropped", _dropped_messages_i2c)
       .arg("avgMsgAge", avg_msg_age_i2c);
