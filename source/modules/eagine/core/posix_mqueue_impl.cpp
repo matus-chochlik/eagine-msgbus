@@ -276,7 +276,7 @@ public:
     /// @brief Returns the absolute maximum block size that can be sent in a message.
     /// @see data_size
     auto max_data_size() noexcept -> valid_if_positive<span_size_t> {
-        if(is_open()) {
+        if(is_open()) [[likely]] {
             struct ::mq_attr attr {};
             errno = 0;
             ::mq_getattr(_ohandle, &attr);
@@ -294,7 +294,7 @@ public:
     /// @brief Sends a block of data with the specified priority.
     auto send(const unsigned priority, const span<const char> blk) noexcept
       -> auto& {
-        if(is_open()) {
+        if(is_open()) [[likely]] {
             errno = 0;
             ::mq_send(_ohandle, blk.data(), integer(blk.size()), priority);
             _last_errno = errno;
@@ -316,13 +316,13 @@ public:
     /// @brief Receives messages and calls the specified handler on them.
     auto receive(memory::span<char> blk, const receive_handler handler) noexcept
       -> bool {
-        if(is_open()) {
+        if(is_open()) [[likely]] {
             unsigned priority{0U};
             errno = 0;
             const auto received =
               ::mq_receive(_ihandle, blk.data(), blk.size(), &priority);
             _last_errno = errno;
-            if(received > 0) {
+            if(received > 0) [[likely]] {
                 handler(priority, head(blk, received));
                 return true;
             } else if(
@@ -412,7 +412,7 @@ public:
     }
 
     auto update() noexcept -> work_done override {
-        std::unique_lock lock{_mutex};
+        const std::unique_lock lock{_mutex};
         some_true something_done{};
         something_done(_receive());
         something_done(_send());
@@ -425,8 +425,8 @@ public:
             block_data_sink sink(cover(_buffer));
             default_serializer_backend backend(sink);
             auto errors = serialize_message(msg_id, message, backend);
-            if(!errors) {
-                std::unique_lock lock{_mutex};
+            if(!errors) [[likely]] {
+                const std::unique_lock lock{_mutex};
                 _outgoing.push(sink.done());
                 return true;
             } else {
@@ -438,7 +438,7 @@ public:
 
     auto fetch_messages(const fetch_handler handler) noexcept
       -> work_done final {
-        std::unique_lock lock{_mutex};
+        const std::unique_lock lock{_mutex};
         return _incoming.fetch_all(handler);
     }
 
@@ -449,8 +449,8 @@ public:
 protected:
     auto _checkup(posix_mqueue& connect_queue) noexcept -> work_done {
         some_true something_done{};
-        if(connect_queue.is_usable()) {
-            if(!_data_queue.is_usable()) {
+        if(connect_queue.is_usable()) [[likely]] {
+            if(!_data_queue.is_usable()) [[unlikely]] {
                 if(_reconnect_timeout) {
                     _data_queue.close();
                     _data_queue.unlink();
@@ -493,7 +493,7 @@ protected:
 
     auto _receive() noexcept -> work_done {
         some_true something_done{};
-        if(_data_queue.is_usable()) {
+        if(_data_queue.is_usable()) [[likely]] {
             while(_data_queue.receive(
               as_chars(cover(_buffer)),
               posix_mqueue::receive_handler(
@@ -506,7 +506,7 @@ protected:
     }
 
     auto _send() noexcept -> bool {
-        if(_data_queue.is_usable()) {
+        if(_data_queue.is_usable()) [[likely]] {
             return _outgoing.fetch_all(
               make_callable_ref<&posix_mqueue_connection::_handle_send>(this));
         }
@@ -579,7 +579,7 @@ public:
     }
 
     auto update() noexcept -> work_done final {
-        std::unique_lock lock{_mutex};
+        const std::unique_lock lock{_mutex};
         some_true something_done{};
         something_done(_checkup());
         something_done(_receive());
@@ -590,7 +590,7 @@ public:
 private:
     auto _checkup() noexcept -> work_done {
         some_true something_done{};
-        if(!_connect_queue.is_usable()) {
+        if(!_connect_queue.is_usable()) [[unlikely]] {
             if(_reconnect_timeout) {
                 _connect_queue.close();
                 if(!_connect_queue.open().had_error()) {
@@ -680,7 +680,7 @@ public:
 private:
     auto _checkup() noexcept -> work_done {
         some_true something_done{};
-        if(!_accept_queue.is_usable()) {
+        if(!_accept_queue.is_usable()) [[unlikely]] {
             if(_reconnect_timeout) {
                 _accept_queue.close();
                 _accept_queue.unlink();
@@ -696,7 +696,7 @@ private:
 
     auto _receive() noexcept -> work_done {
         some_true something_done{};
-        if(_accept_queue.is_usable()) {
+        if(_accept_queue.is_usable()) [[likely]] {
             while(_accept_queue.receive(
               as_chars(cover(_buffer)),
               make_callable_ref<&posix_mqueue_acceptor::_handle_receive>(
