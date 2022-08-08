@@ -449,8 +449,8 @@ public:
 protected:
     auto _checkup(posix_mqueue& connect_queue) noexcept -> work_done {
         some_true something_done{};
-        if(connect_queue.is_usable()) [[likely]] {
-            if(!_data_queue.is_usable()) [[unlikely]] {
+        if(!_data_queue.is_usable()) [[unlikely]] {
+            if(connect_queue.is_usable()) [[likely]] {
                 if(_reconnect_timeout) {
                     _data_queue.close();
                     _data_queue.unlink();
