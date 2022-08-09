@@ -25,6 +25,17 @@ import <thread>;
 
 namespace eagine::msgbus {
 //------------------------------------------------------------------------------
+// router_endpoint_info
+//------------------------------------------------------------------------------
+void router_endpoint_info::assign_instance_id(const message_view& msg) noexcept {
+    is_outdated.reset();
+    if(instance_id != msg.sequence_no) {
+        instance_id = msg.sequence_no;
+        subscriptions.clear();
+        unsubscriptions.clear();
+    }
+}
+//------------------------------------------------------------------------------
 // routed_node
 //------------------------------------------------------------------------------
 static inline auto message_id_list_contains(
@@ -98,6 +109,27 @@ inline void parent_router::reset(
   std::unique_ptr<connection> a_connection) noexcept {
     the_connection = std::move(a_connection);
     confirmed_id = 0;
+}
+//------------------------------------------------------------------------------
+void parent_router::confirm_id(
+  const main_ctx_object& user,
+  const message_view& message) noexcept {
+    confirmed_id = message.target_id;
+    user.log_debug("confirmed id ${id} by parent router ${source}")
+      .arg("id", message.target_id)
+      .arg("source", message.source_id);
+}
+//------------------------------------------------------------------------------
+void parent_router::handle_bye(
+  const main_ctx_object& user,
+  message_id msg_id,
+  const message_view& message) const noexcept {
+    user
+      .log_debug(
+        "received bye-bye (${method}) from node ${source} from parent router")
+      .tag("handleBye")
+      .arg("method", msg_id.method())
+      .arg("source", message.source_id);
 }
 //------------------------------------------------------------------------------
 inline auto parent_router::update(
@@ -829,8 +861,13 @@ auto router::_handle_stats_query(const message_view& message) noexcept
 }
 //------------------------------------------------------------------------------
 auto router::_handle_bye_bye(
+  const message_id msg_id,
   routed_node& node,
   const message_view& message) noexcept -> message_handling_result {
+    log_debug("received bye-bye (${method}) from node ${source}")
+      .arg("method", msg_id.method())
+      .arg("source", message.source_id);
+
     if(!node.maybe_router) {
         node.do_disconnect = true;
     }
@@ -910,73 +947,85 @@ auto router::_handle_special_common(
     return should_be_forwarded;
 }
 //------------------------------------------------------------------------------
-auto router::_handle_special(
+auto router::_do_handle_special(
+  const message_id msg_id,
+  const identifier_t incoming_id,
+  const message_view& message) noexcept -> message_handling_result {
+    log_debug("router handling special message ${message} from parent")
+      .tag("hndlSpcMsg")
+      .arg("router", _id_base)
+      .arg("message", msg_id)
+      .arg("target", message.target_id)
+      .arg("source", message.source_id);
+
+    if(!msg_id.has_method("stillAlive")) [[likely]] {
+        return _handle_special_common(msg_id, incoming_id, message);
+    } else {
+        _update_endpoint_info(incoming_id, message);
+        return should_be_forwarded;
+    }
+}
+//------------------------------------------------------------------------------
+inline auto router::_handle_special(
   const message_id msg_id,
   const identifier_t incoming_id,
   const message_view& message) noexcept -> message_handling_result {
     if(is_special_message(msg_id)) {
-        log_debug("router handling special message ${message} from parent")
-          .tag("hndlSpcMsg")
-          .arg("router", _id_base)
-          .arg("message", msg_id)
-          .arg("target", message.target_id)
-          .arg("source", message.source_id);
-
-        if(msg_id.has_method("stillAlive")) [[unlikely]] {
-            _update_endpoint_info(incoming_id, message);
-            return should_be_forwarded;
-        } else {
-            return _handle_special_common(msg_id, incoming_id, message);
-        }
+        return _do_handle_special(msg_id, incoming_id, message);
     }
     return should_be_forwarded;
 }
 //------------------------------------------------------------------------------
-auto router::_handle_special(
+auto router::_do_handle_special(
+  const message_id msg_id,
+  const identifier_t incoming_id,
+  routed_node& node,
+  const message_view& message) noexcept -> message_handling_result {
+    log_debug("router handling special message ${message} from node")
+      .arg("router", _id_base)
+      .arg("message", msg_id)
+      .arg("target", message.target_id)
+      .arg("source", message.source_id);
+
+    switch(msg_id.method_id()) {
+        case id_v("notARouter"):
+            return _handle_not_not_a_router(incoming_id, node, message);
+        case id_v("clrBlkList"):
+            log_info("clearing router block_list").tag("clrBlkList");
+            node.message_block_list.clear();
+            return was_handled;
+        case id_v("clrAlwList"):
+            log_info("clearing router allow_list").tag("clrAlwList");
+            node.message_allow_list.clear();
+            return was_handled;
+        case id_v("stillAlive"):
+            _update_endpoint_info(incoming_id, message);
+            return should_be_forwarded;
+        case id_v("msgAlwList"):
+            return _handle_msg_allow(incoming_id, node, message);
+        case id_v("msgBlkList"):
+            return _handle_msg_block(incoming_id, node, message);
+        case id_v("byeByeEndp"):
+        case id_v("byeByeRutr"):
+        case id_v("byeByeBrdg"):
+            return _handle_bye_bye(msg_id, node, message);
+        default:
+            return _handle_special_common(msg_id, incoming_id, message);
+    }
+}
+//------------------------------------------------------------------------------
+inline auto router::_handle_special(
   const message_id msg_id,
   const identifier_t incoming_id,
   routed_node& node,
   const message_view& message) noexcept -> message_handling_result {
     if(is_special_message(msg_id)) {
-        log_debug("router handling special message ${message} from node")
-          .arg("router", _id_base)
-          .arg("message", msg_id)
-          .arg("target", message.target_id)
-          .arg("source", message.source_id);
-
-        switch(msg_id.method_id()) {
-            case id_v("notARouter"):
-                return _handle_not_not_a_router(incoming_id, node, message);
-            case id_v("clrBlkList"):
-                log_info("clearing router block_list").tag("clrBlkList");
-                node.message_block_list.clear();
-                return was_handled;
-            case id_v("clrAlwList"):
-                log_info("clearing router allow_list").tag("clrAlwList");
-                node.message_allow_list.clear();
-                return was_handled;
-            case id_v("stillAlive"):
-                _update_endpoint_info(incoming_id, message);
-                return should_be_forwarded;
-            case id_v("msgAlwList"):
-                return _handle_msg_allow(incoming_id, node, message);
-            case id_v("msgBlkList"):
-                return _handle_msg_block(incoming_id, node, message);
-            case id_v("byeByeEndp"):
-            case id_v("byeByeRutr"):
-            case id_v("byeByeBrdg"):
-                log_debug("received bye-bye (${method}) from node ${source}")
-                  .arg("method", msg_id.method())
-                  .arg("source", message.source_id);
-                return _handle_bye_bye(node, message);
-            default:
-                return _handle_special_common(msg_id, incoming_id, message);
-        }
+        return _do_handle_special(msg_id, incoming_id, node, message);
     }
     return should_be_forwarded;
 }
 //------------------------------------------------------------------------------
-auto router::_use_workers() const noexcept -> bool {
+inline auto router::_use_workers() const noexcept -> bool {
     return _nodes.size() > 2;
 }
 //------------------------------------------------------------------------------
@@ -1090,9 +1139,9 @@ auto router::_route_node_messages(
                            const message_age msg_age,
                            message_view message) {
         _message_age_sum += message.add_age(msg_age).age() + message_age_inc;
-        if(
-          this->_handle_special(msg_id, incoming_id, node_in, message) ==
-          was_handled) {
+        const auto result{
+          this->_handle_special(msg_id, incoming_id, node_in, message)};
+        if(result == was_handled) {
             return true;
         }
         if(message.too_old()) [[unlikely]] {
@@ -1109,26 +1158,57 @@ auto router::_route_node_messages(
     return false;
 }
 //------------------------------------------------------------------------------
+auto router::_handle_special_parent_message(
+  const message_id msg_id,
+  message_view& message) noexcept -> bool {
+    switch(msg_id.method_id()) {
+        [[likely]] default:
+            const auto result{this->_do_handle_special(
+              msg_id, this->_parent_router.confirmed_id, message)};
+            if(result == was_handled) {
+                break;
+            }
+            return this->_route_message(msg_id, _id_base, message);
+        case id_v("byeByeEndp"):
+        case id_v("byeByeRutr"):
+        case id_v("byeByeBrdg"):
+            this->_parent_router.handle_bye(*this, msg_id, message);
+            break;
+        case id_v("confirmId"):
+            this->_parent_router.confirm_id(*this, message);
+            break;
+    }
+    return true;
+}
+//------------------------------------------------------------------------------
 auto router::_route_parent_messages(
   const std::chrono::steady_clock::duration message_age_inc) noexcept
   -> work_done {
-    const auto handler = [&](
-                           const message_id msg_id,
-                           const message_age msg_age,
-                           message_view message) {
-        _message_age_sum += message.add_age(msg_age).age() + message_age_inc;
-        if(
-          this->_handle_special(msg_id, _parent_router.confirmed_id, message) ==
-          was_handled) {
+    some_true something_done;
+
+    if(_parent_router.the_connection) [[likely]] {
+        const auto handler = [&](
+                               message_id msg_id,
+                               message_age msg_age,
+                               message_view message) noexcept -> bool {
+            this->_message_age_sum +=
+              message.add_age(msg_age).age() + message_age_inc;
+
+            if(message.too_old()) [[unlikely]] {
+                ++_stats.dropped_messages;
+                return true;
+            }
+            if(is_special_message(msg_id)) {
+                return this->_handle_special_parent_message(msg_id, message);
+            } else {
+                return this->_route_message(msg_id, _id_base, message);
+            }
             return true;
-        }
-        if(message.too_old()) [[unlikely]] {
-            ++_stats.dropped_messages;
-            return true;
-        }
-        return this->_route_message(msg_id, _id_base, message);
-    };
-    return _parent_router.fetch_messages(*this, handler);
+        };
+        something_done(_parent_router.the_connection->fetch_messages(
+          {construct_from, handler}));
+    }
+    return something_done;
 }
 //------------------------------------------------------------------------------
 auto router::_route_messages() noexcept -> work_done {

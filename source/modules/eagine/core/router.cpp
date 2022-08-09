@@ -47,14 +47,7 @@ struct router_endpoint_info {
     std::vector<message_id> subscriptions{};
     std::vector<message_id> unsubscriptions{};
 
-    void assign_instance_id(const message_view& msg) noexcept {
-        is_outdated.reset();
-        if(instance_id != msg.sequence_no) {
-            instance_id = msg.sequence_no;
-            subscriptions.clear();
-            unsubscriptions.clear();
-        }
-    }
+    void assign_instance_id(const message_view& msg) noexcept;
 };
 //------------------------------------------------------------------------------
 struct connection_update : latched_work_unit {
@@ -105,46 +98,15 @@ struct parent_router {
 
     void reset(std::unique_ptr<connection>) noexcept;
 
+    void confirm_id(
+      const main_ctx_object&,
+      const message_view& message) noexcept;
+
+    void handle_bye(const main_ctx_object&, message_id, const message_view&)
+      const noexcept;
+
     auto update(main_ctx_object&, const identifier_t id_base) noexcept
       -> work_done;
-
-    template <typename Handler>
-    auto fetch_messages(main_ctx_object& user, const Handler& handler) noexcept
-      -> work_done {
-        some_true something_done;
-
-        if(the_connection) [[likely]] {
-            const auto wrapped = [&](
-                                   message_id msg_id,
-                                   message_age msg_age,
-                                   const message_view& message) -> bool {
-                if(msg_id == msgbus_id{"confirmId"}) [[unlikely]] {
-                    confirmed_id = message.target_id;
-                    user
-                      .log_debug(
-                        "confirmed id ${id} by parent router ${source}")
-                      .arg("id", message.target_id)
-                      .arg("source", message.source_id);
-                } else if(
-                  msg_id.has_method("byeByeEndp") ||
-                  msg_id.has_method("byeByeRutr") ||
-                  msg_id.has_method("byeByeBrdg")) [[unlikely]] {
-                    user
-                      .log_debug(
-                        "received bye-bye (${method}) from node ${source} "
-                        "from parent router")
-                      .arg("method", msg_id.method())
-                      .arg("source", message.source_id);
-                } else {
-                    return handler(msg_id, msg_age, message);
-                }
-                return true;
-            };
-            something_done(
-              the_connection->fetch_messages({construct_from, wrapped}));
-        }
-        return something_done;
-    }
 
     auto send(const main_ctx_object&, const message_id, const message_view&)
       const noexcept -> bool;
@@ -296,8 +258,10 @@ private:
     auto _handle_stats_query(const message_view&) noexcept
       -> message_handling_result;
 
-    auto _handle_bye_bye(routed_node& node, const message_view&) noexcept
-      -> message_handling_result;
+    auto _handle_bye_bye(
+      const message_id,
+      routed_node& node,
+      const message_view&) noexcept -> message_handling_result;
 
     auto _handle_blob_fragment(const message_view&) noexcept
       -> message_handling_result;
@@ -307,6 +271,17 @@ private:
     auto _handle_special_common(
       const message_id msg_id,
       const identifier_t incoming_id,
+      const message_view&) noexcept -> message_handling_result;
+
+    auto _do_handle_special(
+      const message_id msg_id,
+      const identifier_t incoming_id,
+      const message_view&) noexcept -> message_handling_result;
+
+    auto _do_handle_special(
+      const message_id msg_id,
+      const identifier_t incoming_id,
+      routed_node&,
       const message_view&) noexcept -> message_handling_result;
 
     auto _handle_special(
@@ -342,7 +317,10 @@ private:
     auto _route_node_messages(
       const std::chrono::steady_clock::duration,
       const identifier_t incoming_id,
-      routed_node&) noexcept -> work_done;
+      routed_node&) noexcept -> bool;
+    auto _handle_special_parent_message(
+      const message_id msg_id,
+      message_view& message) noexcept -> bool;
     auto _route_parent_messages(
       const std::chrono::steady_clock::duration) noexcept -> work_done;
     auto _route_messages() noexcept -> work_done;
