@@ -105,6 +105,8 @@ struct parent_router {
     void handle_bye(const main_ctx_object&, message_id, const message_view&)
       const noexcept;
 
+    void announce_id(main_ctx_object&, const identifier_t id_base) noexcept;
+
     auto update(main_ctx_object&, const identifier_t id_base) noexcept
       -> work_done;
 

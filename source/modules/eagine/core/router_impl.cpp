@@ -132,24 +132,28 @@ void parent_router::handle_bye(
       .arg("source", message.source_id);
 }
 //------------------------------------------------------------------------------
+inline void parent_router::announce_id(
+  main_ctx_object& user,
+  const identifier_t id_base) noexcept {
+    message_view announcement{};
+    announcement.set_source_id(id_base);
+    the_connection->send(msgbus_id{"announceId"}, announcement);
+    confirm_id_timeout.reset();
+
+    user.log_debug("announcing id ${id} to parent router").arg("id", id_base);
+}
+//------------------------------------------------------------------------------
 inline auto parent_router::update(
   main_ctx_object& user,
   const identifier_t id_base) noexcept -> work_done {
     some_true something_done{};
 
     if(the_connection) [[likely]] {
-        something_done(the_connection->update());
         if(the_connection->is_usable()) [[likely]] {
             if(!confirmed_id) [[unlikely]] {
                 if(confirm_id_timeout) {
-                    message_view announcement{};
-                    announcement.set_source_id(id_base);
-                    the_connection->send(msgbus_id{"announceId"}, announcement);
-                    confirm_id_timeout.reset();
+                    announce_id(user, id_base);
                     something_done();
-
-                    user.log_debug("announcing id ${id} to parent router")
-                      .arg("id", id_base);
                 }
             }
             something_done(the_connection->update());
@@ -399,18 +403,16 @@ auto router::_remove_disconnected() noexcept -> work_done {
                 conn->cleanup();
             }
             conn.reset();
-        } else {
-            if(!conn->is_usable()) [[unlikely]] {
-                log_debug("removing disconnected connection").tag("rmDiscConn");
-                if(conn) {
-                    conn->cleanup();
-                }
-                conn.reset();
+        } else if(!conn->is_usable()) [[unlikely]] {
+            log_debug("removing disconnected connection").tag("rmDiscConn");
+            if(conn) {
+                conn->cleanup();
             }
+            conn.reset();
         }
     }
     something_done(_nodes.erase_if([this](auto& p) {
-        if(!p.second.the_connection) {
+        if(!p.second.the_connection) [[unlikely]] {
             _mark_disconnected(p.first);
             return true;
         }
