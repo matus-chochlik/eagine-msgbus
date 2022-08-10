@@ -116,6 +116,7 @@ void parent_router::confirm_id(
   const message_view& message) noexcept {
     confirmed_id = message.target_id;
     user.log_debug("confirmed id ${id} by parent router ${source}")
+      .tag("confirmdId")
       .arg("id", message.target_id)
       .arg("source", message.source_id);
 }
@@ -140,7 +141,9 @@ inline void parent_router::announce_id(
     the_connection->send(msgbus_id{"announceId"}, announcement);
     confirm_id_timeout.reset();
 
-    user.log_debug("announcing id ${id} to parent router").arg("id", id_base);
+    user.log_debug("announcing id ${id} to parent router")
+      .tag("announceId")
+      .arg("id", id_base);
 }
 //------------------------------------------------------------------------------
 inline auto parent_router::update(
@@ -149,14 +152,15 @@ inline auto parent_router::update(
     some_true something_done{};
 
     if(the_connection) [[likely]] {
+        something_done(the_connection->update());
         if(the_connection->is_usable()) [[likely]] {
             if(!confirmed_id) [[unlikely]] {
                 if(confirm_id_timeout) {
                     announce_id(user, id_base);
+                    the_connection->update();
                     something_done();
                 }
             }
-            something_done(the_connection->update());
         } else {
             if(confirmed_id) {
                 confirmed_id = 0;
@@ -271,79 +275,88 @@ auto router::_handle_accept() noexcept -> work_done {
     return something_done;
 }
 //------------------------------------------------------------------------------
-auto router::_handle_pending() noexcept -> work_done {
+auto router::_do_handle_pending() noexcept -> work_done {
     some_true something_done{};
 
-    if(!_pending.empty()) [[unlikely]] {
-        identifier_t id = 0;
-        bool maybe_router = true;
-        const auto handler =
-          [&](message_id msg_id, message_age, const message_view& msg) {
-              // this is a special message requesting endpoint id assignment
-              if(msg_id == msgbus_id{"requestId"}) {
-                  id = ~id;
-                  return true;
-              }
-              // this is a special message containing endpoint id
-              if(msg_id == msgbus_id{"annEndptId"}) {
-                  id = msg.source_id;
-                  maybe_router = false;
-                  this->log_debug("received endpoint id ${id}").arg("id", id);
-                  return true;
-              }
-              // this is a special message containing non-endpoint id
-              if(msg_id == msgbus_id{"announceId"}) {
-                  id = msg.source_id;
-                  this->log_debug("received id ${id}").arg("id", id);
-                  return true;
-              }
-              return false;
-          };
+    identifier_t id = 0;
+    bool maybe_router = true;
+    const auto handler = [&](
+                           message_id msg_id,
+                           message_age,
+                           const message_view& msg) {
+        // this is a special message requesting endpoint id assignment
+        if(msg_id == msgbus_id{"requestId"}) {
+            id = ~id;
+            return true;
+        }
+        // this is a special message containing endpoint id
+        if(msg_id == msgbus_id{"annEndptId"}) {
+            id = msg.source_id;
+            maybe_router = false;
+            this->log_debug("received endpoint id ${id}")
+              .tag("annEndptId")
+              .arg("id", id);
+            return true;
+        }
+        // this is a special message containing non-endpoint id
+        if(msg_id == msgbus_id{"announceId"}) {
+            id = msg.source_id;
+            this->log_debug("received id ${id}").tag("announceId").arg("id", id);
+            return true;
+        }
+        return false;
+    };
 
-        std::size_t idx = 0;
-        while(idx < _pending.size()) {
-            id = 0;
-            auto& pending = _pending[idx];
+    std::size_t idx = 0;
+    while(idx < _pending.size()) {
+        id = 0;
+        auto& pending = _pending[idx];
 
-            something_done(pending.the_connection->update());
-            something_done(pending.the_connection->fetch_messages(
-              {construct_from, handler}));
-            something_done(pending.the_connection->update());
-            // if we got the endpoint id message from the connection
-            if(~id == 0) {
-                _assign_id(pending.the_connection);
-            } else if(id != 0) {
-                log_info("adopting pending connection from ${cnterpart} ${id}")
-                  .tag("adPendConn")
-                  .arg("kind", pending.the_connection->kind())
-                  .arg("type", pending.the_connection->type_id())
-                  .arg("id", id)
-                  .arg(
-                    "cnterpart",
-                    maybe_router ? string_view("non-endpoint")
-                                 : string_view("endpoint"));
+        something_done(pending.the_connection->update());
+        something_done(
+          pending.the_connection->fetch_messages({construct_from, handler}));
+        something_done(pending.the_connection->update());
+        // if we got the endpoint id message from the connection
+        if(~id == 0) {
+            _assign_id(pending.the_connection);
+        } else if(id != 0) {
+            log_info("adopting pending connection from ${cnterpart} ${id}")
+              .tag("adPendConn")
+              .arg("kind", pending.the_connection->kind())
+              .arg("type", pending.the_connection->type_id())
+              .arg("id", id)
+              .arg(
+                "cnterpart",
+                maybe_router ? string_view("non-endpoint")
+                             : string_view("endpoint"));
 
-                // send the special message confirming assigned endpoint id
-                message_view confirmation{};
-                confirmation.set_source_id(_id_base).set_target_id(id);
-                pending.the_connection->send(
-                  msgbus_id{"confirmId"}, confirmation);
+            // send the special message confirming assigned endpoint id
+            message_view confirmation{};
+            confirmation.set_source_id(_id_base).set_target_id(id);
+            pending.the_connection->send(msgbus_id{"confirmId"}, confirmation);
 
-                auto pos = _nodes.find(id);
-                if(pos == _nodes.end()) {
-                    pos = _nodes.try_emplace(id).first;
-                }
-                pos->second.the_connection = std::move(pending.the_connection);
-                pos->second.maybe_router = maybe_router;
-                _pending.erase(_pending.begin() + signedness_cast(idx));
-                _recently_disconnected.erase(id);
-                something_done();
-            } else {
-                ++idx;
+            auto pos = _nodes.find(id);
+            if(pos == _nodes.end()) {
+                pos = _nodes.try_emplace(id).first;
             }
+            pos->second.the_connection = std::move(pending.the_connection);
+            pos->second.maybe_router = maybe_router;
+            _pending.erase(_pending.begin() + signedness_cast(idx));
+            _recently_disconnected.erase(id);
+            something_done();
+        } else {
+            ++idx;
         }
     }
     return something_done;
+}
+//------------------------------------------------------------------------------
+auto router::_handle_pending() noexcept -> work_done {
+
+    if(!_pending.empty()) [[unlikely]] {
+        return _do_handle_pending();
+    }
+    return false;
 }
 //------------------------------------------------------------------------------
 auto router::_remove_timeouted() noexcept -> work_done {
@@ -435,6 +448,7 @@ void router::_assign_id(std::unique_ptr<connection>& conn) noexcept {
     }
     //
     log_debug("assigning id ${id} to accepted ${type} connection")
+      .tag("assignId")
       .arg("type", conn->type_id())
       .arg("id", _id_sequence);
     // send the special message assigning the endpoint id
@@ -1167,13 +1181,6 @@ auto router::_handle_special_parent_message(
   const message_id msg_id,
   message_view& message) noexcept -> bool {
     switch(msg_id.method_id()) {
-        [[likely]] default:
-            const auto result{this->_do_handle_special(
-              msg_id, this->_parent_router.confirmed_id, message)};
-            if(result == was_handled) {
-                break;
-            }
-            return this->_route_message(msg_id, _id_base, message);
         case id_v("byeByeEndp"):
         case id_v("byeByeRutr"):
         case id_v("byeByeBrdg"):
@@ -1182,6 +1189,13 @@ auto router::_handle_special_parent_message(
         case id_v("confirmId"):
             this->_parent_router.confirm_id(*this, message);
             break;
+        [[likely]] default:
+            const auto result{this->_do_handle_special(
+              msg_id, this->_parent_router.confirmed_id, message)};
+            if(result == was_handled) {
+                break;
+            }
+            return this->_route_message(msg_id, _id_base, message);
     }
     return true;
 }

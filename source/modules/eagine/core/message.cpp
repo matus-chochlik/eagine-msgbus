@@ -77,7 +77,8 @@ export struct msgbus_id : message_id {
 //------------------------------------------------------------------------------
 /// @brief Indicates if the specified message id denotes a special message bus message.
 /// @ingroup msgbus
-export constexpr auto is_special_message(const message_id msg_id) noexcept {
+export constexpr auto is_special_message(const message_id msg_id) noexcept
+  -> bool {
     return msg_id.has_class("eagiMsgBus");
 }
 //------------------------------------------------------------------------------

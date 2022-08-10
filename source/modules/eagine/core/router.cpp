@@ -193,6 +193,7 @@ private:
     void _setup_from_config();
 
     auto _handle_accept() noexcept -> work_done;
+    auto _do_handle_pending() noexcept -> work_done;
     auto _handle_pending() noexcept -> work_done;
     auto _remove_timeouted() noexcept -> work_done;
     auto _is_disconnected(const identifier_t) const noexcept -> bool;
