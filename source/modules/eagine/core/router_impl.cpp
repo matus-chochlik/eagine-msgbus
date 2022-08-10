@@ -1028,7 +1028,7 @@ inline auto router::_handle_special(
     return should_be_forwarded;
 }
 //------------------------------------------------------------------------------
-inline auto router::_use_workers() const noexcept -> bool {
+auto router::_use_workers() const noexcept -> bool {
     return _nodes.size() > 2;
 }
 //------------------------------------------------------------------------------
