@@ -8,10 +8,10 @@
 #ifndef EAGINE_MSGBUS_MONITOR_SELECTED_ITEM_VIEW_MODEL
 #define EAGINE_MSGBUS_MONITOR_SELECTED_ITEM_VIEW_MODEL
 
+import eagine.core;
 #include "HostViewModel.hpp"
 #include "InstViewModel.hpp"
 #include "NodeViewModel.hpp"
-#include <eagine/main_ctx_object.hpp>
 #include <QObject>
 #include <QUrl>
 

@@ -4,8 +4,8 @@
 /// See http://www.gnu.org/licenses/gpl-3.0.txt
 ///
 
+import eagine.core;
 #include "TilingTheme.hpp"
-#include <eagine/app_config.hpp>
 //------------------------------------------------------------------------------
 TilingTheme::TilingTheme(eagine::main_ctx_parent parent)
   : QObject{nullptr}

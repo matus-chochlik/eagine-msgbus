@@ -7,7 +7,7 @@
 #ifndef EAGINE_MSGBUS_TILING_THEME
 #define EAGINE_MSGBUS_TILING_THEME
 
-#include <eagine/main_ctx_object.hpp>
+import eagine.core;
 #include <QObject>
 
 //------------------------------------------------------------------------------

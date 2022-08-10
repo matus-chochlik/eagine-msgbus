@@ -5,9 +5,10 @@
 ///
 #include <QDebug>
 
+import eagine.core;
+import eagine.msgbus;
 #include "MonitorBackend.hpp"
 #include "TrackerModel.hpp"
-#include <eagine/message_bus.hpp>
 //------------------------------------------------------------------------------
 TrackerModel::TrackerModel(MonitorBackend& backend)
   : QObject{nullptr}
@@ -15,7 +16,7 @@ TrackerModel::TrackerModel(MonitorBackend& backend)
   , _backend{backend}
   , _bus{"TrckrEndpt", *this}
   , _tracker{_bus} {
-    bus().setup_connectors(_tracker);
+    eagine::msgbus::setup_connectors(main_context(), _tracker);
 
     eagine::msgbus::connect<&TrackerModel::handleHostChanged>(
       this, _tracker.host_changed);

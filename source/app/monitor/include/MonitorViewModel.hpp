@@ -7,9 +7,9 @@
 #ifndef EAGINE_MSGBUS_MONITOR_MONITOR_VIEW_MODEL
 #define EAGINE_MSGBUS_MONITOR_MONITOR_VIEW_MODEL
 
+import eagine.core;
 #include "NodeListViewModel.hpp"
 #include "SelectedItemViewModel.hpp"
-#include <eagine/main_ctx_object.hpp>
 #include <QObject>
 
 class MonitorBackend;

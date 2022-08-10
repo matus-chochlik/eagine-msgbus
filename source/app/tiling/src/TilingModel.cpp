@@ -4,12 +4,12 @@
 /// See http://www.gnu.org/licenses/gpl-3.0.txt
 ///
 
+import eagine.core;
+import eagine.msgbus;
+import <algorithm>;
 #include "TilingModel.hpp"
 #include "TilingBackend.hpp"
-#include <eagine/memory/span_algo.hpp>
-#include <eagine/message_bus.hpp>
 #include <QVariant>
-#include <algorithm>
 //------------------------------------------------------------------------------
 TilingModel::TilingModel(TilingBackend& backend)
   : QObject{nullptr}
@@ -17,7 +17,8 @@ TilingModel::TilingModel(TilingBackend& backend)
   , _backend{backend}
   , _bus{"TilngEndpt", *this}
   , _tiling{_bus} {
-    bus().setup_connectors(_tiling);
+
+    eagine::msgbus::setup_connectors(main_context(), _tiling);
 
     auto& info = _tiling.provided_endpoint_info();
     info.display_name = "sudoku tiling generator";

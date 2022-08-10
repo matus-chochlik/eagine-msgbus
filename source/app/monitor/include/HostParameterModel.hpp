@@ -7,8 +7,7 @@
 #ifndef EAGINE_MSGBUS_MONITOR_HOST_PARAMETER_MODEL
 #define EAGINE_MSGBUS_MONITOR_HOST_PARAMETER_MODEL
 
-#include <eagine/main_ctx_object.hpp>
-#include <eagine/value_with_history.hpp>
+import eagine.core;
 
 class TrackerModel;
 //------------------------------------------------------------------------------

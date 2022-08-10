@@ -4,12 +4,12 @@
 /// See http://www.gnu.org/licenses/gpl-3.0.txt
 ///
 
+import eagine.core;
+import <cmath>;
 #include "SolutionIntervalViewModel.hpp"
 #include "TilingBackend.hpp"
 #include "TilingModel.hpp"
-#include <eagine/iterator.hpp>
 #include <cassert>
-#include <cmath>
 
 //------------------------------------------------------------------------------
 auto SolutionIntervalViewModel::fixInterval(float i) const noexcept {

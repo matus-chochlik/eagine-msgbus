@@ -7,8 +7,8 @@
 #ifndef EAGINE_MSGBUS_MONITOR_NODE_PARAMETER_VIEW_MODEL
 #define EAGINE_MSGBUS_MONITOR_NODE_PARAMETER_VIEW_MODEL
 
+import eagine.core;
 #include "PickRoleProxyModel.hpp"
-#include <eagine/main_ctx_object.hpp>
 #include <QAbstractItemModel>
 #include <QObject>
 

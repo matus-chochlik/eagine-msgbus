@@ -56,10 +56,10 @@ target_include_directories(
 	PRIVATE
 		${CMAKE_CURRENT_SOURCE_DIR}/include
 )
+eagine_target_modules(eagine-msgbus-monitor eagine.core eagine.msgbus)
 target_link_libraries(
 	eagine-msgbus-monitor
 	PUBLIC
-		EAGine::MsgBus
 		Qt5::Core
 		Qt5::Widgets
 		Qt5::Qml

@@ -7,12 +7,10 @@
 #ifndef EAGINE_MSGBUS_HELPER_CONTRIBUTION_VIEW_MODEL
 #define EAGINE_MSGBUS_HELPER_CONTRIBUTION_VIEW_MODEL
 
-#include <eagine/flat_set.hpp>
-#include <eagine/main_ctx_object.hpp>
-#include <eagine/timeout.hpp>
+import eagine.core;
+import <tuple>;
 #include <QObject>
 #include <QVariant>
-#include <tuple>
 
 class TilingBackend;
 //------------------------------------------------------------------------------

@@ -4,11 +4,10 @@
 /// See http://www.gnu.org/licenses/gpl-3.0.txt
 ///
 
+import eagine.core;
+import eagine.msgbus;
 #include "TilingBackend.hpp"
 #include "TilingViewModel.hpp"
-#include <eagine/main_ctx.hpp>
-#include <eagine/main_fwd.hpp>
-#include <eagine/message_bus.hpp>
 #include <QApplication>
 #include <QQmlApplicationEngine>
 #include <QQmlContext>

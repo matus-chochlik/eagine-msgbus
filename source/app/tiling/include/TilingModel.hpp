@@ -7,11 +7,8 @@
 #ifndef EAGINE_MSGBUS_TILING_MODEL
 #define EAGINE_MSGBUS_TILING_MODEL
 
-#include <eagine/main_ctx_object.hpp>
-#include <eagine/msgbus/service.hpp>
-#include <eagine/msgbus/service/common_info.hpp>
-#include <eagine/msgbus/service/ping_pong.hpp>
-#include <eagine/msgbus/service/sudoku.hpp>
+import eagine.core;
+import eagine.msgbus;
 #include <QObject>
 
 class TilingBackend;

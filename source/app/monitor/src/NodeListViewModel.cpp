@@ -4,12 +4,11 @@
 /// See accompanying file LICENSE_1_0.txt or copy at
 ///  http://www.boost.org/LICENSE_1_0.txt
 ///
-#include <QDebug>
 
-#include "MonitorBackend.hpp"
+import <algorithm>;
 #include "NodeListViewModel.hpp"
+#include "MonitorBackend.hpp"
 #include "TrackerModel.hpp"
-#include <algorithm>
 #include <cassert>
 //------------------------------------------------------------------------------
 // NodeInfo
