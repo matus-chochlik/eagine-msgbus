@@ -273,7 +273,7 @@ auto router::_handle_pending() noexcept -> work_done {
     if(!_pending.empty()) [[unlikely]] {
         identifier_t id = 0;
         bool maybe_router = true;
-        auto handler =
+        const auto handler =
           [&](message_id msg_id, message_age, const message_view& msg) {
               // this is a special message requesting endpoint id assignment
               if(msg_id == msgbus_id{"requestId"}) {
@@ -468,7 +468,7 @@ void router::_log_router_stats() noexcept {
           .arg("count", _stats.forwarded_messages)
           .arg("dropped", _stats.dropped_messages)
           .arg("interval", interval)
-          .arg("avgMsgAge", std::chrono::microseconds(_stats.message_age_us))
+          .arg("avgMsgAge", _avg_msg_age())
           .arg("msgsPerSec", msgs_per_sec);
     }
 
@@ -770,6 +770,12 @@ auto router::_handle_topology_query(const message_view& message) noexcept
     return should_be_forwarded;
 }
 //------------------------------------------------------------------------------
+auto router::_avg_msg_age() const noexcept -> std::chrono::microseconds {
+    return std::chrono::duration_cast<std::chrono::microseconds>(
+      _message_age_sum /
+      (_stats.forwarded_messages + _stats.dropped_messages + 1));
+}
+//------------------------------------------------------------------------------
 auto router::_update_stats() noexcept -> work_done {
     some_true something_done;
 
@@ -783,11 +789,8 @@ auto router::_update_stats() noexcept -> work_done {
           seconds.count());
         _prev_forwarded_messages = _stats.forwarded_messages;
 
-        const auto avg_msg_age_us = static_cast<std::int32_t>(
-          float(std::chrono::duration_cast<std::chrono::microseconds>(
-                  _message_age_sum)
-                  .count()) /
-          float(_stats.forwarded_messages + _stats.dropped_messages + 1));
+        const auto avg_msg_age_us =
+          static_cast<std::int32_t>(_avg_msg_age().count());
         const auto avg_msg_age_ms = avg_msg_age_us / 1000;
 
         _stats.message_age_us = avg_msg_age_us;
@@ -1348,7 +1351,7 @@ void router::cleanup() noexcept {
       .tag("msgStats")
       .arg("count", _stats.forwarded_messages)
       .arg("dropped", _stats.dropped_messages)
-      .arg("avgMsgAge", std::chrono::microseconds(_stats.message_age_us));
+      .arg("avgMsgAge", _avg_msg_age());
 }
 //------------------------------------------------------------------------------
 void router::finish() noexcept {

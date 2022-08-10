@@ -254,6 +254,7 @@ private:
     auto _handle_topology_query(const message_view&) noexcept
       -> message_handling_result;
 
+    auto _avg_msg_age() const noexcept -> std::chrono::microseconds;
     auto _update_stats() noexcept -> work_done;
     auto _handle_stats_query(const message_view&) noexcept
       -> message_handling_result;
