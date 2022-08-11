@@ -246,6 +246,7 @@ struct asio_connection_state
                 .count();
 
             log_stat("message slack ratio: ${slack}")
+              .tag("msgSlack")
               .arg("usedSize", "ByteSize", total_used_size)
               .arg("sentSize", "ByteSize", total_sent_size)
               .arg("msgsPerBlk", msgs_per_block)
