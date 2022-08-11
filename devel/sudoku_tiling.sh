@@ -38,6 +38,7 @@ ${install_prefix}/bin/eagine-msgbus-tiling \
 	"${conn_args[@]}" \
 	--msgbus-sudoku-solver-width ${2} \
 	--msgbus-sudoku-solver-height ${2} \
+	--msgbus-sudoku-solver-output-path /tmp/tiling1.txt \
 	& pids+=($!)
 sleep 2
 ${install_prefix}/bin/eagine-msgbus-tiling \
@@ -45,6 +46,7 @@ ${install_prefix}/bin/eagine-msgbus-tiling \
 	"${conn_args[@]}" \
 	--msgbus-sudoku-solver-width ${2} \
 	--msgbus-sudoku-solver-height ${2} \
+	--msgbus-sudoku-solver-output-path /tmp/tiling2.txt \
 	& pids+=($!)
 
 for pid in ${pids[@]}
