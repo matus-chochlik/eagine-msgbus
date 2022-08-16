@@ -37,14 +37,14 @@ public:
 
     auto send(const message_id msg_id, const message_view& message) noexcept
       -> bool final {
-        std::unique_lock lock{_mutex};
+        const std::unique_lock lock{_mutex};
         _messages.push(msg_id, message);
         return true;
     }
 
     auto fetch_messages(const connection::fetch_handler handler) noexcept
       -> work_done final {
-        std::unique_lock lock{_mutex};
+        const std::unique_lock lock{_mutex};
         return _messages.fetch_all(handler);
     }
 

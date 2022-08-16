@@ -9,7 +9,7 @@
 //------------------------------------------------------------------------------
 MonitorBackend::MonitorBackend(eagine::main_ctx_parent parent)
   : QObject{nullptr}
-  , eagine::main_ctx_object{EAGINE_ID(Backend), parent}
+  , eagine::main_ctx_object{"Backend", parent}
   , _trackerModel{std::make_shared<TrackerModel>(*this)}
   , _monitorTheme{*this}
   , _monitorViewModel{*this} {

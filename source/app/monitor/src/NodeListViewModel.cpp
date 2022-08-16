@@ -4,12 +4,12 @@
 /// See accompanying file LICENSE_1_0.txt or copy at
 ///  http://www.boost.org/LICENSE_1_0.txt
 ///
-#include <QDebug>
 
-#include "MonitorBackend.hpp"
+import <algorithm>;
 #include "NodeListViewModel.hpp"
+#include "MonitorBackend.hpp"
 #include "TrackerModel.hpp"
-#include <algorithm>
+#include <cassert>
 //------------------------------------------------------------------------------
 // NodeInfo
 //------------------------------------------------------------------------------
@@ -48,7 +48,7 @@ auto NodeListViewModel::InstanceInfo::indexOk(int i) const noexcept -> bool {
 //------------------------------------------------------------------------------
 auto NodeListViewModel::InstanceInfo::id(int i) const noexcept
   -> eagine::identifier_t {
-    EAGINE_ASSERT(indexOk(i));
+    assert(indexOk(i));
     return (nodes.begin() + i)->first;
 }
 //------------------------------------------------------------------------------
@@ -136,10 +136,10 @@ auto NodeListViewModel::Data::forNode(
         if(hostIdPos != inst2Host.end()) {
             const auto hostId = hostIdPos->second;
             const auto hostPos = hosts.find(hostId);
-            EAGINE_ASSERT(hostPos != hosts.end());
+            assert(hostPos != hosts.end());
             const auto& hostInfo = hostPos->second;
             const auto instPos = hostInfo.instances.find(instId);
-            EAGINE_ASSERT(instPos != hostInfo.instances.end());
+            assert(instPos != hostInfo.instances.end());
             const auto& instInfo = instPos->second;
             const auto nodePos = instInfo.nodes.find(nodeId);
             if(nodePos != instInfo.nodes.end()) {
@@ -296,14 +296,14 @@ auto NodeListViewModel::Data::updateNode(
             bool relocated = false;
             const auto prevInstId = prevInstIdPos->second;
             const auto prevHostIdPos = inst2Host.find(prevInstId);
-            EAGINE_ASSERT(prevHostIdPos != inst2Host.end());
+            assert(prevHostIdPos != inst2Host.end());
             const auto prevHostId = prevHostIdPos->second;
 
             const auto prevHostPos = hosts.find(prevHostId);
-            EAGINE_ASSERT(prevHostPos != hosts.end());
+            assert(prevHostPos != hosts.end());
             auto& prevHostInfo = prevHostPos->second;
             const auto prevInstPos = prevHostInfo.instances.find(prevInstId);
-            EAGINE_ASSERT(prevInstPos != prevHostInfo.instances.end());
+            assert(prevInstPos != prevHostInfo.instances.end());
             auto& prevInstInfo = prevInstPos->second;
 
             if(instId != prevInstId) {
@@ -323,7 +323,7 @@ auto NodeListViewModel::Data::updateNode(
                     nodeInfo.node = node;
                 }
 
-                EAGINE_ASSERT(nodeInfo.node);
+                assert(nodeInfo.node);
                 relocated = true;
             }
 
@@ -454,7 +454,7 @@ auto NodeListViewModel::Data::updateHost(
 //------------------------------------------------------------------------------
 NodeListViewModel::NodeListViewModel(MonitorBackend& backend)
   : QAbstractItemModel{nullptr}
-  , eagine::main_ctx_object{EAGINE_ID(NodeListVM), backend}
+  , eagine::main_ctx_object{"NodeListVM", backend}
   , _backend{backend} {
     connect(
       &_backend,

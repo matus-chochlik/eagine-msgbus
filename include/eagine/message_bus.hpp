@@ -22,7 +22,7 @@ class message_bus_impl;
 class message_bus : public main_ctx_object {
 public:
     message_bus(main_ctx_parent parent) noexcept
-      : main_ctx_object{EAGINE_ID(MessageBus), parent}
+      : main_ctx_object{"MessageBus", parent}
       , _addr{parent, nothing}
       , _setup{parent, nothing} {}
 

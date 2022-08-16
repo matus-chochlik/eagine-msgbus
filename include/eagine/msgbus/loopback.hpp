@@ -27,7 +27,7 @@ public:
     }
 
     auto type_id() noexcept -> identifier final {
-        return EAGINE_ID(Loopback);
+        return "Loopback";
     }
 
     auto send(const message_id msg_id, const message_view& message) noexcept

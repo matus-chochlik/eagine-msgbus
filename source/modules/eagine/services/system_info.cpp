@@ -112,15 +112,15 @@ protected:
         Base::add_method(
           this,
           message_map<
-            id_v("eagiSysInf"),
-            id_v("qryStats"),
+            "eagiSysInf",
+            "qryStats",
             &system_info_provider::_handle_stats_query>{});
 
         Base::add_method(
           this,
           message_map<
-            id_v("eagiSysInf"),
-            id_v("qrySensors"),
+            "eagiSysInf",
+            "qrySensors",
             &system_info_provider::_handle_sensor_query>{});
     }
 

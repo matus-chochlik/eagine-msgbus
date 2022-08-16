@@ -246,6 +246,7 @@ struct asio_connection_state
                 .count();
 
             log_stat("message slack ratio: ${slack}")
+              .tag("msgSlack")
               .arg("usedSize", "ByteSize", total_used_size)
               .arg("sentSize", "ByteSize", total_sent_size)
               .arg("msgsPerBlk", msgs_per_block)
@@ -279,6 +280,12 @@ struct asio_connection_state
           asio::buffer(blk.data(), blk.size()), target_endpoint, handler);
     }
 
+    void handle_send_error(const std::error_code error) noexcept {
+        log_error("failed to send data: ${error}").arg("error", error.message());
+        this->is_sending = false;
+        this->socket.close();
+    }
+
     void do_start_send(asio_connection_group<Kind, Proto>& group) noexcept {
         using std::get;
 
@@ -287,23 +294,16 @@ struct asio_connection_state
           group.pack_into(target_endpoint, cover(write_buffer));
         if(!packed.is_empty()) {
             is_sending = true;
-            const auto blk = view(write_buffer);
-
-            log_trace("sending data")
-              .arg("packed", "bits", packed.bits())
-              .arg("usedSize", "ByteSize", packed.used())
-              .arg("sentSize", "ByteSize", packed.total())
-              .arg("block", blk);
 
             do_start_send(
               connection_protocol_tag<Proto>{},
               target_endpoint,
-              blk,
+              view(write_buffer),
               [this, &group, target_endpoint, packed, selfref{weak_ref()}](
                 const std::error_code error,
                 [[maybe_unused]] const std::size_t length) {
-                  if(const auto self{selfref.lock()}) {
-                      if(!error) {
+                  if(const auto self{selfref.lock()}) [[likely]] {
+                      if(!error) [[likely]] {
                           assert(span_size(length) == packed.total());
                           log_trace("sent data")
                             .arg("usedSize", "ByteSize", packed.used())
@@ -323,10 +323,7 @@ struct asio_connection_state
 
                           this->handle_sent(group, target_endpoint, packed);
                       } else {
-                          log_error("failed to send data: ${error}")
-                            .arg("error", error.message());
-                          this->is_sending = false;
-                          this->socket.close();
+                          this->handle_send_error(error);
                       }
                   }
               });
@@ -368,11 +365,30 @@ struct asio_connection_state
           asio::buffer(blk.data(), blk.size()), conn_endpoint, handler);
     }
 
+    void handle_receive_error(
+      memory::const_block rcvd,
+      asio_connection_group<Kind, Proto>& group,
+      const std::error_code error) noexcept {
+        if(rcvd) {
+            log_warning("failed receiving data: ${error}")
+              .arg("error", error.message());
+            this->handle_received(rcvd, group);
+        } else {
+            if(error == asio::error::eof) {
+                log_debug("received end-of-file");
+            } else if(error == asio::error::connection_reset) {
+                log_debug("connection reset by peer");
+            } else {
+                log_error("failed to receive data: ${error}")
+                  .arg("error", error.message());
+            }
+        }
+        this->is_recving = false;
+        this->socket.close();
+    }
+
     void do_start_receive(asio_connection_group<Kind, Proto>& group) noexcept {
         auto blk = cover(read_buffer);
-
-        log_trace("receiving data (size: ${size})")
-          .arg("size", "ByteSize", blk.size());
 
         is_recving = true;
         do_start_receive(
@@ -380,31 +396,15 @@ struct asio_connection_state
           blk,
           [this, &group, selfref{weak_ref()}, blk](
             const std::error_code error, const std::size_t length) {
-              if(const auto self{selfref.lock()}) {
-                  memory::const_block rcvd = head(blk, span_size(length));
-                  if(!error) {
+              if(const auto self{selfref.lock()}) [[likely]] {
+                  memory::const_block rcvd{head(blk, span_size(length))};
+                  if(!error) [[likely]] {
                       log_trace("received data (size: ${size})")
-                        .arg("block", rcvd)
                         .arg("size", "ByteSize", length);
 
                       this->handle_received(rcvd, group);
                   } else {
-                      if(rcvd) {
-                          log_warning("failed receiving data: ${error}")
-                            .arg("error", error.message());
-                          this->handle_received(rcvd, group);
-                      } else {
-                          if(error == asio::error::eof) {
-                              log_debug("received end-of-file");
-                          } else if(error == asio::error::connection_reset) {
-                              log_debug("connection reset by peer");
-                          } else {
-                              log_error("failed to receive data: ${error}")
-                                .arg("error", error.message());
-                          }
-                      }
-                      this->is_recving = false;
-                      this->socket.close();
+                      this->handle_receive_error(rcvd, group, error);
                   }
               }
           });
@@ -428,8 +428,6 @@ struct asio_connection_state
     auto update() noexcept -> work_done {
         some_true something_done{};
         if(const auto count{common->context.poll()}) {
-            log_trace("called ready handlers (count: ${count})")
-              .arg("count", count);
             something_done();
         } else {
             common->context.reset();
@@ -518,7 +516,7 @@ public:
 
     auto update() noexcept -> work_done override {
         some_true something_done{};
-        if(conn_state().socket.is_open()) {
+        if(conn_state().socket.is_open()) [[likely]] {
             something_done(conn_state().start_receive(*this));
             something_done(conn_state().start_send(*this));
         }
@@ -565,7 +563,7 @@ public:
     }
 
     void cleanup() noexcept final {
-        timeout too_long{std::chrono::seconds{5}};
+        const timeout too_long{std::chrono::seconds{5}};
         while(!_outgoing.empty() && !too_long) {
             if(conn_state().socket.is_open()) {
                 if(!conn_state().start_send(*this)) {
@@ -753,7 +751,7 @@ public:
 
     auto update() noexcept -> work_done final {
         some_true something_done{};
-        if(conn_state().socket.is_open()) {
+        if(conn_state().socket.is_open()) [[likely]] {
             something_done(conn_state().start_receive(*this));
             something_done(conn_state().start_send(*this));
         } else {
@@ -859,7 +857,7 @@ public:
 
     auto update() noexcept -> work_done final {
         some_true something_done{};
-        if(conn_state().socket.is_open()) {
+        if(conn_state().socket.is_open()) [[likely]] {
             something_done(conn_state().start_receive(*this));
             something_done(conn_state().start_send(*this));
         } else if(!_connecting) {
@@ -957,7 +955,7 @@ public:
     auto update() noexcept -> work_done final {
         assert(this->_asio_state);
         some_true something_done{};
-        if(!_acceptor.is_open()) {
+        if(!_acceptor.is_open()) [[unlikely]] {
             asio::ip::tcp::endpoint endpoint(
               asio::ip::tcp::v4(), std::get<1>(_addr));
             _acceptor.open(endpoint.protocol());
@@ -994,7 +992,7 @@ private:
     std::tuple<std::string, ipv4_port> _addr;
     asio::ip::tcp::acceptor _acceptor;
     asio::ip::tcp::socket _socket;
-    span_size_t _block_size;
+    const span_size_t _block_size;
 
     std::vector<asio::ip::tcp::socket> _accepted;
 
@@ -1072,7 +1070,7 @@ public:
 
     auto update() noexcept -> work_done final {
         some_true something_done{};
-        if(conn_state().socket.is_open()) {
+        if(conn_state().socket.is_open()) [[likely]] {
             something_done(conn_state().start_receive(*this));
             something_done(conn_state().start_send(*this));
         } else if(!_establishing) {
@@ -1213,7 +1211,7 @@ public:
 
     auto update() noexcept -> work_done final {
         some_true something_done{};
-        if(conn_state().socket.is_open()) {
+        if(conn_state().socket.is_open()) [[likely]] {
             something_done(conn_state().start_receive(*this));
             something_done(conn_state().start_send(*this));
         } else if(!_connecting) {
@@ -1254,8 +1252,7 @@ private:
           });
     }
 
-    static inline auto _fix_addr(const string_view addr_str) noexcept
-      -> string_view {
+    static auto _fix_addr(const string_view addr_str) noexcept -> string_view {
         return addr_str ? addr_str : string_view{"/tmp/eagine-msgbus.socket"};
     }
 };
@@ -1333,7 +1330,7 @@ private:
     std::shared_ptr<asio_common_state> _asio_state;
     std::string _addr_str;
     asio::local::stream_protocol::acceptor _acceptor;
-    span_size_t _block_size;
+    const span_size_t _block_size;
     bool _accepting{false};
 
     std::vector<asio::local::stream_protocol::socket> _accepted;
@@ -1363,12 +1360,11 @@ private:
         });
     }
 
-    static inline auto _fix_addr(const string_view addr_str) noexcept
-      -> string_view {
+    static auto _fix_addr(const string_view addr_str) noexcept -> string_view {
         return addr_str ? addr_str : string_view{"/tmp/eagine-msgbus.socket"};
     }
 
-    static inline auto _prepare(
+    static auto _prepare(
       std::shared_ptr<asio_common_state> asio_state,
       string_view addr_str) noexcept -> std::shared_ptr<asio_common_state> {
         [[maybe_unused]] const auto unused{std::remove(c_str(addr_str))};
@@ -1441,7 +1437,7 @@ private:
         return min_connection_data_size;
     }
 
-    span_size_t _block_size{default_block_size()};
+    const span_size_t _block_size{default_block_size()};
 };
 //------------------------------------------------------------------------------
 auto make_asio_tcp_ipv4_connection_factory(main_ctx_parent parent)

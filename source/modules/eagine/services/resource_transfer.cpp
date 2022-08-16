@@ -149,20 +149,20 @@ protected:
         Base::add_method(
           this,
           message_map<
-            id_v("eagiRsrces"),
-            id_v("qryResurce"),
+            "eagiRsrces",
+            "qryResurce",
             &This::_handle_has_resource_query>{});
         Base::add_method(
           this,
           message_map<
-            id_v("eagiRsrces"),
-            id_v("getContent"),
+            "eagiRsrces",
+            "getContent",
             &This::_handle_resource_content_request>{});
         Base::add_method(
           this,
           message_map<
-            id_v("eagiRsrces"),
-            id_v("fragResend"),
+            "eagiRsrces",
+            "fragResend",
             &This::_handle_resource_resend_request>{});
     }
 
@@ -510,18 +510,13 @@ protected:
     void init() noexcept {
         base::init();
 
-        this->reported_alive.connect(
-          make_callable_ref<&This::_handle_alive>(this));
-        this->subscribed.connect(
-          make_callable_ref<&This::_handle_subscribed>(this));
-        this->unsubscribed.connect(
-          make_callable_ref<&This::_handle_unsubscribed>(this));
-        this->not_subscribed.connect(
-          make_callable_ref<&This::_handle_unsubscribed>(this));
-        this->host_id_received.connect(
-          make_callable_ref<&This::_handle_host_id_received>(this));
-        this->hostname_received.connect(
-          make_callable_ref<&This::_handle_hostname_received>(this));
+        connect<&This::_handle_alive>(this, this->reported_alive);
+        connect<&This::_handle_subscribed>(this, this->subscribed);
+        connect<&This::_handle_unsubscribed>(this, this->unsubscribed);
+        connect<&This::_handle_unsubscribed>(this, this->not_subscribed);
+        connect<&This::_handle_host_id_received>(this, this->host_id_received);
+        connect<&This::_handle_hostname_received>(
+          this, this->hostname_received);
     }
 
     void add_methods() noexcept {
@@ -529,34 +524,31 @@ protected:
 
         base::add_method(
           this,
-          message_map<
-            id_v("eagiRsrces"),
-            id_v("hasResurce"),
-            &This::_handle_has_resource>{});
+          message_map<"eagiRsrces", "hasResurce", &This::_handle_has_resource>{});
         base::add_method(
           this,
           message_map<
-            id_v("eagiRsrces"),
-            id_v("hasNotRsrc"),
+            "eagiRsrces",
+            "hasNotRsrc",
             &This::_handle_has_not_resource>{});
 
         base::add_method(
           this,
           message_map<
-            id_v("eagiRsrces"),
-            id_v("fragment"),
+            "eagiRsrces",
+            "fragment",
             &This::_handle_resource_fragment>{});
         base::add_method(
           this,
           message_map<
-            id_v("eagiRsrces"),
-            id_v("notFound"),
+            "eagiRsrces",
+            "notFound",
             &This::_handle_resource_not_found>{});
         base::add_method(
           this,
           message_map<
-            id_v("eagiRsrces"),
-            id_v("fragResend"),
+            "eagiRsrces",
+            "fragResend",
             &This::_handle_resource_resend_request>{});
     }
 

@@ -37,8 +37,8 @@ public:
       : base(
           {"ExamplPing", parent},
           this,
-          message_map<id_v("PingPong"), id_v("Pong"), &ping::pong>{},
-          message_map<id_v("PingPong"), id_v("Ready"), &ping::ready>{})
+          message_map<"PingPong", "Pong", &ping::pong>{},
+          message_map<"PingPong", "Ready", &ping::ready>{})
       , _lmod{running_on_valgrind() ? 1000U : 10000U}
       , _max{extract_or(max, running_on_valgrind() ? 10000U : 100000U)} {
         this->allow_subscriptions();

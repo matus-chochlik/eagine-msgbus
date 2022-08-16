@@ -12,7 +12,7 @@
 //------------------------------------------------------------------------------
 TilingViewModel::TilingViewModel(TilingBackend& backend)
   : QAbstractTableModel{nullptr}
-  , eagine::main_ctx_object{EAGINE_ID(TilingVM), backend}
+  , eagine::main_ctx_object{"TilingVM", backend}
   , _backend{backend} {
     std::string filePath;
     if(app_config().fetch("msgbus.sudoku.solver.output_path", filePath)) {

@@ -3,16 +3,15 @@
 /// Distributed under the GNU GENERAL PUBLIC LICENSE version 3.
 /// See http://www.gnu.org/licenses/gpl-3.0.txt
 ///
+import eagine.core;
+import eagine.msgbus;
+import <clocale>;
 #include "MonitorBackend.hpp"
 #include "MonitorViewModel.hpp"
 #include "SelectedItemViewModel.hpp"
-#include <eagine/main_ctx.hpp>
-#include <eagine/main_fwd.hpp>
-#include <eagine/message_bus.hpp>
 #include <QApplication>
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
-#include <clocale>
 
 namespace eagine {
 //------------------------------------------------------------------------------
@@ -61,6 +60,6 @@ auto main(int argc, const char** argv) -> int {
     eagine::argc_copy = argc;
     eagine::argv_copy = argv;
     eagine::main_ctx_options options;
-    options.app_id = EAGINE_ID(MonitorExe);
-    return eagine::main_impl(argc, argv, options);
+    options.app_id = "MonitorExe";
+    return eagine::main_impl(argc, argv, options, eagine::main);
 }

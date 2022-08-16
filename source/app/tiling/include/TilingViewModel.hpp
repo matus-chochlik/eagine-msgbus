@@ -7,7 +7,7 @@
 #ifndef EAGINE_MSGBUS_TILING_TILING_VIEW_MODEL
 #define EAGINE_MSGBUS_TILING_TILING_VIEW_MODEL
 
-#include <eagine/main_ctx_object.hpp>
+import eagine.core;
 #include <QAbstractTableModel>
 #include <QUrl>
 

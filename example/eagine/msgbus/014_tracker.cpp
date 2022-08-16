@@ -41,8 +41,7 @@ public:
       : main_ctx_object{"TrkrExampl", bus}
       , base{bus} {
         object_description("Node tracker", "Node tracker example");
-        this->node_changed.connect(
-          make_callable_ref<&tracker_example::on_node_change>(this));
+        connect<&tracker_example::on_node_change>(this, this->node_changed);
     }
 
     void on_node_change(

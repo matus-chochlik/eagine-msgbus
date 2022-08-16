@@ -7,11 +7,11 @@
 #ifndef EAGINE_MSGBUS_MONITOR_BACKEND
 #define EAGINE_MSGBUS_MONITOR_BACKEND
 
+import eagine.core;
+import <memory>;
 #include "MonitorTheme.hpp"
 #include "MonitorViewModel.hpp"
-#include <eagine/main_ctx_object.hpp>
 #include <QObject>
-#include <memory>
 
 class TrackerModel;
 //------------------------------------------------------------------------------

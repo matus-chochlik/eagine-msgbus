@@ -42,14 +42,11 @@ public:
     topology_printer(endpoint& bus)
       : main_ctx_object{"TopoPrint", bus}
       , base{bus} {
-        router_appeared.connect(
-          make_callable_ref<&topology_printer::on_router_appeared>(this));
-        bridge_appeared.connect(
-          make_callable_ref<&topology_printer::on_bridge_appeared>(this));
-        endpoint_appeared.connect(
-          make_callable_ref<&topology_printer::on_endpoint_appeared>(this));
-        shutdown_requested.connect(
-          make_callable_ref<&topology_printer::on_shutdown>(this));
+        connect<&topology_printer::on_router_appeared>(this, router_appeared);
+        connect<&topology_printer::on_bridge_appeared>(this, bridge_appeared);
+        connect<&topology_printer::on_endpoint_appeared>(
+          this, endpoint_appeared);
+        connect<&topology_printer::on_shutdown>(this, shutdown_requested);
     }
 
     void print_topology() {

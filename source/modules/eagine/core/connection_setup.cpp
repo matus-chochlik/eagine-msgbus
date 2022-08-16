@@ -10,6 +10,7 @@ export module eagine.msgbus.core:connection_setup;
 import eagine.core.types;
 import eagine.core.memory;
 import eagine.core.identifier;
+import eagine.core.logging;
 import eagine.core.main_ctx;
 import :types;
 import :interface;
@@ -25,13 +26,19 @@ export void connection_setup_configure(connection_setup&, application_config&);
 export auto adapt_entry_arg(
   const identifier name,
   const std::unique_ptr<connection_factory>& value) noexcept {
-    return [name, &value](auto& backend) {
-        if(value) {
-            backend.add_identifier(name, "ConnFactry", value->type_id());
-        } else {
-            backend.add_nothing(name, "ConnFactry");
+    struct _adapter {
+        const identifier name;
+        const std::unique_ptr<connection_factory>& value;
+
+        void operator()(logger_backend& backend) const noexcept {
+            if(value) {
+                backend.add_identifier(name, "ConnFactry", value->type_id());
+            } else {
+                backend.add_nothing(name, "ConnFactry");
+            }
         }
     };
+    return _adapter{.name = name, .value = value};
 }
 //------------------------------------------------------------------------------
 /// @brief Class setting up connections based from configuration

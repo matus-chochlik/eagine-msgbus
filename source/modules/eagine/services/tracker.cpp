@@ -64,169 +64,6 @@ public:
     /// @brief Triggered when message bus node information changes.
     signal<void(remote_node&, const remote_node_changes) noexcept> node_changed;
 
-    /// @brief Returns handler for the node alive message.
-    auto on_alive() noexcept {
-        return make_callable_ref<&This::_handle_alive>(this);
-    }
-
-    /// @brief Returns handler for the endpoint subscribed message.
-    auto on_subscribed() noexcept {
-        return make_callable_ref<&This::_handle_subscribed>(this);
-    }
-
-    /// @brief Returns handler for the endpoint unsubscribed message.
-    auto on_unsubscribed() noexcept {
-        return make_callable_ref<&This::_handle_unsubscribed>(this);
-    }
-
-    /// @brief Returns handler for the endpoint not subscribed message.
-    auto on_not_subscribed() noexcept {
-        return make_callable_ref<&This::_handle_not_subscribed>(this);
-    }
-
-    /// @brief Returns handler for the host id message.
-    auto on_host_id_received() noexcept {
-        return make_callable_ref<&This::_handle_host_id_received>(this);
-    }
-
-    /// @brief Returns handler for the host name message.
-    auto on_hostname_received() noexcept {
-        return make_callable_ref<&This::_handle_hostname_received>(this);
-    }
-
-    /// @brief Returns handler for the router appeared message.
-    auto on_router_appeared() noexcept {
-        return make_callable_ref<&This::_handle_router_appeared>(this);
-    }
-
-    /// @brief Returns handler for the bridge appeared message.
-    auto on_bridge_appeared() noexcept {
-        return make_callable_ref<&This::_handle_bridge_appeared>(this);
-    }
-
-    /// @brief Returns handler for the endpoint appeared message.
-    auto on_endpoint_appeared() noexcept {
-        return make_callable_ref<&This::_handle_endpoint_appeared>(this);
-    }
-
-    /// @brief Returns handler for the router bye message.
-    auto on_router_disappeared() noexcept {
-        return make_callable_ref<&This::_handle_router_disappeared>(this);
-    }
-
-    /// @brief Returns handler for the bridge bye message.
-    auto on_bridge_disappeared() noexcept {
-        return make_callable_ref<&This::_handle_bridge_disappeared>(this);
-    }
-
-    /// @brief Returns handler for the endpoint bye message.
-    auto on_endpoint_disappeared() noexcept {
-        return make_callable_ref<&This::_handle_endpoint_disappeared>(this);
-    }
-
-    /// @brief Returns handler for the router statistics message.
-    auto on_router_stats_received() noexcept {
-        return make_callable_ref<&This::_handle_router_stats_received>(this);
-    }
-
-    /// @brief Returns handler for the bridge statistics message.
-    auto on_bridge_stats_received() noexcept {
-        return make_callable_ref<&This::_handle_bridge_stats_received>(this);
-    }
-
-    /// @brief Returns handler for the endpoint statistics message.
-    auto on_endpoint_stats_received() noexcept {
-        return make_callable_ref<&This::_handle_endpoint_stats_received>(this);
-    }
-
-    /// @brief Returns handler for the connection statistics message.
-    auto on_connection_stats_received() noexcept {
-        return make_callable_ref<&This::_handle_connection_stats_received>(
-          this);
-    }
-
-    /// @brief Returns handler for the application name message.
-    auto on_application_name_received() noexcept {
-        return make_callable_ref<&This::_handle_application_name_received>(
-          this);
-    }
-
-    /// @brief Returns handler for the endpoint info message.
-    auto on_endpoint_info_received() noexcept {
-        return make_callable_ref<&This::_handle_endpoint_info_received>(this);
-    }
-
-    /// @brief Returns handler for the compiler info message.
-    auto on_compiler_info_received() noexcept {
-        return make_callable_ref<&This::_handle_compiler_info_received>(this);
-    }
-
-    /// @brief Returns handler for the build info message.
-    auto on_build_version_info_received() noexcept {
-        return make_callable_ref<&This::_handle_build_version_info_received>(
-          this);
-    }
-
-    /// @brief Returns handler for the CPU concurent threads message.
-    auto on_cpu_concurrent_threads_received() noexcept {
-        return make_callable_ref<&This::_handle_cpu_concurrent_threads_received>(
-          this);
-    }
-
-    /// @brief Returns handler for the host short load message.
-    auto on_short_average_load_received() noexcept {
-        return make_callable_ref<&This::_handle_short_average_load_received>(
-          this);
-    }
-
-    /// @brief Returns handler for the host long load message.
-    auto on_long_average_load_received() noexcept {
-        return make_callable_ref<&This::_handle_long_average_load_received>(
-          this);
-    }
-
-    /// @brief Returns handler for the free ram size message.
-    auto on_free_ram_size_received() noexcept {
-        return make_callable_ref<&This::_handle_free_ram_size_received>(this);
-    }
-
-    /// @brief Returns handler for the total ram size message.
-    auto on_total_ram_size_received() noexcept {
-        return make_callable_ref<&This::_handle_total_ram_size_received>(this);
-    }
-
-    /// @brief Returns handler for the free swap size message.
-    auto on_free_swap_size_received() noexcept {
-        return make_callable_ref<&This::_handle_free_swap_size_received>(this);
-    }
-
-    /// @brief Returns handler for the total swap size message.
-    auto on_total_swap_size_received() noexcept {
-        return make_callable_ref<&This::_handle_total_swap_size_received>(this);
-    }
-
-    /// @brief Returns handler for the temperature min/max message.
-    auto on_temperature_min_max_received() noexcept {
-        return make_callable_ref<&This::_handle_temperature_min_max_received>(
-          this);
-    }
-
-    /// @brief Returns handler for the power supply kind message.
-    auto on_power_supply_kind_received() noexcept {
-        return make_callable_ref<&This::_handle_power_supply_kind_received>(
-          this);
-    }
-
-    /// @brief Returns handler for the ping response message.
-    auto on_ping_response() noexcept {
-        return make_callable_ref<&This::_handle_ping_response>(this);
-    }
-
-    /// @brief Returns handler for the ping timeout event.
-    auto on_ping_timeout() noexcept {
-        return make_callable_ref<&This::_handle_ping_timeout>(this);
-    }
-
     auto update() noexcept -> work_done {
         some_true something_done{};
         something_done(base::update());
@@ -340,42 +177,59 @@ protected:
     void init() noexcept {
         base::init();
 
-        this->reported_alive.connect(on_alive());
-        this->subscribed.connect(on_subscribed());
-        this->unsubscribed.connect(on_unsubscribed());
-        this->not_subscribed.connect(on_not_subscribed());
-        this->host_id_received.connect(on_host_id_received());
-        this->hostname_received.connect(on_hostname_received());
-        this->router_appeared.connect(on_router_appeared());
-        this->bridge_appeared.connect(on_bridge_appeared());
-        this->endpoint_appeared.connect(on_endpoint_appeared());
-        this->router_disappeared.connect(on_router_disappeared());
-        this->bridge_disappeared.connect(on_bridge_disappeared());
-        this->endpoint_disappeared.connect(on_endpoint_disappeared());
-        this->router_stats_received.connect(on_router_stats_received());
-        this->bridge_stats_received.connect(on_bridge_stats_received());
-        this->endpoint_stats_received.connect(on_endpoint_stats_received());
-        this->application_name_received.connect(on_application_name_received());
-        this->endpoint_info_received.connect(on_endpoint_info_received());
-        this->compiler_info_received.connect(on_compiler_info_received());
-        this->build_version_info_received.connect(
-          on_build_version_info_received());
-        this->cpu_concurrent_threads_received.connect(
-          on_cpu_concurrent_threads_received());
-        this->short_average_load_received.connect(
-          on_short_average_load_received());
-        this->long_average_load_received.connect(
-          on_long_average_load_received());
-        this->free_ram_size_received.connect(on_free_ram_size_received());
-        this->total_ram_size_received.connect(on_total_ram_size_received());
-        this->free_swap_size_received.connect(on_free_swap_size_received());
-        this->total_swap_size_received.connect(on_total_swap_size_received());
-        this->temperature_min_max_received.connect(
-          on_temperature_min_max_received());
-        this->power_supply_kind_received.connect(
-          on_power_supply_kind_received());
-        this->ping_responded.connect(on_ping_response());
-        this->ping_timeouted.connect(on_ping_timeout());
+        connect<&This::_handle_alive>(this, this->reported_alive);
+        connect<&This::_handle_subscribed>(this, this->subscribed);
+        connect<&This::_handle_unsubscribed>(this, this->unsubscribed);
+        connect<&This::_handle_not_subscribed>(this, this->not_subscribed);
+        connect<&This::_handle_host_id_received>(this, this->host_id_received);
+        connect<&This::_handle_hostname_received>(
+          this, this->hostname_received);
+        connect<&This::_handle_router_appeared>(this, this->router_appeared);
+        connect<&This::_handle_bridge_appeared>(this, this->bridge_appeared);
+        connect<&This::_handle_endpoint_appeared>(
+          this, this->endpoint_appeared);
+        connect<&This::_handle_router_disappeared>(
+          this, this->router_disappeared);
+        connect<&This::_handle_bridge_disappeared>(
+          this, this->bridge_disappeared);
+        connect<&This::_handle_endpoint_disappeared>(
+          this, this->endpoint_disappeared);
+        connect<&This::_handle_router_stats_received>(
+          this, this->router_stats_received);
+        connect<&This::_handle_bridge_stats_received>(
+          this, this->bridge_stats_received);
+        connect<&This::_handle_endpoint_stats_received>(
+          this, this->endpoint_stats_received);
+        connect<&This::_handle_connection_stats_received>(
+          this, this->connection_stats_received);
+        connect<&This::_handle_application_name_received>(
+          this, this->application_name_received);
+        connect<&This::_handle_endpoint_info_received>(
+          this, this->endpoint_info_received);
+        connect<&This::_handle_compiler_info_received>(
+          this, this->compiler_info_received);
+        connect<&This::_handle_build_version_info_received>(
+          this, this->build_version_info_received);
+        connect<&This::_handle_cpu_concurrent_threads_received>(
+          this, this->cpu_concurrent_threads_received);
+        connect<&This::_handle_short_average_load_received>(
+          this, this->short_average_load_received);
+        connect<&This::_handle_long_average_load_received>(
+          this, this->long_average_load_received);
+        connect<&This::_handle_free_ram_size_received>(
+          this, this->free_ram_size_received);
+        connect<&This::_handle_total_ram_size_received>(
+          this, this->total_ram_size_received);
+        connect<&This::_handle_free_swap_size_received>(
+          this, this->free_swap_size_received);
+        connect<&This::_handle_total_swap_size_received>(
+          this, this->total_swap_size_received);
+        connect<&This::_handle_temperature_min_max_received>(
+          this, this->temperature_min_max_received);
+        connect<&This::_handle_power_supply_kind_received>(
+          this, this->power_supply_kind_received);
+        connect<&This::_handle_ping_response>(this, this->ping_responded);
+        connect<&This::_handle_ping_timeout>(this, this->ping_timeouted);
     }
 
     void add_methods() noexcept {

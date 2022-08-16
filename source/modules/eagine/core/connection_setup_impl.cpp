@@ -59,7 +59,7 @@ void connection_setup::_do_setup_connectors(
 void connection_setup::setup_acceptors(
   acceptor_user& target,
   const string_view address) {
-    std::unique_lock lock{_mutex};
+    const std::unique_lock lock{_mutex};
     _factory_map.visit_all(_make_call_setup_acceptors(target, address));
 }
 //------------------------------------------------------------------------------
@@ -67,7 +67,7 @@ void connection_setup::setup_acceptors(
   acceptor_user& target,
   const connection_kinds kinds,
   const string_view address) {
-    std::unique_lock lock{_mutex};
+    const std::unique_lock lock{_mutex};
     _factory_map.visit(kinds, _make_call_setup_acceptors(target, address));
 }
 //------------------------------------------------------------------------------
@@ -75,14 +75,14 @@ void connection_setup::setup_acceptors(
   acceptor_user& target,
   const connection_kind kind,
   const string_view address) {
-    std::unique_lock lock{_mutex};
+    const std::unique_lock lock{_mutex};
     _factory_map.visit(kind, _make_call_setup_acceptors(target, address));
 }
 //------------------------------------------------------------------------------
 void connection_setup::setup_connectors(
   connection_user& target,
   const string_view address) {
-    std::unique_lock lock{_mutex};
+    const std::unique_lock lock{_mutex};
     _factory_map.visit_all(_make_call_setup_connectors(target, address));
 }
 //------------------------------------------------------------------------------
@@ -90,7 +90,7 @@ void connection_setup::setup_connectors(
   connection_user& target,
   const connection_kinds kinds,
   const string_view address) {
-    std::unique_lock lock{_mutex};
+    const std::unique_lock lock{_mutex};
     _factory_map.visit(kinds, _make_call_setup_connectors(target, address));
 }
 //------------------------------------------------------------------------------
@@ -98,12 +98,12 @@ void connection_setup::setup_connectors(
   connection_user& target,
   const connection_kind kind,
   const string_view address) {
-    std::unique_lock lock{_mutex};
+    const std::unique_lock lock{_mutex};
     _factory_map.visit(kind, _make_call_setup_connectors(target, address));
 }
 //------------------------------------------------------------------------------
 void connection_setup::add_factory(std::unique_ptr<connection_factory> factory) {
-    std::unique_lock lock{_mutex};
+    const std::unique_lock lock{_mutex};
     if(factory) {
         const auto kind{factory->kind()};
 

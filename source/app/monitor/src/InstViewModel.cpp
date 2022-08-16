@@ -12,7 +12,7 @@ InstViewModel::InstViewModel(
   MonitorBackend& backend,
   SelectedItemViewModel& selectedItemViewModel)
   : QObject{nullptr}
-  , eagine::main_ctx_object{EAGINE_ID(InstVM), backend}
+  , eagine::main_ctx_object{"InstVM", backend}
   , _backend{backend} {
     connect(
       &_backend,
@@ -90,7 +90,7 @@ auto InstViewModel::getCompilerVersionPatch() -> QVariant {
 }
 //------------------------------------------------------------------------------
 auto InstViewModel::getVersionMajor() -> QVariant {
-    if(auto optBuild{_inst.build()}) {
+    if(auto optBuild{_inst.build_version()}) {
         if(auto optVerMajor{extract(optBuild).version_major()}) {
             return {extract(optVerMajor)};
         }
@@ -99,7 +99,7 @@ auto InstViewModel::getVersionMajor() -> QVariant {
 }
 //------------------------------------------------------------------------------
 auto InstViewModel::getVersionMinor() -> QVariant {
-    if(auto optBuild{_inst.build()}) {
+    if(auto optBuild{_inst.build_version()}) {
         if(auto optVerMinor{extract(optBuild).version_minor()}) {
             return {extract(optVerMinor)};
         }
@@ -108,7 +108,7 @@ auto InstViewModel::getVersionMinor() -> QVariant {
 }
 //------------------------------------------------------------------------------
 auto InstViewModel::getVersionPatch() -> QVariant {
-    if(auto optBuild{_inst.build()}) {
+    if(auto optBuild{_inst.build_version()}) {
         if(auto optVerPatch{extract(optBuild).version_patch()}) {
             return {extract(optVerPatch)};
         }
@@ -117,7 +117,7 @@ auto InstViewModel::getVersionPatch() -> QVariant {
 }
 //------------------------------------------------------------------------------
 auto InstViewModel::getVersionCommit() -> QVariant {
-    if(auto optBuild{_inst.build()}) {
+    if(auto optBuild{_inst.build_version()}) {
         if(auto optVerCommit{extract(optBuild).version_commit()}) {
             return {extract(optVerCommit)};
         }

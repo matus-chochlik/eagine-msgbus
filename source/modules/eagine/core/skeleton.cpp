@@ -392,12 +392,12 @@ private:
         identifier_t invoker_id{};
         bool finished{false};
 
-        auto do_it() -> bool final {
+        auto do_it() noexcept -> bool final {
             result = std::apply(func, args);
             return true;
         }
 
-        void deliver() final {
+        void deliver() noexcept final {
             finished = true;
         }
     };

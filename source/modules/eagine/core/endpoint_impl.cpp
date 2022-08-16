@@ -202,10 +202,10 @@ auto endpoint::_handle_topology_query(const message_view& message) noexcept
     info.endpoint_id = _endpoint_id;
     info.instance_id = _instance_id;
     auto temp{default_serialize_buffer_for(info)};
-    if(const auto serialized{default_serialize(info, cover(temp))}) {
+    if(const auto serialized{default_serialize(info, cover(temp))}) [[likely]] {
         message_view response{extract(serialized)};
         response.setup_response(message);
-        if(post(msgbus_id{"topoEndpt"}, response)) {
+        if(post(msgbus_id{"topoEndpt"}, response)) [[likely]] {
             return was_handled;
         }
     }
@@ -221,10 +221,11 @@ auto endpoint::_handle_stats_query(const message_view& message) noexcept
     _stats.uptime_seconds = _uptime_seconds();
 
     auto temp{default_serialize_buffer_for(_stats)};
-    if(const auto serialized{default_serialize(_stats, cover(temp))}) {
+    if(const auto serialized{default_serialize(_stats, cover(temp))})
+      [[likely]] {
         message_view response{extract(serialized)};
         response.setup_response(message);
-        if(post(msgbus_id{"statsEndpt"}, response)) {
+        if(post(msgbus_id{"statsEndpt"}, response)) [[likely]] {
             return was_handled;
         }
     }
@@ -239,54 +240,60 @@ auto endpoint::_handle_special(
   const message_view& message) noexcept -> message_handling_result {
 
     assert(_context);
-    if(is_special_message(msg_id)) [[unlikely]] {
+    if(is_special_message(msg_id)) {
         log_debug("endpoint handling special message ${message}")
           .arg("message", msg_id)
           .arg("endpoint", _endpoint_id)
           .arg("target", message.target_id)
           .arg("source", message.source_id);
 
+        switch(msg_id.method_id()) {
+            case id_v("blobFrgmnt"):
+                return _handle_blob_fragment(message);
+            case id_v("blobResend"):
+                return _handle_blob_resend(message);
+            case id_v("assignId"):
+                return _handle_assign_id(message);
+            case id_v("confirmId"):
+                return _handle_confirm_id(message);
+            case id_v("msgFlowInf"):
+                return _handle_flow_info(message);
+            case id_v("eptCertQry"):
+                return _handle_certificate_query(message);
+            case id_v("eptCertPem"):
+                return _handle_endpoint_certificate(message);
+            case id_v("eptSigNnce"):
+                return _handle_sign_nonce_request(message);
+            case id_v("eptNnceSig"):
+                return _handle_signed_nonce(message);
+            case id_v("rtrCertPem"):
+                return _handle_router_certificate(message);
+            case id_v("topoQuery"):
+                return _handle_topology_query(message);
+            case id_v("statsQuery"):
+                return _handle_stats_query(message);
+            case id_v("ping"):
+            case id_v("pong"):
+            case id_v("subscribTo"):
+            case id_v("unsubFrom"):
+            case id_v("notSubTo"):
+            case id_v("qrySubscrp"):
+            case id_v("qrySubscrb"):
+            case id_v("byeByeEndp"):
+            case id_v("byeByeRutr"):
+            case id_v("byeByeBrdg"):
+            case id_v("stillAlive"):
+            case id_v("topoRutrCn"):
+            case id_v("topoBrdgCn"):
+            case id_v("topoEndpt"):
+                return should_be_stored;
+        }
+
         if(has_id() && (message.source_id == _endpoint_id)) [[unlikely]] {
             ++_stats.dropped_messages;
             log_warning("received own special message ${message}")
               .arg("message", msg_id);
             return was_handled;
-        } else if(msg_id.has_method("blobFrgmnt")) {
-            return _handle_blob_fragment(message);
-        } else if(msg_id.has_method("blobResend")) {
-            return _handle_blob_resend(message);
-        } else if(msg_id.has_method("assignId")) {
-            return _handle_assign_id(message);
-        } else if(msg_id.has_method("confirmId")) {
-            return _handle_confirm_id(message);
-        } else if(
-          msg_id.has_method("ping") || msg_id.has_method("pong") ||
-          msg_id.has_method("subscribTo") || msg_id.has_method("unsubFrom") ||
-          msg_id.has_method("notSubTo") || msg_id.has_method("qrySubscrp") ||
-          msg_id.has_method("qrySubscrb")) {
-            return should_be_stored;
-        } else if(msg_id.has_method("msgFlowInf")) {
-            return _handle_flow_info(message);
-        } else if(msg_id.has_method("eptCertQry")) {
-            return _handle_certificate_query(message);
-        } else if(msg_id.has_method("eptCertPem")) {
-            return _handle_endpoint_certificate(message);
-        } else if(msg_id.has_method("eptSigNnce")) {
-            return _handle_sign_nonce_request(message);
-        } else if(msg_id.has_method("eptNnceSig")) {
-            return _handle_signed_nonce(message);
-        } else if(msg_id.has_method("rtrCertPem")) {
-            return _handle_router_certificate(message);
-        } else if(
-          msg_id.has_method("byeByeEndp") || msg_id.has_method("byeByeRutr") ||
-          msg_id.has_method("byeByeBrdg") || msg_id.has_method("stillAlive") ||
-          msg_id.has_method("topoRutrCn") || msg_id.has_method("topoBrdgCn") ||
-          msg_id.has_method("topoEndpt")) {
-            return should_be_stored;
-        } else if(msg_id.has_method("topoQuery")) {
-            return _handle_topology_query(message);
-        } else if(msg_id.has_method("statsQuery")) {
-            return _handle_stats_query(message);
         }
         log_warning("unhandled special message ${message} from ${source}")
           .arg("message", msg_id)
@@ -302,8 +309,9 @@ auto endpoint::_store_message(
   const message_view& message) noexcept -> bool {
     ++_stats.received_messages;
     if(_handle_special(msg_id, message) == should_be_stored) {
-        if((message.target_id == _endpoint_id) || !is_valid_id(message.target_id)) {
-            if(auto found{_find_incoming(msg_id)}) {
+        if((message.target_id == _endpoint_id) || !is_valid_id(message.target_id))
+          [[likely]] {
+            if(auto found{_find_incoming(msg_id)}) [[likely]] {
                 log_trace("stored message ${message}").arg("message", msg_id);
                 extract(found).queue.push(message).add_age(msg_age);
             } else {
@@ -331,7 +339,7 @@ auto endpoint::_accept_message(
     if(_handle_special(msg_id, message) == was_handled) {
         return true;
     }
-    if(auto found{_find_incoming(msg_id)}) {
+    if(auto found{_find_incoming(msg_id)}) [[likely]] {
         if((message.target_id == _endpoint_id) || !is_valid_id(message.target_id)) {
             log_trace("accepted message ${message}").arg("message", msg_id);
             extract(found).queue.push(message);
@@ -343,19 +351,15 @@ auto endpoint::_accept_message(
 //------------------------------------------------------------------------------
 void endpoint::add_certificate_pem(const memory::const_block blk) noexcept {
     assert(_context);
-    if(_context) {
-        if(_context->add_own_certificate_pem(blk)) {
-            broadcast_certificate();
-        }
+    if(_context->add_own_certificate_pem(blk)) {
+        broadcast_certificate();
     }
 }
 //------------------------------------------------------------------------------
 void endpoint::add_ca_certificate_pem(const memory::const_block blk) noexcept {
     assert(_context);
-    if(_context) {
-        if(_context->add_ca_certificate_pem(blk)) {
-            broadcast_certificate();
-        }
+    if(_context->add_ca_certificate_pem(blk)) {
+        broadcast_certificate();
     }
 }
 //------------------------------------------------------------------------------
@@ -379,28 +383,21 @@ auto endpoint::add_connection(std::unique_ptr<connection> conn) noexcept
 }
 //------------------------------------------------------------------------------
 auto endpoint::is_usable() const noexcept -> bool {
-    if(_connection) [[likely]] {
-        if(_connection->is_usable()) {
-            return true;
-        }
-    }
-    return false;
+    return _connection && _connection->is_usable();
 }
 //------------------------------------------------------------------------------
 auto endpoint::max_data_size() const noexcept
   -> valid_if_positive<span_size_t> {
     span_size_t result{0};
-    if(_connection) [[likely]] {
-        if(_connection->is_usable()) {
-            if(const auto opt_max_size = _connection->max_data_size()) {
-                const auto max_size = extract(opt_max_size);
-                if(result > 0) {
-                    if(result > max_size) {
-                        result = max_size;
-                    }
-                } else {
+    if(is_usable()) [[likely]] {
+        if(const auto opt_max_size{_connection->max_data_size()}) {
+            const auto max_size{extract(opt_max_size)};
+            if(result > 0) {
+                if(result > max_size) {
                     result = max_size;
                 }
+            } else {
+                result = max_size;
             }
         }
     }
@@ -408,7 +405,7 @@ auto endpoint::max_data_size() const noexcept
 }
 //------------------------------------------------------------------------------
 void endpoint::flush_outbox() noexcept {
-    if(has_id()) {
+    if(has_id()) [[likely]] {
         log_debug("flushing outbox (size: ${count})")
           .arg("count", _outgoing.count());
         _outgoing.fetch_all(make_callable_ref<&endpoint::_handle_send>(this));
@@ -460,7 +457,7 @@ auto endpoint::update() noexcept -> work_done {
         log_warning("endpoint has no connection");
     }
 
-    const bool had_id = has_id();
+    const bool had_id{has_id()};
     if(_connection) [[likely]] {
         if(!_had_working_connection) [[unlikely]] {
             _had_working_connection = true;
@@ -506,7 +503,7 @@ auto endpoint::update() noexcept -> work_done {
         }
     }
 
-    if(_should_notify_alive) {
+    if(_should_notify_alive) [[unlikely]] {
         say_still_alive();
     }
 
@@ -564,7 +561,7 @@ void endpoint::post_meta_message(
   const message_id msg_id) noexcept {
     auto temp{default_serialize_buffer_for(msg_id)};
     if(const auto serialized{
-         default_serialize_message_type(msg_id, cover(temp))}) {
+         default_serialize_message_type(msg_id, cover(temp))}) [[likely]] {
         message_view meta_msg{extract(serialized)};
         meta_msg.set_sequence_no(_instance_id);
         post(meta_msg_id, meta_msg);
@@ -581,7 +578,7 @@ void endpoint::post_meta_message_to(
   const message_id msg_id) noexcept {
     auto temp{default_serialize_buffer_for(msg_id)};
     if(const auto serialized{
-         default_serialize_message_type(msg_id, cover(temp))}) {
+         default_serialize_message_type(msg_id, cover(temp))}) [[likely]] {
         message_view meta_msg{extract(serialized)};
         meta_msg.set_target_id(target_id);
         meta_msg.set_sequence_no(_instance_id);
@@ -699,7 +696,7 @@ void endpoint::query_certificate_of(const identifier_t endpoint_id) noexcept {
 auto endpoint::process_one(
   const message_id msg_id,
   const method_handler handler) noexcept -> bool {
-    if(const auto found{_find_incoming(msg_id)}) {
+    if(const auto found{_find_incoming(msg_id)}) [[likely]] {
         const message_context msg_ctx{*this, msg_id};
         return extract(found).queue.process_one(msg_ctx, handler);
     }
@@ -709,7 +706,7 @@ auto endpoint::process_one(
 auto endpoint::process_all(
   const message_id msg_id,
   const method_handler handler) noexcept -> span_size_t {
-    if(const auto found{_find_incoming(msg_id)}) {
+    if(const auto found{_find_incoming(msg_id)}) [[likely]] {
         const message_context msg_ctx{*this, msg_id};
         return extract(found).queue.process_all(msg_ctx, handler);
     }

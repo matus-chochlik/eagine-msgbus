@@ -107,9 +107,7 @@ public:
                                const message_id msg_id,
                                const message_age msg_age,
                                message_view message) {
-            if(message.add_age(msg_age).too_old()) [[unlikely]] {
-                ++_dropped_messages;
-            } else {
+            if(!message.add_age(msg_age).too_old()) [[likely]] {
                 default_serializer_backend backend(_sink);
                 serialize_message_header(msg_id, message, backend);
 
@@ -128,6 +126,8 @@ public:
 
                 _output << '\n' << std::flush;
                 ++_forwarded_messages;
+            } else {
+                ++_dropped_messages;
             }
             return true;
         };
@@ -161,9 +161,7 @@ public:
             const auto errors = deserialize_message_header(
               class_id, method_id, _recv_dest, backend);
 
-            if(errors) [[unlikely]] {
-                ++_decode_errors;
-            } else {
+            if(!errors) [[likely]] {
                 _buffer.ensure(source.remaining().size());
                 span_size_t i = 0;
                 span_size_t o = 0;
@@ -177,10 +175,12 @@ public:
 
                 const std::unique_lock lock{_input_mutex};
                 _incoming.back().push({class_id, method_id}, _recv_dest);
+            } else {
+                ++_decode_errors;
             }
             _source.pop(extract(pos) + 1);
         } else {
-            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+            std::this_thread::sleep_for(std::chrono::milliseconds(5));
         }
     }
 
@@ -263,7 +263,7 @@ auto bridge::_handle_id_confirmed(const message_view& message) noexcept
 auto bridge::_handle_ping(
   const message_view& message,
   const bool to_connection) noexcept -> message_handling_result {
-    if(has_id()) {
+    if(has_id()) [[likely]] {
         if(_id == message.target_id) {
             message_view response{};
             response.setup_response(message);
@@ -323,7 +323,7 @@ auto bridge::_handle_stats_query(
     _stats.dropped_messages = _dropped_messages_i2c;
     _stats.uptime_seconds = _uptime_seconds();
 
-    const auto now = std::chrono::steady_clock::now();
+    const auto now{std::chrono::steady_clock::now()};
     const std::chrono::duration<float> seconds{now - _forwarded_since_stat};
     if(seconds.count() > 15.F) [[likely]] {
         _forwarded_since_stat = now;
@@ -354,25 +354,29 @@ auto bridge::_handle_special(
   const bool to_connection) noexcept -> message_handling_result {
     if(is_special_message(msg_id)) [[unlikely]] {
         log_debug("bridge handling special message ${message}")
+          .tag("hndlSpcMsg")
           .arg("bridge", _id)
           .arg("message", msg_id)
           .arg("target", message.target_id)
           .arg("source", message.source_id);
 
-        if(msg_id.has_method("assignId")) {
-            return _handle_id_assigned(message);
-        } else if(msg_id.has_method("confirmId")) {
-            return _handle_id_confirmed(message);
-        } else if(msg_id.has_method("ping")) {
-            return _handle_ping(message, to_connection);
-        } else if(msg_id.has_method("topoBrdgCn")) {
-            return _handle_topo_bridge_conn(message, to_connection);
-        } else if(msg_id.has_method("topoQuery")) {
-            return _handle_topology_query(message, to_connection);
-        } else if(msg_id.has_method("statsQuery")) {
-            return _handle_stats_query(message, to_connection);
-        } else if(msg_id.has_method("msgFlowInf")) {
-            return was_handled;
+        switch(msg_id.method_id()) {
+            case id_v("assignId"):
+                return _handle_id_assigned(message);
+            case id_v("confirmId"):
+                return _handle_id_confirmed(message);
+            case id_v("ping"):
+                return _handle_ping(message, to_connection);
+            case id_v("topoBrdgCn"):
+                return _handle_topo_bridge_conn(message, to_connection);
+            case id_v("topoQuery"):
+                return _handle_topology_query(message, to_connection);
+            case id_v("statsQuery"):
+                return _handle_stats_query(message, to_connection);
+            case id_v("msgFlowInf"):
+                return was_handled;
+            default:
+                break;
         }
     }
     return should_be_forwarded;
@@ -412,40 +416,86 @@ auto bridge::_do_push(const message_id msg_id, message_view& message) noexcept
     return false;
 }
 //------------------------------------------------------------------------------
+auto bridge::_avg_msg_age_c2o() const noexcept -> std::chrono::microseconds {
+    return std::chrono::duration_cast<std::chrono::microseconds>(
+      _message_age_sum_c2o /
+      (_forwarded_messages_c2o + _dropped_messages_c2o + 1));
+}
+//------------------------------------------------------------------------------
+auto bridge::_avg_msg_age_i2c() const noexcept -> std::chrono::microseconds {
+    return std::chrono::duration_cast<std::chrono::microseconds>(
+      _message_age_sum_i2c /
+      (_forwarded_messages_i2c + _dropped_messages_i2c + 1));
+}
+//------------------------------------------------------------------------------
+auto bridge::_should_log_bridge_stats_c2o() noexcept -> bool {
+    return ++_forwarded_messages_c2o % 1'000'000 == 0;
+}
+//------------------------------------------------------------------------------
+auto bridge::_should_log_bridge_stats_i2c() noexcept -> bool {
+    return ++_forwarded_messages_i2c % 1'000'000 == 0;
+}
+//------------------------------------------------------------------------------
+void bridge::_log_bridge_stats_c2o() noexcept {
+    const auto now{std::chrono::steady_clock::now()};
+    const std::chrono::duration<float> interval{now - _forwarded_since_c2o};
+
+    if(interval > decltype(interval)::zero()) [[likely]] {
+        const auto msgs_per_sec{1'000'000.F / interval.count()};
+
+        log_chart_sample("msgPerSecO", msgs_per_sec);
+        log_stat("forwarded ${count} messages to output queue")
+          .tag("msgStats")
+          .arg("count", _forwarded_messages_c2o)
+          .arg("dropped", _dropped_messages_c2o)
+          .arg("interval", interval)
+          .arg("avgMsgAge", _avg_msg_age_c2o())
+          .arg("msgsPerSec", msgs_per_sec);
+    }
+
+    _forwarded_since_c2o = now;
+}
+//------------------------------------------------------------------------------
+void bridge::_log_bridge_stats_i2c() noexcept {
+    const auto now{std::chrono::steady_clock::now()};
+    const std::chrono::duration<float> interval{now - _forwarded_since_i2c};
+
+    if(interval > decltype(interval)::zero()) [[likely]] {
+        const auto msgs_per_sec{1'000'000.F / interval.count()};
+
+        _stats.message_age_milliseconds =
+          std::chrono::duration_cast<std::chrono::milliseconds>(
+            _avg_msg_age_i2c())
+            .count();
+
+        log_chart_sample("msgPerSecI", msgs_per_sec);
+        log_stat("forwarded ${count} messages from input")
+          .tag("msgStats")
+          .arg("count", _forwarded_messages_i2c)
+          .arg("dropped", _dropped_messages_i2c)
+          .arg("interval", interval)
+          .arg("avgMsgAge", _avg_msg_age_i2c())
+          .arg("msgsPerSec", msgs_per_sec);
+    }
+
+    _forwarded_since_i2c = now;
+}
+//------------------------------------------------------------------------------
 auto bridge::_forward_messages() noexcept -> work_done {
     some_true something_done{};
 
     const auto forward_conn_to_output =
       [this](
         const message_id msg_id, message_age msg_age, message_view message) {
-          _message_age_sum_c2o += message.add_age(msg_age).age().count();
+          _message_age_sum_c2o += message.add_age(msg_age).age();
           if(message.too_old()) [[unlikely]] {
               ++_dropped_messages_c2o;
               return true;
           }
-          if(++_forwarded_messages_c2o % 1000000 == 0) [[unlikely]] {
-              const auto now{std::chrono::steady_clock::now()};
-              const std::chrono::duration<float> interval{
-                now - _forwarded_since_c2o};
-
-              if(interval > decltype(interval)::zero()) [[likely]] {
-                  const auto msgs_per_sec{1000000.F / interval.count()};
-                  const auto avg_msg_age =
-                    _message_age_sum_c2o /
-                    float(_forwarded_messages_c2o + _dropped_messages_c2o + 1);
-
-                  log_chart_sample("msgPerSecO", msgs_per_sec);
-                  log_stat("forwarded ${count} messages to output queue")
-                    .arg("count", _forwarded_messages_c2o)
-                    .arg("dropped", _dropped_messages_c2o)
-                    .arg("interval", interval)
-                    .arg("avgMsgAge", avg_msg_age)
-                    .arg("msgsPerSec", msgs_per_sec);
-              }
-
-              _forwarded_since_c2o = now;
+          if(_should_log_bridge_stats_c2o()) [[unlikely]] {
+              _log_bridge_stats_c2o();
           }
-          if(this->_handle_special(msg_id, message, false) == was_handled) {
+          if(_handle_special(msg_id, message, false) == was_handled) {
               return true;
           }
           return this->_do_push(msg_id, message);
@@ -457,47 +507,26 @@ auto bridge::_forward_messages() noexcept -> work_done {
     }
     _state->notify_output_ready();
 
-    const auto forward_input_to_conn =
-      [this](
-        const message_id msg_id, message_age msg_age, message_view message) {
-          _message_age_sum_i2c += message.add_age(msg_age).age().count();
-          if(message.too_old()) [[unlikely]] {
-              ++_dropped_messages_i2c;
-              return true;
-          }
-          if(++_forwarded_messages_i2c % 1000000 == 0) [[unlikely]] {
-              const auto now{std::chrono::steady_clock::now()};
-              const std::chrono::duration<float> interval{
-                now - _forwarded_since_i2c};
-
-              if(interval > decltype(interval)::zero()) [[likely]] {
-                  const auto msgs_per_sec{1000000.F / interval.count()};
-                  const auto avg_msg_age =
-                    _message_age_sum_i2c /
-                    float(_forwarded_messages_i2c + _dropped_messages_i2c + 1);
-
-                  _stats.message_age_milliseconds =
-                    static_cast<std::int32_t>(avg_msg_age * 1000.F);
-
-                  log_chart_sample("msgPerSecI", msgs_per_sec);
-                  log_stat("forwarded ${count} messages from input")
-                    .arg("count", _forwarded_messages_i2c)
-                    .arg("dropped", _dropped_messages_i2c)
-                    .arg("interval", interval)
-                    .arg("avgMsgAge", avg_msg_age)
-                    .arg("msgsPerSec", msgs_per_sec);
-              }
-
-              _forwarded_since_i2c = now;
-          }
-          if(this->_handle_special(msg_id, message, true) == was_handled) {
-              return true;
-          }
-          this->_do_send(msg_id, message);
-          return true;
-      };
-
     if(_state) [[likely]] {
+        const auto forward_input_to_conn = [this](
+                                             const message_id msg_id,
+                                             message_age msg_age,
+                                             message_view message) {
+            _message_age_sum_i2c += message.add_age(msg_age).age();
+            if(message.too_old()) [[unlikely]] {
+                ++_dropped_messages_i2c;
+                return true;
+            }
+            if(_should_log_bridge_stats_i2c()) [[unlikely]] {
+                _log_bridge_stats_i2c();
+            }
+            if(this->_handle_special(msg_id, message, true) == was_handled) {
+                return true;
+            }
+            this->_do_send(msg_id, message);
+            return true;
+        };
+
         something_done(
           _state->fetch_messages({construct_from, forward_input_to_conn}));
     }
@@ -597,6 +626,7 @@ void bridge::cleanup() noexcept {
 
     if(_state) {
         log_stat("forwarded ${count} messages in total to output stream")
+          .tag("msgStats")
           .arg("count", _state->forwarded_messages())
           .arg("dropped", _state->dropped_messages())
           .arg("decodeErr", _state->decode_errors())
@@ -604,11 +634,13 @@ void bridge::cleanup() noexcept {
     }
 
     log_stat("forwarded ${count} messages in total to output queue")
+      .tag("msgStats")
       .arg("count", _forwarded_messages_c2o)
       .arg("dropped", _dropped_messages_c2o)
       .arg("avgMsgAge", avg_msg_age_c2o);
 
     log_stat("forwarded ${count} messages in total to connection")
+      .tag("msgStats")
       .arg("count", _forwarded_messages_i2c)
       .arg("dropped", _dropped_messages_i2c)
       .arg("avgMsgAge", avg_msg_age_i2c);

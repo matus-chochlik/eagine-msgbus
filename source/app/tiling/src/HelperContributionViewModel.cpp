@@ -11,7 +11,7 @@
 //------------------------------------------------------------------------------
 HelperContributionViewModel::HelperContributionViewModel(TilingBackend& backend)
   : QObject{nullptr}
-  , eagine::main_ctx_object{EAGINE_ID(CntrbModel), backend}
+  , eagine::main_ctx_object{"CntrbModel", backend}
   , _backend{backend}
   , _timerId{startTimer(2000)} {}
 //------------------------------------------------------------------------------

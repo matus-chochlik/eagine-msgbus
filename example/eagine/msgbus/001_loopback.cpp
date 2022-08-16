@@ -31,10 +31,7 @@ struct str_utils_server
       , base(
           ep,
           this,
-          message_map<
-            id_v("StrUtilReq"),
-            id_v("Reverse"),
-            &this_class::reverse>{}) {}
+          message_map<"StrUtilReq", "Reverse", &this_class::reverse>{}) {}
 
     auto reverse(const message_context&, const stored_message& msg) noexcept
       -> bool {
@@ -62,7 +59,7 @@ struct str_utils_client
       , base{
           ep,
           this,
-          message_map<id_v("StrUtilRes"), id_v("Reverse"), &this_class::print>{}} {}
+          message_map<"StrUtilRes", "Reverse", &this_class::print>{}} {}
 
     void call_reverse(const string_view str) {
         ++_remaining;

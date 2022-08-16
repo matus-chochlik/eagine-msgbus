@@ -7,12 +7,11 @@
 #ifndef EAGINE_MSGBUS_SOLUTION_INTERVAL_VIEW_MODEL
 #define EAGINE_MSGBUS_SOLUTION_INTERVAL_VIEW_MODEL
 
-#include <eagine/main_ctx_object.hpp>
-#include <eagine/value_with_history.hpp>
+import eagine.core;
+import <chrono>;
+import <tuple>;
 #include <QObject>
 #include <QVariant>
-#include <chrono>
-#include <tuple>
 
 class TilingBackend;
 //------------------------------------------------------------------------------

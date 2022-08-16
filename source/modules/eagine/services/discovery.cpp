@@ -63,13 +63,13 @@ protected:
     void add_methods() noexcept {
         Base::add_methods();
         Base::add_method(
-          this, msgbus_map<id_v("stillAlive"), &This::_handle_alive>{});
+          this, msgbus_map<"stillAlive", &This::_handle_alive>{});
         Base::add_method(
-          this, msgbus_map<id_v("subscribTo"), &This::_handle_subscribed>{});
+          this, msgbus_map<"subscribTo", &This::_handle_subscribed>{});
         Base::add_method(
-          this, msgbus_map<id_v("unsubFrom"), &This::_handle_unsubscribed>{});
+          this, msgbus_map<"unsubFrom", &This::_handle_unsubscribed>{});
         Base::add_method(
-          this, msgbus_map<id_v("notSubTo"), &This::_handle_not_subscribed>{});
+          this, msgbus_map<"notSubTo", &This::_handle_not_subscribed>{});
     }
 
 private:

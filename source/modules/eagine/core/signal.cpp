@@ -107,6 +107,11 @@ private:
 
     flat_map<unsigned, callable_ref<void(Params...) noexcept>> _slots;
 };
+
+export template <auto MemFuncPtr, typename C, typename... Params>
+auto connect(C* that, signal<void(Params...) noexcept>& sig) noexcept {
+    return sig.connect(make_callable_ref<MemFuncPtr>(that));
+}
 //------------------------------------------------------------------------------
 /// @brief Class that keeps a signam binding key and disconnects it when destroyed.
 /// @ingroup msgbus

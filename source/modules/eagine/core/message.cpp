@@ -70,17 +70,15 @@ auto default_serialize_buffer_for(const T& inst) noexcept {
 }
 //------------------------------------------------------------------------------
 export struct msgbus_id : message_id {
-    template <auto L>
-        requires(identifier_literal_length<L>)
-
-    constexpr msgbus_id(const char (&method)[L]) noexcept
+    constexpr msgbus_id(identifier_value method) noexcept
       : message_id{"eagiMsgBus", method} {}
 };
 
 //------------------------------------------------------------------------------
 /// @brief Indicates if the specified message id denotes a special message bus message.
 /// @ingroup msgbus
-export constexpr auto is_special_message(const message_id msg_id) noexcept {
+export constexpr auto is_special_message(const message_id msg_id) noexcept
+  -> bool {
     return msg_id.has_class("eagiMsgBus");
 }
 //------------------------------------------------------------------------------
@@ -113,7 +111,8 @@ export using message_timestamp = std::chrono::steady_clock::time_point;
 /// @brief Alias for message age type.
 /// @ingroup msgbus
 /// @see message_timestamp
-export using message_age = std::chrono::duration<float>;
+export using message_age =
+  std::chrono::duration<std::int16_t, std::ratio<1, 100>>;
 //------------------------------------------------------------------------------
 /// @brief Message priority enumeration.
 /// @ingroup msgbus
@@ -264,7 +263,7 @@ export struct message_info {
                 return age_quarter_seconds > 10 * 4;
             case message_priority::low:
                 return age_quarter_seconds > 20 * 4;
-            case message_priority::normal:
+            [[likely]] case message_priority::normal:
                 return age_quarter_seconds > 30 * 4;
             case message_priority::high:
                 return age_quarter_seconds == std::numeric_limits<age_t>::max();
@@ -278,9 +277,10 @@ export struct message_info {
     /// @see age
     /// @see too_old
     auto add_age(const message_age age) noexcept -> auto& {
-        const float added_quarter_seconds = (age.count() + 0.20F) * 4.F;
+        const auto added_quarter_seconds = (age.count() + 20) / 25;
         if(const auto new_age{convert_if_fits<age_t>(
-             int(age_quarter_seconds) + int(added_quarter_seconds))}) {
+             int(age_quarter_seconds) + int(added_quarter_seconds))})
+          [[likely]] {
             age_quarter_seconds = extract(new_age);
         } else {
             age_quarter_seconds = std::numeric_limits<age_t>::max();
@@ -292,7 +292,7 @@ export struct message_info {
     /// @see too_old
     /// @see add_age
     auto age() const noexcept -> message_age {
-        return message_age{float(age_quarter_seconds) * 0.25F};
+        return message_age{age_quarter_seconds * 25};
     }
 
     /// @brief Sets the priority of this message.
@@ -429,8 +429,7 @@ auto serialize_message_header(
   Backend& backend) noexcept -> serialization_errors
     requires(std::is_base_of_v<serializer_backend, Backend>)
 {
-
-    auto message_params = std::make_tuple(
+    const auto message_params = std::make_tuple(
       msg_id.class_(),
       msg_id.method(),
       msg.source_id,
@@ -456,11 +455,10 @@ auto serialize_message(
   Backend& backend) noexcept -> serialization_errors
     requires(std::is_base_of_v<serializer_backend, Backend>)
 {
-
     auto errors = serialize_message_header(msg_id, msg, backend);
 
-    if(!errors) {
-        if(auto sink{backend.sink()}) {
+    if(!errors) [[likely]] {
+        if(auto sink{backend.sink()}) [[likely]] {
             errors |= extract(sink).write(msg.data());
         } else {
             errors |= serialization_error_code::backend_error;
@@ -480,7 +478,7 @@ inline auto default_serialize(const T& value, memory::block blk) noexcept
   -> serialization_result<memory::const_block> {
     block_data_sink sink(blk);
     default_serializer_backend backend(sink);
-    auto errors = serialize(value, backend);
+    const auto errors = serialize(value, backend);
     return {sink.done(), errors};
 }
 //------------------------------------------------------------------------------
@@ -498,7 +496,7 @@ auto default_serialize_packed(
   -> serialization_result<memory::const_block> {
     packed_block_data_sink sink(std::move(compressor), blk);
     default_serializer_backend backend(sink);
-    auto errors = serialize(value, backend);
+    const auto errors = serialize(value, backend);
     return {sink.done(), errors};
 }
 //------------------------------------------------------------------------------
@@ -705,8 +703,8 @@ auto deserialize_message(
 
     auto errors = deserialize_message_header(class_id, method_id, msg, backend);
 
-    if(!errors) {
-        if(auto source{backend.source()}) {
+    if(!errors) [[likely]] {
+        if(auto source{backend.source()}) [[likely]] {
             msg.fetch_all_from(extract(source));
         } else {
             errors |= deserialization_error_code::backend_error;
@@ -732,7 +730,7 @@ auto deserialize_message(
     identifier method_id{};
     deserialization_errors errors =
       deserialize_message(class_id, method_id, msg, backend);
-    if(!errors) {
+    if(!errors) [[likely]] {
         msg_id = {class_id, method_id};
     }
     return errors;
@@ -782,7 +780,7 @@ export auto default_deserialize_message_type(
   const memory::const_block blk) noexcept {
     std::tuple<identifier, identifier> value{};
     auto result = default_deserialize(value, blk);
-    if(result) {
+    if(result) [[likely]] {
         msg_id = {value};
     }
     return result;
@@ -796,7 +794,7 @@ auto stored_message::do_store_value(
     block_data_sink sink(cover(_buffer));
     Backend backend(sink);
     auto errors = serialize(value, backend);
-    if(!errors) {
+    if(!errors) [[likely]] {
         set_serializer_id(backend.type_id());
         _buffer.resize(sink.done().size());
         return true;
@@ -866,13 +864,13 @@ public:
         (void)(insert_time);
         bool rollback = false;
         try {
-            if(!function(msg_id, insert_time, message)) {
+            if(!function(msg_id, insert_time, message)) [[unlikely]] {
                 rollback = true;
             }
         } catch(...) {
             rollback = true;
         }
-        if(rollback) {
+        if(rollback) [[unlikely]] {
             _buffers.eat(message.release_buffer());
             _messages.pop_back();
             return false;

@@ -54,8 +54,7 @@ public:
             log_info("shutdown delay is set to ${delay}")
               .arg("delay", _shutdown_timeout.period());
 
-            shutdown_requested.connect(
-              make_callable_ref<&bridge_node::on_shutdown>(this));
+            connect<&bridge_node::on_shutdown>(this, shutdown_requested);
         }
         auto& info = provided_endpoint_info();
         info.display_name = "bridge control node";

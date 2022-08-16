@@ -113,18 +113,14 @@ protected:
     void init() noexcept {
         base::init();
 
-        this->reported_alive.connect(
-          make_callable_ref<&stream_endpoint::_handle_stream_relay_alive>(
-            this));
-        this->subscribed.connect(
-          make_callable_ref<&stream_endpoint::_handle_stream_relay_subscribed>(
-            this));
-        this->unsubscribed.connect(
-          make_callable_ref<&stream_endpoint::_handle_stream_relay_unsubscribed>(
-            this));
-        this->not_subscribed.connect(
-          make_callable_ref<&stream_endpoint::_handle_stream_relay_unsubscribed>(
-            this));
+        connect<&stream_endpoint::_handle_stream_relay_alive>(
+          this, this->reported_alive);
+        connect<&stream_endpoint::_handle_stream_relay_subscribed>(
+          this, this->subscribed);
+        connect<&stream_endpoint::_handle_stream_relay_unsubscribed>(
+          this, this->unsubscribed);
+        connect<&stream_endpoint::_handle_stream_relay_unsubscribed>(
+          this, this->not_subscribed);
     }
 
     auto update() noexcept -> work_done {
@@ -244,12 +240,10 @@ protected:
     void init() noexcept {
         base::init();
 
-        this->stream_relay_assigned.connect(
-          make_callable_ref<&stream_provider::_handle_stream_relay_assigned>(
-            this));
-        this->stream_relay_reset.connect(
-          make_callable_ref<&stream_provider::_handle_stream_relay_reset>(
-            this));
+        connect<&stream_provider::_handle_stream_relay_assigned>(
+          this, this->stream_relay_assigned);
+        connect<&stream_provider::_handle_stream_relay_reset>(
+          this, this->stream_relay_reset);
     }
 
     void add_methods() noexcept {
@@ -258,16 +252,13 @@ protected:
         base::add_method(
           this,
           message_map<
-            id_v("eagiStream"),
-            id_v("startSend"),
+            "eagiStream",
+            "startSend",
             &This::_handle_start_send_data>{});
 
         base::add_method(
           this,
-          message_map<
-            id_v("eagiStream"),
-            id_v("stopSend"),
-            &This::_handle_stop_send_data>{});
+          message_map<"eagiStream", "stopSend", &This::_handle_stop_send_data>{});
     }
 
 private:
@@ -415,15 +406,12 @@ protected:
         base::add_methods();
         base::add_method(
           this,
-          message_map<
-            id_v("eagiStream"),
-            id_v("appeared"),
-            &This::_handle_stream_appeared>{});
+          message_map<"eagiStream", "appeared", &This::_handle_stream_appeared>{});
         base::add_method(
           this,
           message_map<
-            id_v("eagiStream"),
-            id_v("disapeared"),
+            "eagiStream",
+            "disapeared",
             &This::_handle_stream_disappeared>{});
     }
 
@@ -518,28 +506,16 @@ protected:
 
         base::add_method(
           this,
-          message_map<
-            id_v("eagiStream"),
-            id_v("announce"),
-            &This::_handle_stream_announce>{});
+          message_map<"eagiStream", "announce", &This::_handle_stream_announce>{});
         base::add_method(
           this,
-          message_map<
-            id_v("eagiStream"),
-            id_v("retract"),
-            &This::_handle_stream_retract>{});
+          message_map<"eagiStream", "retract", &This::_handle_stream_retract>{});
         base::add_method(
           this,
-          message_map<
-            id_v("eagiStream"),
-            id_v("startFrwrd"),
-            &This::_handle_start_forward>{});
+          message_map<"eagiStream", "startFrwrd", &This::_handle_start_forward>{});
         base::add_method(
           this,
-          message_map<
-            id_v("eagiStream"),
-            id_v("stopFrwrd"),
-            &This::_handle_stop_forward>{});
+          message_map<"eagiStream", "stopFrwrd", &This::_handle_stop_forward>{});
     }
 
     auto update() noexcept -> work_done {

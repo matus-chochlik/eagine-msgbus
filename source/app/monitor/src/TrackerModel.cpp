@@ -5,29 +5,32 @@
 ///
 #include <QDebug>
 
+import eagine.core;
+import eagine.msgbus;
 #include "MonitorBackend.hpp"
 #include "TrackerModel.hpp"
-#include <eagine/message_bus.hpp>
 //------------------------------------------------------------------------------
 TrackerModel::TrackerModel(MonitorBackend& backend)
   : QObject{nullptr}
-  , eagine::main_ctx_object{EAGINE_ID(Tracker), backend}
+  , eagine::main_ctx_object{"Tracker", backend}
   , _backend{backend}
-  , _bus{EAGINE_ID(TrckrEndpt), *this}
+  , _bus{"TrckrEndpt", *this}
   , _tracker{_bus} {
-    bus().setup_connectors(_tracker);
+    eagine::msgbus::setup_connectors(main_context(), _tracker);
 
-    _tracker.host_changed.connect(EAGINE_THIS_MEM_FUNC_REF(handleHostChanged));
-    _tracker.instance_changed.connect(
-      EAGINE_THIS_MEM_FUNC_REF(handleInstanceChanged));
-    _tracker.node_changed.connect(EAGINE_THIS_MEM_FUNC_REF(handleNodeChanged));
+    eagine::msgbus::connect<&TrackerModel::handleHostChanged>(
+      this, _tracker.host_changed);
+    eagine::msgbus::connect<&TrackerModel::handleInstanceChanged>(
+      this, _tracker.instance_changed);
+    eagine::msgbus::connect<&TrackerModel::handleNodeChanged>(
+      this, _tracker.node_changed);
 
-    _tracker.router_disappeared.connect(
-      EAGINE_THIS_MEM_FUNC_REF(handleNodeDisappeared));
-    _tracker.bridge_disappeared.connect(
-      EAGINE_THIS_MEM_FUNC_REF(handleNodeDisappeared));
-    _tracker.endpoint_disappeared.connect(
-      EAGINE_THIS_MEM_FUNC_REF(handleNodeDisappeared));
+    eagine::msgbus::connect<&TrackerModel::handleNodeDisappeared>(
+      this, _tracker.router_disappeared);
+    eagine::msgbus::connect<&TrackerModel::handleNodeDisappeared>(
+      this, _tracker.bridge_disappeared);
+    eagine::msgbus::connect<&TrackerModel::handleNodeDisappeared>(
+      this, _tracker.endpoint_disappeared);
 }
 //------------------------------------------------------------------------------
 auto TrackerModel::hostParameters(eagine::identifier_t hostId) noexcept

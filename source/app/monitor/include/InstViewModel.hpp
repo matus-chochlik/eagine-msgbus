@@ -8,8 +8,8 @@
 #ifndef EAGINE_MSGBUS_MONITOR_INST_VIEW_MODEL
 #define EAGINE_MSGBUS_MONITOR_INST_VIEW_MODEL
 
-#include <eagine/main_ctx_object.hpp>
-#include <eagine/msgbus/remote_node.hpp>
+import eagine.core;
+import eagine.msgbus;
 #include <QObject>
 #include <QVariant>
 

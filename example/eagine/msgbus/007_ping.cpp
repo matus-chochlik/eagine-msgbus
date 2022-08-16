@@ -101,27 +101,18 @@ public:
       , _max{extract_or(max, 100000)} {
         object_description("Pinger", "Ping example");
 
-        bus.id_assigned.connect(
-          make_callable_ref<&ping_example::on_id_assigned>(this));
-        bus.connection_lost.connect(
-          make_callable_ref<&ping_example::on_connection_lost>(this));
-        bus.connection_established.connect(
-          make_callable_ref<&ping_example::on_connection_established>(this));
+        connect<&ping_example::on_id_assigned>(this, bus.id_assigned);
+        connect<&ping_example::on_connection_lost>(this, bus.connection_lost);
+        connect<&ping_example::on_connection_established>(
+          this, bus.connection_established);
 
-        subscribed.connect(
-          make_callable_ref<&ping_example::on_subscribed>(this));
-        unsubscribed.connect(
-          make_callable_ref<&ping_example::on_unsubscribed>(this));
-        not_subscribed.connect(
-          make_callable_ref<&ping_example::on_not_subscribed>(this));
-        ping_responded.connect(
-          make_callable_ref<&ping_example::on_ping_response>(this));
-        ping_timeouted.connect(
-          make_callable_ref<&ping_example::on_ping_timeout>(this));
-        host_id_received.connect(
-          make_callable_ref<&ping_example::on_host_id_received>(this));
-        hostname_received.connect(
-          make_callable_ref<&ping_example::on_hostname_received>(this));
+        connect<&ping_example::on_subscribed>(this, subscribed);
+        connect<&ping_example::on_unsubscribed>(this, unsubscribed);
+        connect<&ping_example::on_not_subscribed>(this, not_subscribed);
+        connect<&ping_example::on_ping_response>(this, ping_responded);
+        connect<&ping_example::on_ping_timeout>(this, ping_timeouted);
+        connect<&ping_example::on_host_id_received>(this, host_id_received);
+        connect<&ping_example::on_hostname_received>(this, hostname_received);
     }
 
     void on_id_assigned(const identifier_t endpoint_id) noexcept {
@@ -130,12 +121,12 @@ public:
     }
 
     void on_connection_established(const bool usable) noexcept {
-        log_info("connection established");
+        log_info("connection established").tag("newConn");
         _do_ping = usable;
     }
 
     void on_connection_lost() noexcept {
-        log_info("connection lost");
+        log_info("connection lost").tag("connLost");
         _do_ping = false;
     }
 
@@ -145,6 +136,7 @@ public:
         if(sub_msg == this->ping_msg_id()) {
             if(_targets.try_emplace(info.endpoint_id, ping_stats{}).second) {
                 log_info("new pingable ${id} appeared")
+                  .tag("newPngable")
                   .arg("id", info.endpoint_id);
             }
         }
@@ -204,6 +196,7 @@ public:
 
                 log_chart_sample("msgsPerSec", msgs_per_sec);
                 log_info("received ${rcvd} pongs")
+                  .tag("rcvdPongs")
                   .arg("rcvd", _rcvd)
                   .arg("interval", interval)
                   .arg("msgsPerSec", msgs_per_sec)
@@ -245,7 +238,9 @@ public:
                 if((_rcvd < _max) && (_sent < lim)) {
                     this->ping(pingable_id, std::chrono::seconds(3 + _rep));
                     if((++_sent % _mod) == 0) [[unlikely]] {
-                        log_info("sent ${sent} pings").arg("sent", _sent);
+                        log_info("sent ${sent} pings")
+                          .tag("sentPings")
+                          .arg("sent", _sent);
                     }
 
                     if(entry.should_check_info) [[unlikely]] {
@@ -270,7 +265,7 @@ public:
         something_done(base::update());
         if(_do_ping) {
             if(_should_query_pingable) [[unlikely]] {
-                log_info("searching for pingables");
+                log_info("searching for pingables").tag("search");
                 query_pingables();
             }
             for([[maybe_unused]] const auto i : integer_range(_rep)) {

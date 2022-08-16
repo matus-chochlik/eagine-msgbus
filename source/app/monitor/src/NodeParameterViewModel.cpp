@@ -11,7 +11,7 @@
 //------------------------------------------------------------------------------
 NodeParameterViewModel::NodeParameterViewModel(MonitorBackend& backend)
   : QAbstractItemModel{nullptr}
-  , eagine::main_ctx_object{EAGINE_ID(NodeParaVM), backend}
+  , eagine::main_ctx_object{"NodeParaVM", backend}
   , _backend{backend}
   , _pingSuccessRateModel{*this, pingSuccessRateRole} {}
 //------------------------------------------------------------------------------

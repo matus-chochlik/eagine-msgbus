@@ -12,7 +12,7 @@ NodeViewModel::NodeViewModel(
   MonitorBackend& backend,
   SelectedItemViewModel& selectedItemViewModel)
   : QObject{nullptr}
-  , eagine::main_ctx_object{EAGINE_ID(NodeVM), backend}
+  , eagine::main_ctx_object{"NodeVM", backend}
   , _backend{backend}
   , _parameters{backend} {
     connect(

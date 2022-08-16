@@ -7,13 +7,13 @@
 #ifndef EAGINE_MSGBUS_TILING_BACKEND
 #define EAGINE_MSGBUS_TILING_BACKEND
 
+import eagine.core;
+import <memory>;
 #include "HelperContributionViewModel.hpp"
 #include "SolutionIntervalViewModel.hpp"
 #include "TilingTheme.hpp"
 #include "TilingViewModel.hpp"
-#include <eagine/main_ctx_object.hpp>
 #include <QObject>
-#include <memory>
 
 class TilingModel;
 //------------------------------------------------------------------------------

@@ -35,8 +35,8 @@ public:
       : base(
           {"ExamplPong", parent},
           this,
-          message_map<id_v("PingPong"), id_v("Ping"), &pong::ping>{},
-          message_map<id_v("PingPong"), id_v("Shutdown"), &pong::shutdown>{})
+          message_map<"PingPong", "Ping", &pong::ping>{},
+          message_map<"PingPong", "Shutdown", &pong::shutdown>{})
       , _lmod{running_on_valgrind() ? 1000U : 10000U} {
         this->allow_subscriptions();
         conn_setup.setup_connectors(

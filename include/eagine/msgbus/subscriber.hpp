@@ -95,8 +95,8 @@ protected:
           , handler{std::move(hndlr)} {}
 
         template <
-          const identifier_t ClassId,
-          const identifier_t MethodId,
+          identifier_value ClassId,
+          identifier_value MethodId,
           typename Class,
           bool (Class::*HandlerFunc)(
             const message_context&,
@@ -113,8 +113,8 @@ protected:
           , handler{instance, msg_map.method()} {}
 
         template <
-          const identifier_t ClassId,
-          const identifier_t MethodId,
+          identifier_value ClassId,
+          identifier_value MethodId,
           typename Class,
           bool (
             Class::*HandlerFunc)(const message_context&, const stored_message&)
@@ -256,7 +256,7 @@ public:
 
     template <typename... MsgHandlers>
     static_subscriber(endpoint& bus, MsgHandlers&&... msg_handlers) noexcept
-      requires(sizeof...(MsgHandlers) == N)
+        requires(sizeof...(MsgHandlers) == N)
       : subscriber_base{bus}
       , _msg_handlers{{std::forward<MsgHandlers>(msg_handlers)...}} {
         this->_setup_queues(cover(_msg_handlers));
@@ -271,7 +271,8 @@ public:
     static_subscriber(
       endpoint& bus,
       Class* instance,
-      const MsgMaps... msg_maps) noexcept requires(sizeof...(MsgMaps) == N)
+      const MsgMaps... msg_maps) noexcept
+        requires(sizeof...(MsgMaps) == N)
       : static_subscriber(bus, handler_entry(instance, msg_maps)...) {}
 
     /// @brief Not move constructible.
@@ -413,8 +414,8 @@ public:
       typename Class,
       bool (
         Class::*Method)(const message_context&, const stored_message&) noexcept,
-      identifier_t ClassId,
-      identifier_t MethodId>
+      identifier_value ClassId,
+      identifier_value MethodId>
     void add_method(
       Class* instance,
       const static_message_handler_map<

@@ -49,11 +49,7 @@ protected:
     void add_methods() noexcept {
         Base::add_methods();
         Base::add_method(
-          this,
-          message_map<
-            id_v("Shutdown"),
-            id_v("shutdown"),
-            &This::_handle_shutdown>{});
+          this, message_map<"Shutdown", "shutdown", &This::_handle_shutdown>{});
     }
 
 private:

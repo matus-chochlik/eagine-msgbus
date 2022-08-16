@@ -7,14 +7,12 @@
 #ifndef EAGINE_MSGBUS_MONITOR_TRACKER_MODEL
 #define EAGINE_MSGBUS_MONITOR_TRACKER_MODEL
 
+import eagine.core;
+import eagine.msgbus;
+import <map>;
 #include "HostParameterModel.hpp"
 #include "NodeParameterModel.hpp"
-#include <eagine/main_ctx_object.hpp>
-#include <eagine/msgbus/service.hpp>
-#include <eagine/msgbus/service/shutdown.hpp>
-#include <eagine/msgbus/service/tracker.hpp>
 #include <QObject>
-#include <map>
 
 class MonitorBackend;
 //------------------------------------------------------------------------------

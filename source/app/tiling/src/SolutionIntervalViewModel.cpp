@@ -4,11 +4,12 @@
 /// See http://www.gnu.org/licenses/gpl-3.0.txt
 ///
 
+import eagine.core;
+import <cmath>;
 #include "SolutionIntervalViewModel.hpp"
 #include "TilingBackend.hpp"
 #include "TilingModel.hpp"
-#include <eagine/iterator.hpp>
-#include <cmath>
+#include <cassert>
 
 //------------------------------------------------------------------------------
 auto SolutionIntervalViewModel::fixInterval(float i) const noexcept {
@@ -17,7 +18,7 @@ auto SolutionIntervalViewModel::fixInterval(float i) const noexcept {
 //------------------------------------------------------------------------------
 SolutionIntervalViewModel::SolutionIntervalViewModel(TilingBackend& backend)
   : QObject{nullptr}
-  , eagine::main_ctx_object{EAGINE_ID(IntvlModel), backend}
+  , eagine::main_ctx_object{"IntvlModel", backend}
   , _backend{backend} {
     for(const auto& interval : eagine::reverse(_intervals)) {
         _intervalList.append(interval.count());
@@ -66,7 +67,7 @@ void SolutionIntervalViewModel::timerEvent(QTimerEvent*) {
         }
     }
     const std::chrono::duration<float> current{now - _previousSolutionTime};
-    EAGINE_ASSERT(!_intervalList.empty());
+    assert(!_intervalList.empty());
     _maxInterval = std::max(_maxInterval, current);
     _intervalList.back() = current.count();
     _fixedIntervalList.back() = fixInterval(current.count());

@@ -8,9 +8,9 @@
 #ifndef EAGINE_MSGBUS_MONITOR_NODE_VIEW_MODEL
 #define EAGINE_MSGBUS_MONITOR_NODE_VIEW_MODEL
 
+import eagine.core;
+import eagine.msgbus;
 #include "NodeParameterViewModel.hpp"
-#include <eagine/main_ctx_object.hpp>
-#include <eagine/msgbus/remote_node.hpp>
 #include <QObject>
 #include <QVariant>
 

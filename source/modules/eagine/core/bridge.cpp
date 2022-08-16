@@ -87,6 +87,12 @@ private:
       const bool) noexcept -> message_handling_result;
 
     auto _do_push(const message_id, message_view&) noexcept -> bool;
+    auto _avg_msg_age_c2o() const noexcept -> std::chrono::microseconds;
+    auto _avg_msg_age_i2c() const noexcept -> std::chrono::microseconds;
+    auto _should_log_bridge_stats_c2o() noexcept -> bool;
+    auto _should_log_bridge_stats_i2c() noexcept -> bool;
+    void _log_bridge_stats_c2o() noexcept;
+    void _log_bridge_stats_i2c() noexcept;
     auto _forward_messages() noexcept -> work_done;
 
     struct user_impl : connection_user {
@@ -115,14 +121,14 @@ private:
       std::chrono::steady_clock::now()};
     std::chrono::steady_clock::time_point _forwarded_since_stat{
       std::chrono::steady_clock::now()};
+    std::chrono::steady_clock::duration _message_age_sum_i2c;
+    std::chrono::steady_clock::duration _message_age_sum_c2o;
     std::int64_t _state_count{0};
     std::int64_t _forwarded_messages_i2c{0};
     std::int64_t _forwarded_messages_c2o{0};
     std::int64_t _prev_forwarded_messages{0};
     std::int64_t _dropped_messages_i2c{0};
     std::int64_t _dropped_messages_c2o{0};
-    float _message_age_sum_i2c{0.F};
-    float _message_age_sum_c2o{0.F};
     bridge_statistics _stats{};
 
     std::shared_ptr<bridge_state> _state{};
