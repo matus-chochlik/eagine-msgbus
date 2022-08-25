@@ -6,5 +6,7 @@
 find_program(BASH_COMMAND bash)
 find_program(DPKG_DEB_COMMAND dpkg-deb)
 if(BASH_COMMAND AND DPKG_DEB_COMMAND)
-	add_subdirectory(debian)
+	if(TARGET eagine-msgbus)
+		add_subdirectory(debian)
+	endif()
 endif()
