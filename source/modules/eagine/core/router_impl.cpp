@@ -1249,13 +1249,13 @@ auto router::_route_messages() noexcept -> work_done {
 auto router::_update_connections_by_workers(std::latch& completed) noexcept
   -> work_done {
     some_true something_done{};
-    auto& workers = main_context().workers();
+    auto& work = workers();
 
     for(auto& entry : _nodes) {
         auto& node_in = std::get<1>(entry);
         if(node_in.the_connection) [[likely]] {
             node_in.update_connection = {*node_in.the_connection, completed};
-            workers.enqueue(node_in.update_connection);
+            work.enqueue(node_in.update_connection);
         }
     }
     something_done(_parent_router.update(*this, _id_base));
