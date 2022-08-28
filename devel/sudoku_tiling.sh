@@ -6,7 +6,7 @@
 #
 install_prefix="$(<$(dirname ${0})/../INSTALL_PREFIX)"
 log_args=("--min-log-severity" "stat")
-conn_args=("--config-group" "service")
+conn_args=()
 case "${1}" in
 	posixmq) conn_args+=("--msgbus-posix-mqueue");;
 	udpip4) conn_args+=("--msgbus-asio-udp-ipv4");;
