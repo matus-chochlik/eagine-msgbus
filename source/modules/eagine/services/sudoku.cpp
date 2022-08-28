@@ -229,7 +229,7 @@ protected:
         if(const auto max_recursion{this->app_config().get(
              "msgbus.sudoku.helper.max_recursion",
              std::type_identity<int>{})}) {
-            if(max_recursion > 0) {
+            if(max_recursion >= 0) {
                 this->bus_node()
                   .log_info("setting maximum recursion to ${recursion}")
                   .tag("sdkuMaxRec")
