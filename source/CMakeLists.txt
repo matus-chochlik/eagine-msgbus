@@ -10,16 +10,8 @@ endif()
 add_subdirectory(config)
 add_subdirectory(app)
 
-if(TARGET eagine-msgbus)
-	add_library(EAGine::MsgBus INTERFACE IMPORTED GLOBAL)
-	target_link_libraries(EAGine::MsgBus INTERFACE eagine-msgbus)
-
 	set(
 		EAGINE_MSGBUS_EXPORT_TARGETS
-		eagine-msgbus-generated-headers
-		eagine-msgbus-private-headers
-		eagine-msgbus-headers
-		eagine-msgbus
 		eagine-msgbus-router
 		eagine-msgbus-bridge
 		eagine-msgbus-pingable
@@ -29,22 +21,16 @@ if(TARGET eagine-msgbus)
 		eagine-msgbus-sudoku_tiling
 	)
 
-	if(TARGET eagine-msgbus-monitor)
-		list(APPEND EAGINE_MSGBUS_EXPORT_TARGETS eagine-msgbus-monitor)
-	endif()
+if(TARGET eagine-msgbus)
+	add_library(EAGine::MsgBus INTERFACE IMPORTED GLOBAL)
+	target_link_libraries(EAGine::MsgBus INTERFACE eagine-msgbus)
 
-	if(TARGET eagine-msgbus-tiling)
-		list(APPEND EAGINE_MSGBUS_EXPORT_TARGETS eagine-msgbus-tiling)
-	endif()
-
-	install(
-		TARGETS ${EAGINE_MSGBUS_EXPORT_TARGETS}
-		EXPORT MsgBus
-		LIBRARY DESTINATION lib
-		ARCHIVE DESTINATION lib
-		RUNTIME DESTINATION bin
-		INCLUDES DESTINATION include
-		PUBLIC_HEADER DESTINATION include
+	list(
+		APPEND EAGINE_MSGBUS_EXPORT_TARGETS
+		eagine-msgbus-generated-headers
+		eagine-msgbus-private-headers
+		eagine-msgbus-headers
+		eagine-msgbus
 	)
 
 	install(
@@ -54,3 +40,22 @@ if(TARGET eagine-msgbus)
 		DESTINATION lib/cmake/EAGine
 	)
 endif()
+
+if(TARGET eagine-msgbus-monitor)
+	list(APPEND EAGINE_MSGBUS_EXPORT_TARGETS eagine-msgbus-monitor)
+endif()
+
+if(TARGET eagine-msgbus-tiling)
+	list(APPEND EAGINE_MSGBUS_EXPORT_TARGETS eagine-msgbus-tiling)
+endif()
+
+install(
+	TARGETS ${EAGINE_MSGBUS_EXPORT_TARGETS}
+	EXPORT MsgBus
+	LIBRARY DESTINATION lib
+	ARCHIVE DESTINATION lib
+	RUNTIME DESTINATION bin
+	INCLUDES DESTINATION include
+	PUBLIC_HEADER DESTINATION include
+)
+
