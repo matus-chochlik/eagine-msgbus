@@ -224,6 +224,25 @@ protected:
         mark_activity();
     }
 
+    void init() noexcept {
+        Base::init();
+        if(const auto max_recursion{this->app_config().get(
+             "msgbus.sudoku.helper.max_recursion",
+             std::type_identity<int>{})}) {
+            if(max_recursion > 0) {
+                this->bus_node()
+                  .log_info("setting maximum recursion to ${recursion}")
+                  .tag("sdkuMaxRec")
+                  .arg("recursion", extract(max_recursion));
+                for_each_sudoku_rank_unit(
+                  [&](auto& info) {
+                      info.max_recursion = extract(max_recursion);
+                  },
+                  _infos);
+            }
+        }
+    }
+
 private:
     template <unsigned S>
     auto _handle_search(
@@ -278,6 +297,7 @@ private:
     struct rank_info {
         default_sudoku_board_traits<S> traits;
         memory::buffer serialize_buffer;
+        int max_recursion{1};
 
         std::vector<
           std::tuple<identifier_t, message_sequence_t, basic_sudoku_board<S>>>
@@ -386,9 +406,14 @@ private:
                 boards.pop_back();
 
                 bool done{false};
-                const int levels{1};
                 process_board(
-                  bus, compressor, target_id, sequence_no, board, done, levels);
+                  bus,
+                  compressor,
+                  target_id,
+                  sequence_no,
+                  board,
+                  done,
+                  max_recursion);
 
                 message_view response{};
                 response.set_target_id(target_id);
@@ -462,6 +487,7 @@ public:
              std::type_identity<std::chrono::seconds>{})}) {
             this->bus_node()
               .log_info("setting solution timeout to ${timeout}")
+              .tag("sdkuSolTmt")
               .arg("timeout", extract(solution_timeout));
             for_each_sudoku_rank_unit(
               [&](auto& info) {
