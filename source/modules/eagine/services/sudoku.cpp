@@ -304,6 +304,66 @@ private:
             }
         }
 
+        auto do_send_board(
+          endpoint& bus,
+          const data_compressor& compressor,
+          const auto target_id,
+          const auto sequence_no,
+          const auto& candidate,
+          const bool is_solved) {
+            serialize_buffer.ensure(
+              default_serialize_buffer_size_for(candidate));
+            const auto serialized{
+              (S >= 4) ? default_serialize_packed(
+                           candidate, cover(serialize_buffer), compressor)
+                       : default_serialize(candidate, cover(serialize_buffer))};
+            assert(serialized);
+
+            const unsigned_constant<S> rank{};
+            message_view response{extract(serialized)};
+            response.set_target_id(target_id);
+            response.set_sequence_no(sequence_no);
+            bus.post(sudoku_response_msg(rank, is_solved), response);
+        }
+
+        auto process_board(
+          endpoint& bus,
+          const data_compressor& compressor,
+          const auto target_id,
+          const auto sequence_no,
+          const auto& candidate,
+          bool& done,
+          int levels) noexcept {
+            const auto send_board = [&, this](auto& board, bool is_solved) {
+                do_send_board(
+                  bus, compressor, target_id, sequence_no, board, is_solved);
+            };
+            const auto process_recursive = [&, this](auto& board) {
+                process_board(
+                  bus,
+                  compressor,
+                  target_id,
+                  sequence_no,
+                  board,
+                  done,
+                  levels - 1);
+            };
+
+            candidate.for_each_alternative(
+              candidate.find_unsolved(), [&](const auto& intermediate) {
+                  if(intermediate.is_solved()) {
+                      send_board(intermediate, true);
+                      done = true;
+                  } else if(!done) {
+                      if(levels > 0) {
+                          process_recursive(intermediate);
+                      } else {
+                          send_board(intermediate, false);
+                      }
+                  }
+              });
+        }
+
         auto update(endpoint& bus, const data_compressor& compressor) noexcept
           -> work_done {
             const unsigned_constant<S> rank{};
@@ -325,58 +385,10 @@ private:
                 auto board = std::get<2>(boards.back());
                 boards.pop_back();
 
-                const auto send_board =
-                  [&](auto& candidate, const bool is_solved) {
-                      serialize_buffer.ensure(
-                        default_serialize_buffer_size_for(candidate));
-                      const auto serialized{
-                        (S >= 4)
-                          ? default_serialize_packed(
-                              candidate, cover(serialize_buffer), compressor)
-                          : default_serialize(
-                              candidate, cover(serialize_buffer))};
-                      assert(serialized);
-
-                      message_view response{extract(serialized)};
-                      response.set_target_id(target_id);
-                      response.set_sequence_no(sequence_no);
-                      bus.post(sudoku_response_msg(rank, is_solved), response);
-                  };
-
                 bool done{false};
-                const auto process_candidate = [&](auto& candidate) {
-                    if(candidate.is_solved()) {
-                        send_board(candidate, true);
-                        done = true;
-                    } else {
-                        if(!done) {
-                            candidate.for_each_alternative(
-                              candidate.find_unsolved(),
-                              [&](auto& intermediate) {
-                                  if(intermediate.is_solved()) {
-                                      send_board(intermediate, true);
-                                      done = true;
-                                  } else {
-                                      if(!done) {
-                                          intermediate.for_each_alternative(
-                                            intermediate.find_unsolved(),
-                                            [&](auto& nested) {
-                                                if(nested.is_solved()) {
-                                                    send_board(nested, true);
-                                                    done = true;
-                                                } else if(!done) {
-                                                    send_board(nested, false);
-                                                }
-                                            });
-                                      }
-                                  }
-                              });
-                        }
-                    }
-                };
-
-                board.for_each_alternative(
-                  board.find_unsolved(), process_candidate);
+                const int levels{1};
+                process_board(
+                  bus, compressor, target_id, sequence_no, board, done, levels);
 
                 message_view response{};
                 response.set_target_id(target_id);
