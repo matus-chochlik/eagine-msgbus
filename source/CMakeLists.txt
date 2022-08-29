@@ -10,16 +10,16 @@ endif()
 add_subdirectory(config)
 add_subdirectory(app)
 
-	set(
-		EAGINE_MSGBUS_EXPORT_TARGETS
-		eagine-msgbus-router
-		eagine-msgbus-bridge
-		eagine-msgbus-pingable
-		eagine-msgbus-pinger
-		eagine-msgbus-file_server
-		eagine-msgbus-sudoku_helper
-		eagine-msgbus-sudoku_tiling
-	)
+set(
+	EAGINE_MSGBUS_EXPORT_TARGETS
+	eagine-msgbus-router
+	eagine-msgbus-bridge
+	eagine-msgbus-pingable
+	eagine-msgbus-pinger
+	eagine-msgbus-file_server
+	eagine-msgbus-sudoku_helper
+	eagine-msgbus-sudoku_tiling
+)
 
 if(TARGET eagine-msgbus)
 	add_library(EAGine::MsgBus INTERFACE IMPORTED GLOBAL)
