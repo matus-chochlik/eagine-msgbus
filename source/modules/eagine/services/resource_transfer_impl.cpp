@@ -276,6 +276,7 @@ auto resource_server_impl::handle_resource_content_request(
         const url locator{std::move(url_str)};
         ctx.bus_node()
           .log_info("received content request for ${url}")
+          .tag("rsrcCntReq")
           .arg("url", "URL", locator.str());
 
         auto [read_io, max_time, priority] =

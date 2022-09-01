@@ -176,7 +176,7 @@ private:
     auto _handle_resource_content_request(
       const message_context& ctx,
       const stored_message& message) noexcept -> bool {
-        return _impl.handle_resource_resend_request(*this, ctx, message);
+        return _impl.handle_resource_content_request(*this, ctx, message);
     }
 
     auto _handle_resource_resend_request(
