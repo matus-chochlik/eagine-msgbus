@@ -16,6 +16,7 @@ import eagine.core.utility;
 import eagine.core.valid_if;
 import eagine.core.runtime;
 import eagine.core.math;
+import eagine.core.main_ctx;
 import eagine.msgbus.core;
 import :discovery;
 import :host_info;
@@ -127,17 +128,91 @@ private:
     span_size_t _size{0};
 };
 //------------------------------------------------------------------------------
+export struct resource_server_intf : interface<resource_server_intf> {
+    virtual auto has_resource(const url&) noexcept -> bool {
+        return false;
+    }
+
+    virtual auto get_resource_io(const identifier_t, const url&)
+      -> std::unique_ptr<blob_io> {
+        return {};
+    }
+
+    virtual auto get_blob_timeout(
+      const identifier_t,
+      const span_size_t size) noexcept -> std::chrono::seconds {
+        return std::chrono::seconds{size / 1024};
+    }
+
+    virtual auto get_blob_priority(
+      const identifier_t,
+      const message_priority priority) noexcept -> message_priority {
+        return priority;
+    }
+};
+//------------------------------------------------------------------------------
+export class resource_server_impl {
+public:
+    resource_server_impl(main_ctx_parent parent) noexcept;
+
+    auto update(endpoint& bus) noexcept -> work_done;
+
+    void set_file_root(const std::filesystem::path& root_path) noexcept {
+        _root_path = std::filesystem::canonical(root_path);
+    }
+
+    auto is_contained(const std::filesystem::path& file_path) const noexcept
+      -> bool;
+
+    auto get_file_path(const url& locator) const noexcept
+      -> std::filesystem::path;
+
+    auto has_resource(
+      resource_server_intf& impl,
+      const message_context&,
+      const url& locator) noexcept -> bool;
+
+    auto get_resource(
+      resource_server_intf& impl,
+      const message_context& ctx,
+      const url& locator,
+      const identifier_t endpoint_id,
+      const message_priority priority) -> std::
+      tuple<std::unique_ptr<blob_io>, std::chrono::seconds, message_priority>;
+
+    auto handle_has_resource_query(
+      resource_server_intf& impl,
+      const message_context& ctx,
+      const stored_message& message) noexcept -> bool;
+
+    auto handle_resource_content_request(
+      resource_server_intf& impl,
+      const message_context& ctx,
+      const stored_message& message) noexcept -> bool;
+
+    auto handle_resource_resend_request(
+      resource_server_intf& impl,
+      const message_context&,
+      const stored_message& message) noexcept -> bool;
+
+private:
+    blob_manipulator _blobs;
+    std::filesystem::path _root_path{};
+};
+//------------------------------------------------------------------------------
 /// @brief Service providing access to files and/or blobs over the message bus.
 /// @ingroup msgbus
 /// @see service_composition
 /// @see resource_manipulator
 export template <typename Base = subscriber>
-class resource_server : public Base {
+class resource_server
+  : public Base
+  , public resource_server_intf {
     using This = resource_server;
 
 public:
     void set_file_root(const std::filesystem::path& root_path) noexcept {
-        _root_path = std::filesystem::canonical(root_path);
+        _impl.set_file_root(root_path);
     }
 
 protected:
@@ -168,15 +243,13 @@ protected:
 
     auto update() noexcept -> work_done {
         some_true something_done{Base::update()};
-
-        something_done(_blobs.update(this->bus_node().post_callable()));
-        const auto opt_max_size = this->bus_node().max_data_size();
-        if(opt_max_size) [[likely]] {
-            something_done(_blobs.process_outgoing(
-              this->bus_node().post_callable(), extract(opt_max_size)));
-        }
+        something_done(_impl.update(this->bus_node()));
 
         return something_done;
+    }
+
+    virtual auto has_resource(const url&) noexcept -> bool {
+        return false;
     }
 
     virtual auto get_resource_io(const identifier_t, const url&)
@@ -197,178 +270,25 @@ protected:
     }
 
 private:
-    auto _get_file_path(const url& locator) const noexcept
-      -> std::filesystem::path {
-        try {
-            if(const auto loc_path_str{locator.path_str()}) {
-                std::filesystem::path loc_path{
-                  std::string_view{extract(loc_path_str)}};
-                if(_root_path.empty()) {
-                    if(loc_path.is_absolute()) {
-                        return loc_path;
-                    }
-                    return std::filesystem::current_path().root_path() /
-                           loc_path;
-                }
-                if(loc_path.is_absolute()) {
-                    return std::filesystem::canonical(
-                      _root_path / loc_path.relative_path());
-                }
-                return std::filesystem::canonical(_root_path / loc_path);
-            }
-        } catch(const std::exception&) {
-        }
-        return {};
-    }
-
-    auto _has_resource(const message_context&, const url& locator) noexcept
-      -> bool {
-        if(locator.has_scheme("eagires")) {
-            return locator.has_path("/zeroes") || locator.has_path("/ones") ||
-                   locator.has_path("/random");
-        } else if(locator.has_scheme("file")) {
-            const auto file_path = _get_file_path(locator);
-            const bool is_contained =
-              starts_with(string_view(file_path), string_view(_root_path));
-            if(is_contained) {
-                try {
-                    const auto stat = std::filesystem::status(file_path);
-                    return exists(stat) && !is_directory(stat);
-                } catch(...) {
-                }
-            }
-        }
-        return false;
-    }
-
-    auto _get_resource(
-      const message_context& ctx,
-      const url& locator,
-      const identifier_t endpoint_id,
-      const message_priority priority) -> std::
-      tuple<std::unique_ptr<blob_io>, std::chrono::seconds, message_priority> {
-        auto read_io = get_resource_io(endpoint_id, locator);
-        if(!read_io) {
-            if(locator.has_scheme("eagires")) {
-                if(const auto count{locator.argument("count")}) {
-                    if(const auto bytes{
-                         from_string<span_size_t>(extract(count))}) {
-                        if(locator.has_path("/random")) {
-                            read_io = std::make_unique<random_byte_blob_io>(
-                              extract(bytes));
-                        } else if(locator.has_path("/zeroes")) {
-                            read_io = std::make_unique<single_byte_blob_io>(
-                              extract(bytes), 0x0U);
-                        } else if(locator.has_path("/ones")) {
-                            read_io = std::make_unique<single_byte_blob_io>(
-                              extract(bytes), 0x1U);
-                        }
-                    }
-                }
-            } else if(locator.has_scheme("file")) {
-                const auto file_path = _get_file_path(locator);
-                const bool is_contained =
-                  starts_with(string_view(file_path), string_view(_root_path));
-                if(is_contained) {
-                    std::fstream file{
-                      file_path, std::ios::in | std::ios::binary};
-                    if(file.is_open()) {
-                        ctx.bus_node()
-                          .log_info("sending file ${filePath} to ${target}")
-                          .arg("target", endpoint_id)
-                          .arg("filePath", "FsPath", file_path);
-                        read_io = std::make_unique<file_blob_io>(
-                          std::move(file),
-                          from_string<span_size_t>(extract_or(
-                            locator.argument("offs"), string_view{})),
-                          from_string<span_size_t>(extract_or(
-                            locator.argument("size"), string_view{})));
-                    }
-                }
-            }
-        }
-
-        const auto max_time =
-          read_io ? get_blob_timeout(endpoint_id, read_io->total_size())
-                  : std::chrono::seconds{};
-
-        return {
-          std::move(read_io),
-          max_time,
-          get_blob_priority(endpoint_id, priority)};
-    }
-
     auto _handle_has_resource_query(
       const message_context& ctx,
       const stored_message& message) noexcept -> bool {
-        std::string url_str;
-        if(default_deserialize(url_str, message.content())) [[likely]] {
-            const url locator{std::move(url_str)};
-            if(_has_resource(ctx, locator)) {
-                message_view response{message.content()};
-                response.setup_response(message);
-                this->bus_node().post(
-                  message_id{"eagiRsrces", "hasResurce"}, response);
-            } else {
-                message_view response{message.content()};
-                response.setup_response(message);
-                this->bus_node().post(
-                  message_id{"eagiRsrces", "hasNotRsrc"}, response);
-            }
-        }
-        return true;
+        return _impl.handle_has_resource_query(*this, ctx, message);
     }
 
     auto _handle_resource_content_request(
       const message_context& ctx,
       const stored_message& message) noexcept -> bool {
-        std::string url_str;
-        if(default_deserialize(url_str, message.content())) [[likely]] {
-            const url locator{std::move(url_str)};
-            ctx.bus_node()
-              .log_info("received content request for ${url}")
-              .arg("url", "URL", locator.str());
-
-            auto [read_io, max_time, priority] =
-              _get_resource(ctx, locator, message.source_id, message.priority);
-            if(read_io) {
-                _blobs.push_outgoing(
-                  message_id{"eagiRsrces", "content"},
-                  message.target_id,
-                  message.source_id,
-                  message.sequence_no,
-                  std::move(read_io),
-                  max_time,
-                  priority);
-            } else {
-                message_view response{};
-                response.setup_response(message);
-                this->bus_node().post(
-                  message_id{"eagiRsrces", "notFound"}, response);
-                ctx.bus_node()
-                  .log_info("failed to get I/O object for content request")
-                  .arg("url", "URL", locator.str());
-            }
-        } else {
-            ctx.bus_node()
-              .log_error("failed to deserialize resource content request")
-              .arg("content", message.const_content());
-        }
-        return true;
+        return _impl.handle_resource_resend_request(*this, ctx, message);
     }
 
     auto _handle_resource_resend_request(
-      const message_context&,
+      const message_context& ctx,
       const stored_message& message) noexcept -> bool {
-        _blobs.process_resend(message);
-        return true;
+        return _impl.handle_resource_resend_request(*this, ctx, message);
     }
 
-    blob_manipulator _blobs{
-      *this,
-      message_id{"eagiRsrces", "fragment"},
-      message_id{"eagiRsrces", "fragResend"}};
-    std::filesystem::path _root_path{};
+    resource_server_impl _impl{*this};
 };
 //------------------------------------------------------------------------------
 /// @brief Service manipulating files over the message bus.
@@ -436,7 +356,7 @@ public:
         auto buffer = default_serialize_buffer_for(locator.str());
 
         if(const auto serialized{
-             default_serialize(locator.str(), cover(buffer))}) {
+             default_serialize(locator.str(), cover(buffer))}) [[likely]] {
             const auto msg_id{message_id{"eagiRsrces", "qryResurce"}};
             message_view message{extract(serialized)};
             message.set_target_id(endpoint_id);

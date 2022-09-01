@@ -8,6 +8,7 @@ eagine_add_module(
 		eagine.core.types
 		eagine.core.memory
 		eagine.core.identifier
+		eagine.core.runtime
 		eagine.msgbus.core
 		eagine.msgbus.services
 )
@@ -21,6 +22,7 @@ eagine_add_module(
 	SOURCES
 		resource_transfer_impl
 	IMPORTS
+		eagine.core.valid_if
 		eagine.core.logging
 )
 

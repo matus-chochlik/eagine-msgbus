@@ -10,6 +10,7 @@ export module eagine.msgbus.utility:resource_transfer;
 import eagine.core.types;
 import eagine.core.memory;
 import eagine.core.identifier;
+import eagine.core.runtime;
 import eagine.core.main_ctx;
 import eagine.msgbus.core;
 import eagine.msgbus.services;

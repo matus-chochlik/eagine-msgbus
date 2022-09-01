@@ -163,6 +163,7 @@ eagine_add_module(
 		eagine.core.valid_if
 		eagine.core.runtime
 		eagine.core.math
+		eagine.core.main_ctx
 		eagine.msgbus.core
 )
 
@@ -220,5 +221,6 @@ eagine_add_module(
 		sudoku
 		tracker
 	SOURCES
+		resource_transfer_impl
 	IMPORTS
 )

@@ -8,9 +8,12 @@
 module eagine.msgbus.utility;
 
 import eagine.core.types;
+import eagine.core.valid_if;
+import eagine.core.runtime;
 import eagine.core.logging;
 import eagine.msgbus.core;
 import <chrono>;
+import <filesystem>;
 import <string>;
 
 namespace eagine::msgbus {
@@ -23,6 +26,11 @@ resource_data_server_node::resource_data_server_node(endpoint& bus)
     auto& info = provided_endpoint_info();
     info.display_name = "resource server node";
     info.description = "message bus resource server";
+
+    if(const auto fs_root_path{main_context().config().get<std::string>(
+         "msgbus.file_server.root_path")}) {
+        set_file_root(extract(fs_root_path));
+    }
 }
 //------------------------------------------------------------------------------
 void resource_data_server_node::_handle_shutdown(
