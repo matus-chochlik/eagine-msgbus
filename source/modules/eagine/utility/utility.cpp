@@ -5,8 +5,7 @@
 /// See accompanying file LICENSE_1_0.txt or copy at
 ///  http://www.boost.org/LICENSE_1_0.txt
 ///
-export module eagine.msgbus;
+export module eagine.msgbus.utility;
 
-export import eagine.msgbus.core;
-export import eagine.msgbus.services;
-export import eagine.msgbus.utility;
+export import :resource_transfer;
+

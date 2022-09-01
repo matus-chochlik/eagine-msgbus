@@ -4,6 +4,7 @@
 #  http://www.boost.org/LICENSE_1_0.txt
 add_subdirectory(core)
 add_subdirectory(services)
+add_subdirectory(utility)
 
 eagine_add_module(
 	eagine.msgbus
@@ -12,5 +13,6 @@ eagine_add_module(
 	IMPORTS
 		eagine.msgbus.core
 		eagine.msgbus.services
+		eagine.msgbus.utility
 )
 
