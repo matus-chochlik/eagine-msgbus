@@ -15,11 +15,114 @@ import eagine.core.valid_if;
 import eagine.core.utility;
 import eagine.core.runtime;
 import eagine.core.logging;
+import eagine.core.math;
 import eagine.core.main_ctx;
 import eagine.msgbus.core;
 import <fstream>;
+import <random>;
+import <tuple>;
 
 namespace eagine::msgbus {
+//------------------------------------------------------------------------------
+class single_byte_blob_io final : public blob_io {
+public:
+    single_byte_blob_io(const span_size_t size, const byte value) noexcept
+      : _size{size}
+      , _value{value} {}
+
+    auto total_size() noexcept -> span_size_t final {
+        return _size;
+    }
+
+    auto fetch_fragment(const span_size_t offs, memory::block dst) noexcept
+      -> span_size_t final {
+        return fill(head(dst, _size - offs), _value).size();
+    }
+
+private:
+    span_size_t _size;
+    byte _value;
+};
+//------------------------------------------------------------------------------
+class random_byte_blob_io final : public blob_io {
+public:
+    random_byte_blob_io(span_size_t size) noexcept
+      : _size{size}
+      , _re{std::random_device{}()} {}
+
+    auto total_size() noexcept -> span_size_t final {
+        return _size;
+    }
+
+    auto fetch_fragment(const span_size_t offs, memory::block dst) noexcept
+      -> span_size_t final {
+        return fill_with_random_bytes(head(dst, _size - offs), _re).size();
+    }
+
+private:
+    span_size_t _size;
+    std::default_random_engine _re;
+};
+//------------------------------------------------------------------------------
+class file_blob_io final : public blob_io {
+public:
+    file_blob_io(
+      std::fstream file,
+      std::optional<span_size_t> offs,
+      std::optional<span_size_t> size) noexcept
+      : _file{std::move(file)} {
+        _file.seekg(0, std::ios::end);
+        _size = limit_cast<span_size_t>(_file.tellg());
+        if(size) {
+            _size = _size ? math::minimum(_size, extract(size)) : extract(size);
+        }
+        if(offs) {
+            _offs = math::minimum(_size, extract(offs));
+        }
+    }
+
+    auto is_at_eod(const span_size_t offs) noexcept -> bool final {
+        return offs >= total_size();
+    }
+
+    auto total_size() noexcept -> span_size_t final {
+        return _size - _offs;
+    }
+
+    auto fetch_fragment(const span_size_t offs, memory::block dst) noexcept
+      -> span_size_t final {
+        _file.seekg(_offs + offs, std::ios::beg);
+        return limit_cast<span_size_t>(
+          read_from_stream(_file, head(dst, _size - _offs - offs)).gcount());
+    }
+
+    auto store_fragment(const span_size_t offs, memory::const_block src) noexcept
+      -> bool final {
+        _file.seekg(_offs + offs, std::ios::beg);
+        return write_to_stream(_file, head(src, _size - _offs - offs)).good();
+    }
+
+    auto check_stored(const span_size_t, memory::const_block) noexcept
+      -> bool final {
+        return true;
+    }
+
+    void handle_finished(
+      const message_id,
+      const message_age,
+      const message_info&) noexcept final {
+        _file.close();
+    }
+
+    void handle_cancelled() noexcept final {
+        _file.close();
+    }
+
+private:
+    std::fstream _file;
+    span_size_t _offs{0};
+    span_size_t _size{0};
+};
 //------------------------------------------------------------------------------
 resource_server_impl::resource_server_impl(main_ctx_parent parent) noexcept
   : _blobs{
