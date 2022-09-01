@@ -173,18 +173,20 @@ auto resource_server_impl::has_resource(
   resource_server_intf& impl,
   const message_context&,
   const url& locator) noexcept -> bool {
-    if(impl.has_resource(locator)) {
+    if(const auto has_res{impl.has_resource(locator)}) {
         return true;
-    } else if(locator.has_scheme("eagires")) {
-        return locator.has_path("/zeroes") || locator.has_path("/ones") ||
-               locator.has_path("/random");
-    } else if(locator.has_scheme("file")) {
-        const auto file_path = get_file_path(locator);
-        if(is_contained(file_path)) {
-            try {
-                const auto stat = std::filesystem::status(file_path);
-                return exists(stat) && !is_directory(stat);
-            } catch(...) {
+    } else if(has_res.is(indeterminate)) {
+        if(locator.has_scheme("eagires")) {
+            return locator.has_path("/zeroes") || locator.has_path("/ones") ||
+                   locator.has_path("/random");
+        } else if(locator.has_scheme("file")) {
+            const auto file_path = get_file_path(locator);
+            if(is_contained(file_path)) {
+                try {
+                    const auto stat = std::filesystem::status(file_path);
+                    return exists(stat) && !is_directory(stat);
+                } catch(...) {
+                }
             }
         }
     }

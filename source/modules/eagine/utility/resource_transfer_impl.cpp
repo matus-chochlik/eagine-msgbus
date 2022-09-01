@@ -28,7 +28,7 @@ resource_data_server_node::resource_data_server_node(endpoint& bus)
     info.description = "message bus resource server";
 
     if(const auto fs_root_path{main_context().config().get<std::string>(
-         "msgbus.file_server.root_path")}) {
+         "msgbus.resource_server.root_path")}) {
         set_file_root(extract(fs_root_path));
     }
 }

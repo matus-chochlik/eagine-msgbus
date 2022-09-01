@@ -26,8 +26,8 @@ import <tuple>;
 namespace eagine::msgbus {
 //------------------------------------------------------------------------------
 export struct resource_server_intf : interface<resource_server_intf> {
-    virtual auto has_resource(const url&) noexcept -> bool {
-        return false;
+    virtual auto has_resource(const url&) noexcept -> tribool {
+        return indeterminate;
     }
 
     virtual auto get_resource_io(const identifier_t, const url&)
@@ -143,27 +143,6 @@ protected:
         something_done(_impl.update(this->bus_node()));
 
         return something_done;
-    }
-
-    virtual auto has_resource(const url&) noexcept -> bool {
-        return false;
-    }
-
-    virtual auto get_resource_io(const identifier_t, const url&)
-      -> std::unique_ptr<blob_io> {
-        return {};
-    }
-
-    virtual auto get_blob_timeout(
-      const identifier_t,
-      const span_size_t size) noexcept -> std::chrono::seconds {
-        return std::chrono::seconds{size / 1024};
-    }
-
-    virtual auto get_blob_priority(
-      const identifier_t,
-      const message_priority priority) noexcept -> message_priority {
-        return priority;
     }
 
 private:
