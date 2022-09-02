@@ -5,10 +5,6 @@
 /// See accompanying file LICENSE_1_0.txt or copy at
 ///  http://www.boost.org/LICENSE_1_0.txt
 ///
-module;
-
-#include <cassert>
-
 export module eagine.msgbus.services:sudoku;
 
 import eagine.core.types;
@@ -69,109 +65,6 @@ void for_each_sudoku_rank_unit(Function func, RankTuple&... t) {
     func(std::get<4>(t)...);
     func(std::get<5>(t)...);
     func(std::get<6>(t)...);
-}
-//------------------------------------------------------------------------------
-export template <unsigned S>
-auto sudoku_search_msg(const unsigned_constant<S>) noexcept {
-    if constexpr(S == 3) {
-        return message_id{"eagiSudoku", "search3"};
-    }
-    if constexpr(S == 4) {
-        return message_id{"eagiSudoku", "search4"};
-    }
-    if constexpr(S == 5) {
-        return message_id{"eagiSudoku", "search5"};
-    }
-    if constexpr(S == 6) {
-        return message_id{"eagiSudoku", "search6"};
-    }
-}
-//------------------------------------------------------------------------------
-export template <unsigned S>
-auto sudoku_alive_msg(const unsigned_constant<S>) noexcept {
-    if constexpr(S == 3) {
-        return message_id{"eagiSudoku", "alive3"};
-    }
-    if constexpr(S == 4) {
-        return message_id{"eagiSudoku", "alive4"};
-    }
-    if constexpr(S == 5) {
-        return message_id{"eagiSudoku", "alive5"};
-    }
-    if constexpr(S == 6) {
-        return message_id{"eagiSudoku", "alive6"};
-    }
-}
-//------------------------------------------------------------------------------
-export template <unsigned S>
-auto sudoku_query_msg(const unsigned_constant<S>) noexcept {
-    if constexpr(S == 3) {
-        return message_id{"eagiSudoku", "query3"};
-    }
-    if constexpr(S == 4) {
-        return message_id{"eagiSudoku", "query4"};
-    }
-    if constexpr(S == 5) {
-        return message_id{"eagiSudoku", "query5"};
-    }
-    if constexpr(S == 6) {
-        return message_id{"eagiSudoku", "query6"};
-    }
-}
-//------------------------------------------------------------------------------
-export template <unsigned S>
-auto sudoku_solved_msg(const unsigned_constant<S>) noexcept -> message_id {
-    if constexpr(S == 3) {
-        return message_id{"eagiSudoku", "solved3"};
-    }
-    if constexpr(S == 4) {
-        return message_id{"eagiSudoku", "solved4"};
-    }
-    if constexpr(S == 5) {
-        return message_id{"eagiSudoku", "solved5"};
-    }
-    if constexpr(S == 6) {
-        return message_id{"eagiSudoku", "solved6"};
-    }
-}
-//------------------------------------------------------------------------------
-export template <unsigned S>
-auto sudoku_candidate_msg(const unsigned_constant<S>) noexcept -> message_id {
-    if constexpr(S == 3) {
-        return message_id{"eagiSudoku", "candidate3"};
-    }
-    if constexpr(S == 4) {
-        return message_id{"eagiSudoku", "candidate4"};
-    }
-    if constexpr(S == 5) {
-        return message_id{"eagiSudoku", "candidate5"};
-    }
-    if constexpr(S == 6) {
-        return message_id{"eagiSudoku", "candidate6"};
-    }
-}
-//------------------------------------------------------------------------------
-export template <unsigned S>
-auto sudoku_done_msg(const unsigned_constant<S>) noexcept -> message_id {
-    if constexpr(S == 3) {
-        return message_id{"eagiSudoku", "done3"};
-    }
-    if constexpr(S == 4) {
-        return message_id{"eagiSudoku", "done4"};
-    }
-    if constexpr(S == 5) {
-        return message_id{"eagiSudoku", "done5"};
-    }
-    if constexpr(S == 6) {
-        return message_id{"eagiSudoku", "done6"};
-    }
-}
-//------------------------------------------------------------------------------
-export template <unsigned S>
-auto sudoku_response_msg(
-  const unsigned_constant<S> rank,
-  const bool is_solved) noexcept -> message_id {
-    return is_solved ? sudoku_solved_msg(rank) : sudoku_candidate_msg(rank);
 }
 //------------------------------------------------------------------------------
 export struct sudoku_helper_intf : interface<sudoku_helper_intf> {
