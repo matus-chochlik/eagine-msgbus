@@ -395,6 +395,8 @@ private:
       std::chrono::steady_clock::now()};
 };
 //------------------------------------------------------------------------------
+using sudoku_solver_key = std::variant<int, std::tuple<int, int>>;
+//------------------------------------------------------------------------------
 /// @brief Service solving sudoku boards with the help of helper service on message bus.
 /// @ingroup msgbus
 /// @see service_composition
@@ -578,23 +580,27 @@ public:
     }
 
     /// @brief Indicates if board with the specified rank is already solved.
-    virtual auto already_done(const Key&, const unsigned_constant<3>) noexcept
-      -> bool {
+    virtual auto already_done(
+      const sudoku_solver_key&,
+      const unsigned_constant<3>) noexcept -> bool {
         return false;
     }
     /// @brief Indicates if board with the specified rank is already solved.
-    virtual auto already_done(const Key&, const unsigned_constant<4>) noexcept
-      -> bool {
+    virtual auto already_done(
+      const sudoku_solver_key&,
+      const unsigned_constant<4>) noexcept -> bool {
         return false;
     }
     /// @brief Indicates if board with the specified rank is already solved.
-    virtual auto already_done(const Key&, const unsigned_constant<5>) noexcept
-      -> bool {
+    virtual auto already_done(
+      const sudoku_solver_key&,
+      const unsigned_constant<5>) noexcept -> bool {
         return false;
     }
     /// @brief Indicates if board with the specified rank is already solved.
-    virtual auto already_done(const Key&, const unsigned_constant<6>) noexcept
-      -> bool {
+    virtual auto already_done(
+      const sudoku_solver_key&,
+      const unsigned_constant<6>) noexcept -> bool {
         return false;
     }
 
@@ -602,16 +608,28 @@ public:
     signal<void(const identifier_t) noexcept> helper_appeared;
 
     /// @brief Triggered when the board with the specified key is solved.
-    signal<void(const identifier_t, const Key&, basic_sudoku_board<3>&) noexcept>
+    signal<void(
+      const identifier_t,
+      const sudoku_solver_key&,
+      basic_sudoku_board<3>&) noexcept>
       solved_3;
     /// @brief Triggered when the board with the specified key is solved.
-    signal<void(const identifier_t, const Key&, basic_sudoku_board<4>&) noexcept>
+    signal<void(
+      const identifier_t,
+      const sudoku_solver_key&,
+      basic_sudoku_board<4>&) noexcept>
       solved_4;
     /// @brief Triggered when the board with the specified key is solved.
-    signal<void(const identifier_t, const Key&, basic_sudoku_board<5>&) noexcept>
+    signal<void(
+      const identifier_t,
+      const sudoku_solver_key&,
+      basic_sudoku_board<5>&) noexcept>
       solved_5;
     /// @brief Triggered when the board with the specified key is solved.
-    signal<void(const identifier_t, const Key&, basic_sudoku_board<6>&) noexcept>
+    signal<void(
+      const identifier_t,
+      const sudoku_solver_key&,
+      basic_sudoku_board<6>&) noexcept>
       solved_6;
 
     /// @brief Returns a reference to the solved_3 signal.
@@ -1404,20 +1422,28 @@ public:
     }
 
     /// @brief Triggered then all tiles with rank 3 are generated.
-    signal<
-      void(const identifier_t, const sudoku_tiles<3>&, const Coord&) noexcept>
+    signal<void(
+      const identifier_t,
+      const sudoku_tiles<3>&,
+      const sudoku_solver_key&) noexcept>
       tiles_generated_3;
     /// @brief Triggered then all tiles with rank 4 are generated.
-    signal<
-      void(const identifier_t, const sudoku_tiles<4>&, const Coord&) noexcept>
+    signal<void(
+      const identifier_t,
+      const sudoku_tiles<4>&,
+      const sudoku_solver_key&) noexcept>
       tiles_generated_4;
     /// @brief Triggered then all tiles with rank 5 are generated.
-    signal<
-      void(const identifier_t, const sudoku_tiles<5>&, const Coord&) noexcept>
+    signal<void(
+      const identifier_t,
+      const sudoku_tiles<5>&,
+      const sudoku_solver_key&) noexcept>
       tiles_generated_5;
     /// @brief Triggered then all tiles with rank 6 are generated.
-    signal<
-      void(const identifier_t, const sudoku_tiles<6>&, const Coord&) noexcept>
+    signal<void(
+      const identifier_t,
+      const sudoku_tiles<6>&,
+      const sudoku_solver_key&) noexcept>
       tiles_generated_6;
 
     /// @brief Returns a reference to the tiles_generated_3 signal.
@@ -1681,39 +1707,41 @@ private:
     sudoku_rank_tuple<rank_info> _infos;
 
     auto already_done(
-      const Coord& coord,
+      const sudoku_solver_key& coord,
       const unsigned_constant<3> rank) noexcept -> bool final {
         return _is_already_done(coord, rank);
     }
     auto already_done(
-      const Coord& coord,
+      const sudoku_solver_key& coord,
       const unsigned_constant<4> rank) noexcept -> bool final {
         return _is_already_done(coord, rank);
     }
     auto already_done(
-      const Coord& coord,
+      const sudoku_solver_key& coord,
       const unsigned_constant<5> rank) noexcept -> bool final {
         return _is_already_done(coord, rank);
     }
     auto already_done(
-      const Coord& coord,
+      const sudoku_solver_key& coord,
       const unsigned_constant<6> rank) noexcept -> bool final {
         return _is_already_done(coord, rank);
     }
 
     template <unsigned S>
-    auto _is_already_done(const Coord& coord, const unsigned_constant<S> rank)
-      const noexcept -> bool {
-        return _infos.get(rank).get_board(coord);
+    auto _is_already_done(
+      const sudoku_solver_key& coord,
+      const unsigned_constant<S> rank) const noexcept -> bool {
+        return _infos.get(rank).get_board(std::get<Coord>(coord));
     }
 
     template <unsigned S>
     void _handle_solved(
       const identifier_t helper_id,
-      const Coord& coord,
+      const sudoku_solver_key& coord,
       basic_sudoku_board<S>& board) noexcept {
         auto& info = _infos.get(unsigned_constant<S>{});
-        info.handle_solved(*this, helper_id, coord, std::move(board));
+        info.handle_solved(
+          *this, helper_id, std::get<Coord>(coord), std::move(board));
     }
 };
 //------------------------------------------------------------------------------
