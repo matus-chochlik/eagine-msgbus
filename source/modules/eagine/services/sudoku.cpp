@@ -5,6 +5,10 @@
 /// See accompanying file LICENSE_1_0.txt or copy at
 ///  http://www.boost.org/LICENSE_1_0.txt
 ///
+module;
+
+#include <cassert>
+
 export module eagine.msgbus.services:sudoku;
 
 import eagine.core.types;
@@ -14,63 +18,22 @@ import eagine.core.container;
 import eagine.core.serialization;
 import eagine.core.utility;
 import eagine.core.runtime;
-import eagine.core.logging;
 import eagine.core.math;
 import eagine.msgbus.core;
-import <algorithm>;
 import <array>;
 import <chrono>;
 import <cmath>;
 import <ostream>;
-import <random>;
 import <tuple>;
 import <variant>;
 import <vector>;
 
 namespace eagine::msgbus {
 //------------------------------------------------------------------------------
-export template <template <unsigned> class U>
-struct sudoku_rank_tuple
-  : std::tuple<nothing_t, nothing_t, nothing_t, U<3>, U<4>, U<5>, U<6>> {
-    using base =
-      std::tuple<nothing_t, nothing_t, nothing_t, U<3>, U<4>, U<5>, U<6>>;
-
-    sudoku_rank_tuple() = default;
-
-    template <typename... Args>
-    sudoku_rank_tuple(const Args&... args) noexcept
-      : base{
-          nothing,
-          nothing,
-          nothing,
-          {args...},
-          {args...},
-          {args...},
-          {args...}} {}
-
-    template <unsigned S>
-    auto get(const unsigned_constant<S>) noexcept -> auto& {
-        return std::get<S>(*this);
-    }
-
-    template <unsigned S>
-    auto get(const unsigned_constant<S>) const noexcept -> const auto& {
-        return std::get<S>(*this);
-    }
-};
-//------------------------------------------------------------------------------
-export template <typename Function, typename... RankTuple>
-void for_each_sudoku_rank_unit(Function func, RankTuple&... t) {
-    func(std::get<3>(t)...);
-    func(std::get<4>(t)...);
-    func(std::get<5>(t)...);
-    func(std::get<6>(t)...);
-}
-//------------------------------------------------------------------------------
 export struct sudoku_helper_intf : interface<sudoku_helper_intf> {
-    virtual void add_methods(subscriber&) noexcept = 0;
-    virtual void init(subscriber&) noexcept = 0;
-    virtual auto update(endpoint& bus) noexcept -> work_done = 0;
+    virtual void add_methods() noexcept = 0;
+    virtual void init() noexcept = 0;
+    virtual auto update() noexcept -> work_done = 0;
 
     virtual void mark_activity() noexcept = 0;
 
@@ -79,7 +42,8 @@ export struct sudoku_helper_intf : interface<sudoku_helper_intf> {
       -> std::chrono::steady_clock::duration = 0;
 };
 //------------------------------------------------------------------------------
-export auto make_sudoku_helper_impl() -> std::unique_ptr<sudoku_helper_intf>;
+export auto make_sudoku_helper_impl(subscriber&)
+  -> std::unique_ptr<sudoku_helper_intf>;
 //------------------------------------------------------------------------------
 /// @brief Service helping to partially solve sudoku boards sent by sudoku_solver.
 /// @ingroup msgbus
@@ -93,7 +57,7 @@ class sudoku_helper : public Base {
 public:
     auto update() noexcept -> work_done {
         some_true something_done{Base::update()};
-        something_done(_impl->update(this->bus_node()));
+        something_done(_impl->update());
 
         return something_done;
     }
@@ -108,24 +72,51 @@ protected:
 
     void add_methods() noexcept {
         Base::add_methods();
-
-        _impl->add_methods(*this);
+        _impl->add_methods();
     }
 
     void init() noexcept {
         Base::init();
-        _impl->init(*this);
+        _impl->init();
     }
 
 private:
-    std::unique_ptr<sudoku_helper_intf> _impl{make_sudoku_helper_impl()};
+    const std::unique_ptr<sudoku_helper_intf> _impl{
+      make_sudoku_helper_impl(*this)};
 };
 //------------------------------------------------------------------------------
-export using sudoku_solver_key =
-  std::variant<std::monostate, int, std::tuple<int, int>>;
+export using sudoku_solver_key = std::variant<int, std::tuple<int, int>>;
+//------------------------------------------------------------------------------
+export struct sudoku_solver_driver : interface<sudoku_solver_driver> {
+    /// @brief Indicates if board with the specified rank is already solved.
+    virtual auto already_done(
+      const sudoku_solver_key&,
+      const unsigned_constant<3>) noexcept -> bool {
+        return false;
+    }
+    /// @brief Indicates if board with the specified rank is already solved.
+    virtual auto already_done(
+      const sudoku_solver_key&,
+      const unsigned_constant<4>) noexcept -> bool {
+        return false;
+    }
+    /// @brief Indicates if board with the specified rank is already solved.
+    virtual auto already_done(
+      const sudoku_solver_key&,
+      const unsigned_constant<5>) noexcept -> bool {
+        return false;
+    }
+    /// @brief Indicates if board with the specified rank is already solved.
+    virtual auto already_done(
+      const sudoku_solver_key&,
+      const unsigned_constant<6>) noexcept -> bool {
+        return false;
+    }
+};
 //------------------------------------------------------------------------------
 struct sudoku_solver_intf : interface<sudoku_solver_intf> {
 
+    virtual void assign_driver(sudoku_solver_driver&) noexcept = 0;
     virtual void add_methods() noexcept = 0;
     virtual void init() noexcept = 0;
     virtual auto update() noexcept -> work_done = 0;
@@ -224,38 +215,8 @@ export struct sudoku_solver_signals {
       queue_length_changed;
 };
 //------------------------------------------------------------------------------
-export struct sudoku_solver_driver : interface<sudoku_solver_driver> {
-
-    /// @brief Indicates if board with the specified rank is already solved.
-    virtual auto already_done(
-      const sudoku_solver_key&,
-      const unsigned_constant<3>) noexcept -> bool {
-        return false;
-    }
-    /// @brief Indicates if board with the specified rank is already solved.
-    virtual auto already_done(
-      const sudoku_solver_key&,
-      const unsigned_constant<4>) noexcept -> bool {
-        return false;
-    }
-    /// @brief Indicates if board with the specified rank is already solved.
-    virtual auto already_done(
-      const sudoku_solver_key&,
-      const unsigned_constant<5>) noexcept -> bool {
-        return false;
-    }
-    /// @brief Indicates if board with the specified rank is already solved.
-    virtual auto already_done(
-      const sudoku_solver_key&,
-      const unsigned_constant<6>) noexcept -> bool {
-        return false;
-    }
-};
-//------------------------------------------------------------------------------
-export auto make_sudoku_solver_impl(
-  subscriber& base,
-  sudoku_solver_driver&,
-  sudoku_solver_signals&) -> std::unique_ptr<sudoku_solver_intf>;
+export auto make_sudoku_solver_impl(subscriber& base, sudoku_solver_signals&)
+  -> std::unique_ptr<sudoku_solver_intf>;
 //------------------------------------------------------------------------------
 /// @brief Service solving sudoku boards with the help of helper service on message bus.
 /// @ingroup msgbus
@@ -265,7 +226,6 @@ export auto make_sudoku_solver_impl(
 export template <typename Base = subscriber, typename Key = int>
 class sudoku_solver
   : public Base
-  , public sudoku_solver_driver
   , public sudoku_solver_signals {
     using This = sudoku_solver;
 
@@ -374,16 +334,26 @@ public:
     }
 
 protected:
-    using Base::Base;
+    sudoku_solver(
+      endpoint& bus,
+      std::unique_ptr<sudoku_solver_intf> impl) noexcept
+      : Base{bus}
+      , _impl{std::move(impl)} {}
+
+    sudoku_solver(endpoint& bus)
+      : sudoku_solver{bus, make_sudoku_solver_impl(*this, *this)} {}
 
     void add_methods() noexcept {
         Base::add_methods();
         _impl->add_methods();
     }
 
+    auto impl() noexcept -> sudoku_solver_intf& {
+        return *_impl;
+    }
+
 private:
-    std::unique_ptr<sudoku_solver_intf> _impl{
-      make_sudoku_solver_impl(*this, *this, *this)};
+    const std::unique_ptr<sudoku_solver_intf> _impl;
 };
 //------------------------------------------------------------------------------
 export template <unsigned S>
@@ -674,89 +644,66 @@ void sudoku_fragment_view<S>::for_each_cell(Function function) const {
     }
 }
 //------------------------------------------------------------------------------
-/// @brief Service generating a sudoku tiling using helper message bus nodes.
-/// @ingroup msgbus
-/// @see service_composition
-/// @see sudoku_helper
-/// @see sudoku_solver
-export template <typename Base = subscriber>
-class sudoku_tiling : public sudoku_solver<Base, std::tuple<int, int>> {
-    using base = sudoku_solver<Base, std::tuple<int, int>>;
-    using This = sudoku_tiling;
-    using Coord = std::tuple<int, int>;
-
+struct sudoku_tiling_intf : interface<sudoku_tiling_intf> {
 public:
-    /// @brief Initializes the tiling to be generated with initial board.
-    template <unsigned S>
-    auto initialize(
-      const Coord min,
-      const Coord max,
-      const Coord coord,
-      basic_sudoku_board<S> board) noexcept -> auto& {
-        const auto [x, y] = coord;
-        auto& info = _infos.get(unsigned_constant<S>{});
-        info.set_extent(min, max);
-        info.initialize(*this, x, y, std::move(board));
-        return *this;
-    }
+    virtual auto driver() noexcept -> sudoku_solver_driver& = 0;
 
-    /// @brief Initializes the tiling to be generated with initial board.
-    template <unsigned S>
-    auto initialize(const Coord max, basic_sudoku_board<S> board) noexcept
-      -> auto& {
-        return initialize({0, 0}, max, {0, 0}, std::move(board));
-    }
+    virtual void initialize(
+      const sudoku_solver_key min,
+      const sudoku_solver_key max,
+      const sudoku_solver_key coord,
+      basic_sudoku_board<3> board) noexcept = 0;
 
-    /// @brief Resets the tiling with the specified rank.
-    template <unsigned S>
-    auto reset(unsigned_constant<S> rank) noexcept -> auto& {
-        base::reset(rank);
-        _infos.get(rank).reset();
-        return *this;
-    }
+    virtual void initialize(
+      const sudoku_solver_key min,
+      const sudoku_solver_key max,
+      const sudoku_solver_key coord,
+      basic_sudoku_board<4> board) noexcept = 0;
 
-    /// @brief Re-initializes the tiling with the specified board.
-    template <unsigned S>
-    auto reinitialize(const Coord max, basic_sudoku_board<S> board) noexcept
-      -> auto& {
-        reset(unsigned_constant<S>{});
-        return initialize(max, board);
-    }
+    virtual void initialize(
+      const sudoku_solver_key min,
+      const sudoku_solver_key max,
+      const sudoku_solver_key coord,
+      basic_sudoku_board<5> board) noexcept = 0;
 
-    /// @brief Indicates that pending tiling with the specified rank is complete.
-    template <unsigned S>
-    auto tiling_complete(const unsigned_constant<S> rank) const noexcept
-      -> bool {
-        return _infos.get(rank).are_complete();
-    }
+    virtual void initialize(
+      const sudoku_solver_key min,
+      const sudoku_solver_key max,
+      const sudoku_solver_key coord,
+      basic_sudoku_board<6> board) noexcept = 0;
 
-    /// @brief Indicates that all pending tilings are complete.
-    auto tiling_complete() const noexcept -> bool {
-        bool result = true;
-        sudoku_rank_tuple<unsigned_constant> ranks;
-        for_each_sudoku_rank_unit(
-          [&](auto rank) { result &= tiling_complete(rank); }, ranks);
-        return result;
-    }
-
+    virtual void reset(unsigned rank) noexcept = 0;
+    virtual auto are_complete() const noexcept -> bool = 0;
+    virtual auto are_complete(unsigned rank) const noexcept -> bool = 0;
+    virtual auto solution_progress(unsigned rank) const noexcept -> float = 0;
+    virtual void log_contribution_histogram(unsigned rank) noexcept = 0;
+};
+//------------------------------------------------------------------------------
+/// @brief Collection of signals emitted by the sudoku_tiling service
+/// @ingroup msgbus
+/// @see sudoku_tiling
+export struct sudoku_tiling_signals {
     /// @brief Triggered then all tiles with rank 3 are generated.
     signal<void(
       const identifier_t,
       const sudoku_tiles<3>&,
       const sudoku_solver_key&) noexcept>
       tiles_generated_3;
+
     /// @brief Triggered then all tiles with rank 4 are generated.
     signal<void(
       const identifier_t,
       const sudoku_tiles<4>&,
       const sudoku_solver_key&) noexcept>
       tiles_generated_4;
+
     /// @brief Triggered then all tiles with rank 5 are generated.
     signal<void(
       const identifier_t,
       const sudoku_tiles<5>&,
       const sudoku_solver_key&) noexcept>
       tiles_generated_5;
+
     /// @brief Triggered then all tiles with rank 6 are generated.
     signal<void(
       const identifier_t,
@@ -787,275 +734,96 @@ public:
     auto tiles_generated_signal(const unsigned_constant<6>) noexcept -> auto& {
         return tiles_generated_6;
     }
+};
+//------------------------------------------------------------------------------
+export auto make_sudoku_tiling_impl(
+  subscriber& base,
+  sudoku_solver_signals&,
+  sudoku_tiling_signals&,
+  sudoku_solver_intf&) -> std::unique_ptr<sudoku_tiling_intf>;
+//------------------------------------------------------------------------------
+/// @brief Service generating a sudoku tiling using helper message bus nodes.
+/// @ingroup msgbus
+/// @see service_composition
+/// @see sudoku_helper
+/// @see sudoku_solver
+export template <typename Base = subscriber>
+class sudoku_tiling
+  : public sudoku_solver<Base, std::tuple<int, int>>
+  , public sudoku_tiling_signals {
+    using base = sudoku_solver<Base, std::tuple<int, int>>;
+    using This = sudoku_tiling;
+    using Coord = std::tuple<int, int>;
 
-    /// @brief Logs the contributions of the helpers to the solution.
+public:
+    /// @brief Initializes the tiling to be generated with initial board.
     template <unsigned S>
-    auto log_contribution_histogram(const unsigned_constant<S> rank) noexcept
-      -> auto& {
-        _infos.get(rank).log_contribution_histogram(*this);
+    auto initialize(
+      const Coord min,
+      const Coord max,
+      const Coord coord,
+      basic_sudoku_board<S> board) noexcept -> auto& {
+        _impl->initialize(min, max, coord, std::move(board));
         return *this;
+    }
+
+    /// @brief Initializes the tiling to be generated with initial board.
+    template <unsigned S>
+    auto initialize(const Coord max, basic_sudoku_board<S> board) noexcept
+      -> auto& {
+        return initialize({0, 0}, max, {0, 0}, std::move(board));
+    }
+
+    /// @brief Resets the tiling with the specified rank.
+    template <unsigned S>
+    auto reset(unsigned_constant<S> rank) noexcept -> auto& {
+        base::reset(rank);
+        _impl->reset(S);
+        return *this;
+    }
+
+    /// @brief Re-initializes the tiling with the specified board.
+    template <unsigned S>
+    auto reinitialize(const Coord max, basic_sudoku_board<S> board) noexcept
+      -> auto& {
+        reset(unsigned_constant<S>{});
+        return initialize(max, board);
+    }
+
+    /// @brief Indicates that pending tiling with the specified rank is complete.
+    template <unsigned S>
+    auto tiling_complete(const unsigned_constant<S>) const noexcept -> bool {
+        return _impl->are_complete(S);
+    }
+
+    /// @brief Indicates that pending tilings with all ranks are complete.
+    auto tiling_complete() const noexcept -> bool {
+        return _impl->are_complete();
     }
 
     /// @brief Returns the fraction <0, 1> indicating how many tiles are solved.
     template <unsigned S>
-    auto solution_progress(const unsigned_constant<S> rank) const noexcept
-      -> float {
-        return _infos.get(rank).solution_progress();
+    auto solution_progress(const unsigned_constant<S>) const noexcept -> float {
+        return _impl->solution_progress(S);
+    }
+
+    /// @brief Logs the contributions of the helpers to the solution.
+    template <unsigned S>
+    auto log_contribution_histogram(const unsigned_constant<S>) noexcept
+      -> auto& {
+        _impl->log_contribution_histogram(S);
+        return *this;
     }
 
 protected:
     sudoku_tiling(endpoint& bus) noexcept
-      : base{bus} {
-        connect<&sudoku_tiling::_handle_solved<3>>(this, this->solved_3);
-        connect<&sudoku_tiling::_handle_solved<4>>(this, this->solved_4);
-        connect<&sudoku_tiling::_handle_solved<5>>(this, this->solved_5);
-        connect<&sudoku_tiling::_handle_solved<6>>(this, this->solved_6);
+      : base{bus}
+      , _impl{make_sudoku_tiling_impl(*this, *this, *this, base::impl())} {
+        base::impl().assign_driver(_impl->driver());
     }
 
 private:
-    template <unsigned S>
-    struct rank_info : sudoku_tiles<S> {
-
-        void initialize(
-          This& solver,
-          const int x,
-          const int y,
-          basic_sudoku_board<S> board) noexcept {
-            solver.enqueue({x, y}, std::move(board));
-            solver.bus_node()
-              .log_debug("enqueuing initial board (${x}, ${y})")
-              .arg("x", x)
-              .arg("y", y)
-              .arg("rank", S);
-            cells_done = 0;
-        }
-
-        void do_enqueue(This& solver, const int x, const int y) noexcept {
-            auto board{this->new_board()};
-            bool should_enqueue = false;
-            if(y > 0) {
-                if(x > 0) {
-                    const auto left = this->get_board(x - 1, y);
-                    const auto down = this->get_board(x, y - 1);
-                    if(left && down) {
-                        for(const auto by : integer_range(S - 1U)) {
-                            board.set_block(
-                              0U, by, extract(left).get_block(S - 1U, by));
-                        }
-                        for(const auto bx : integer_range(1U, S)) {
-                            board.set_block(
-                              bx, S - 1U, extract(down).get_block(bx, 0U));
-                        }
-                        should_enqueue = true;
-                    }
-                } else if(x < 0) {
-                    const auto right = this->get_board(x + 1, y);
-                    const auto down = this->get_board(x, y - 1);
-                    if(right && down) {
-                        for(const auto by : integer_range(S - 1U)) {
-                            board.set_block(
-                              S - 1U, by, extract(right).get_block(0U, by));
-                        }
-                        for(const auto bx : integer_range(S - 1U)) {
-                            board.set_block(
-                              bx, S - 1U, extract(down).get_block(bx, 0U));
-                        }
-                        should_enqueue = true;
-                    }
-                } else {
-                    const auto down = this->get_board(x, y - 1);
-                    if(down) {
-                        for(const auto bx : integer_range(S)) {
-                            board.set_block(
-                              bx, S - 1U, extract(down).get_block(bx, 0U));
-                        }
-                        should_enqueue = true;
-                    }
-                }
-            } else if(y < 0) {
-                if(x > 0) {
-                    const auto left = this->get_board(x - 1, y);
-                    const auto up = this->get_board(x, y + 1);
-                    if(left && up) {
-                        for(const auto by : integer_range(1U, S)) {
-                            board.set_block(
-                              0U, by, extract(left).get_block(S - 1U, by));
-                        }
-                        for(const auto bx : integer_range(1U, S)) {
-                            board.set_block(
-                              bx, 0U, extract(up).get_block(bx, S - 1U));
-                        }
-                        should_enqueue = true;
-                    }
-                } else if(x < 0) {
-                    const auto right = this->get_board(x + 1, y);
-                    const auto up = this->get_board(x, y + 1);
-                    if(right && up) {
-                        for(const auto by : integer_range(1U, S)) {
-                            board.set_block(
-                              S - 1U, by, extract(right).get_block(0U, by));
-                        }
-                        for(const auto bx : integer_range(S - 1U)) {
-                            board.set_block(
-                              bx, 0U, extract(up).get_block(bx, S - 1U));
-                        }
-                        should_enqueue = true;
-                    }
-                } else {
-                    const auto up = this->get_board(x, y + 1);
-                    if(up) {
-                        for(const auto bx : integer_range(S)) {
-                            board.set_block(
-                              bx, 0U, extract(up).get_block(bx, S - 1U));
-                        }
-                        should_enqueue = true;
-                    }
-                }
-            } else {
-                if(x > 0) {
-                    const auto left = this->get_board(x - 1, y);
-                    if(left) {
-                        for(const auto by : integer_range(S)) {
-                            board.set_block(
-                              0U, by, extract(left).get_block(S - 1U, by));
-                        }
-                        should_enqueue = true;
-                    }
-                } else if(x < 0) {
-                    const auto right = this->get_board(x + 1, y);
-                    if(right) {
-                        for(const auto by : integer_range(S)) {
-                            board.set_block(
-                              S - 1U, by, extract(right).get_block(0U, by));
-                        }
-                        should_enqueue = true;
-                    }
-                }
-            }
-            if(should_enqueue) {
-                solver.enqueue({x, y}, board.calculate_alternatives());
-                solver.bus_node()
-                  .log_debug("enqueuing board (${x}, ${y})")
-                  .arg("x", x)
-                  .arg("y", y)
-                  .arg("rank", S);
-            }
-        }
-
-        void enqueue_incomplete(This& solver) noexcept {
-            const unsigned_constant<S> rank{};
-            const auto [xmin, ymin, xmax, ymax] = this->boards_extent();
-            for(const auto y : integer_range(ymin, ymax)) {
-                for(const auto x : integer_range(xmin, xmax)) {
-                    if(!this->get_board(x, y)) {
-                        if(!solver.has_enqueued({x, y}, rank)) {
-                            do_enqueue(solver, x, y);
-                        }
-                    }
-                }
-            }
-        }
-
-        void handle_solved(
-          This& solver,
-          const identifier_t helper_id,
-          const Coord coord,
-          basic_sudoku_board<S> board) noexcept {
-
-            if(this->set_board(coord, std::move(board))) {
-                cells_done += this->cells_per_tile();
-                solver.bus_node()
-                  .log_info("solved board (${x}, ${y})")
-                  .arg("rank", S)
-                  .arg("x", std::get<0>(coord))
-                  .arg("y", std::get<1>(coord))
-                  .arg("helper", helper_id)
-                  .arg(
-                    "progress",
-                    "Progress",
-                    0.F,
-                    float(cells_done),
-                    float(this->cell_count()));
-
-                auto helper_pos = helper_contrib.find(helper_id);
-                if(helper_pos == helper_contrib.end()) {
-                    helper_pos = helper_contrib.emplace(helper_id, 0).first;
-                }
-                ++helper_pos->second;
-
-                const unsigned_constant<S> rank{};
-                solver.tiles_generated_signal(rank)(helper_id, *this, coord);
-            }
-
-            enqueue_incomplete(solver);
-        }
-
-        void log_contribution_histogram(This& solver) noexcept {
-            span_size_t max_count = 0;
-            for(const auto& p : helper_contrib) {
-                max_count = std::max(max_count, std::get<1>(p));
-            }
-            solver.bus_node()
-              .log_stat("solution contributions by helpers")
-              .arg("rank", S)
-              .arg_func([this, max_count](logger_backend& backend) {
-                  for(const auto& [helper_id, count] : helper_contrib) {
-                      backend.add_float(
-                        "helper",
-                        "Histogram",
-                        float(0),
-                        float(count),
-                        float(max_count));
-                  }
-              });
-        }
-
-        auto solution_progress() const noexcept -> float {
-            return float(cells_done) / float(this->cell_count());
-        }
-
-        flat_map<identifier_t, span_size_t> helper_contrib;
-        int cells_done{0};
-    };
-
-    sudoku_rank_tuple<rank_info> _infos;
-
-    auto already_done(
-      const sudoku_solver_key& coord,
-      const unsigned_constant<3> rank) noexcept -> bool final {
-        return _is_already_done(std::get<Coord>(coord), rank);
-    }
-    auto already_done(
-      const sudoku_solver_key& coord,
-      const unsigned_constant<4> rank) noexcept -> bool final {
-        return _is_already_done(std::get<Coord>(coord), rank);
-    }
-    auto already_done(
-      const sudoku_solver_key& coord,
-      const unsigned_constant<5> rank) noexcept -> bool final {
-        return _is_already_done(std::get<Coord>(coord), rank);
-    }
-    auto already_done(
-      const sudoku_solver_key& coord,
-      const unsigned_constant<6> rank) noexcept -> bool final {
-        return _is_already_done(std::get<Coord>(coord), rank);
-    }
-
-    template <unsigned S>
-    auto _is_already_done(const Coord& coord, const unsigned_constant<S> rank)
-      const noexcept -> bool {
-        return _infos.get(rank).get_board(coord);
-    }
-
-    template <unsigned S>
-    void _handle_solved(
-      const identifier_t helper_id,
-      const sudoku_solver_key& coord,
-      basic_sudoku_board<S>& board) noexcept {
-        auto& info = _infos.get(unsigned_constant<S>{});
-        info.handle_solved(
-          *this, helper_id, std::get<Coord>(coord), std::move(board));
-    }
+    std::unique_ptr<sudoku_tiling_intf> _impl;
 };
 //------------------------------------------------------------------------------
 } // namespace eagine::msgbus
