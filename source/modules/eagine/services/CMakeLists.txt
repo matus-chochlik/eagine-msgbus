@@ -178,6 +178,7 @@ eagine_add_module(
 		eagine.core.utility
 		eagine.core.runtime
 		eagine.core.logging
+		eagine.core.main_ctx
 		eagine.msgbus.core
 )
 
@@ -222,5 +223,6 @@ eagine_add_module(
 		tracker
 	SOURCES
 		resource_transfer_impl
+		sudoku_impl
 	IMPORTS
 )

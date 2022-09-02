@@ -32,7 +32,7 @@ import <vector>;
 
 namespace eagine::msgbus {
 //------------------------------------------------------------------------------
-template <template <unsigned> class U>
+export template <template <unsigned> class U>
 struct sudoku_rank_tuple
   : std::tuple<nothing_t, nothing_t, nothing_t, U<3>, U<4>, U<5>, U<6>> {
     using base =
@@ -173,6 +173,20 @@ auto sudoku_response_msg(
     return is_solved ? sudoku_solved_msg(rank) : sudoku_candidate_msg(rank);
 }
 //------------------------------------------------------------------------------
+export struct sudoku_helper_intf : interface<sudoku_helper_intf> {
+    virtual void add_methods(subscriber&) noexcept = 0;
+    virtual void init(subscriber&) noexcept = 0;
+    virtual auto update(endpoint& bus) noexcept -> work_done = 0;
+
+    virtual void mark_activity() noexcept = 0;
+
+    /// @brief Returns current idle time interval.
+    virtual auto idle_time() const noexcept
+      -> std::chrono::steady_clock::duration = 0;
+};
+//------------------------------------------------------------------------------
+export auto make_sudoku_helper_impl() -> std::unique_ptr<sudoku_helper_intf>;
+//------------------------------------------------------------------------------
 /// @brief Service helping to partially solve sudoku boards sent by sudoku_solver.
 /// @ingroup msgbus
 /// @see service_composition
@@ -184,27 +198,15 @@ class sudoku_helper : public Base {
 
 public:
     auto update() noexcept -> work_done {
-        some_true something_done{};
-        something_done(Base::update());
-
-        for_each_sudoku_rank_unit(
-          [&](auto& info) {
-              if(info.update(this->bus_node(), _compressor)) {
-                  something_done();
-              }
-          },
-          _infos);
+        some_true something_done{Base::update()};
+        something_done(_impl->update(this->bus_node()));
 
         return something_done;
     }
 
-    void mark_activity() noexcept {
-        _activity_time = std::chrono::steady_clock::now();
-    }
-
     /// @brief Returns current idle time interval.
     auto idle_time() const noexcept {
-        return std::chrono::steady_clock::now() - _activity_time;
+        return _impl->idle_time();
     }
 
 protected:
@@ -213,224 +215,16 @@ protected:
     void add_methods() noexcept {
         Base::add_methods();
 
-        sudoku_rank_tuple<unsigned_constant> ranks;
-        for_each_sudoku_rank_unit(
-          [&](auto rank) {
-              Base::add_method(this, _bind_handle_search(rank));
-              Base::add_method(this, _bind_handle_board(rank));
-          },
-          ranks);
-
-        mark_activity();
+        _impl->add_methods(*this);
     }
 
     void init() noexcept {
         Base::init();
-        if(const auto max_recursion{this->app_config().get(
-             "msgbus.sudoku.helper.max_recursion",
-             std::type_identity<int>{})}) {
-            if(max_recursion >= 0) {
-                this->bus_node()
-                  .log_info("setting maximum recursion to ${recursion}")
-                  .tag("sdkuMaxRec")
-                  .arg("recursion", extract(max_recursion));
-                for_each_sudoku_rank_unit(
-                  [&](auto& info) {
-                      info.max_recursion = extract(max_recursion);
-                  },
-                  _infos);
-            }
-        }
+        _impl->init(*this);
     }
 
 private:
-    template <unsigned S>
-    auto _handle_search(
-      const message_context&,
-      const stored_message& message) noexcept -> bool {
-        _infos.get(unsigned_constant<S>{}).on_search(message.source_id);
-        mark_activity();
-        return true;
-    }
-
-    template <unsigned S>
-    static constexpr auto _bind_handle_search(
-      const unsigned_constant<S> rank) noexcept {
-        return message_handler_map<member_function_constant<
-          bool (This::*)(const message_context&, const stored_message&) noexcept,
-          &This::_handle_search<S>>>{sudoku_search_msg(rank)};
-    }
-
-    template <unsigned S>
-    auto _handle_board(
-      const message_context&,
-      const stored_message& message) noexcept -> bool {
-        const unsigned_constant<S> rank{};
-        auto& info = _infos.get(rank);
-        basic_sudoku_board<S> board{info.traits};
-
-        const auto deserialized{
-          (S >= 4)
-            ? default_deserialize_packed(board, message.content(), _compressor)
-            : default_deserialize(board, message.content())};
-
-        if(deserialized) [[likely]] {
-            info.add_board(
-              this->bus_node(),
-              message.source_id,
-              message.sequence_no,
-              std::move(board));
-            mark_activity();
-        }
-        return true;
-    }
-
-    template <unsigned S>
-    static constexpr auto _bind_handle_board(
-      const unsigned_constant<S> rank) noexcept {
-        return message_handler_map<member_function_constant<
-          bool (This::*)(const message_context&, const stored_message&) noexcept,
-          &This::_handle_board<S>>>{sudoku_query_msg(rank)};
-    }
-
-    template <unsigned S>
-    struct rank_info {
-        default_sudoku_board_traits<S> traits;
-        memory::buffer serialize_buffer;
-        int max_recursion{1};
-
-        std::vector<
-          std::tuple<identifier_t, message_sequence_t, basic_sudoku_board<S>>>
-          boards;
-
-        flat_set<identifier_t> searches;
-
-        void on_search(const identifier_t source_id) noexcept {
-            searches.insert(source_id);
-        }
-
-        void add_board(
-          endpoint& bus,
-          const identifier_t source_id,
-          const message_sequence_t sequence_no,
-          const basic_sudoku_board<S> board) noexcept {
-            if(boards.size() <= 8) [[likely]] {
-                searches.insert(source_id);
-                boards.emplace_back(source_id, sequence_no, std::move(board));
-            } else {
-                bus.log_warning("too many boards in backlog")
-                  .arg("rank", S)
-                  .arg("count", boards.size());
-            }
-        }
-
-        auto do_send_board(
-          endpoint& bus,
-          const data_compressor& compressor,
-          const auto target_id,
-          const auto sequence_no,
-          const auto& candidate,
-          const bool is_solved) {
-            serialize_buffer.ensure(
-              default_serialize_buffer_size_for(candidate));
-            const auto serialized{
-              (S >= 4) ? default_serialize_packed(
-                           candidate, cover(serialize_buffer), compressor)
-                       : default_serialize(candidate, cover(serialize_buffer))};
-            assert(serialized);
-
-            const unsigned_constant<S> rank{};
-            message_view response{extract(serialized)};
-            response.set_target_id(target_id);
-            response.set_sequence_no(sequence_no);
-            bus.post(sudoku_response_msg(rank, is_solved), response);
-        }
-
-        auto process_board(
-          endpoint& bus,
-          const data_compressor& compressor,
-          const auto target_id,
-          const auto sequence_no,
-          const auto& candidate,
-          bool& done,
-          int levels) noexcept {
-            const auto send_board = [&, this](auto& board, bool is_solved) {
-                do_send_board(
-                  bus, compressor, target_id, sequence_no, board, is_solved);
-            };
-            const auto process_recursive = [&, this](auto& board) {
-                process_board(
-                  bus,
-                  compressor,
-                  target_id,
-                  sequence_no,
-                  board,
-                  done,
-                  levels - 1);
-            };
-
-            candidate.for_each_alternative(
-              candidate.find_unsolved(), [&](const auto& intermediate) {
-                  if(intermediate.is_solved()) {
-                      send_board(intermediate, true);
-                      done = true;
-                  } else if(!done) {
-                      if(levels > 0) {
-                          process_recursive(intermediate);
-                      } else {
-                          send_board(intermediate, false);
-                      }
-                  }
-              });
-        }
-
-        auto update(endpoint& bus, const data_compressor& compressor) noexcept
-          -> work_done {
-            const unsigned_constant<S> rank{};
-            some_true something_done;
-
-            if(boards.size() < 6) {
-                for(auto target_id : searches) {
-                    message_view response{};
-                    response.set_target_id(target_id);
-                    bus.post(sudoku_alive_msg(rank), response);
-                    something_done();
-                }
-            }
-            searches.clear();
-
-            if(!boards.empty()) {
-                const auto target_id = std::get<0>(boards.back());
-                const auto sequence_no = std::get<1>(boards.back());
-                auto board = std::get<2>(boards.back());
-                boards.pop_back();
-
-                bool done{false};
-                process_board(
-                  bus,
-                  compressor,
-                  target_id,
-                  sequence_no,
-                  board,
-                  done,
-                  max_recursion);
-
-                message_view response{};
-                response.set_target_id(target_id);
-                response.set_sequence_no(sequence_no);
-                bus.post(sudoku_done_msg(rank), response);
-                something_done();
-            }
-            return something_done;
-        }
-    };
-
-    data_compressor _compressor{};
-
-    sudoku_rank_tuple<rank_info> _infos;
-
-    std::chrono::steady_clock::time_point _activity_time{
-      std::chrono::steady_clock::now()};
+    std::unique_ptr<sudoku_helper_intf> _impl{make_sudoku_helper_impl()};
 };
 //------------------------------------------------------------------------------
 /// @brief Service solving sudoku boards with the help of helper service on message bus.
