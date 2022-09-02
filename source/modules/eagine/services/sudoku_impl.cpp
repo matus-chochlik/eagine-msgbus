@@ -34,6 +34,26 @@ import <vector>;
 
 namespace eagine::msgbus {
 //------------------------------------------------------------------------------
+template <typename Function, typename... RankTuple>
+void apply_to_sudoku_rank_unit(unsigned rank, Function func, RankTuple&... t) {
+    switch(rank) {
+        case 3:
+            func(std::get<3>(t)...);
+            break;
+        case 4:
+            func(std::get<4>(t)...);
+            break;
+        case 5:
+            func(std::get<5>(t)...);
+            break;
+        case 6:
+            func(std::get<6>(t)...);
+            break;
+        default:
+            break;
+    }
+}
+//------------------------------------------------------------------------------
 // sudoku_helper_rank_info
 //------------------------------------------------------------------------------
 template <unsigned S>
@@ -363,10 +383,6 @@ struct sudoku_solver_rank_info {
     std::default_random_engine randeng{std::random_device{}()};
 
     sudoku_solver_rank_info() noexcept = default;
-
-    auto has_rank(unsigned s) const noexcept -> bool {
-        return s == S;
-    }
 
     auto has_work() const noexcept {
         return !key_boards.empty() || !pending.empty();
@@ -900,50 +916,32 @@ auto sudoku_solver_impl::has_work() const noexcept -> bool {
 }
 //------------------------------------------------------------------------------
 void sudoku_solver_impl::reset(unsigned rank) noexcept {
-    for_each_sudoku_rank_unit(
-      [rank, this](auto& info) {
-          if(info.has_rank(rank)) {
-              info.reset(*this);
-          }
-      },
-      _infos);
+    apply_to_sudoku_rank_unit(
+      rank, [rank, this](auto& info) { info.reset(*this); }, _infos);
 }
 //------------------------------------------------------------------------------
 auto sudoku_solver_impl::has_enqueued(
   const sudoku_solver_key& key,
   unsigned rank) noexcept -> bool {
     bool result = false;
-    for_each_sudoku_rank_unit(
-      [&](auto& info) {
-          if(info.has_rank(rank)) {
-              result |= info.has_enqueued(key);
-          }
-      },
-      _infos);
+    apply_to_sudoku_rank_unit(
+      rank, [&](auto& info) { result |= info.has_enqueued(key); }, _infos);
     return result;
 }
 //------------------------------------------------------------------------------
 void sudoku_solver_impl::set_solution_timeout(
   unsigned rank,
   const std::chrono::seconds sec) noexcept {
-    for_each_sudoku_rank_unit(
-      [=](auto& info) {
-          if(info.has_rank(rank)) {
-              info.solution_timeout.reset(sec);
-          }
-      },
-      _infos);
+    apply_to_sudoku_rank_unit(
+      rank, [=](auto& info) { info.solution_timeout.reset(sec); }, _infos);
 }
 //------------------------------------------------------------------------------
 auto sudoku_solver_impl::solution_timeouted(unsigned rank) const noexcept
   -> bool {
     bool result = false;
-    for_each_sudoku_rank_unit(
-      [&](const auto& info) {
-          if(info.has_rank(rank)) {
-              result |= info.solution_timeout.is_expired();
-          }
-      },
+    apply_to_sudoku_rank_unit(
+      rank,
+      [&](const auto& info) { result |= info.solution_timeout.is_expired(); },
       _infos);
     return result;
 }
@@ -952,11 +950,10 @@ auto sudoku_solver_impl::updated_by_helper(
   const identifier_t helper_id,
   const unsigned rank) const noexcept -> std::intmax_t {
     std::intmax_t result{0};
-    for_each_sudoku_rank_unit(
+    apply_to_sudoku_rank_unit(
+      rank,
       [&](const auto& info) {
-          if(info.has_rank(rank)) {
-              result += info.updated_by_helper_count(helper_id);
-          }
+          result += info.updated_by_helper_count(helper_id);
       },
       _infos);
     return result;
@@ -965,13 +962,8 @@ auto sudoku_solver_impl::updated_by_helper(
 auto sudoku_solver_impl::updated_count(const unsigned rank) const noexcept
   -> std::intmax_t {
     std::intmax_t result{0};
-    for_each_sudoku_rank_unit(
-      [&](const auto& info) {
-          if(info.has_rank(rank)) {
-              result += info.updated_count();
-          }
-      },
-      _infos);
+    apply_to_sudoku_rank_unit(
+      rank, [&](const auto& info) { result += info.updated_count(); }, _infos);
     return result;
 }
 //------------------------------------------------------------------------------
@@ -979,11 +971,10 @@ auto sudoku_solver_impl::solved_by_helper(
   const identifier_t helper_id,
   const unsigned rank) const noexcept -> std::intmax_t {
     std::intmax_t result{0};
-    for_each_sudoku_rank_unit(
+    apply_to_sudoku_rank_unit(
+      rank,
       [&](const auto& info) {
-          if(info.has_rank(rank)) {
-              result += info.solved_by_helper_count(helper_id);
-          }
+          result += info.solved_by_helper_count(helper_id);
       },
       _infos);
     return result;
@@ -992,13 +983,8 @@ auto sudoku_solver_impl::solved_by_helper(
 auto sudoku_solver_impl::solved_count(const unsigned rank) const noexcept
   -> std::intmax_t {
     std::intmax_t result{0};
-    for_each_sudoku_rank_unit(
-      [&](const auto& info) {
-          if(info.has_rank(rank)) {
-              result += info.solved_count();
-          }
-      },
-      _infos);
+    apply_to_sudoku_rank_unit(
+      rank, [&](const auto& info) { result += info.solved_count(); }, _infos);
     return result;
 }
 //------------------------------------------------------------------------------
