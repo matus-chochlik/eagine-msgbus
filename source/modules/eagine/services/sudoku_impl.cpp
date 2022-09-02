@@ -1151,7 +1151,7 @@ struct sudoku_tiling_rank_info : sudoku_tiles<S> {
       const int y,
       basic_sudoku_board<S> board) noexcept {
         tiling.solver.enqueue(std::make_tuple(x, y), std::move(board));
-        tiling.base.bus_node()
+        tiling.solver.base.bus_node()
           .log_debug("enqueuing initial board (${x}, ${y})")
           .arg("x", x)
           .arg("y", y)
@@ -1263,7 +1263,7 @@ struct sudoku_tiling_rank_info : sudoku_tiles<S> {
         }
         if(should_enqueue) {
             tiling.solver.enqueue(Coord{x, y}, board.calculate_alternatives());
-            tiling.base.bus_node()
+            tiling.solver.base.bus_node()
               .log_debug("enqueuing board (${x}, ${y})")
               .arg("x", x)
               .arg("y", y)
@@ -1294,7 +1294,7 @@ struct sudoku_tiling_rank_info : sudoku_tiles<S> {
         const auto coord{std::get<Coord>(key)};
         if(this->set_board(coord, std::move(board))) {
             cells_done += this->cells_per_tile();
-            tiling.base.bus_node()
+            tiling.solver.base.bus_node()
               .log_info("solved board (${x}, ${y})")
               .arg("rank", S)
               .arg("x", std::get<0>(coord))
@@ -1326,7 +1326,7 @@ struct sudoku_tiling_rank_info : sudoku_tiles<S> {
         for(const auto& p : helper_contrib) {
             max_count = std::max(max_count, std::get<1>(p));
         }
-        tiling.base.bus_node()
+        tiling.solver.base.bus_node()
           .log_stat("solution contributions by helpers")
           .arg("rank", S)
           .arg_func([this, max_count](logger_backend& backend) {
@@ -1360,13 +1360,11 @@ public:
     using Coord = std::tuple<int, int>;
 
     sudoku_tiling_impl(
-      subscriber& sub,
+      sudoku_solver_intf& impl,
       sudoku_solver_signals& ssigs,
-      sudoku_tiling_signals& tsigs,
-      sudoku_solver_intf& impl) noexcept
-      : base{sub}
-      , signals{tsigs}
-      , solver{static_cast<sudoku_solver_impl&>(impl)} {
+      sudoku_tiling_signals& tsigs) noexcept
+      : solver{static_cast<sudoku_solver_impl&>(impl)}
+      , signals{tsigs} {
         connect<&This::handle_solved<3>>(this, ssigs.solved_3);
         connect<&This::handle_solved<4>>(this, ssigs.solved_4);
         connect<&This::handle_solved<5>>(this, ssigs.solved_5);
@@ -1492,20 +1490,18 @@ public:
           _infos);
     }
 
-    subscriber& base;
-    sudoku_tiling_signals& signals;
     sudoku_solver_impl& solver;
+    sudoku_tiling_signals& signals;
 
 private:
     sudoku_rank_tuple<sudoku_tiling_rank_info> _infos;
 };
 //------------------------------------------------------------------------------
 auto make_sudoku_tiling_impl(
-  subscriber& base,
+  sudoku_solver_intf& solver,
   sudoku_solver_signals& ssigs,
-  sudoku_tiling_signals& tsigs,
-  sudoku_solver_intf& solver) -> std::unique_ptr<sudoku_tiling_intf> {
-    return std::make_unique<sudoku_tiling_impl>(base, ssigs, tsigs, solver);
+  sudoku_tiling_signals& tsigs) -> std::unique_ptr<sudoku_tiling_intf> {
+    return std::make_unique<sudoku_tiling_impl>(solver, ssigs, tsigs);
 }
 //------------------------------------------------------------------------------
 } // namespace eagine::msgbus

@@ -737,10 +737,9 @@ export struct sudoku_tiling_signals {
 };
 //------------------------------------------------------------------------------
 export auto make_sudoku_tiling_impl(
-  subscriber& base,
+  sudoku_solver_intf&,
   sudoku_solver_signals&,
-  sudoku_tiling_signals&,
-  sudoku_solver_intf&) -> std::unique_ptr<sudoku_tiling_intf>;
+  sudoku_tiling_signals&) -> std::unique_ptr<sudoku_tiling_intf>;
 //------------------------------------------------------------------------------
 /// @brief Service generating a sudoku tiling using helper message bus nodes.
 /// @ingroup msgbus
@@ -818,7 +817,7 @@ public:
 protected:
     sudoku_tiling(endpoint& bus) noexcept
       : base{bus}
-      , _impl{make_sudoku_tiling_impl(*this, *this, *this, base::impl())} {
+      , _impl{make_sudoku_tiling_impl(base::impl(), *this, *this)} {
         base::impl().assign_driver(_impl->driver());
     }
 
