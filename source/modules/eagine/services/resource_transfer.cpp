@@ -21,6 +21,7 @@ import :discovery;
 import :host_info;
 import <filesystem>;
 import <optional>;
+import <chrono>;
 import <tuple>;
 
 namespace eagine::msgbus {

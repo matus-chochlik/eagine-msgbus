@@ -17,6 +17,7 @@ import :types;
 import :message;
 import :interface;
 import :context;
+import <chrono>;
 import <memory>;
 
 namespace eagine::msgbus {
