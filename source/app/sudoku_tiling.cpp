@@ -54,7 +54,7 @@ private:
     void _handle_generated(
       const eagine::identifier_t,
       const sudoku_tiles<S>& tiles,
-      const std::tuple<int, int>&) noexcept {
+      const sudoku_solver_key&) noexcept {
         if(_print_progress) {
             tiles.print_progress(std::cerr) << std::flush;
         }

@@ -53,7 +53,7 @@ private:
     void onFragmentAdded(
       eagine::identifier_t,
       const eagine::msgbus::sudoku_tiles<4>&,
-      const std::tuple<int, int>&) noexcept;
+      const eagine::msgbus::sudoku_solver_key&) noexcept;
 
     void onQueueLengthChanged(
       unsigned rank,
