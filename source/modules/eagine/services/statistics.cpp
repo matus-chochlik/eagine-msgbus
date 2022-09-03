@@ -13,12 +13,6 @@ import eagine.msgbus.core;
 
 namespace eagine::msgbus {
 //------------------------------------------------------------------------------
-struct statistics_consumer_intf : interface<statistics_consumer_intf> {
-    virtual void add_methods() noexcept = 0;
-
-    virtual void query_statistics(identifier_t node_id) noexcept = 0;
-};
-//------------------------------------------------------------------------------
 /// @brief Collection of signals emitted by bus node network statistics service.
 /// @ingroup msgbus
 /// @see statistics_consumer
@@ -54,6 +48,12 @@ export struct statistics_consumer_signals {
     /// @see endpoint_stats_received
     signal<void(const connection_statistics&) noexcept>
       connection_stats_received;
+};
+//------------------------------------------------------------------------------
+struct statistics_consumer_intf : interface<statistics_consumer_intf> {
+    virtual void add_methods() noexcept = 0;
+
+    virtual void query_statistics(identifier_t node_id) noexcept = 0;
 };
 //------------------------------------------------------------------------------
 auto make_statistics_consumer_impl(subscriber&, statistics_consumer_signals&)

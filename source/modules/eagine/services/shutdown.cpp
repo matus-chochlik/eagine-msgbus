@@ -25,6 +25,26 @@ export using shutdown_service_clock = std::chrono::system_clock;
 export using shutdown_service_duration =
   std::chrono::duration<std::int64_t, std::milli>;
 //------------------------------------------------------------------------------
+/// @brief Collection of signals emitted by the shutdown target service.
+/// @ingroup msgbus
+/// @see shutdown_target
+/// @see shutdown_invoker
+export struct shutdown_target_signals {
+    /// @brief Triggered when a shutdown request is received.
+    signal<void(
+      const std::chrono::milliseconds age,
+      const identifier_t source_id,
+      const verification_bits verified) noexcept>
+      shutdown_requested;
+};
+//------------------------------------------------------------------------------
+struct shutdown_target_intf : interface<shutdown_target_intf> {
+    virtual void add_methods() noexcept = 0;
+};
+//------------------------------------------------------------------------------
+auto make_shutdown_target_impl(subscriber&, shutdown_target_signals&)
+  -> std::unique_ptr<shutdown_target_intf>;
+//------------------------------------------------------------------------------
 /// @brief Service allowing an endpoint to be shut down over the message bus.
 /// @ingroup msgbus
 /// @see service_composition
@@ -32,42 +52,19 @@ export using shutdown_service_duration =
 export template <typename Base = subscriber>
 class shutdown_target
   : public Base
-  , protected shutdown_service_clock {
-    using This = shutdown_target;
-
-public:
-    /// @brief Triggered when a shutdown request is received.
-    signal<void(
-      const std::chrono::milliseconds age,
-      const identifier_t source_id,
-      const verification_bits verified) noexcept>
-      shutdown_requested;
+  , public shutdown_target_signals {
 
 protected:
     using Base::Base;
 
     void add_methods() noexcept {
         Base::add_methods();
-        Base::add_method(
-          this, message_map<"Shutdown", "shutdown", &This::_handle_shutdown>{});
+        _impl->add_methods();
     }
 
 private:
-    auto _handle_shutdown(
-      const message_context&,
-      const stored_message& message) noexcept -> bool {
-        typename shutdown_service_duration::rep count{0};
-        if(default_deserialize(count, message.content())) {
-            const shutdown_service_duration ticks{count};
-            const typename shutdown_service_clock::time_point ts{ticks};
-            const auto age{this->now() - ts};
-            shutdown_requested(
-              std::chrono::duration_cast<std::chrono::milliseconds>(age),
-              message.source_id,
-              this->verify_bits(message));
-        }
-        return true;
-    }
+    const std::unique_ptr<shutdown_target_intf> _impl{
+      make_shutdown_target_impl(*this, *this)};
 };
 //------------------------------------------------------------------------------
 /// @brief Service allowing to shut down other endpoints over the message bus.
