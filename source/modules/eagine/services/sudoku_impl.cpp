@@ -1360,15 +1360,14 @@ public:
     using Coord = std::tuple<int, int>;
 
     sudoku_tiling_impl(
-      sudoku_solver_intf& impl,
-      sudoku_solver_signals& ssigs,
-      sudoku_tiling_signals& tsigs) noexcept
-      : solver{static_cast<sudoku_solver_impl&>(impl)}
-      , signals{tsigs} {
-        connect<&This::handle_solved<3>>(this, ssigs.solved_3);
-        connect<&This::handle_solved<4>>(this, ssigs.solved_4);
-        connect<&This::handle_solved<5>>(this, ssigs.solved_5);
-        connect<&This::handle_solved<6>>(this, ssigs.solved_6);
+      sudoku_solver_impl& impl,
+      sudoku_tiling_signals& sigs) noexcept
+      : solver{impl}
+      , signals{sigs} {
+        connect<&This::handle_solved<3>>(this, solver.signals.solved_3);
+        connect<&This::handle_solved<4>>(this, solver.signals.solved_4);
+        connect<&This::handle_solved<5>>(this, solver.signals.solved_5);
+        connect<&This::handle_solved<6>>(this, solver.signals.solved_6);
     }
 
     auto already_done(
@@ -1499,9 +1498,9 @@ private:
 //------------------------------------------------------------------------------
 auto make_sudoku_tiling_impl(
   sudoku_solver_intf& solver,
-  sudoku_solver_signals& ssigs,
   sudoku_tiling_signals& tsigs) -> std::unique_ptr<sudoku_tiling_intf> {
-    return std::make_unique<sudoku_tiling_impl>(solver, ssigs, tsigs);
+    return std::make_unique<sudoku_tiling_impl>(
+      static_cast<sudoku_solver_impl&>(solver), tsigs);
 }
 //------------------------------------------------------------------------------
 } // namespace eagine::msgbus

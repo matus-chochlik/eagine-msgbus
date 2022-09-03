@@ -736,10 +736,8 @@ export struct sudoku_tiling_signals {
     }
 };
 //------------------------------------------------------------------------------
-export auto make_sudoku_tiling_impl(
-  sudoku_solver_intf&,
-  sudoku_solver_signals&,
-  sudoku_tiling_signals&) -> std::unique_ptr<sudoku_tiling_intf>;
+export auto make_sudoku_tiling_impl(sudoku_solver_intf&, sudoku_tiling_signals&)
+  -> std::unique_ptr<sudoku_tiling_intf>;
 //------------------------------------------------------------------------------
 /// @brief Service generating a sudoku tiling using helper message bus nodes.
 /// @ingroup msgbus
@@ -817,12 +815,12 @@ public:
 protected:
     sudoku_tiling(endpoint& bus) noexcept
       : base{bus}
-      , _impl{make_sudoku_tiling_impl(base::impl(), *this, *this)} {
+      , _impl{make_sudoku_tiling_impl(base::impl(), *this)} {
         base::impl().assign_driver(_impl->driver());
     }
 
 private:
-    std::unique_ptr<sudoku_tiling_intf> _impl;
+    const std::unique_ptr<sudoku_tiling_intf> _impl;
 };
 //------------------------------------------------------------------------------
 } // namespace eagine::msgbus
