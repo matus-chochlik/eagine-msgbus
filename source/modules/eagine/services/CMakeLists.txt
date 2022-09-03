@@ -223,6 +223,7 @@ eagine_add_module(
 		tracker
 	SOURCES
 		topology_impl
+		ping_pong_impl
 		statistics_impl
 		system_info_impl
 		resource_transfer_impl
