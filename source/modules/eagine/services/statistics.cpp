@@ -9,33 +9,20 @@ export module eagine.msgbus.services:statistics;
 
 import eagine.core.types;
 import eagine.core.memory;
-import eagine.core.identifier;
 import eagine.msgbus.core;
 
 namespace eagine::msgbus {
 //------------------------------------------------------------------------------
-/// @brief Service observing message bus node network statistics.
+struct statistics_consumer_intf : interface<statistics_consumer_intf> {
+    virtual void add_methods() noexcept = 0;
+
+    virtual void query_statistics(identifier_t node_id) noexcept = 0;
+};
+//------------------------------------------------------------------------------
+/// @brief Collection of signals emitted by bus node network statistics service.
 /// @ingroup msgbus
-/// @see service_composition
-export template <typename Base = subscriber>
-class statistics_consumer : public Base {
-    using This = statistics_consumer;
-
-public:
-    /// @brief Queries the statistics information of the specified bus node.
-    /// @see discover_statistics
-    void query_statistics(identifier_t node_id) noexcept {
-        message_view message{};
-        message.set_target_id(node_id);
-        const auto msg_id{msgbus_id{"statsQuery"}};
-        this->bus_node().post(msg_id, message);
-    }
-
-    /// @brief Broadcasts network statistics query to all message bus nodes.
-    /// @see query_statistics
-    void discover_statistics() noexcept {
-        query_statistics(broadcast_endpoint_id());
-    }
+/// @see statistics_consumer
+export struct statistics_consumer_signals {
 
     /// @brief Triggered on receipt of router node statistics information.
     /// @see router_disappeared
@@ -67,60 +54,43 @@ public:
     /// @see endpoint_stats_received
     signal<void(const connection_statistics&) noexcept>
       connection_stats_received;
+};
+//------------------------------------------------------------------------------
+auto make_statistics_consumer_impl(subscriber&, statistics_consumer_signals&)
+  -> std::unique_ptr<statistics_consumer_intf>;
+//------------------------------------------------------------------------------
+/// @brief Service observing message bus node network statistics.
+/// @ingroup msgbus
+/// @see service_composition
+export template <typename Base = subscriber>
+class statistics_consumer
+  : public Base
+  , public statistics_consumer_signals {
+
+public:
+    /// @brief Queries the statistics information of the specified bus node.
+    /// @see discover_statistics
+    void query_statistics(identifier_t node_id) noexcept {
+        _impl->query_statistics(node_id);
+    }
+
+    /// @brief Broadcasts network statistics query to all message bus nodes.
+    /// @see query_statistics
+    void discover_statistics() noexcept {
+        query_statistics(broadcast_endpoint_id());
+    }
 
 protected:
     using Base::Base;
 
     void add_methods() noexcept {
         Base::add_methods();
-        Base::add_method(
-          this, msgbus_map<"statsRutr", &This::_handle_router>{});
-        Base::add_method(
-          this, msgbus_map<"statsBrdg", &This::_handle_bridge>{});
-        Base::add_method(
-          this, msgbus_map<"statsEndpt", &This::_handle_endpoint>{});
+        _impl->add_methods();
     }
 
 private:
-    auto _handle_router(
-      const message_context&,
-      const stored_message& message) noexcept -> bool {
-        router_statistics stats{};
-        if(default_deserialize(stats, message.content())) {
-            router_stats_received(message.source_id, stats);
-        }
-        return true;
-    }
-
-    auto _handle_bridge(
-      const message_context&,
-      const stored_message& message) noexcept -> bool {
-        bridge_statistics stats{};
-        if(default_deserialize(stats, message.content())) {
-            bridge_stats_received(message.source_id, stats);
-        }
-        return true;
-    }
-
-    auto _handle_endpoint(
-      const message_context&,
-      const stored_message& message) noexcept -> bool {
-        endpoint_statistics stats{};
-        if(default_deserialize(stats, message.content())) {
-            endpoint_stats_received(message.source_id, stats);
-        }
-        return true;
-    }
-
-    auto _handle_connection(
-      const message_context&,
-      const stored_message& message) noexcept -> bool {
-        connection_statistics stats{};
-        if(default_deserialize(stats, message.content())) {
-            connection_stats_received(stats);
-        }
-        return true;
-    }
+    const std::unique_ptr<statistics_consumer_intf> _impl{
+      make_statistics_consumer_impl(*this, *this)};
 };
 //------------------------------------------------------------------------------
 } // namespace eagine::msgbus

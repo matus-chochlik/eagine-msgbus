@@ -223,6 +223,8 @@ eagine_add_module(
 		tracker
 	SOURCES
 		topology_impl
+		statistics_impl
+		system_info_impl
 		resource_transfer_impl
 		sudoku_impl
 	IMPORTS
