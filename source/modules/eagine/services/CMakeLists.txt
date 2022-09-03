@@ -222,6 +222,7 @@ eagine_add_module(
 		sudoku
 		tracker
 	SOURCES
+		topology_impl
 		resource_transfer_impl
 		sudoku_impl
 	IMPORTS
