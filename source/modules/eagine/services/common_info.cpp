@@ -9,11 +9,11 @@ export module eagine.msgbus.services:common_info;
 
 import eagine.core.types;
 import eagine.msgbus.core;
-import :application_info;
-import :build_info;
-import :compiler_info;
-import :endpoint_info;
-import :host_info;
+export import :application_info;
+export import :build_info;
+export import :compiler_info;
+export import :endpoint_info;
+export import :host_info;
 
 namespace eagine::msgbus {
 

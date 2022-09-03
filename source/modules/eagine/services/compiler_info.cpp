@@ -42,13 +42,27 @@ private:
     default_function_skeleton<const compiler_info&() noexcept, 256> _respond;
 };
 //------------------------------------------------------------------------------
+/// @brief Collection of signals emitted by the compiler info consumer service.
+/// @ingroup msgbus
+/// @see service_composition
+/// @see compiler_info_provider
+/// @see compiler_info
+export struct compiler_info_consumer_signals {
+    /// @brief Triggered on receipt of endpoints compiler information.
+    /// @see query_compiler_info
+    signal<void(const result_context&, const compiler_info&) noexcept>
+      compiler_info_received;
+};
+//------------------------------------------------------------------------------
 /// @brief Service consuming information about endpoint compiler info.
 /// @ingroup msgbus
 /// @see service_composition
 /// @see compiler_info_provider
 /// @see compiler_info
 export template <typename Base = subscriber>
-class compiler_info_consumer : public Base {
+class compiler_info_consumer
+  : public Base
+  , public compiler_info_consumer_signals {
 
     using This = compiler_info_consumer;
 
@@ -60,18 +74,13 @@ public:
           this->bus_node(), endpoint_id, {"eagiCplInf", "request"});
     }
 
-    /// @brief Triggered on receipt of endpoints compiler information.
-    /// @see query_compiler_info
-    signal<void(const result_context&, const compiler_info&) noexcept>
-      compiler_info_received;
-
 protected:
     using Base::Base;
 
     void add_methods() noexcept {
         Base::add_methods();
 
-        Base::add_method(_compiler(compiler_info_received)
+        Base::add_method(_compiler(this->compiler_info_received)
                            .map_fulfill_by({"eagiCplInf", "response"}));
     }
 

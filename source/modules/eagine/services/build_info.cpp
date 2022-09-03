@@ -42,13 +42,26 @@ private:
     default_function_skeleton<const version_info&() noexcept, 256> _respond;
 };
 //------------------------------------------------------------------------------
+/// @brief Collection of signals emitted by the build info provider service.
+/// @ingroup msgbus
+/// @see build_info_provider
+/// @see build_info
+export struct build_version_info_consumer_signals {
+    /// @brief Triggered on receipt of endpoint's build version information.
+    /// @see query_build_info
+    signal<void(const result_context&, const version_info&) noexcept>
+      build_version_info_received;
+};
+//------------------------------------------------------------------------------
 /// @brief Service consuming information about endpoint build version.
 /// @ingroup msgbus
 /// @see service_composition
 /// @see build_info_provider
 /// @see build_info
 template <typename Base = subscriber>
-class build_version_info_consumer : public Base {
+class build_version_info_consumer
+  : public Base
+  , public build_version_info_consumer_signals {
 
     using This = build_version_info_consumer;
 
@@ -60,18 +73,13 @@ public:
           this->bus_node(), endpoint_id, {"eagiBldInf", "request"});
     }
 
-    /// @brief Triggered on receipt of endpoint's build version information.
-    /// @see query_build_info
-    signal<void(const result_context&, const version_info&) noexcept>
-      build_version_info_received;
-
 protected:
     using Base::Base;
 
     void add_methods() noexcept {
         Base::add_methods();
 
-        Base::add_method(_build_version(build_version_info_received)
+        Base::add_method(_build_version(this->build_version_info_received)
                            .map_fulfill_by({"eagiBldInf", "response"}));
     }
 

@@ -228,6 +228,7 @@ eagine_add_module(
 		statistics_impl
 		system_info_impl
 		resource_transfer_impl
+		tracker_impl
 		sudoku_impl
 	IMPORTS
 )

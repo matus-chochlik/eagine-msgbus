@@ -54,13 +54,27 @@ private:
     endpoint_info _info;
 };
 //------------------------------------------------------------------------------
+/// @brief Collection of signals emitted by the endpoint info consumer service.
+/// @ingroup msgbus
+/// @see service_composition
+/// @see endpoint_info_provider
+/// @see endpoint_info
+export struct endpoint_info_consumer_signals {
+    /// @brief Triggered on receipt of basic endpoint information.
+    /// @see query_endpoint_info
+    signal<void(const result_context&, const endpoint_info&) noexcept>
+      endpoint_info_received;
+};
+//------------------------------------------------------------------------------
 /// @brief Service consuming basic information about message bus endpoint.
 /// @ingroup msgbus
 /// @see service_composition
 /// @see endpoint_info_provider
 /// @see endpoint_info
 export template <typename Base = subscriber>
-class endpoint_info_consumer : public Base {
+class endpoint_info_consumer
+  : public Base
+  , public endpoint_info_consumer_signals {
 
 public:
     /// @brief Queries basic information about the specified endpoint.
@@ -70,18 +84,13 @@ public:
           this->bus_node(), endpoint_id, message_id{"eagiEptInf", "request"});
     }
 
-    /// @brief Triggered on receipt of basic endpoint information.
-    /// @see query_endpoint_info
-    signal<void(const result_context&, const endpoint_info&) noexcept>
-      endpoint_info_received;
-
 protected:
     using Base::Base;
 
     void add_methods() noexcept {
         Base::add_methods();
 
-        Base::add_method(_info(endpoint_info_received)
+        Base::add_method(_info(this->endpoint_info_received)
                            .map_fulfill_by({"eagiEptInf", "response"}));
     }
 

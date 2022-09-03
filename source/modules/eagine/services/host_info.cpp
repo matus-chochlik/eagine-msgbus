@@ -53,12 +53,29 @@ private:
       _hostname;
 };
 //------------------------------------------------------------------------------
+export struct host_info_consumer_signals {
+    /// @brief Triggered on receipt of endpoint's host identifier.
+    /// @see query_host_id
+    signal<
+      void(const result_context&, const valid_if_positive<host_id_t>&) noexcept>
+      host_id_received;
+
+    /// @brief Triggered on receipt of endpoint's host name.
+    /// @see query_hostname
+    signal<void(
+      const result_context&,
+      const valid_if_not_empty<std::string>&) noexcept>
+      hostname_received;
+};
+//------------------------------------------------------------------------------
 /// @brief Service consuming basic information about message bus endpoint's host.
 /// @ingroup msgbus
 /// @see service_composition
 /// @see host_info_provider
 export template <typename Base = subscriber>
-class host_info_consumer : public Base {
+class host_info_consumer
+  : public Base
+  , public host_info_consumer_signals {
 
     using This = host_info_consumer;
 
@@ -71,12 +88,6 @@ public:
           this->bus_node(), endpoint_id, message_id{"eagiSysInf", "rqHostId"});
     }
 
-    /// @brief Triggered on receipt of endpoint's host identifier.
-    /// @see query_host_id
-    signal<
-      void(const result_context&, const valid_if_positive<host_id_t>&) noexcept>
-      host_id_received;
-
     /// @brief Queries the endpoint's host name.
     /// @see hostname_received
     /// @see query_host_id
@@ -87,23 +98,16 @@ public:
           message_id{"eagiSysInf", "rqHostname"});
     }
 
-    /// @brief Triggered on receipt of endpoint's host name.
-    /// @see query_hostname
-    signal<void(
-      const result_context&,
-      const valid_if_not_empty<std::string>&) noexcept>
-      hostname_received;
-
 protected:
     using Base::Base;
 
     void add_methods() noexcept {
         Base::add_methods();
 
-        Base::add_method(
-          _host_id(host_id_received).map_fulfill_by({"eagiSysInf", "hostId"}));
+        Base::add_method(_host_id(this->host_id_received)
+                           .map_fulfill_by({"eagiSysInf", "hostId"}));
 
-        Base::add_method(_hostname(hostname_received)
+        Base::add_method(_hostname(this->hostname_received)
                            .map_fulfill_by({"eagiSysInf", "hostname"}));
     }
 
