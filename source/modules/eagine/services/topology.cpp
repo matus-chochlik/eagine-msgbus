@@ -17,6 +17,8 @@ import <memory>;
 namespace eagine::msgbus {
 //------------------------------------------------------------------------------
 struct network_topology_intf : interface<network_topology_intf> {
+    virtual void add_methods(subscriber& base) noexcept = 0;
+
     virtual void query_topology(
       endpoint& bus,
       const identifier_t node_id) noexcept = 0;
@@ -24,7 +26,7 @@ struct network_topology_intf : interface<network_topology_intf> {
 //------------------------------------------------------------------------------
 /// @brief Collection of signals emitted by the network topology service
 /// @ingroup msgbus
-/// @see service_composition
+/// @see network_topology
 export struct network_topology_signals {
 
     /// @brief Triggered on receipt of router node topology information.
@@ -93,6 +95,7 @@ protected:
 
     void add_methods() noexcept {
         Base::add_methods();
+        _impl->add_methods(*this);
     }
 
 private:

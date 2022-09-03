@@ -18,10 +18,12 @@ class network_topology_impl : public network_topology_intf {
     using This = network_topology_impl;
 
 public:
-    network_topology_impl(
-      subscriber& base,
-      network_topology_signals& sigs) noexcept
-      : signals{sigs} {
+    network_topology_impl(subscriber&, network_topology_signals& sigs) noexcept
+      : signals{sigs} {}
+
+    network_topology_signals& signals;
+
+    void add_methods(subscriber& base) noexcept final {
         base.add_method(
           this, msgbus_map<"topoRutrCn", &This::_handle_router>{});
         base.add_method(
@@ -35,8 +37,6 @@ public:
         base.add_method(
           this, msgbus_map<"byeByeEndp", &This::_handle_endpoint_bye>{});
     }
-
-    network_topology_signals& signals;
 
     void query_topology(endpoint& bus, const identifier_t node_id) noexcept
       final {
