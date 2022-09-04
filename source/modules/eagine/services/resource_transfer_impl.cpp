@@ -24,6 +24,8 @@ import <tuple>;
 
 namespace eagine::msgbus {
 //------------------------------------------------------------------------------
+// single_byte_blob_io
+//------------------------------------------------------------------------------
 class single_byte_blob_io final : public blob_io {
 public:
     single_byte_blob_io(const span_size_t size, const byte value) noexcept
@@ -44,6 +46,8 @@ private:
     byte _value;
 };
 //------------------------------------------------------------------------------
+// random_byte_blob_io
+//------------------------------------------------------------------------------
 class random_byte_blob_io final : public blob_io {
 public:
     random_byte_blob_io(span_size_t size) noexcept
@@ -63,6 +67,8 @@ private:
     span_size_t _size;
     std::default_random_engine _re;
 };
+//------------------------------------------------------------------------------
+// file_blob_io
 //------------------------------------------------------------------------------
 class file_blob_io final : public blob_io {
 public:
@@ -124,22 +130,99 @@ private:
     span_size_t _size{0};
 };
 //------------------------------------------------------------------------------
-resource_server_impl::resource_server_impl(main_ctx_parent parent) noexcept
-  : _blobs{
-      parent,
-      message_id{"eagiRsrces", "fragment"},
-      message_id{"eagiRsrces", "fragResend"}} {}
+// resource_server_impl
 //------------------------------------------------------------------------------
-auto resource_server_impl::update(endpoint& bus) noexcept -> work_done {
-    some_true something_done{_blobs.update(bus.post_callable())};
-    const auto opt_max_size = bus.max_data_size();
-    if(opt_max_size) [[likely]] {
-        something_done(
-          _blobs.process_outgoing(bus.post_callable(), extract(opt_max_size)));
+class resource_server_impl : public resource_server_intf {
+public:
+    resource_server_impl(subscriber& sub, resource_server_driver& drvr) noexcept;
+
+    void add_methods() noexcept final {
+        base.add_method(
+          this,
+          message_map<
+            "eagiRsrces",
+            "qryResurce",
+            &resource_server_impl::_handle_has_resource_query>{});
+        base.add_method(
+          this,
+          message_map<
+            "eagiRsrces",
+            "getContent",
+            &resource_server_impl::_handle_resource_content_request>{});
+        base.add_method(
+          this,
+          message_map<
+            "eagiRsrces",
+            "fragResend",
+            &resource_server_impl::_handle_resource_resend_request>{});
+    }
+    auto update() noexcept -> work_done final {
+        {
+            auto& bus = base.bus_node();
+            some_true something_done{_blobs.update(bus.post_callable())};
+            const auto opt_max_size = bus.max_data_size();
+            if(opt_max_size) [[likely]] {
+                something_done(_blobs.process_outgoing(
+                  bus.post_callable(), extract(opt_max_size)));
+            }
+
+            return something_done;
+        }
     }
 
-    return something_done;
+    void set_file_root(const std::filesystem::path& root_path) noexcept final {
+        _root_path = std::filesystem::canonical(root_path);
+    }
+
+    auto is_contained(const std::filesystem::path& file_path) const noexcept
+      -> bool;
+
+    auto get_file_path(const url& locator) const noexcept
+      -> std::filesystem::path;
+
+    auto has_resource(const message_context&, const url& locator) noexcept
+      -> bool;
+
+    auto get_resource(
+      const message_context& ctx,
+      const url& locator,
+      const identifier_t endpoint_id,
+      const message_priority priority) -> std::
+      tuple<std::unique_ptr<blob_io>, std::chrono::seconds, message_priority>;
+
+private:
+    auto _handle_has_resource_query(
+      const message_context& ctx,
+      const stored_message& message) noexcept -> bool;
+
+    auto _handle_resource_content_request(
+      const message_context& ctx,
+      const stored_message& message) noexcept -> bool;
+
+    auto _handle_resource_resend_request(
+      const message_context& ctx,
+      const stored_message& message) noexcept -> bool;
+
+    subscriber& base;
+    resource_server_driver& driver;
+    blob_manipulator _blobs;
+    std::filesystem::path _root_path{};
+};
+//------------------------------------------------------------------------------
+auto make_resource_server_impl(subscriber& sub, resource_server_driver& drvr)
+  -> std::unique_ptr<resource_server_intf> {
+    return std::make_unique<resource_server_impl>(sub, drvr);
 }
+//------------------------------------------------------------------------------
+resource_server_impl::resource_server_impl(
+  subscriber& sub,
+  resource_server_driver& drvr) noexcept
+  : base{sub}
+  , driver{drvr}
+  , _blobs{
+      base,
+      message_id{"eagiRsrces", "fragment"},
+      message_id{"eagiRsrces", "fragResend"}} {}
 //------------------------------------------------------------------------------
 auto resource_server_impl::is_contained(
   const std::filesystem::path& file_path) const noexcept -> bool {
@@ -170,10 +253,9 @@ auto resource_server_impl::get_file_path(const url& locator) const noexcept
 }
 //------------------------------------------------------------------------------
 auto resource_server_impl::has_resource(
-  resource_server_intf& impl,
   const message_context&,
   const url& locator) noexcept -> bool {
-    if(const auto has_res{impl.has_resource(locator)}) {
+    if(const auto has_res{driver.has_resource(locator)}) {
         return true;
     } else if(has_res.is(indeterminate)) {
         if(locator.has_scheme("eagires")) {
@@ -194,13 +276,12 @@ auto resource_server_impl::has_resource(
 }
 //------------------------------------------------------------------------------
 auto resource_server_impl::get_resource(
-  resource_server_intf& impl,
   const message_context& ctx,
   const url& locator,
   const identifier_t endpoint_id,
   const message_priority priority)
   -> std::tuple<std::unique_ptr<blob_io>, std::chrono::seconds, message_priority> {
-    auto read_io = impl.get_resource_io(endpoint_id, locator);
+    auto read_io = driver.get_resource_io(endpoint_id, locator);
     if(!read_io) {
         if(locator.has_scheme("eagires")) {
             if(const auto count{locator.argument("count")}) {
@@ -238,23 +319,22 @@ auto resource_server_impl::get_resource(
     }
 
     const auto max_time =
-      read_io ? impl.get_blob_timeout(endpoint_id, read_io->total_size())
+      read_io ? driver.get_blob_timeout(endpoint_id, read_io->total_size())
               : std::chrono::seconds{};
 
     return {
       std::move(read_io),
       max_time,
-      impl.get_blob_priority(endpoint_id, priority)};
+      driver.get_blob_priority(endpoint_id, priority)};
 }
 //------------------------------------------------------------------------------
-auto resource_server_impl::handle_has_resource_query(
-  resource_server_intf& impl,
+auto resource_server_impl::_handle_has_resource_query(
   const message_context& ctx,
   const stored_message& message) noexcept -> bool {
     std::string url_str;
     if(default_deserialize(url_str, message.content())) [[likely]] {
         const url locator{std::move(url_str)};
-        if(has_resource(impl, ctx, locator)) {
+        if(has_resource(ctx, locator)) {
             message_view response{message.content()};
             response.setup_response(message);
             ctx.bus_node().post(
@@ -269,8 +349,7 @@ auto resource_server_impl::handle_has_resource_query(
     return true;
 }
 //------------------------------------------------------------------------------
-auto resource_server_impl::handle_resource_content_request(
-  resource_server_intf& impl,
+auto resource_server_impl::_handle_resource_content_request(
   const message_context& ctx,
   const stored_message& message) noexcept -> bool {
     std::string url_str;
@@ -282,7 +361,7 @@ auto resource_server_impl::handle_resource_content_request(
           .arg("url", "URL", locator.str());
 
         auto [read_io, max_time, priority] =
-          get_resource(impl, ctx, locator, message.source_id, message.priority);
+          get_resource(ctx, locator, message.source_id, message.priority);
         if(read_io) {
             _blobs.push_outgoing(
               message_id{"eagiRsrces", "content"},
@@ -308,8 +387,7 @@ auto resource_server_impl::handle_resource_content_request(
     return true;
 }
 //------------------------------------------------------------------------------
-auto resource_server_impl::handle_resource_resend_request(
-  resource_server_intf&,
+auto resource_server_impl::_handle_resource_resend_request(
   const message_context&,
   const stored_message& message) noexcept -> bool {
     _blobs.process_resend(message);

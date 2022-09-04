@@ -26,7 +26,7 @@ import <tuple>;
 
 namespace eagine::msgbus {
 //------------------------------------------------------------------------------
-export struct resource_server_intf : interface<resource_server_intf> {
+export struct resource_server_driver : interface<resource_server_driver> {
     virtual auto has_resource(const url&) noexcept -> tribool {
         return indeterminate;
     }
@@ -49,123 +49,54 @@ export struct resource_server_intf : interface<resource_server_intf> {
     }
 };
 //------------------------------------------------------------------------------
-export class resource_server_impl {
-public:
-    resource_server_impl(main_ctx_parent parent) noexcept;
+struct resource_server_intf : interface<resource_server_intf> {
+    virtual void add_methods() noexcept = 0;
+    virtual auto update() noexcept -> work_done = 0;
 
-    auto update(endpoint& bus) noexcept -> work_done;
-
-    void set_file_root(const std::filesystem::path& root_path) noexcept {
-        _root_path = std::filesystem::canonical(root_path);
-    }
-
-    auto is_contained(const std::filesystem::path& file_path) const noexcept
-      -> bool;
-
-    auto get_file_path(const url& locator) const noexcept
-      -> std::filesystem::path;
-
-    auto has_resource(
-      resource_server_intf& impl,
-      const message_context&,
-      const url& locator) noexcept -> bool;
-
-    auto get_resource(
-      resource_server_intf& impl,
-      const message_context& ctx,
-      const url& locator,
-      const identifier_t endpoint_id,
-      const message_priority priority) -> std::
-      tuple<std::unique_ptr<blob_io>, std::chrono::seconds, message_priority>;
-
-    auto handle_has_resource_query(
-      resource_server_intf& impl,
-      const message_context& ctx,
-      const stored_message& message) noexcept -> bool;
-
-    auto handle_resource_content_request(
-      resource_server_intf& impl,
-      const message_context& ctx,
-      const stored_message& message) noexcept -> bool;
-
-    auto handle_resource_resend_request(
-      resource_server_intf& impl,
-      const message_context&,
-      const stored_message& message) noexcept -> bool;
-
-private:
-    blob_manipulator _blobs;
-    std::filesystem::path _root_path{};
+    virtual void set_file_root(
+      const std::filesystem::path& root_path) noexcept = 0;
 };
+//------------------------------------------------------------------------------
+auto make_resource_server_impl(subscriber&, resource_server_driver&)
+  -> std::unique_ptr<resource_server_intf>;
 //------------------------------------------------------------------------------
 /// @brief Service providing access to files and/or blobs over the message bus.
 /// @ingroup msgbus
 /// @see service_composition
 /// @see resource_manipulator
 export template <typename Base = subscriber>
-class resource_server
-  : public Base
-  , public resource_server_intf {
+class resource_server : public Base {
     using This = resource_server;
+
+    resource_server_driver _default_driver;
 
 public:
     void set_file_root(const std::filesystem::path& root_path) noexcept {
-        _impl.set_file_root(root_path);
+        _impl->set_file_root(root_path);
     }
 
 protected:
-    using Base::Base;
+    resource_server(endpoint& bus, resource_server_driver& drvr) noexcept
+      : Base{bus}
+      , _impl{make_resource_server_impl(*this, drvr)} {}
+
+    resource_server(endpoint& bus) noexcept
+      : resource_server{bus, _default_driver} {}
 
     void add_methods() noexcept {
         Base::add_methods();
-
-        Base::add_method(
-          this,
-          message_map<
-            "eagiRsrces",
-            "qryResurce",
-            &This::_handle_has_resource_query>{});
-        Base::add_method(
-          this,
-          message_map<
-            "eagiRsrces",
-            "getContent",
-            &This::_handle_resource_content_request>{});
-        Base::add_method(
-          this,
-          message_map<
-            "eagiRsrces",
-            "fragResend",
-            &This::_handle_resource_resend_request>{});
+        _impl->add_methods();
     }
 
     auto update() noexcept -> work_done {
         some_true something_done{Base::update()};
-        something_done(_impl.update(this->bus_node()));
+        something_done(_impl->update());
 
         return something_done;
     }
 
 private:
-    auto _handle_has_resource_query(
-      const message_context& ctx,
-      const stored_message& message) noexcept -> bool {
-        return _impl.handle_has_resource_query(*this, ctx, message);
-    }
-
-    auto _handle_resource_content_request(
-      const message_context& ctx,
-      const stored_message& message) noexcept -> bool {
-        return _impl.handle_resource_content_request(*this, ctx, message);
-    }
-
-    auto _handle_resource_resend_request(
-      const message_context& ctx,
-      const stored_message& message) noexcept -> bool {
-        return _impl.handle_resource_resend_request(*this, ctx, message);
-    }
-
-    resource_server_impl _impl{*this};
+    const std::unique_ptr<resource_server_intf> _impl;
 };
 //------------------------------------------------------------------------------
 /// @brief Service manipulating files over the message bus.
