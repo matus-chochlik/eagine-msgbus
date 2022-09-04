@@ -539,7 +539,7 @@ auto blob_manipulator::cancel_incoming(
     return false;
 }
 //------------------------------------------------------------------------------
-auto blob_manipulator::message_size(
+auto blob_manipulator::_message_size(
   const pending_blob& pending,
   const span_size_t max_message_size) const noexcept -> span_size_t {
     switch(pending.priority) {
@@ -623,7 +623,7 @@ auto blob_manipulator::process_outgoing(
               limit_cast<std::int64_t>(pending.total_size));
 
             block_data_sink sink(
-              _scratch_block(message_size(pending, max_message_size)));
+              _scratch_block(_message_size(pending, max_message_size)));
             default_serializer_backend backend(sink);
 
             const auto errors = serialize(header, backend);
