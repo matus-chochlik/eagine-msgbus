@@ -149,6 +149,7 @@ inline void parent_router::announce_id(
 inline auto parent_router::update(
   main_ctx_object& user,
   const identifier_t id_base) noexcept -> work_done {
+    const auto exec_time{user.measure_time_interval("parentUpdt")};
     some_true something_done{};
 
     if(the_connection) [[likely]] {
@@ -1322,6 +1323,7 @@ auto router::do_work_by_router() noexcept -> work_done {
 }
 //------------------------------------------------------------------------------
 auto router::update(const valid_if_positive<int>& count) noexcept -> work_done {
+    const auto exec_time{measure_time_interval("busUpdate")};
     some_true something_done{};
 
     something_done(do_maintenance());

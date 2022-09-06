@@ -243,6 +243,7 @@ void pending_blob::merge_resend_request(
 //------------------------------------------------------------------------------
 auto blob_manipulator::update(
   const blob_manipulator::send_handler do_send) noexcept -> work_done {
+    const auto exec_time{measure_time_interval("blobUpdate")};
     const auto now = std::chrono::steady_clock::now();
     some_true something_done{};
 
