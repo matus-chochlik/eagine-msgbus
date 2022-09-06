@@ -30,6 +30,23 @@
 	<file>tiles/b16_E.svg</file>
 	<file>tiles/b16_F.svg</file>
 
+	<file>tiles/grayscale_0.svg</file>
+	<file>tiles/grayscale_1.svg</file>
+	<file>tiles/grayscale_2.svg</file>
+	<file>tiles/grayscale_3.svg</file>
+	<file>tiles/grayscale_4.svg</file>
+	<file>tiles/grayscale_5.svg</file>
+	<file>tiles/grayscale_6.svg</file>
+	<file>tiles/grayscale_7.svg</file>
+	<file>tiles/grayscale_8.svg</file>
+	<file>tiles/grayscale_9.svg</file>
+	<file>tiles/grayscale_A.svg</file>
+	<file>tiles/grayscale_B.svg</file>
+	<file>tiles/grayscale_C.svg</file>
+	<file>tiles/grayscale_D.svg</file>
+	<file>tiles/grayscale_E.svg</file>
+	<file>tiles/grayscale_F.svg</file>
+
 	<file>tiles/nodes_0.svg</file>
 	<file>tiles/nodes_1.svg</file>
 	<file>tiles/nodes_2.svg</file>
