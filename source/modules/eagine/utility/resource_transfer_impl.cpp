@@ -12,15 +12,14 @@ import eagine.core.valid_if;
 import eagine.core.runtime;
 import eagine.core.logging;
 import eagine.msgbus.core;
+import eagine.msgbus.services;
 import <chrono>;
 import <filesystem>;
 import <string>;
 
 namespace eagine::msgbus {
 //------------------------------------------------------------------------------
-resource_data_server_node::resource_data_server_node(endpoint& bus)
-  : main_ctx_object{"FileServer", bus}
-  , base{bus} {
+void resource_data_server_node::_init() {
     connect<&resource_data_server_node::_handle_shutdown>(
       this, shutdown_requested);
     auto& info = provided_endpoint_info();

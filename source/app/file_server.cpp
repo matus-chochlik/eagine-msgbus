@@ -33,6 +33,9 @@ import <thread>;
 namespace eagine {
 namespace msgbus {
 //------------------------------------------------------------------------------
+#if EAGINE_MSGBUS_MODULE
+using file_server_node = resource_data_server_node;
+#else
 using file_server_node_base = service_composition<require_services<
   subscriber,
   shutdown_target,
@@ -73,6 +76,7 @@ private:
 
     bool _done{false};
 };
+#endif
 //------------------------------------------------------------------------------
 } // namespace msgbus
 

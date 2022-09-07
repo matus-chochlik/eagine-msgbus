@@ -10,11 +10,13 @@ export module eagine.msgbus.utility:resource_transfer;
 import eagine.core.types;
 import eagine.core.memory;
 import eagine.core.identifier;
+import eagine.core.valid_if;
 import eagine.core.runtime;
 import eagine.core.main_ctx;
 import eagine.msgbus.core;
 import eagine.msgbus.services;
 import <chrono>;
+import <filesystem>;
 
 namespace eagine::msgbus {
 //------------------------------------------------------------------------------
@@ -30,8 +32,14 @@ export class resource_data_server_node
   , public resource_data_server_node_base {
     using base = resource_data_server_node_base;
 
+    void _init();
+
 public:
-    resource_data_server_node(endpoint& bus);
+    resource_data_server_node(endpoint& bus)
+      : main_ctx_object{"RsrcServer", bus}
+      , base{bus} {
+        _init();
+    }
 
     auto is_done() const noexcept -> bool {
         return _done;
