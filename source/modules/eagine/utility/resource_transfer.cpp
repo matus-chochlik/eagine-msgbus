@@ -41,6 +41,12 @@ public:
         _init();
     }
 
+    resource_data_server_node(endpoint& bus, resource_server_driver& drvr)
+      : main_ctx_object{"RsrcServer", bus}
+      , base{bus, drvr} {
+        _init();
+    }
+
     auto is_done() const noexcept -> bool {
         return _done;
     }

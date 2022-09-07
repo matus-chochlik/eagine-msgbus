@@ -55,6 +55,11 @@ public:
         auto& info = provided_endpoint_info();
         info.display_name = "file server node";
         info.description = "message bus file server";
+
+        if(const auto fs_root_path{
+             ctx.config().get<std::string>("msgbus.file_server.root_path")}) {
+            the_file_server.set_file_root(extract(fs_root_path));
+        }
     }
 
     auto is_done() const noexcept -> bool {
@@ -93,10 +98,6 @@ auto main(main_ctx& ctx) -> int {
     msgbus::file_server_node the_file_server{bus};
     conn_setup.setup_connectors(the_file_server, address);
 
-    if(const auto fs_root_path{
-         ctx.config().get<std::string>("msgbus.file_server.root_path")}) {
-        the_file_server.set_file_root(extract(fs_root_path));
-    }
     auto& wd = ctx.watchdog();
     wd.declare_initialized();
 
