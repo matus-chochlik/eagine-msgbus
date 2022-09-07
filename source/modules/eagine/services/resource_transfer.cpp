@@ -16,12 +16,27 @@ import eagine.core.runtime;
 import eagine.msgbus.core;
 import :discovery;
 import :host_info;
+import <chrono>;
 import <filesystem>;
 import <optional>;
-import <chrono>;
 import <tuple>;
 
 namespace eagine::msgbus {
+//------------------------------------------------------------------------------
+export struct blob_stream_signals {
+    signal<void(
+      const url& locator,
+      const span_size_t offset,
+      const memory::span<const memory::const_block>) noexcept>
+      blob_stream_data_appended;
+
+    signal<void(const url& locator) noexcept> blob_stream_cancelled;
+};
+//------------------------------------------------------------------------------
+export auto make_blob_stream_io(
+  url loc,
+  blob_stream_signals& sigs,
+  memory::buffer_pool& buffers) -> std::unique_ptr<blob_io>;
 //------------------------------------------------------------------------------
 export struct resource_server_driver : interface<resource_server_driver> {
     virtual auto has_resource(const url&) noexcept -> tribool {
