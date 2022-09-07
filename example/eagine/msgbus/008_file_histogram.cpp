@@ -1,4 +1,4 @@
-/// @example eagine/msgbus/006_file_histogram.cpp
+/// @example eagine/msgbus/008_file_histogram.cpp
 ///
 /// Copyright Matus Chochlik.
 /// Distributed under the Boost Software License, Version 1.0.
