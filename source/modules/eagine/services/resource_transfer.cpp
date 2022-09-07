@@ -30,6 +30,8 @@ export struct blob_stream_signals {
       const memory::span<const memory::const_block>) noexcept>
       blob_stream_data_appended;
 
+    signal<void(const url& locator) noexcept> blob_stream_finished;
+
     signal<void(const url& locator) noexcept> blob_stream_cancelled;
 };
 //------------------------------------------------------------------------------

@@ -49,7 +49,7 @@ public:
       const message_id,
       const message_age,
       const message_info&) noexcept final {
-        _append(_offs_done, {});
+        signals.blob_stream_finished(_locator);
     }
 
     void handle_cancelled() noexcept final {
