@@ -8,7 +8,10 @@ eagine_add_module(
 		eagine.core.types
 		eagine.core.memory
 		eagine.core.identifier
+		eagine.core.container
+		eagine.core.valid_if
 		eagine.core.runtime
+		eagine.core.main_ctx
 		eagine.msgbus.core
 		eagine.msgbus.services
 )

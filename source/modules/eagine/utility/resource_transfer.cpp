@@ -10,6 +10,7 @@ export module eagine.msgbus.utility:resource_transfer;
 import eagine.core.types;
 import eagine.core.memory;
 import eagine.core.identifier;
+import eagine.core.container;
 import eagine.core.valid_if;
 import eagine.core.runtime;
 import eagine.core.main_ctx;
@@ -58,6 +59,30 @@ private:
       const verification_bits verified) noexcept;
 
     bool _done{false};
+};
+//------------------------------------------------------------------------------
+export using resource_data_consumer_node_base =
+  service_composition<require_services<subscriber, resource_manipulator>>;
+//------------------------------------------------------------------------------
+export class resource_data_consumer_node
+  : public main_ctx_object
+  , public resource_data_consumer_node_base {
+    using base = resource_data_consumer_node_base;
+
+    void _init();
+
+public:
+    resource_data_consumer_node(endpoint& bus)
+      : main_ctx_object{"RsrcCnsmer", bus}
+      , base{bus} {
+        _init();
+    }
+
+private:
+    void _handle_server_appeared(identifier_t) noexcept;
+    void _handle_server_lost(identifier_t) noexcept;
+
+    flat_set<identifier_t> _server_ids;
 };
 //------------------------------------------------------------------------------
 } // namespace eagine::msgbus

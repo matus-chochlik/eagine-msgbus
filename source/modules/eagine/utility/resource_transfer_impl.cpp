@@ -19,6 +19,8 @@ import <string>;
 
 namespace eagine::msgbus {
 //------------------------------------------------------------------------------
+// resource_data_server_node
+//------------------------------------------------------------------------------
 void resource_data_server_node::_init() {
     connect<&resource_data_server_node::_handle_shutdown>(
       this, shutdown_requested);
@@ -42,6 +44,25 @@ void resource_data_server_node::_handle_shutdown(
       .arg("verified", verified);
 
     _done = true;
+}
+//------------------------------------------------------------------------------
+// resource_data_consumer_node
+//------------------------------------------------------------------------------
+void resource_data_consumer_node::_init() {
+    connect<&resource_data_consumer_node::_handle_server_appeared>(
+      this, resource_server_appeared);
+    connect<&resource_data_consumer_node::_handle_server_lost>(
+      this, resource_server_lost);
+}
+//------------------------------------------------------------------------------
+void resource_data_consumer_node::_handle_server_appeared(
+  identifier_t endpoint_id) noexcept {
+    _server_ids.insert(endpoint_id);
+}
+//------------------------------------------------------------------------------
+void resource_data_consumer_node::_handle_server_lost(
+  identifier_t endpoint_id) noexcept {
+    _server_ids.erase(endpoint_id);
 }
 //------------------------------------------------------------------------------
 } // namespace eagine::msgbus
