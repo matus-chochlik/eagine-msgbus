@@ -40,6 +40,9 @@ export auto make_blob_stream_io(
   blob_stream_signals& sigs,
   memory::buffer_pool& buffers) -> std::unique_ptr<blob_io>;
 //------------------------------------------------------------------------------
+export auto get_blob_io_locator(blob_io&)
+  -> optional_reference_wrapper<const url>;
+//------------------------------------------------------------------------------
 export struct resource_server_driver : interface<resource_server_driver> {
     virtual auto has_resource(const url&) noexcept -> tribool {
         return indeterminate;

@@ -42,6 +42,10 @@ public:
       , _locator{std::move(loc)}
       , _buffers{buffers} {}
 
+    auto locator() const noexcept -> const url& {
+        return _locator;
+    }
+
     auto store_fragment(span_size_t offset, memory::const_block data) noexcept
       -> bool final;
 
@@ -83,6 +87,13 @@ auto make_blob_stream_io(
   blob_stream_signals& sigs,
   memory::buffer_pool& buffers) -> std::unique_ptr<blob_io> {
     return std::make_unique<blob_stream_io>(std::move(loc), sigs, buffers);
+}
+//------------------------------------------------------------------------------
+auto get_blob_io_locator(blob_io& io) -> optional_reference_wrapper<const url> {
+    if(const auto bsio{dynamic_cast<blob_stream_io*>(&io)}) {
+        return {bsio->locator()};
+    }
+    return {nothing};
 }
 //------------------------------------------------------------------------------
 auto blob_stream_io::store_fragment(
