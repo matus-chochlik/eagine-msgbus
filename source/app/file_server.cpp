@@ -56,9 +56,9 @@ public:
         info.display_name = "file server node";
         info.description = "message bus file server";
 
-        if(const auto fs_root_path{
-             ctx.config().get<std::string>("msgbus.file_server.root_path")}) {
-            the_file_server.set_file_root(extract(fs_root_path));
+        if(const auto fs_root_path{bus.main_context().config().get<std::string>(
+             "msgbus.file_server.root_path")}) {
+            set_file_root(extract(fs_root_path));
         }
     }
 
