@@ -24,6 +24,7 @@
 #include <cmath>
 #include <random>
 #include <tuple>
+#include <variant>
 #include <vector>
 
 namespace eagine::msgbus {
