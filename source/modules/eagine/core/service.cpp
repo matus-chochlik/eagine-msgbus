@@ -36,8 +36,9 @@ class service_composition
 
 public:
     /// @brief Construction from a reference to an endpoint.
-    service_composition(endpoint& bus)
-      : Base{bus} {
+    template <typename... Args>
+    service_composition(endpoint& bus, Args&&... args)
+      : Base{bus, std::forward<Args>(args)...} {
         _init();
     }
 

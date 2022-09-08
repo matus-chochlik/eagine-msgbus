@@ -149,6 +149,7 @@ inline void parent_router::announce_id(
 inline auto parent_router::update(
   main_ctx_object& user,
   const identifier_t id_base) noexcept -> work_done {
+    const auto exec_time{user.measure_time_interval("parentUpdt")};
     some_true something_done{};
 
     if(the_connection) [[likely]] {
@@ -1249,13 +1250,13 @@ auto router::_route_messages() noexcept -> work_done {
 auto router::_update_connections_by_workers(std::latch& completed) noexcept
   -> work_done {
     some_true something_done{};
-    auto& workers = main_context().workers();
+    auto& work = workers();
 
     for(auto& entry : _nodes) {
         auto& node_in = std::get<1>(entry);
         if(node_in.the_connection) [[likely]] {
             node_in.update_connection = {*node_in.the_connection, completed};
-            workers.enqueue(node_in.update_connection);
+            work.enqueue(node_in.update_connection);
         }
     }
     something_done(_parent_router.update(*this, _id_base));
@@ -1322,6 +1323,7 @@ auto router::do_work_by_router() noexcept -> work_done {
 }
 //------------------------------------------------------------------------------
 auto router::update(const valid_if_positive<int>& count) noexcept -> work_done {
+    const auto exec_time{measure_time_interval("busUpdate")};
     some_true something_done{};
 
     something_done(do_maintenance());

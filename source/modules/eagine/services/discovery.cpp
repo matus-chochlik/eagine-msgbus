@@ -35,15 +35,11 @@ export struct subscriber_info {
     }
 };
 //------------------------------------------------------------------------------
-/// @brief Service discovering information about endpoint status and subscriptions.
+/// @brief Collection of signals emitted by the subscriber discovery service.
 /// @ingroup msgbus
-/// @see service_composition
+/// @see subscriber_discovery
 /// @see subscriber_info
-export template <typename Base = subscriber>
-class subscriber_discovery : public Base {
-    using This = subscriber_discovery;
-
-public:
+export struct subscriber_discovery_signals {
     /// @brief Triggered on receipt of notification that an endpoint is alive.
     signal<void(const subscriber_info&) noexcept> reported_alive;
 
@@ -56,75 +52,36 @@ public:
     /// @brief Triggered on receipt of info that endpoint doesn't handle message type.
     signal<void(const subscriber_info&, const message_id) noexcept>
       not_subscribed;
+};
+//------------------------------------------------------------------------------
+struct subscriber_discovery_intf : interface<subscriber_discovery_intf> {
+    virtual void add_methods() noexcept = 0;
+};
+//------------------------------------------------------------------------------
+auto make_subscriber_discovery_impl(
+  subscriber& base,
+  subscriber_discovery_signals&) -> std::unique_ptr<subscriber_discovery_intf>;
+//------------------------------------------------------------------------------
+/// @brief Service discovering information about endpoint status and subscriptions.
+/// @ingroup msgbus
+/// @see service_composition
+/// @see subscriber_info
+export template <typename Base = subscriber>
+class subscriber_discovery
+  : public Base
+  , public subscriber_discovery_signals {
 
 protected:
     using Base::Base;
 
     void add_methods() noexcept {
         Base::add_methods();
-        Base::add_method(
-          this, msgbus_map<"stillAlive", &This::_handle_alive>{});
-        Base::add_method(
-          this, msgbus_map<"subscribTo", &This::_handle_subscribed>{});
-        Base::add_method(
-          this, msgbus_map<"unsubFrom", &This::_handle_unsubscribed>{});
-        Base::add_method(
-          this, msgbus_map<"notSubTo", &This::_handle_not_subscribed>{});
+        _impl->add_methods();
     }
 
 private:
-    auto _handle_alive(
-      const message_context&,
-      const stored_message& message) noexcept -> bool {
-        subscriber_info info{};
-        info.endpoint_id = message.source_id;
-        info.instance_id = message.sequence_no;
-        info.hop_count = message.hop_count;
-        reported_alive(info);
-        return true;
-    }
-
-    auto _handle_subscribed(
-      const message_context&,
-      const stored_message& message) noexcept -> bool {
-        message_id sub_msg_id{};
-        if(default_deserialize_message_type(sub_msg_id, message.content())) {
-            subscriber_info info{};
-            info.endpoint_id = message.source_id;
-            info.instance_id = message.sequence_no;
-            info.hop_count = message.hop_count;
-            subscribed(info, sub_msg_id);
-        }
-        return true;
-    }
-
-    auto _handle_unsubscribed(
-      const message_context&,
-      const stored_message& message) noexcept -> bool {
-        message_id sub_msg_id{};
-        if(default_deserialize_message_type(sub_msg_id, message.content())) {
-            subscriber_info info{};
-            info.endpoint_id = message.source_id;
-            info.instance_id = message.sequence_no;
-            info.hop_count = message.hop_count;
-            unsubscribed(info, sub_msg_id);
-        }
-        return true;
-    }
-
-    auto _handle_not_subscribed(
-      const message_context&,
-      const stored_message& message) noexcept -> bool {
-        message_id sub_msg_id{};
-        if(default_deserialize_message_type(sub_msg_id, message.content())) {
-            subscriber_info info{};
-            info.endpoint_id = message.source_id;
-            info.instance_id = message.sequence_no;
-            info.hop_count = message.hop_count;
-            not_subscribed(info, sub_msg_id);
-        }
-        return true;
-    }
+    const std::unique_ptr<subscriber_discovery_intf> _impl{
+      make_subscriber_discovery_impl(*this, *this)};
 };
 //------------------------------------------------------------------------------
 } // namespace eagine::msgbus

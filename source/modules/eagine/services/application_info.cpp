@@ -42,12 +42,26 @@ private:
     default_function_skeleton<string_view() noexcept, 256> _app_name;
 };
 //------------------------------------------------------------------------------
+/// @brief Collection of signals emitted by the application info consumer service.
+/// @ingroup msgbus
+/// @see application_info_consumer
+export struct application_info_consumer_signals {
+    /// @brief Triggered on receipt of response about endpoint application name.
+    /// @see query_application_name
+    signal<void(
+      const result_context&,
+      const valid_if_not_empty<std::string>&) noexcept>
+      application_name_received;
+};
+//------------------------------------------------------------------------------
 /// @brief Service consuming basic information about endpoint's application.
 /// @ingroup msgbus
 /// @see service_composition
 /// @see application_info_provider
 export template <typename Base = subscriber>
-class application_info_consumer : public Base {
+class application_info_consumer
+  : public Base
+  , public application_info_consumer_signals {
 
     using This = application_info_consumer;
 
@@ -59,20 +73,13 @@ public:
           this->bus_node(), endpoint_id, message_id{"eagiAppInf", "rqAppName"});
     }
 
-    /// @brief Triggered on receipt of response about endpoint application name.
-    /// @see query_application_name
-    signal<void(
-      const result_context&,
-      const valid_if_not_empty<std::string>&) noexcept>
-      application_name_received;
-
 protected:
     using Base::Base;
 
     void add_methods() noexcept {
         Base::add_methods();
 
-        Base::add_method(_app_name(application_name_received)
+        Base::add_method(_app_name(this->application_name_received)
                            .map_fulfill_by({"eagiAppInf", "appName"}));
     }
 

@@ -20,6 +20,7 @@ import eagine.core.main_ctx;
 import :types;
 import :message;
 import <cstdint>;
+import <chrono>;
 import <vector>;
 
 namespace eagine::msgbus {
@@ -63,7 +64,7 @@ export struct blob_io : interface<blob_io> {
 export class buffer_blob_io;
 //------------------------------------------------------------------------------
 export using blob_id_t = std::uint32_t;
-export struct pending_blob {
+struct pending_blob {
     message_id msg_id{};
     identifier_t source_id{0U};
     identifier_t target_id{0U};
@@ -142,9 +143,6 @@ public:
         return {span_size(_max_blob_size)};
     }
 
-    auto message_size(const pending_blob&, const span_size_t max_message_size)
-      const noexcept -> span_size_t;
-
     using io_getter = callable_ref<std::unique_ptr<
       blob_io>(const message_id, const span_size_t, blob_manipulator&) noexcept>;
 
@@ -221,6 +219,9 @@ private:
     memory::buffer_pool _buffers{};
     std::vector<pending_blob> _outgoing{};
     std::vector<pending_blob> _incoming{};
+
+    auto _message_size(const pending_blob&, const span_size_t max_message_size)
+      const noexcept -> span_size_t;
 
     auto _make_io(
       const message_id,

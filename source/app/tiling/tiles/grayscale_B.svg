@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   width="16"
+   height="16"
+   viewBox="0 0 16 16"
+   version="1.1"
+   id="svg_tile_B">
+  <rect
+     style="fill:#B0B0B0;fill-opacity:1;stroke:none"
+     width="16" height="16"
+     id="tile_fg" />
+</svg>

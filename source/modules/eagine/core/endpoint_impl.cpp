@@ -449,6 +449,7 @@ auto endpoint::post_signed(
 }
 //------------------------------------------------------------------------------
 auto endpoint::update() noexcept -> work_done {
+    const auto exec_time{measure_time_interval("busUpdate")};
     some_true something_done{};
 
     something_done(_process_blobs());

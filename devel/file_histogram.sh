@@ -21,7 +21,7 @@ ${install_prefix}/bin/eagine-msgbus-file_server \
 	${conn_type} \
 	& termpids+=($!)
 sleep 3
-${install_prefix}/share/eagine/example/msgbus/eagine-006_file_histogram \
+${install_prefix}/share/eagine/example/msgbus/eagine-008_file_histogram \
 	"${log_args[@]}" \
 	${conn_type} "${@}" \
 	& pids+=($!)

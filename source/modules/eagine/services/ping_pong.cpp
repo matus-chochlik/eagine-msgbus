@@ -10,11 +10,9 @@ export module eagine.msgbus.services:ping_pong;
 import eagine.core.types;
 import eagine.core.debug;
 import eagine.core.memory;
-import eagine.core.identifier;
 import eagine.core.utility;
 import eagine.msgbus.core;
 import <chrono>;
-import <vector>;
 
 namespace eagine::msgbus {
 //------------------------------------------------------------------------------
@@ -57,84 +55,25 @@ private:
     }
 };
 //------------------------------------------------------------------------------
-/// @brief Service sending to pings from the pingable counterparts.
+struct pinger_intf : interface<pinger_intf> {
+    virtual void add_methods() noexcept = 0;
+
+    virtual void query_pingables() noexcept = 0;
+
+    virtual void ping(
+      const identifier_t pingable_id,
+      const std::chrono::milliseconds max_time) noexcept = 0;
+
+    virtual auto update() noexcept -> work_done = 0;
+
+    virtual auto has_pending_pings() noexcept -> bool = 0;
+};
+//------------------------------------------------------------------------------
+/// @brief Collection of signals emitted by the pinger service.
 /// @ingroup msgbus
 /// @see service_composition
-/// @see pingable
-export template <typename Base = subscriber>
-class pinger
-  : public Base
-  , protected std::chrono::steady_clock {
-
-    using This = pinger;
-
-    std::vector<std::tuple<identifier_t, message_sequence_t, timeout>>
-      _pending{};
-
-public:
-    /// @brief Returns the ping message type id.
-    static constexpr auto ping_msg_id() noexcept {
-        return msgbus_id{"ping"};
-    }
-
-    /// @brief Broadcasts a query searching for pingable message bus nodes.
-    void query_pingables() noexcept {
-        this->bus_node().query_subscribers_of(ping_msg_id());
-    }
-
-    /// @brief Sends a pings request and tracks it for the specified maximum time.
-    /// @see ping_responded
-    /// @see ping_timeouted
-    /// @see has_pending_pings
-    void ping(
-      const identifier_t pingable_id,
-      const std::chrono::milliseconds max_time) noexcept {
-        message_view message{};
-        auto msg_id{msgbus_id{"ping"}};
-        message.set_target_id(pingable_id);
-        message.set_priority(message_priority::low);
-        this->bus_node().set_next_sequence_id(msg_id, message);
-        this->bus_node().post(msg_id, message);
-        _pending.emplace_back(message.target_id, message.sequence_no, max_time);
-    }
-
-    /// @brief Sends a pings request and tracks it for a default time period.
-    /// @see ping_responded
-    /// @see ping_timeouted
-    /// @see has_pending_pings
-    void ping(const identifier_t pingable_id) noexcept {
-        ping(
-          pingable_id,
-          adjusted_duration(
-            std::chrono::milliseconds{5000}, memory_access_rate::low));
-    }
-
-    auto update() noexcept -> work_done {
-        some_true something_done{};
-        something_done(Base::update());
-
-        something_done(
-          std::erase_if(_pending, [this](auto& entry) {
-              auto& [pingable_id, sequence_no, ping_time] = entry;
-              if(ping_time.is_expired()) {
-                  ping_timeouted(
-                    pingable_id,
-                    sequence_no,
-                    std::chrono::duration_cast<std::chrono::microseconds>(
-                      ping_time.elapsed_time()));
-                  return true;
-              }
-              return false;
-          }) > 0);
-        return something_done;
-    }
-
-    /// @brief Indicates if there are yet unresponded pending ping requests.
-    /// @see ping_responded
-    /// @see ping_timeouted
-    auto has_pending_pings() const noexcept -> bool {
-        return !_pending.empty();
-    }
+/// @see pinger
+export struct pinger_signals {
 
     /// @brief Triggered on receipt of ping response.
     /// @see ping
@@ -156,36 +95,76 @@ public:
       const message_sequence_t sequence_no,
       const std::chrono::microseconds age) noexcept>
       ping_timeouted;
+};
+//------------------------------------------------------------------------------
+auto make_pinger_impl(subscriber&, pinger_signals&)
+  -> std::unique_ptr<pinger_intf>;
+//------------------------------------------------------------------------------
+/// @brief Service sending to pings from the pingable counterparts.
+/// @ingroup msgbus
+/// @see service_composition
+/// @see pingable
+export template <typename Base = subscriber>
+class pinger
+  : public Base
+  , public pinger_signals
+  , protected std::chrono::steady_clock {
+
+public:
+    static constexpr auto ping_msg_id() noexcept {
+        return msgbus_id{"ping"};
+    }
+
+    /// @brief Broadcasts a query searching for pingable message bus nodes.
+    void query_pingables() noexcept {
+        _impl->query_pingables();
+    }
+
+    /// @brief Sends a pings request and tracks it for the specified maximum time.
+    /// @see ping_responded
+    /// @see ping_timeouted
+    /// @see has_pending_pings
+    void ping(
+      const identifier_t pingable_id,
+      const std::chrono::milliseconds max_time) noexcept {
+        _impl->ping(pingable_id, max_time);
+    }
+
+    /// @brief Sends a pings request and tracks it for a default time period.
+    /// @see ping_responded
+    /// @see ping_timeouted
+    /// @see has_pending_pings
+    void ping(const identifier_t pingable_id) noexcept {
+        ping(
+          pingable_id,
+          adjusted_duration(
+            std::chrono::milliseconds{5000}, memory_access_rate::low));
+    }
+
+    auto update() noexcept -> work_done {
+        some_true something_done{Base::update()};
+        something_done(_impl->update());
+
+        return something_done;
+    }
+
+    /// @brief Indicates if there are yet unresponded pending ping requests.
+    /// @see ping_responded
+    /// @see ping_timeouted
+    auto has_pending_pings() const noexcept -> bool {
+        return _impl->has_pending_pings();
+    }
 
 protected:
     using Base::Base;
 
     void add_methods() noexcept {
         Base::add_methods();
-        Base::add_method(this, msgbus_map<"pong", &This::_handle_pong>{});
+        _impl->add_methods();
     }
 
 private:
-    auto _handle_pong(
-      const message_context&,
-      const stored_message& message) noexcept -> bool {
-        std::erase_if(_pending, [this, &message](auto& entry) {
-            auto& [pingable_id, sequence_no, ping_time] = entry;
-            const bool is_response = (message.source_id == pingable_id) &&
-                                     (message.sequence_no == sequence_no);
-            if(is_response) {
-                ping_responded(
-                  message.source_id,
-                  message.sequence_no,
-                  std::chrono::duration_cast<std::chrono::microseconds>(
-                    ping_time.elapsed_time()),
-                  this->verify_bits(message));
-                return true;
-            }
-            return false;
-        });
-        return true;
-    }
+    const std::unique_ptr<pinger_intf> _impl{make_pinger_impl(*this, *this)};
 };
 //------------------------------------------------------------------------------
 } // namespace eagine::msgbus

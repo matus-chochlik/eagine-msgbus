@@ -12,31 +12,22 @@ import eagine.core.memory;
 import eagine.core.identifier;
 import eagine.core.utility;
 import eagine.msgbus.core;
+import <memory>;
 
 namespace eagine::msgbus {
 //------------------------------------------------------------------------------
-/// @brief Service observing message bus node network topology.
+struct network_topology_intf : interface<network_topology_intf> {
+    virtual void add_methods(subscriber& base) noexcept = 0;
+
+    virtual void query_topology(
+      endpoint& bus,
+      const identifier_t node_id) noexcept = 0;
+};
+//------------------------------------------------------------------------------
+/// @brief Collection of signals emitted by the network topology service
 /// @ingroup msgbus
-/// @see service_composition
-export template <typename Base = subscriber>
-class network_topology : public Base {
-    using This = network_topology;
-
-public:
-    /// @brief Queries the topology information of the specified bus node.
-    /// @see discover_topology
-    void query_topology(const identifier_t node_id) noexcept {
-        message_view message{};
-        message.set_target_id(node_id);
-        const auto msg_id{msgbus_id{"topoQuery"}};
-        this->bus_node().post(msg_id, message);
-    }
-
-    /// @brief Broadcasts network topology query to all message bus nodes.
-    /// @see query_topology
-    void discover_topology() noexcept {
-        query_topology(broadcast_endpoint_id());
-    }
+/// @see network_topology
+export struct network_topology_signals {
 
     /// @brief Triggered on receipt of router node topology information.
     /// @see router_disappeared
@@ -73,77 +64,43 @@ public:
     /// @see router_disappeared
     /// @see bridge_disappeared
     signal<void(const identifier_t) noexcept> endpoint_disappeared;
+};
+//------------------------------------------------------------------------------
+auto make_network_topology_impl(subscriber& base, network_topology_signals&)
+  -> std::unique_ptr<network_topology_intf>;
+//------------------------------------------------------------------------------
+/// @brief Service observing message bus node network topology.
+/// @ingroup msgbus
+/// @see service_composition
+export template <typename Base = subscriber>
+class network_topology
+  : public Base
+  , public network_topology_signals {
+
+public:
+    /// @brief Queries the topology information of the specified bus node.
+    /// @see discover_topology
+    void query_topology(const identifier_t node_id) noexcept {
+        _impl->query_topology(this->bus_node(), node_id);
+    }
+
+    /// @brief Broadcasts network topology query to all message bus nodes.
+    /// @see query_topology
+    void discover_topology() noexcept {
+        query_topology(broadcast_endpoint_id());
+    }
 
 protected:
     using Base::Base;
 
     void add_methods() noexcept {
         Base::add_methods();
-        Base::add_method(
-          this, msgbus_map<"topoRutrCn", &This::_handle_router>{});
-        Base::add_method(
-          this, msgbus_map<"topoBrdgCn", &This::_handle_bridge>{});
-        Base::add_method(
-          this, msgbus_map<"topoEndpt", &This::_handle_endpoint>{});
-        Base::add_method(
-          this, msgbus_map<"byeByeRutr", &This::_handle_router_bye>{});
-        Base::add_method(
-          this, msgbus_map<"byeByeBrdg", &This::_handle_bridge_bye>{});
-        Base::add_method(
-          this, msgbus_map<"byeByeEndp", &This::_handle_endpoint_bye>{});
+        _impl->add_methods(*this);
     }
 
 private:
-    auto _handle_router(
-      const message_context&,
-      const stored_message& message) noexcept -> bool {
-        router_topology_info info{};
-        if(default_deserialize(info, message.content())) {
-            router_appeared(info);
-        }
-        return true;
-    }
-
-    auto _handle_bridge(
-      const message_context&,
-      const stored_message& message) noexcept -> bool {
-        bridge_topology_info info{};
-        if(default_deserialize(info, message.content())) {
-            bridge_appeared(info);
-        }
-        return true;
-    }
-
-    auto _handle_endpoint(
-      const message_context&,
-      const stored_message& message) noexcept -> bool {
-        endpoint_topology_info info{};
-        if(default_deserialize(info, message.content())) {
-            endpoint_appeared(info);
-        }
-        return true;
-    }
-
-    auto _handle_router_bye(
-      const message_context&,
-      const stored_message& message) noexcept -> bool {
-        router_disappeared(message.source_id);
-        return true;
-    }
-
-    auto _handle_bridge_bye(
-      const message_context&,
-      const stored_message& message) noexcept -> bool {
-        bridge_disappeared(message.source_id);
-        return true;
-    }
-
-    auto _handle_endpoint_bye(
-      const message_context&,
-      const stored_message& message) noexcept -> bool {
-        endpoint_disappeared(message.source_id);
-        return true;
-    }
+    const std::unique_ptr<network_topology_intf> _impl{
+      make_network_topology_impl(*this, *this)};
 };
 //------------------------------------------------------------------------------
 } // namespace eagine::msgbus

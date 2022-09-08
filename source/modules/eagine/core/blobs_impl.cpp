@@ -19,6 +19,7 @@ import eagine.core.identifier;
 import eagine.core.serialization;
 import eagine.core.valid_if;
 import <array>;
+import <chrono>;
 
 namespace eagine::msgbus {
 //------------------------------------------------------------------------------
@@ -242,6 +243,7 @@ void pending_blob::merge_resend_request(
 //------------------------------------------------------------------------------
 auto blob_manipulator::update(
   const blob_manipulator::send_handler do_send) noexcept -> work_done {
+    const auto exec_time{measure_time_interval("blobUpdate")};
     const auto now = std::chrono::steady_clock::now();
     some_true something_done{};
 
@@ -538,7 +540,7 @@ auto blob_manipulator::cancel_incoming(
     return false;
 }
 //------------------------------------------------------------------------------
-auto blob_manipulator::message_size(
+auto blob_manipulator::_message_size(
   const pending_blob& pending,
   const span_size_t max_message_size) const noexcept -> span_size_t {
     switch(pending.priority) {
@@ -622,7 +624,7 @@ auto blob_manipulator::process_outgoing(
               limit_cast<std::int64_t>(pending.total_size));
 
             block_data_sink sink(
-              _scratch_block(message_size(pending, max_message_size)));
+              _scratch_block(_message_size(pending, max_message_size)));
             default_serializer_backend backend(sink);
 
             const auto errors = serialize(header, backend);
