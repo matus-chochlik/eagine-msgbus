@@ -26,6 +26,7 @@ export using resource_data_server_node_base =
     subscriber,
     shutdown_target,
     resource_server,
+    pingable,
     common_info_providers>>;
 //------------------------------------------------------------------------------
 export class resource_data_server_node
@@ -62,7 +63,7 @@ private:
 };
 //------------------------------------------------------------------------------
 export using resource_data_consumer_node_base =
-  service_composition<require_services<subscriber, resource_manipulator>>;
+  service_composition<require_services<subscriber, resource_manipulator, pinger>>;
 //------------------------------------------------------------------------------
 export class resource_data_consumer_node
   : public main_ctx_object
@@ -100,6 +101,15 @@ private:
     void _handle_server_lost(identifier_t) noexcept;
     void _handle_resource_found(identifier_t, const url&) noexcept;
     void _handle_missing(identifier_t, const url&) noexcept;
+    void _handle_ping_response(
+      const identifier_t pinger_id,
+      const message_sequence_t,
+      const std::chrono::microseconds age,
+      const verification_bits) noexcept;
+    void _handle_ping_timeout(
+      const identifier_t pinger_id,
+      const message_sequence_t,
+      const std::chrono::microseconds) noexcept;
 
     memory::buffer_pool _buffers;
 

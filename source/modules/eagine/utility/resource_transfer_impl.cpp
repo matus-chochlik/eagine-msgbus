@@ -57,6 +57,12 @@ void resource_data_consumer_node::_init() {
       this, resource_server_lost);
     connect<&resource_data_consumer_node::_handle_resource_found>(
       this, server_has_resource);
+    connect<&resource_data_consumer_node::_handle_missing>(
+      this, server_has_not_resource);
+    connect<&resource_data_consumer_node::_handle_ping_response>(
+      this, ping_responded);
+    connect<&resource_data_consumer_node::_handle_ping_timeout>(
+      this, ping_timeouted);
 }
 //------------------------------------------------------------------------------
 auto resource_data_consumer_node::update() noexcept -> work_done {
@@ -165,6 +171,25 @@ void resource_data_consumer_node::_handle_missing(
             }
         }
     }
+}
+//------------------------------------------------------------------------------
+void resource_data_consumer_node::_handle_ping_response(
+  const identifier_t endpoint_id,
+  const message_sequence_t,
+  const std::chrono::microseconds age,
+  const verification_bits) noexcept {
+    const auto pos{_current_servers.find(endpoint_id)};
+    if(pos != _current_servers.end()) {
+        auto& info = std::get<1>(*pos);
+        info.is_alive.reset();
+    }
+}
+//------------------------------------------------------------------------------
+void resource_data_consumer_node::_handle_ping_timeout(
+  const identifier_t endpoint_id,
+  const message_sequence_t,
+  const std::chrono::microseconds) noexcept {
+    _handle_server_lost(endpoint_id);
 }
 //------------------------------------------------------------------------------
 } // namespace eagine::msgbus
