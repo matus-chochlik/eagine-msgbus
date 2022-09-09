@@ -85,13 +85,8 @@ public:
         _query_resource(_get_resource_id(), std::move(locator), std::move(io));
     }
 
-    auto stream_resource(url locator) -> identifier_t {
-        const auto res_id{_get_resource_id()};
-        return _query_resource(
-          res_id,
-          std::move(locator),
-          make_blob_stream_io(res_id, *this, _buffers));
-    }
+    auto stream_resource(url locator) -> identifier_t;
+    auto cancel_resource_stream(identifier_t resource_id) noexcept -> bool;
 
 private:
     auto _has_pending(identifier_t) const noexcept -> bool;
@@ -104,6 +99,7 @@ private:
     void _handle_server_appeared(identifier_t) noexcept;
     void _handle_server_lost(identifier_t) noexcept;
     void _handle_resource_found(identifier_t, const url&) noexcept;
+    void _handle_missing(identifier_t, const url&) noexcept;
 
     memory::buffer_pool _buffers;
 

@@ -106,6 +106,23 @@ auto resource_data_consumer_node::_query_resource(
     return resource_id;
 }
 //------------------------------------------------------------------------------
+auto resource_data_consumer_node::stream_resource(url locator) -> identifier_t {
+    const auto res_id{_get_resource_id()};
+    return _query_resource(
+      res_id, std::move(locator), make_blob_stream_io(res_id, *this, _buffers));
+}
+//------------------------------------------------------------------------------
+auto resource_data_consumer_node::cancel_resource_stream(
+  identifier_t resource_id) noexcept -> bool {
+    const auto pos{_pending_resources.find(resource_id)};
+    if(pos != _pending_resources.end()) {
+        // TODO: cancel in base
+        _pending_resources.erase(pos);
+        return true;
+    }
+    return false;
+}
+//------------------------------------------------------------------------------
 void resource_data_consumer_node::_handle_server_appeared(
   identifier_t endpoint_id) noexcept {
     auto& info = _current_servers[endpoint_id];
@@ -114,6 +131,12 @@ void resource_data_consumer_node::_handle_server_appeared(
 //------------------------------------------------------------------------------
 void resource_data_consumer_node::_handle_server_lost(
   identifier_t endpoint_id) noexcept {
+    for(auto& entry : _pending_resources) {
+        auto& info = std::get<1>(entry);
+        if(info.source_server_id == endpoint_id) {
+            info.source_server_id = invalid_endpoint_id();
+        }
+    }
     _current_servers.erase(endpoint_id);
 }
 //------------------------------------------------------------------------------
@@ -126,6 +149,19 @@ void resource_data_consumer_node::_handle_resource_found(
             if(!is_valid_endpoint_id(info.source_server_id)) {
                 info.source_server_id = endpoint_id;
                 // TODO: fetch
+            }
+        }
+    }
+}
+//------------------------------------------------------------------------------
+void resource_data_consumer_node::_handle_missing(
+  identifier_t endpoint_id,
+  const url& locator) noexcept {
+    for(auto& entry : _pending_resources) {
+        auto& info = std::get<1>(entry);
+        if(info.locator == locator) {
+            if(info.source_server_id == endpoint_id) {
+                info.source_server_id = invalid_endpoint_id();
             }
         }
     }
