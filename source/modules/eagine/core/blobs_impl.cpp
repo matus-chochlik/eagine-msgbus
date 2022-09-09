@@ -77,6 +77,117 @@ private:
     memory::buffer _buf;
 };
 //------------------------------------------------------------------------------
+// blob_stream_io
+//------------------------------------------------------------------------------
+class blob_stream_io : public blob_io {
+public:
+    blob_stream_io(
+      identifier_t blob_id,
+      blob_stream_signals& sigs,
+      memory::buffer_pool& buffers) noexcept
+      : _blob_id{blob_id}
+      , signals{sigs}
+      , _buffers{buffers} {}
+
+    auto store_fragment(span_size_t offset, memory::const_block data) noexcept
+      -> bool final;
+
+    void handle_finished(
+      const message_id,
+      const message_age,
+      const message_info&) noexcept final {
+        signals.blob_stream_finished(_blob_id);
+    }
+
+    void handle_cancelled() noexcept final {
+        signals.blob_stream_cancelled(_blob_id);
+    }
+
+private:
+    const identifier_t _blob_id;
+    blob_stream_signals& signals;
+
+    void _append(
+      span_size_t offset,
+      const memory::span<const memory::const_block> data) const noexcept {
+        signals.blob_stream_data_appended(_blob_id, offset, data);
+    }
+
+    void _append_one(span_size_t offset, memory::const_block data)
+      const noexcept {
+        _append(offset, memory::view_one(data));
+    }
+
+    memory::buffer_pool& _buffers;
+    span_size_t _offs_done{0};
+    std::vector<std::tuple<span_size_t, memory::buffer>> _unmerged;
+    std::vector<memory::buffer> _merged;
+    std::vector<memory::const_block> _consecutive;
+};
+//------------------------------------------------------------------------------
+auto make_blob_stream_io(
+  identifier_t blob_id,
+  blob_stream_signals& sigs,
+  memory::buffer_pool& buffers) -> std::unique_ptr<blob_io> {
+    return std::make_unique<blob_stream_io>(blob_id, sigs, buffers);
+}
+//------------------------------------------------------------------------------
+auto blob_stream_io::store_fragment(
+  span_size_t offset,
+  memory::const_block data) noexcept -> bool {
+    assert(!data.empty());
+    assert(offset >= _offs_done);
+
+    if(offset == _offs_done) {
+        if(_unmerged.empty()) {
+            _append_one(offset, data);
+            _offs_done = safe_add(offset + data.size());
+        } else {
+            assert(_merged.empty());
+            _merged.reserve(_unmerged.size());
+            assert(_consecutive.empty());
+            _consecutive.push_back(data);
+
+            auto data_end{safe_add(offset, data.size())};
+            while(!_unmerged.empty()) {
+                auto& [merge_offs, merge_buf] = _unmerged.back();
+
+                assert(data_end <= merge_offs);
+                if(data_end == merge_offs) {
+                    _merged.emplace_back(std::move(merge_buf));
+                    auto& merge_data = _merged.back();
+                    _unmerged.pop_back();
+                    data_end = safe_add(merge_offs, merge_data.size());
+                    _consecutive.push_back(view(merge_data));
+                } else {
+                    break;
+                }
+            }
+
+            _offs_done = data_end;
+            _append(offset, view(_consecutive));
+            _consecutive.clear();
+            for(auto& buf : _merged) {
+                _buffers.eat(std::move(buf));
+            }
+            _merged.clear();
+        }
+    } else {
+        auto buf{_buffers.get(data.size())};
+        memory::copy(data, buf);
+        if(_unmerged.empty()) {
+            _unmerged.emplace_back(offset, std::move(buf));
+        } else {
+            const auto rpos{std::find_if(
+              _unmerged.rbegin(), _unmerged.rend(), [=](const auto& entry) {
+                  return std::get<0>(entry) >= offset;
+              })};
+            _unmerged.emplace(rpos.base(), offset, std::move(buf));
+        }
+    }
+    return true;
+}
+//------------------------------------------------------------------------------
 // pending blob
 //------------------------------------------------------------------------------
 auto pending_blob::buffer_io() noexcept -> buffer_blob_io* {

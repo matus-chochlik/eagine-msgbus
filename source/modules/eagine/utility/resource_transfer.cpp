@@ -10,14 +10,14 @@ export module eagine.msgbus.utility:resource_transfer;
 import eagine.core.types;
 import eagine.core.memory;
 import eagine.core.identifier;
-import eagine.core.container;
 import eagine.core.valid_if;
+import eagine.core.utility;
 import eagine.core.runtime;
 import eagine.core.main_ctx;
 import eagine.msgbus.core;
 import eagine.msgbus.services;
 import <chrono>;
-import <filesystem>;
+import <map>;
 
 namespace eagine::msgbus {
 //------------------------------------------------------------------------------
@@ -66,7 +66,8 @@ export using resource_data_consumer_node_base =
 //------------------------------------------------------------------------------
 export class resource_data_consumer_node
   : public main_ctx_object
-  , public resource_data_consumer_node_base {
+  , public resource_data_consumer_node_base
+  , public blob_stream_signals {
     using base = resource_data_consumer_node_base;
 
     void _init();
@@ -78,11 +79,50 @@ public:
         _init();
     }
 
+    auto update() noexcept -> work_done;
+
+    void query_resource(url locator, std::shared_ptr<blob_io> io) {
+        _query_resource(_get_resource_id(), std::move(locator), std::move(io));
+    }
+
+    auto stream_resource(url locator) -> identifier_t {
+        const auto res_id{_get_resource_id()};
+        return _query_resource(
+          res_id,
+          std::move(locator),
+          make_blob_stream_io(res_id, *this, _buffers));
+    }
+
 private:
+    auto _has_pending(identifier_t) const noexcept -> bool;
+    auto _get_resource_id() noexcept -> identifier_t;
+    auto _query_resource(
+      identifier_t res_id,
+      url locator,
+      std::shared_ptr<blob_io> io) -> identifier_t;
+
     void _handle_server_appeared(identifier_t) noexcept;
     void _handle_server_lost(identifier_t) noexcept;
+    void _handle_resource_found(identifier_t, const url&) noexcept;
 
-    flat_set<identifier_t> _server_ids;
+    memory::buffer_pool _buffers;
+
+    struct _server_info {
+        timeout should_check{std::chrono::seconds{5}};
+        timeout is_alive{std::chrono::seconds{10}};
+    };
+
+    std::map<identifier_t, _server_info> _current_servers;
+
+    struct _resource_info {
+        url locator;
+        std::shared_ptr<blob_io> resource_io;
+        identifier_t source_server_id{invalid_endpoint_id()};
+        timeout should_search{std::chrono::seconds{3}, nothing};
+    };
+
+    identifier_t _res_id_seq{0};
+    std::map<identifier_t, _resource_info> _pending_resources;
 };
 //------------------------------------------------------------------------------
 } // namespace eagine::msgbus

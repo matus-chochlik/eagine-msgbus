@@ -88,7 +88,7 @@ eagine_add_module(
 eagine_add_module(
 	eagine.msgbus.core PARTITION blobs
 	IMPORTS
-		types message
+		types message signal
 		eagine.core.types
 		eagine.core.debug
 		eagine.core.memory
