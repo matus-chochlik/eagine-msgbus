@@ -21,8 +21,17 @@ auto main(main_ctx& ctx) -> int {
     msgbus::resource_data_consumer_node node{ctx};
     msgbus::setup_connectors(ctx, node);
 
+    for(auto& arg : ctx.args()) {
+        if(url locator{arg.get_string()}) {
+            node.stream_resource(std::move(locator));
+        }
+    }
+    if(!node.has_pending_resources()) {
+        node.stream_resource(url("eagires:///zeroes?count=1073741824"));
+    }
+
     const auto is_done = [&] {
-        if(idle_too_long) {
+        if(idle_too_long || !node.has_pending_resources()) {
             return true;
         }
         return false;

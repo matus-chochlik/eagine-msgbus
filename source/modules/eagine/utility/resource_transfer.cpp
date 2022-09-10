@@ -87,6 +87,10 @@ public:
     auto stream_resource(url locator) -> std::pair<identifier_t, const url&>;
     auto cancel_resource_stream(identifier_t resource_id) noexcept -> bool;
 
+    auto has_pending_resources() const noexcept -> bool {
+        return !_pending_resources.empty();
+    }
+
 private:
     struct _server_info {
         timeout should_check{std::chrono::seconds{5}};
