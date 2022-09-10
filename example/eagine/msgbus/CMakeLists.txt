@@ -73,3 +73,6 @@ eagine_example_common(013_conn_setup)
 eagine_example_common(014_tracker)
 eagine_example_common(015_stream)
 
+if(WITH_MODULES)
+eagine_example_common(006_stream_histogram)
+endif()
