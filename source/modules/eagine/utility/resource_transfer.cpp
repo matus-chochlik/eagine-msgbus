@@ -63,20 +63,18 @@ private:
 };
 //------------------------------------------------------------------------------
 export using resource_data_consumer_node_base =
-  service_composition<require_services<subscriber, resource_manipulator, pinger>>;
+  service_node<require_services<subscriber, resource_manipulator, pinger>>;
 //------------------------------------------------------------------------------
 export class resource_data_consumer_node
-  : public main_ctx_object
-  , public resource_data_consumer_node_base
+  : public resource_data_consumer_node_base
   , public blob_stream_signals {
     using base = resource_data_consumer_node_base;
 
     void _init();
 
 public:
-    resource_data_consumer_node(endpoint& bus)
-      : main_ctx_object{"RsrcCnsmer", bus}
-      , base{bus} {
+    resource_data_consumer_node(main_ctx& ctx)
+      : base{"RsrcCnsmer", ctx} {
         _init();
     }
 
