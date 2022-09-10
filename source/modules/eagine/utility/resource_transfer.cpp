@@ -84,16 +84,29 @@ public:
         _query_resource(_get_resource_id(), std::move(locator), std::move(io));
     }
 
-    auto stream_resource(url locator) -> identifier_t;
+    auto stream_resource(url locator) -> std::pair<identifier_t, const url&>;
     auto cancel_resource_stream(identifier_t resource_id) noexcept -> bool;
 
 private:
+    struct _server_info {
+        timeout should_check{std::chrono::seconds{5}};
+        timeout is_alive{std::chrono::seconds{10}};
+    };
+
+    struct _resource_info {
+        url locator;
+        std::shared_ptr<blob_io> resource_io;
+        identifier_t source_server_id{invalid_endpoint_id()};
+        timeout should_search{std::chrono::seconds{3}, nothing};
+    };
+
     auto _has_pending(identifier_t) const noexcept -> bool;
     auto _get_resource_id() noexcept -> identifier_t;
     auto _query_resource(
       identifier_t res_id,
       url locator,
-      std::shared_ptr<blob_io> io) -> identifier_t;
+      std::shared_ptr<blob_io> io)
+      -> std::pair<identifier_t, resource_data_consumer_node::_resource_info&>;
 
     void _handle_server_appeared(identifier_t) noexcept;
     void _handle_server_lost(identifier_t) noexcept;
@@ -111,19 +124,7 @@ private:
 
     memory::buffer_pool _buffers;
 
-    struct _server_info {
-        timeout should_check{std::chrono::seconds{5}};
-        timeout is_alive{std::chrono::seconds{10}};
-    };
-
     std::map<identifier_t, _server_info> _current_servers;
-
-    struct _resource_info {
-        url locator;
-        std::shared_ptr<blob_io> resource_io;
-        identifier_t source_server_id{invalid_endpoint_id()};
-        timeout should_search{std::chrono::seconds{3}, nothing};
-    };
 
     identifier_t _res_id_seq{0};
     std::map<identifier_t, _resource_info> _pending_resources;

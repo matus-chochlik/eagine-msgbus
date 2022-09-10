@@ -104,18 +104,23 @@ auto resource_data_consumer_node::_get_resource_id() noexcept -> identifier_t {
 auto resource_data_consumer_node::_query_resource(
   identifier_t resource_id,
   url locator,
-  std::shared_ptr<blob_io> io) -> identifier_t {
+  std::shared_ptr<blob_io> io)
+  -> std::pair<identifier_t, resource_data_consumer_node::_resource_info&> {
     auto& info = _pending_resources[resource_id];
     info.locator = std::move(locator);
     info.resource_io = std::move(io);
     info.source_server_id = invalid_endpoint_id();
-    return resource_id;
+    return {resource_id, info};
 }
 //------------------------------------------------------------------------------
-auto resource_data_consumer_node::stream_resource(url locator) -> identifier_t {
-    const auto res_id{_get_resource_id()};
-    return _query_resource(
-      res_id, std::move(locator), make_blob_stream_io(res_id, *this, _buffers));
+auto resource_data_consumer_node::stream_resource(url locator)
+  -> std::pair<identifier_t, const url&> {
+    const auto resource_id{_get_resource_id()};
+    auto result{_query_resource(
+      resource_id,
+      std::move(locator),
+      make_blob_stream_io(resource_id, *this, _buffers))};
+    return {std::get<0>(result), std::get<1>(result).locator};
 }
 //------------------------------------------------------------------------------
 auto resource_data_consumer_node::cancel_resource_stream(
