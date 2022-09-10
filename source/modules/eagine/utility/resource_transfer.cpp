@@ -80,11 +80,25 @@ public:
 
     auto update() noexcept -> work_done;
 
-    void query_resource(url locator, std::shared_ptr<blob_io> io) {
-        _query_resource(_get_resource_id(), std::move(locator), std::move(io));
+    void query_resource(
+      url locator,
+      std::shared_ptr<blob_io> io,
+      const message_priority priority,
+      const std::chrono::seconds max_time) {
+        _query_resource(
+          _get_resource_id(),
+          std::move(locator),
+          std::move(io),
+          priority,
+          max_time);
     }
 
-    auto stream_resource(url locator) -> std::pair<identifier_t, const url&>;
+    auto stream_resource(
+      url locator,
+      const message_priority priority,
+      const std::chrono::seconds max_time)
+      -> std::pair<identifier_t, const url&>;
+
     auto cancel_resource_stream(identifier_t resource_id) noexcept -> bool;
 
     auto has_pending_resources() const noexcept -> bool {
@@ -98,10 +112,12 @@ private:
     };
 
     struct _resource_info {
-        url locator;
-        std::shared_ptr<blob_io> resource_io;
+        url locator{};
+        std::shared_ptr<blob_io> resource_io{};
         identifier_t source_server_id{invalid_endpoint_id()};
         timeout should_search{std::chrono::seconds{3}, nothing};
+        timeout blob_timeout{};
+        message_priority blob_priority{message_priority::normal};
     };
 
     auto _has_pending(identifier_t) const noexcept -> bool;
@@ -109,7 +125,9 @@ private:
     auto _query_resource(
       identifier_t res_id,
       url locator,
-      std::shared_ptr<blob_io> io)
+      std::shared_ptr<blob_io> io,
+      const message_priority priority,
+      const std::chrono::seconds max_time)
       -> std::pair<identifier_t, resource_data_consumer_node::_resource_info&>;
 
     void _handle_server_appeared(identifier_t) noexcept;

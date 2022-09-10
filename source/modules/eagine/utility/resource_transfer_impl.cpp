@@ -104,22 +104,30 @@ auto resource_data_consumer_node::_get_resource_id() noexcept -> identifier_t {
 auto resource_data_consumer_node::_query_resource(
   identifier_t resource_id,
   url locator,
-  std::shared_ptr<blob_io> io)
+  std::shared_ptr<blob_io> io,
+  const message_priority priority,
+  const std::chrono::seconds max_time)
   -> std::pair<identifier_t, resource_data_consumer_node::_resource_info&> {
     auto& info = _pending_resources[resource_id];
     info.locator = std::move(locator);
     info.resource_io = std::move(io);
     info.source_server_id = invalid_endpoint_id();
+    info.blob_timeout.reset(max_time);
+    info.blob_priority = priority;
     return {resource_id, info};
 }
 //------------------------------------------------------------------------------
-auto resource_data_consumer_node::stream_resource(url locator)
-  -> std::pair<identifier_t, const url&> {
+auto resource_data_consumer_node::stream_resource(
+  url locator,
+  const message_priority priority,
+  const std::chrono::seconds max_time) -> std::pair<identifier_t, const url&> {
     const auto resource_id{_get_resource_id()};
     auto result{_query_resource(
       resource_id,
       std::move(locator),
-      make_blob_stream_io(resource_id, *this, _buffers))};
+      make_blob_stream_io(resource_id, *this, _buffers),
+      priority,
+      max_time)};
     return {std::get<0>(result), std::get<1>(result).locator};
 }
 //------------------------------------------------------------------------------

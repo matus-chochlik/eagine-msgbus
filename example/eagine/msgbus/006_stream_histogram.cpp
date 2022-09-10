@@ -21,13 +21,20 @@ auto main(main_ctx& ctx) -> int {
     msgbus::resource_data_consumer_node node{ctx};
     msgbus::setup_connectors(ctx, node);
 
-    for(auto& arg : ctx.args()) {
-        if(url locator{arg.get_string()}) {
-            node.stream_resource(std::move(locator));
+    auto enqueue = [&](url locator) {
+        if(locator) {
+            node.stream_resource(
+              std::move(locator),
+              msgbus::message_priority::high,
+              std::chrono::hours{1});
         }
+    };
+
+    for(auto& arg : ctx.args()) {
+        enqueue(url(arg.get_string()));
     }
     if(!node.has_pending_resources()) {
-        node.stream_resource(url("eagires:///zeroes?count=1073741824"));
+        enqueue(url("eagires:///zeroes?count=1073741824"));
     }
 
     const auto is_done = [&] {
