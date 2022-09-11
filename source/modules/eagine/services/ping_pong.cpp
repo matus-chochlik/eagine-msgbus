@@ -130,6 +130,21 @@ public:
         _impl->ping(pingable_id, max_time);
     }
 
+    /// @brief Sends a pings request and tracks it for the timeouts period.
+    /// @see ping_responded
+    /// @see ping_timeouted
+    /// @see has_pending_pings
+    void ping_if(const identifier_t pingable_id, timeout& should_ping) noexcept {
+        if(should_ping) {
+            ping(
+              pingable_id,
+              std::chrono::duration_cast<std::chrono::milliseconds>(
+                adjusted_duration(
+                  should_ping.period(), memory_access_rate::low)));
+            should_ping.reset();
+        }
+    }
+
     /// @brief Sends a pings request and tracks it for a default time period.
     /// @see ping_responded
     /// @see ping_timeouted
@@ -137,8 +152,8 @@ public:
     void ping(const identifier_t pingable_id) noexcept {
         ping(
           pingable_id,
-          adjusted_duration(
-            std::chrono::milliseconds{5000}, memory_access_rate::low));
+          std::chrono::milliseconds{5000},
+          memory_access_rate::low);
     }
 
     auto update() noexcept -> work_done {
