@@ -193,6 +193,21 @@ public:
     }
 
     /// @brief Requests the contents of the file with the specified URL.
+    auto query_resource_content(
+      identifier_t endpoint_id,
+      const url& locator,
+      std::shared_ptr<blob_io> write_io,
+      const message_priority priority,
+      timeout& max_timeout) -> std::optional<message_sequence_t> {
+        return _impl->query_resource_content(
+          endpoint_id,
+          locator,
+          std::move(write_io),
+          priority,
+          std::chrono::ceil<std::chrono::seconds>(max_timeout.period()));
+    }
+
+    /// @brief Requests the contents of the file with the specified URL.
     /// @see server_endpoint_id
     auto query_resource_content(
       const url& locator,
