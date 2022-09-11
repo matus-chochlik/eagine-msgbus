@@ -24,6 +24,7 @@ eagine_add_module(
 	SOURCES
 		resource_transfer_impl
 	IMPORTS
+		eagine.core.reflection
 		eagine.core.valid_if
 		eagine.core.logging
 )

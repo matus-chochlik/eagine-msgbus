@@ -117,6 +117,7 @@ private:
         identifier_t source_server_id{invalid_endpoint_id()};
         timeout should_search{std::chrono::seconds{3}, nothing};
         timeout blob_timeout{};
+        message_sequence_t blob_stream_id{0};
         message_priority blob_priority{message_priority::normal};
     };
 

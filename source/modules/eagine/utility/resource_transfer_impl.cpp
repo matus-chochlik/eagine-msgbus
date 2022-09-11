@@ -9,6 +9,7 @@ module eagine.msgbus.utility;
 
 import eagine.core.types;
 import eagine.core.valid_if;
+import eagine.core.reflection;
 import eagine.core.utility;
 import eagine.core.runtime;
 import eagine.core.logging;
@@ -41,6 +42,7 @@ void resource_data_server_node::_handle_shutdown(
   const identifier_t source_id,
   const verification_bits verified) noexcept {
     log_info("received shutdown request from ${source}")
+      .tag("shutdwnReq")
       .arg("age", age)
       .arg("source", source_id)
       .arg("verified", verified);
@@ -70,18 +72,22 @@ auto resource_data_consumer_node::update() noexcept -> work_done {
 
     for(auto& [server_id, info] : _current_servers) {
         if(!info.is_alive) {
-            if(info.should_check) {
-                info.should_check.reset();
-                // TODO: ping
-            }
+            ping_if(server_id, info.should_check);
         }
     }
 
-    for(auto& [resource_id, info] : _pending_resources) {
-        if(!is_valid_endpoint_id(info.source_server_id)) {
-            if(info.should_search) {
-                info.should_search.reset();
-                // TODO: search
+    for(auto& [resource_id, rinfo] : _pending_resources) {
+        if(!is_valid_endpoint_id(rinfo.source_server_id)) {
+            if(rinfo.should_search) {
+                for(auto& [server_id, sinfo] : _current_servers) {
+                    if(sinfo.is_alive) {
+                        search_resource(server_id, rinfo.locator);
+                    }
+                }
+                rinfo.should_search.reset();
+                log_debug("searching resource: ${locator}")
+                  .tag("resrceSrch")
+                  .arg("locator", rinfo.locator.str());
             }
         }
     }
@@ -143,55 +149,78 @@ auto resource_data_consumer_node::cancel_resource_stream(
 }
 //------------------------------------------------------------------------------
 void resource_data_consumer_node::_handle_server_appeared(
-  identifier_t endpoint_id) noexcept {
-    auto& info = _current_servers[endpoint_id];
+  identifier_t server_id) noexcept {
+    auto& info = _current_servers[server_id];
     info.is_alive.reset();
+    log_info("resource server ${id} appeared")
+      .tag("resSrvAppr")
+      .arg("id", server_id);
 }
 //------------------------------------------------------------------------------
 void resource_data_consumer_node::_handle_server_lost(
-  identifier_t endpoint_id) noexcept {
+  identifier_t server_id) noexcept {
     for(auto& entry : _pending_resources) {
         auto& info = std::get<1>(entry);
-        if(info.source_server_id == endpoint_id) {
+        if(info.source_server_id == server_id) {
             info.source_server_id = invalid_endpoint_id();
         }
     }
-    _current_servers.erase(endpoint_id);
+    _current_servers.erase(server_id);
+    log_info("resource server ${id} lost")
+      .tag("resSrvLost")
+      .arg("id", server_id);
 }
 //------------------------------------------------------------------------------
 void resource_data_consumer_node::_handle_resource_found(
-  identifier_t endpoint_id,
+  identifier_t server_id,
   const url& locator) noexcept {
     for(auto& entry : _pending_resources) {
         auto& info = std::get<1>(entry);
         if(info.locator == locator) {
             if(!is_valid_endpoint_id(info.source_server_id)) {
-                info.source_server_id = endpoint_id;
-                // TODO: fetch
+                if(const auto id{query_resource_content(
+                     server_id,
+                     info.locator,
+                     info.resource_io,
+                     info.blob_priority,
+                     info.blob_timeout)}) {
+                    info.source_server_id = server_id;
+                    info.blob_stream_id = extract(id);
+                    log_info("fetching resource ${locator} from server ${id}")
+                      .tag("qryResCont")
+                      .arg("locator", info.locator.str())
+                      .arg("priority", info.blob_priority)
+                      .arg("id", server_id);
+                    break;
+                }
             }
         }
     }
 }
 //------------------------------------------------------------------------------
 void resource_data_consumer_node::_handle_missing(
-  identifier_t endpoint_id,
+  identifier_t server_id,
   const url& locator) noexcept {
     for(auto& entry : _pending_resources) {
         auto& info = std::get<1>(entry);
         if(info.locator == locator) {
-            if(info.source_server_id == endpoint_id) {
+            if(info.source_server_id == server_id) {
                 info.source_server_id = invalid_endpoint_id();
+                log_debug("resource ${locator} not found on server ${id}")
+                  .tag("resNotFund")
+                  .arg("locator", info.locator.str())
+                  .arg("id", server_id);
             }
         }
     }
 }
 //------------------------------------------------------------------------------
 void resource_data_consumer_node::_handle_ping_response(
-  const identifier_t endpoint_id,
+  const identifier_t server_id,
   const message_sequence_t,
   const std::chrono::microseconds age,
   const verification_bits) noexcept {
-    const auto pos{_current_servers.find(endpoint_id)};
+    const auto pos{_current_servers.find(server_id)};
     if(pos != _current_servers.end()) {
         auto& info = std::get<1>(*pos);
         info.is_alive.reset();
@@ -199,10 +228,10 @@ void resource_data_consumer_node::_handle_ping_response(
 }
 //------------------------------------------------------------------------------
 void resource_data_consumer_node::_handle_ping_timeout(
-  const identifier_t endpoint_id,
+  const identifier_t server_id,
   const message_sequence_t,
   const std::chrono::microseconds) noexcept {
-    _handle_server_lost(endpoint_id);
+    _handle_server_lost(server_id);
 }
 //------------------------------------------------------------------------------
 } // namespace eagine::msgbus
