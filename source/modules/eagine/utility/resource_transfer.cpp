@@ -145,11 +145,10 @@ private:
       const message_sequence_t,
       const std::chrono::microseconds) noexcept;
 
+    identifier_t _res_id_seq{0};
     memory::buffer_pool _buffers;
 
     std::map<identifier_t, _server_info> _current_servers;
-
-    identifier_t _res_id_seq{0};
     std::map<identifier_t, _resource_info> _pending_resources;
 };
 //------------------------------------------------------------------------------

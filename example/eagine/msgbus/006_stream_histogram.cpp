@@ -21,6 +21,24 @@ auto main(main_ctx& ctx) -> int {
     msgbus::resource_data_consumer_node node{ctx};
     msgbus::setup_connectors(ctx, node);
 
+    span_size_t max_count{0};
+    std::array<span_size_t, 256> byte_counts{};
+    zero(cover(byte_counts));
+
+    auto consume = [&](
+                     identifier_t,
+                     const span_size_t,
+                     const memory::span<const memory::const_block> data) {
+        for(const auto& blk : data) {
+            for(auto b : blk) {
+                max_count =
+                  math::maximum(max_count, ++byte_counts[std_size(b)]);
+            }
+        }
+    };
+
+    node.blob_stream_data_appended.connect({construct_from, consume});
+
     auto enqueue = [&](url locator) {
         if(locator) {
             node.stream_resource(
@@ -51,6 +69,19 @@ auto main(main_ctx& ctx) -> int {
             std::this_thread::sleep_for(std::chrono::milliseconds(1));
         }
     }
+
+    ctx.log().info("blob byte counts").arg_func([&](logger_backend& backend) {
+        for(const auto i : integer_range(std_size(256))) {
+            if(byte_counts[i]) {
+                backend.add_float(
+                  byte_to_identifier(byte(i)),
+                  "Histogram",
+                  float(0),
+                  float(byte_counts[i]),
+                  float(max_count));
+            }
+        }
+    });
 
     return 0;
 }
