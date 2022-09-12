@@ -129,7 +129,7 @@ private:
       std::shared_ptr<blob_io> io,
       const message_priority priority,
       const std::chrono::seconds max_time)
-      -> std::pair<identifier_t, resource_data_consumer_node::_resource_info&>;
+      -> std::pair<identifier_t, _resource_info&>;
 
     void _handle_server_appeared(identifier_t) noexcept;
     void _handle_server_lost(identifier_t) noexcept;

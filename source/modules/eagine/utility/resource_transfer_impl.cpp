@@ -91,6 +91,7 @@ auto resource_data_consumer_node::update() noexcept -> work_done {
                 rinfo.should_search.reset();
                 log_debug("searching resource: ${locator}")
                   .tag("resrceSrch")
+                  .arg("streamId", resource_id)
                   .arg("locator", rinfo.locator.str());
                 something_done();
             }
