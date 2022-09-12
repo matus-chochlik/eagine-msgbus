@@ -108,7 +108,7 @@ public:
 private:
     struct _server_info {
         timeout should_check{std::chrono::seconds{5}};
-        timeout is_alive{std::chrono::seconds{10}};
+        timeout not_responding{std::chrono::seconds{10}};
     };
 
     struct _resource_info {

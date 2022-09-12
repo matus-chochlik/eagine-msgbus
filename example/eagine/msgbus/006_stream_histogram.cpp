@@ -22,6 +22,7 @@ auto main(main_ctx& ctx) -> int {
     msgbus::setup_connectors(ctx, node);
 
     span_size_t max_count{0};
+    span_size_t streamed_bytes{0};
     std::array<span_size_t, 256> byte_counts{};
     zero(cover(byte_counts));
 
@@ -33,6 +34,12 @@ auto main(main_ctx& ctx) -> int {
             for(auto b : blk) {
                 max_count =
                   math::maximum(max_count, ++byte_counts[std_size(b)]);
+                if((++streamed_bytes % (8 * 1024 * 1024)) == 0) {
+                    ctx.log()
+                      .info("streamed ${count}")
+                      .tag("strmdBytes")
+                      .arg("count", "ByteSize", streamed_bytes);
+                }
             }
         }
     };
@@ -63,25 +70,28 @@ auto main(main_ctx& ctx) -> int {
     };
 
     while(!is_done()) {
-        if(node.update_and_process_all()) {
+        if(node.update()) {
             idle_too_long.reset();
         } else {
             std::this_thread::sleep_for(std::chrono::milliseconds(1));
         }
     }
 
-    ctx.log().info("blob byte counts").arg_func([&](logger_backend& backend) {
-        for(const auto i : integer_range(std_size(256))) {
-            if(byte_counts[i]) {
-                backend.add_float(
-                  byte_to_identifier(byte(i)),
-                  "Histogram",
-                  float(0),
-                  float(byte_counts[i]),
-                  float(max_count));
-            }
-        }
-    });
+    ctx.log()
+      .info("blob byte counts")
+      .tag("blobHstgrm")
+      .arg_func([&](logger_backend& backend) {
+          for(const auto i : integer_range(std_size(256))) {
+              if(byte_counts[i]) {
+                  backend.add_float(
+                    byte_to_identifier(byte(i)),
+                    "Histogram",
+                    float(0),
+                    float(byte_counts[i]),
+                    float(max_count));
+              }
+          }
+      });
 
     return 0;
 }

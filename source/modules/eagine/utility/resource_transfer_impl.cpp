@@ -68,11 +68,11 @@ void resource_data_consumer_node::_init() {
 }
 //------------------------------------------------------------------------------
 auto resource_data_consumer_node::update() noexcept -> work_done {
-    some_true something_done{base::update()};
+    some_true something_done;
 
     for(auto& [server_id, info] : _current_servers) {
-        if(!info.is_alive) {
-            ping_if(server_id, info.should_check);
+        if(ping_if(server_id, info.should_check)) {
+            something_done();
         }
     }
 
@@ -80,7 +80,7 @@ auto resource_data_consumer_node::update() noexcept -> work_done {
         if(!is_valid_endpoint_id(rinfo.source_server_id)) {
             if(rinfo.should_search) {
                 for(auto& [server_id, sinfo] : _current_servers) {
-                    if(sinfo.is_alive) {
+                    if(!sinfo.not_responding) {
                         search_resource(server_id, rinfo.locator);
                     }
                 }
@@ -88,9 +88,11 @@ auto resource_data_consumer_node::update() noexcept -> work_done {
                 log_debug("searching resource: ${locator}")
                   .tag("resrceSrch")
                   .arg("locator", rinfo.locator.str());
+                something_done();
             }
         }
     }
+    something_done(base::update_and_process_all());
 
     return something_done;
 }
@@ -151,7 +153,7 @@ auto resource_data_consumer_node::cancel_resource_stream(
 void resource_data_consumer_node::_handle_server_appeared(
   identifier_t server_id) noexcept {
     auto& info = _current_servers[server_id];
-    info.is_alive.reset();
+    info.not_responding.reset();
     log_info("resource server ${id} appeared")
       .tag("resSrvAppr")
       .arg("id", server_id);
@@ -223,7 +225,7 @@ void resource_data_consumer_node::_handle_ping_response(
     const auto pos{_current_servers.find(server_id)};
     if(pos != _current_servers.end()) {
         auto& info = std::get<1>(*pos);
-        info.is_alive.reset();
+        info.not_responding.reset();
     }
 }
 //------------------------------------------------------------------------------
