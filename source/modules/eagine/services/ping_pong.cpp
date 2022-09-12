@@ -134,7 +134,8 @@ public:
     /// @see ping_responded
     /// @see ping_timeouted
     /// @see has_pending_pings
-    void ping_if(const identifier_t pingable_id, timeout& should_ping) noexcept {
+    auto ping_if(const identifier_t pingable_id, timeout& should_ping) noexcept
+      -> bool {
         if(should_ping) {
             ping(
               pingable_id,
@@ -142,7 +143,9 @@ public:
                 adjusted_duration(
                   should_ping.period(), memory_access_rate::low)));
             should_ping.reset();
+            return true;
         }
+        return false;
     }
 
     /// @brief Sends a pings request and tracks it for a default time period.
