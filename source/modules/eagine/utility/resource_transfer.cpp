@@ -135,6 +135,7 @@ private:
     void _handle_server_lost(identifier_t) noexcept;
     void _handle_resource_found(identifier_t, const url&) noexcept;
     void _handle_missing(identifier_t, const url&) noexcept;
+    void _handle_stream_done(identifier_t) noexcept;
     void _handle_ping_response(
       const identifier_t pinger_id,
       const message_sequence_t,

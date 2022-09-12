@@ -61,6 +61,10 @@ void resource_data_consumer_node::_init() {
       this, server_has_resource);
     connect<&resource_data_consumer_node::_handle_missing>(
       this, server_has_not_resource);
+    connect<&resource_data_consumer_node::_handle_stream_done>(
+      this, blob_stream_finished);
+    connect<&resource_data_consumer_node::_handle_stream_done>(
+      this, blob_stream_cancelled);
     connect<&resource_data_consumer_node::_handle_ping_response>(
       this, ping_responded);
     connect<&resource_data_consumer_node::_handle_ping_timeout>(
@@ -215,6 +219,11 @@ void resource_data_consumer_node::_handle_missing(
             }
         }
     }
+}
+//------------------------------------------------------------------------------
+void resource_data_consumer_node::_handle_stream_done(
+  identifier_t resource_id) noexcept {
+    _pending_resources.erase(resource_id);
 }
 //------------------------------------------------------------------------------
 void resource_data_consumer_node::_handle_ping_response(
