@@ -65,6 +65,16 @@ private:
 export using resource_data_consumer_node_base =
   service_node<require_services<subscriber, resource_manipulator, pinger>>;
 //------------------------------------------------------------------------------
+export struct resource_data_consumer_node_config {
+    application_config_value<std::chrono::seconds> server_check_interval;
+    application_config_value<std::chrono::seconds> server_response_timeout;
+    application_config_value<std::chrono::seconds> resource_search_interval;
+    application_config_value<std::chrono::seconds> resource_stream_timeout;
+    int _dummy;
+
+    resource_data_consumer_node_config(application_config& c);
+};
+//------------------------------------------------------------------------------
 export class resource_data_consumer_node
   : public resource_data_consumer_node_base
   , public blob_stream_signals {
@@ -74,7 +84,8 @@ export class resource_data_consumer_node
 
 public:
     resource_data_consumer_node(main_ctx& ctx)
-      : base{"RsrcCnsmer", ctx} {
+      : base{"RsrcCnsmer", ctx}
+      , _config{ctx.config()} {
         _init();
     }
 
@@ -99,6 +110,12 @@ public:
       const std::chrono::seconds max_time)
       -> std::pair<identifier_t, const url&>;
 
+    auto stream_resource(url locator, const message_priority priority)
+      -> std::pair<identifier_t, const url&> {
+        return stream_resource(
+          std::move(locator), priority, _config.resource_stream_timeout);
+    }
+
     auto cancel_resource_stream(identifier_t resource_id) noexcept -> bool;
 
     auto has_pending_resources() const noexcept -> bool {
@@ -107,15 +124,15 @@ public:
 
 private:
     struct _server_info {
-        timeout should_check{std::chrono::seconds{5}};
-        timeout not_responding{std::chrono::seconds{10}};
+        timeout should_check{};
+        timeout not_responding{};
     };
 
     struct _resource_info {
         url locator{};
         std::shared_ptr<blob_io> resource_io{};
         identifier_t source_server_id{invalid_endpoint_id()};
-        timeout should_search{std::chrono::seconds{3}, nothing};
+        timeout should_search{};
         timeout blob_timeout{};
         message_sequence_t blob_stream_id{0};
         message_priority blob_priority{message_priority::normal};
@@ -145,6 +162,8 @@ private:
       const identifier_t pinger_id,
       const message_sequence_t,
       const std::chrono::microseconds) noexcept;
+
+    resource_data_consumer_node_config _config;
 
     identifier_t _res_id_seq{0};
     memory::buffer_pool _buffers;

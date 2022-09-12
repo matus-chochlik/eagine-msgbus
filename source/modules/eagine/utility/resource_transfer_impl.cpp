@@ -13,6 +13,7 @@ import eagine.core.reflection;
 import eagine.core.utility;
 import eagine.core.runtime;
 import eagine.core.logging;
+import eagine.core.main_ctx;
 import eagine.msgbus.core;
 import eagine.msgbus.services;
 import <chrono>;
@@ -49,6 +50,16 @@ void resource_data_server_node::_handle_shutdown(
 
     _done = true;
 }
+//------------------------------------------------------------------------------
+// resource_data_consumer_node_config
+//------------------------------------------------------------------------------
+resource_data_consumer_node_config::resource_data_consumer_node_config(
+  application_config& c)
+  : server_check_interval{c, "resource.consumer.server_check_interval", std::chrono::seconds{3}}
+  , server_response_timeout{c, "resource.consumer.server_response_timeout", std::chrono::seconds{10}}
+  , resource_search_interval{c, "resource.consumer.search_interval", std::chrono::seconds{3}}
+  , resource_stream_timeout{c, "resource.consumer.stream_timeout", std::chrono::seconds{3600}}
+  , _dummy{0} {}
 //------------------------------------------------------------------------------
 // resource_data_consumer_node
 //------------------------------------------------------------------------------
@@ -125,7 +136,8 @@ auto resource_data_consumer_node::_query_resource(
     info.locator = std::move(locator);
     info.resource_io = std::move(io);
     info.source_server_id = invalid_endpoint_id();
-    info.blob_timeout.reset(max_time);
+    info.should_search = {_config.resource_search_interval.value(), nothing};
+    info.blob_timeout = {max_time};
     info.blob_priority = priority;
     return {resource_id, info};
 }
@@ -158,7 +170,8 @@ auto resource_data_consumer_node::cancel_resource_stream(
 void resource_data_consumer_node::_handle_server_appeared(
   identifier_t server_id) noexcept {
     auto& info = _current_servers[server_id];
-    info.not_responding.reset();
+    info.should_check = {_config.server_check_interval.value(), nothing};
+    info.not_responding = {_config.server_response_timeout.value()};
     log_info("resource server ${id} appeared")
       .tag("resSrvAppr")
       .arg("id", server_id);
