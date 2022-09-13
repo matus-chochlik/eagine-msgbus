@@ -8,7 +8,6 @@
 export module eagine.msgbus.core;
 
 export import :types;
-export import :signal;
 export import :future;
 export import :handler_map;
 export import :message;

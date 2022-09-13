@@ -10,6 +10,7 @@ export module eagine.msgbus.services:endpoint_info;
 import eagine.core.types;
 import eagine.core.memory;
 import eagine.core.identifier;
+import eagine.core.utility;
 import eagine.core.main_ctx;
 import eagine.msgbus.core;
 import <array>;

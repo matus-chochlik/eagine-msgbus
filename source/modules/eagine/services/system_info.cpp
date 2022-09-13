@@ -11,6 +11,7 @@ import eagine.core.types;
 import eagine.core.memory;
 import eagine.core.identifier;
 import eagine.core.units;
+import eagine.core.utility;
 import eagine.core.valid_if;
 import eagine.core.main_ctx;
 import eagine.msgbus.core;

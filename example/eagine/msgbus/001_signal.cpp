@@ -17,7 +17,7 @@ import eagine.msgbus;
 namespace eagine {
 
 auto main(main_ctx& ctx) -> int {
-    msgbus::signal<void(const int) noexcept> sig;
+    signal<void(const int) noexcept> sig;
     callable_ref<void(const int) noexcept> f = sig;
 
     const auto fa = [&](const int i) {

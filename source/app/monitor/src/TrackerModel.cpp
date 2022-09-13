@@ -18,18 +18,18 @@ TrackerModel::TrackerModel(MonitorBackend& backend)
   , _tracker{_bus} {
     eagine::msgbus::setup_connectors(main_context(), _tracker);
 
-    eagine::msgbus::connect<&TrackerModel::handleHostChanged>(
+    eagine::connect<&TrackerModel::handleHostChanged>(
       this, _tracker.host_changed);
-    eagine::msgbus::connect<&TrackerModel::handleInstanceChanged>(
+    eagine::connect<&TrackerModel::handleInstanceChanged>(
       this, _tracker.instance_changed);
-    eagine::msgbus::connect<&TrackerModel::handleNodeChanged>(
+    eagine::connect<&TrackerModel::handleNodeChanged>(
       this, _tracker.node_changed);
 
-    eagine::msgbus::connect<&TrackerModel::handleNodeDisappeared>(
+    eagine::connect<&TrackerModel::handleNodeDisappeared>(
       this, _tracker.router_disappeared);
-    eagine::msgbus::connect<&TrackerModel::handleNodeDisappeared>(
+    eagine::connect<&TrackerModel::handleNodeDisappeared>(
       this, _tracker.bridge_disappeared);
-    eagine::msgbus::connect<&TrackerModel::handleNodeDisappeared>(
+    eagine::connect<&TrackerModel::handleNodeDisappeared>(
       this, _tracker.endpoint_disappeared);
 }
 //------------------------------------------------------------------------------

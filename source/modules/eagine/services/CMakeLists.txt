@@ -9,6 +9,7 @@ eagine_add_module(
 		eagine.core.memory
 		eagine.core.identifier
 		eagine.core.serialization
+		eagine.core.utility
 		eagine.core.valid_if
 		eagine.msgbus.core
 )
@@ -19,6 +20,7 @@ eagine_add_module(
 		eagine.core.types
 		eagine.core.memory
 		eagine.core.identifier
+		eagine.core.utility
 		eagine.msgbus.core
 )
 
@@ -28,6 +30,7 @@ eagine_add_module(
 		eagine.core.types
 		eagine.core.memory
 		eagine.core.identifier
+		eagine.core.utility
 		eagine.msgbus.core
 )
 
@@ -58,6 +61,7 @@ eagine_add_module(
 		eagine.core.types
 		eagine.core.memory
 		eagine.core.identifier
+		eagine.core.utility
 		eagine.msgbus.core
 )
 
@@ -67,6 +71,7 @@ eagine_add_module(
 		eagine.core.types
 		eagine.core.memory
 		eagine.core.identifier
+		eagine.core.utility
 		eagine.core.valid_if
 		eagine.core.main_ctx
 		eagine.msgbus.core
@@ -78,6 +83,7 @@ eagine_add_module(
 		eagine.core.types
 		eagine.core.memory
 		eagine.core.identifier
+		eagine.core.utility
 		eagine.core.main_ctx
 		eagine.msgbus.core
 )
@@ -88,6 +94,7 @@ eagine_add_module(
 		eagine.core.types
 		eagine.core.memory
 		eagine.core.identifier
+		eagine.core.utility
 		eagine.core.valid_if
 		eagine.core.main_ctx
 		eagine.msgbus.core
@@ -100,6 +107,7 @@ eagine_add_module(
 		eagine.core.memory
 		eagine.core.identifier
 		eagine.core.units
+		eagine.core.utility
 		eagine.core.valid_if
 		eagine.core.main_ctx
 		eagine.msgbus.core
@@ -111,6 +119,7 @@ eagine_add_module(
 		eagine.core.types
 		eagine.core.memory
 		eagine.core.identifier
+		eagine.core.utility
 		eagine.core.valid_if
 		eagine.core.main_ctx
 		eagine.msgbus.core
@@ -122,6 +131,7 @@ eagine_add_module(
 		eagine.core.types
 		eagine.core.memory
 		eagine.core.identifier
+		eagine.core.utility
 		eagine.core.valid_if
 		eagine.core.main_ctx
 		eagine.msgbus.core
