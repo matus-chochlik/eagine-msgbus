@@ -136,8 +136,8 @@ auto resource_data_consumer_node::_query_resource(
     info.locator = std::move(locator);
     info.resource_io = std::move(io);
     info.source_server_id = invalid_endpoint_id();
-    info.should_search = {_config.resource_search_interval.value(), nothing};
-    info.blob_timeout = {max_time};
+    info.should_search.reset(_config.resource_search_interval.value(), nothing);
+    info.blob_timeout.reset(max_time);
     info.blob_priority = priority;
     return {resource_id, info};
 }
@@ -170,8 +170,8 @@ auto resource_data_consumer_node::cancel_resource_stream(
 void resource_data_consumer_node::_handle_server_appeared(
   identifier_t server_id) noexcept {
     auto& info = _current_servers[server_id];
-    info.should_check = {_config.server_check_interval.value(), nothing};
-    info.not_responding = {_config.server_response_timeout.value()};
+    info.should_check.reset(_config.server_check_interval.value(), nothing);
+    info.not_responding.reset(_config.server_response_timeout.value());
     log_info("resource server ${id} appeared")
       .tag("resSrvAppr")
       .arg("id", server_id);
