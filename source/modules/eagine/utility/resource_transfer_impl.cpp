@@ -8,6 +8,7 @@
 module eagine.msgbus.utility;
 
 import eagine.core.types;
+import eagine.core.memory;
 import eagine.core.valid_if;
 import eagine.core.reflection;
 import eagine.core.utility;
@@ -110,8 +111,27 @@ auto resource_data_consumer_node::update() noexcept -> work_done {
                     something_done();
                 }
             }
+        } else if(std::holds_alternative<_embedded_resource_info>(pres.info)) {
+            auto& rinfo = std::get<_embedded_resource_info>(pres.info);
+            auto append = [&, offset{span_size(0)}, this](
+                            const memory::const_block data) mutable {
+                blob_stream_data_appended(resource_id, offset, view_one(data));
+                offset += data.size();
+                return true;
+            };
+            rinfo.resource.fetch(main_context(), {construct_from, append});
         }
     }
+    auto pos{_pending_resources.begin()};
+    while(pos != _pending_resources.end()) {
+        if(std::holds_alternative<_embedded_resource_info>(
+             std::get<1>(*pos).info)) {
+            pos = _pending_resources.erase(pos);
+        } else {
+            ++pos;
+        }
+    }
+
     something_done(base::update_and_process_all());
 
     return something_done;
