@@ -163,10 +163,13 @@ auto resource_data_consumer_node::_query_resource(
             pres.info = _embedded_resource_info{};
             auto& info = std::get<_embedded_resource_info>(pres.info);
             info.resource = std::move(res);
+            log_info("fetching embedded resource ${locator}")
+              .tag("embResCont")
+              .arg("locator", pres.locator.str());
             return {resource_id, pres};
         }
     }
-    pres.info = _embedded_resource_info{};
+    pres.info = _streamed_resource_info{};
     auto& info = std::get<_streamed_resource_info>(pres.info);
     info.resource_io = std::move(io);
     info.source_server_id = invalid_endpoint_id();
