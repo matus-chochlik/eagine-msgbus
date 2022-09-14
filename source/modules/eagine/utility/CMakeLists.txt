@@ -11,6 +11,7 @@ eagine_add_module(
 		eagine.core.valid_if
 		eagine.core.runtime
 		eagine.core.main_ctx
+		eagine.core.resource
 		eagine.msgbus.core
 		eagine.msgbus.services
 )

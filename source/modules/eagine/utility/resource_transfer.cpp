@@ -14,6 +14,7 @@ import eagine.core.valid_if;
 import eagine.core.utility;
 import eagine.core.runtime;
 import eagine.core.main_ctx;
+import eagine.core.resource;
 import eagine.msgbus.core;
 import eagine.msgbus.services;
 import <chrono>;
@@ -128,14 +129,26 @@ private:
         timeout not_responding{};
     };
 
-    struct _resource_info {
-        url locator{};
-        std::shared_ptr<blob_io> resource_io{};
+    struct _embedded_resource_info {
+        embedded_resource resource;
+    };
+
+    struct _streamed_resource_info {
         identifier_t source_server_id{invalid_endpoint_id()};
+        std::shared_ptr<blob_io> resource_io{};
         timeout should_search{};
         timeout blob_timeout{};
         message_sequence_t blob_stream_id{0};
         message_priority blob_priority{message_priority::normal};
+    };
+
+    struct _resource_info {
+        url locator{};
+        std::variant<
+          std::monostate,
+          _embedded_resource_info,
+          _streamed_resource_info>
+          info{};
     };
 
     auto _has_pending(identifier_t) const noexcept -> bool;
@@ -168,8 +181,10 @@ private:
     identifier_t _res_id_seq{0};
     memory::buffer_pool _buffers;
 
+    embedded_resource_loader _embedded_loader;
     std::map<identifier_t, _server_info> _current_servers;
     std::map<identifier_t, _resource_info> _pending_resources;
+    std::map<identifier_t, embedded_resource> _embedded_resources;
 };
 //------------------------------------------------------------------------------
 } // namespace eagine::msgbus

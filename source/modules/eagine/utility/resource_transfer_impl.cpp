@@ -14,6 +14,7 @@ import eagine.core.utility;
 import eagine.core.runtime;
 import eagine.core.logging;
 import eagine.core.main_ctx;
+import eagine.core.resource;
 import eagine.msgbus.core;
 import eagine.msgbus.services;
 import <chrono>;
@@ -91,20 +92,23 @@ auto resource_data_consumer_node::update() noexcept -> work_done {
         }
     }
 
-    for(auto& [resource_id, rinfo] : _pending_resources) {
-        if(!is_valid_endpoint_id(rinfo.source_server_id)) {
-            if(rinfo.should_search) {
-                for(auto& [server_id, sinfo] : _current_servers) {
-                    if(!sinfo.not_responding) {
-                        search_resource(server_id, rinfo.locator);
+    for(auto& [resource_id, pres] : _pending_resources) {
+        if(std::holds_alternative<_streamed_resource_info>(pres.info)) {
+            auto& rinfo = std::get<_streamed_resource_info>(pres.info);
+            if(!is_valid_endpoint_id(rinfo.source_server_id)) {
+                if(rinfo.should_search) {
+                    for(auto& [server_id, sinfo] : _current_servers) {
+                        if(!sinfo.not_responding) {
+                            search_resource(server_id, pres.locator);
+                        }
                     }
+                    rinfo.should_search.reset();
+                    log_debug("searching resource: ${locator}")
+                      .tag("resrceSrch")
+                      .arg("streamId", resource_id)
+                      .arg("locator", pres.locator.str());
+                    something_done();
                 }
-                rinfo.should_search.reset();
-                log_debug("searching resource: ${locator}")
-                  .tag("resrceSrch")
-                  .arg("streamId", resource_id)
-                  .arg("locator", rinfo.locator.str());
-                something_done();
             }
         }
     }
@@ -132,14 +136,24 @@ auto resource_data_consumer_node::_query_resource(
   const message_priority priority,
   const std::chrono::seconds max_time)
   -> std::pair<identifier_t, resource_data_consumer_node::_resource_info&> {
-    auto& info = _pending_resources[resource_id];
-    info.locator = std::move(locator);
+    auto& pres = _pending_resources[resource_id];
+    pres.locator = std::move(locator);
+    if(const auto res_id{pres.locator.path_identifier()}) {
+        if(const auto res{_embedded_loader.search(res_id.value())}) {
+            pres.info = _embedded_resource_info{};
+            auto& info = std::get<_embedded_resource_info>(pres.info);
+            info.resource = std::move(res);
+            return {resource_id, pres};
+        }
+    }
+    pres.info = _embedded_resource_info{};
+    auto& info = std::get<_streamed_resource_info>(pres.info);
     info.resource_io = std::move(io);
     info.source_server_id = invalid_endpoint_id();
     info.should_search.reset(_config.resource_search_interval.value(), nothing);
     info.blob_timeout.reset(max_time);
     info.blob_priority = priority;
-    return {resource_id, info};
+    return {resource_id, pres};
 }
 //------------------------------------------------------------------------------
 auto resource_data_consumer_node::stream_resource(
@@ -180,9 +194,12 @@ void resource_data_consumer_node::_handle_server_appeared(
 void resource_data_consumer_node::_handle_server_lost(
   identifier_t server_id) noexcept {
     for(auto& entry : _pending_resources) {
-        auto& info = std::get<1>(entry);
-        if(info.source_server_id == server_id) {
-            info.source_server_id = invalid_endpoint_id();
+        auto& pres = std::get<1>(entry);
+        if(std::holds_alternative<_streamed_resource_info>(pres.info)) {
+            auto& info = std::get<_streamed_resource_info>(pres.info);
+            if(info.source_server_id == server_id) {
+                info.source_server_id = invalid_endpoint_id();
+            }
         }
     }
     _current_servers.erase(server_id);
@@ -195,23 +212,27 @@ void resource_data_consumer_node::_handle_resource_found(
   identifier_t server_id,
   const url& locator) noexcept {
     for(auto& entry : _pending_resources) {
-        auto& info = std::get<1>(entry);
-        if(info.locator == locator) {
-            if(!is_valid_endpoint_id(info.source_server_id)) {
-                if(const auto id{query_resource_content(
-                     server_id,
-                     info.locator,
-                     info.resource_io,
-                     info.blob_priority,
-                     info.blob_timeout)}) {
-                    info.source_server_id = server_id;
-                    info.blob_stream_id = extract(id);
-                    log_info("fetching resource ${locator} from server ${id}")
-                      .tag("qryResCont")
-                      .arg("locator", info.locator.str())
-                      .arg("priority", info.blob_priority)
-                      .arg("id", server_id);
-                    break;
+        auto& pres = std::get<1>(entry);
+        if(pres.locator == locator) {
+            if(std::holds_alternative<_streamed_resource_info>(pres.info)) {
+                auto& info = std::get<_streamed_resource_info>(pres.info);
+                if(!is_valid_endpoint_id(info.source_server_id)) {
+                    if(const auto id{query_resource_content(
+                         server_id,
+                         pres.locator,
+                         info.resource_io,
+                         info.blob_priority,
+                         info.blob_timeout)}) {
+                        info.source_server_id = server_id;
+                        info.blob_stream_id = extract(id);
+                        log_info(
+                          "fetching resource ${locator} from server ${id}")
+                          .tag("qryResCont")
+                          .arg("locator", pres.locator.str())
+                          .arg("priority", info.blob_priority)
+                          .arg("id", server_id);
+                        break;
+                    }
                 }
             }
         }
@@ -222,14 +243,17 @@ void resource_data_consumer_node::_handle_missing(
   identifier_t server_id,
   const url& locator) noexcept {
     for(auto& entry : _pending_resources) {
-        auto& info = std::get<1>(entry);
-        if(info.locator == locator) {
-            if(info.source_server_id == server_id) {
-                info.source_server_id = invalid_endpoint_id();
-                log_debug("resource ${locator} not found on server ${id}")
-                  .tag("resNotFund")
-                  .arg("locator", info.locator.str())
-                  .arg("id", server_id);
+        auto& pres = std::get<1>(entry);
+        if(pres.locator == locator) {
+            if(std::holds_alternative<_streamed_resource_info>(pres.info)) {
+                auto& info = std::get<_streamed_resource_info>(pres.info);
+                if(info.source_server_id == server_id) {
+                    info.source_server_id = invalid_endpoint_id();
+                    log_debug("resource ${locator} not found on server ${id}")
+                      .tag("resNotFund")
+                      .arg("locator", pres.locator.str())
+                      .arg("id", server_id);
+                }
             }
         }
     }
