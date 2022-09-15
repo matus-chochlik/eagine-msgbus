@@ -159,7 +159,7 @@ auto resource_data_consumer_node::_query_resource(
     auto& pres = _pending_resources[resource_id];
     pres.locator = std::move(locator);
     if(const auto res_id{pres.locator.path_identifier()}) {
-        if(const auto res{_embedded_loader.search(res_id.value())}) {
+        if(const auto res{_embedded_loader.search(res_id)}) {
             pres.info = _embedded_resource_info{};
             auto& info = std::get<_embedded_resource_info>(pres.info);
             info.resource = std::move(res);

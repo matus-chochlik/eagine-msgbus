@@ -619,8 +619,8 @@ private:
       const stored_message& message) noexcept -> bool {
         std::string url_str;
         if(default_deserialize(url_str, message.content())) [[likely]] {
-            signals.server_has_resource(
-              message.source_id, url{std::move(url_str)});
+            const url locator{std::move(url_str)};
+            signals.server_has_resource(message.source_id, locator);
         }
         return true;
     }
@@ -630,8 +630,8 @@ private:
       const stored_message& message) noexcept -> bool {
         std::string url_str;
         if(default_deserialize(url_str, message.content())) [[likely]] {
-            signals.server_has_not_resource(
-              message.source_id, url{std::move(url_str)});
+            const url locator{std::move(url_str)};
+            signals.server_has_not_resource(message.source_id, locator);
         }
         return true;
     }
