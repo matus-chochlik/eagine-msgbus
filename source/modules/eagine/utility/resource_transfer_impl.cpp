@@ -5,6 +5,10 @@
 /// See accompanying file LICENSE_1_0.txt or copy at
 ///  http://www.boost.org/LICENSE_1_0.txt
 ///
+module;
+
+#include <cassert>
+
 module eagine.msgbus.utility;
 
 import eagine.core.types;
@@ -93,6 +97,7 @@ auto resource_data_consumer_node::update() noexcept -> work_done {
         }
     }
 
+    bool cleanup_embedded = false;
     for(auto& [resource_id, pres] : _pending_resources) {
         if(std::holds_alternative<_streamed_resource_info>(pres.info)) {
             auto& rinfo = std::get<_streamed_resource_info>(pres.info);
@@ -120,16 +125,20 @@ auto resource_data_consumer_node::update() noexcept -> work_done {
                 return true;
             };
             rinfo.resource.fetch(main_context(), {construct_from, append});
+            cleanup_embedded = true;
         }
     }
-    auto pos{_pending_resources.begin()};
-    while(pos != _pending_resources.end()) {
-        if(std::holds_alternative<_embedded_resource_info>(
-             std::get<1>(*pos).info)) {
-            pos = _pending_resources.erase(pos);
-        } else {
-            ++pos;
+    if(cleanup_embedded) {
+        auto pos{_pending_resources.begin()};
+        while(pos != _pending_resources.end()) {
+            if(std::holds_alternative<_embedded_resource_info>(
+                 std::get<1>(*pos).info)) {
+                pos = _pending_resources.erase(pos);
+            } else {
+                ++pos;
+            }
         }
+        something_done();
     }
 
     something_done(base::update_and_process_all());
@@ -145,7 +154,7 @@ auto resource_data_consumer_node::_has_pending(
 auto resource_data_consumer_node::_get_resource_id() noexcept -> identifier_t {
     do {
         ++_res_id_seq;
-    } while(!_res_id_seq || _has_pending(_res_id_seq));
+    } while((_res_id_seq == 0) || _has_pending(_res_id_seq));
     return _res_id_seq;
 }
 //------------------------------------------------------------------------------
@@ -156,6 +165,8 @@ auto resource_data_consumer_node::_query_resource(
   const message_priority priority,
   const std::chrono::seconds max_time)
   -> std::pair<identifier_t, resource_data_consumer_node::_resource_info&> {
+    assert(resource_id != 0);
+
     auto& pres = _pending_resources[resource_id];
     pres.locator = std::move(locator);
     if(const auto res_id{pres.locator.path_identifier()}) {
