@@ -98,7 +98,7 @@ auto resource_data_consumer_node::update() noexcept -> work_done {
     }
 
     bool cleanup_embedded = false;
-    for(auto& [resource_id, pres] : _pending_resources) {
+    for(auto& [request_id, pres] : _pending_resources) {
         if(std::holds_alternative<_streamed_resource_info>(pres.info)) {
             auto& rinfo = std::get<_streamed_resource_info>(pres.info);
             if(!is_valid_endpoint_id(rinfo.source_server_id)) {
@@ -111,7 +111,7 @@ auto resource_data_consumer_node::update() noexcept -> work_done {
                     rinfo.should_search.reset();
                     log_debug("searching resource: ${locator}")
                       .tag("resrceSrch")
-                      .arg("streamId", resource_id)
+                      .arg("streamId", request_id)
                       .arg("locator", pres.locator.str());
                     something_done();
                 }
@@ -120,7 +120,7 @@ auto resource_data_consumer_node::update() noexcept -> work_done {
             auto& rinfo = std::get<_embedded_resource_info>(pres.info);
             auto append = [&, offset{span_size(0)}, this](
                             const memory::const_block data) mutable {
-                blob_stream_data_appended(resource_id, offset, view_one(data));
+                blob_stream_data_appended(request_id, offset, view_one(data));
                 offset += data.size();
                 return true;
             };
@@ -146,28 +146,28 @@ auto resource_data_consumer_node::update() noexcept -> work_done {
     return something_done;
 }
 //------------------------------------------------------------------------------
-auto resource_data_consumer_node::_has_pending(
-  identifier_t resource_id) const noexcept -> bool {
-    return _pending_resources.find(resource_id) != _pending_resources.end();
-}
-//------------------------------------------------------------------------------
-auto resource_data_consumer_node::_get_resource_id() noexcept -> identifier_t {
+auto resource_data_consumer_node::get_request_id() noexcept -> identifier_t {
     do {
         ++_res_id_seq;
     } while((_res_id_seq == 0) || _has_pending(_res_id_seq));
     return _res_id_seq;
 }
 //------------------------------------------------------------------------------
+auto resource_data_consumer_node::_has_pending(
+  identifier_t request_id) const noexcept -> bool {
+    return _pending_resources.find(request_id) != _pending_resources.end();
+}
+//------------------------------------------------------------------------------
 auto resource_data_consumer_node::_query_resource(
-  identifier_t resource_id,
+  identifier_t request_id,
   url locator,
   std::shared_ptr<blob_io> io,
   const message_priority priority,
   const std::chrono::seconds max_time)
   -> std::pair<identifier_t, resource_data_consumer_node::_resource_info&> {
-    assert(resource_id != 0);
+    assert(request_id != 0);
 
-    auto& pres = _pending_resources[resource_id];
+    auto& pres = _pending_resources[request_id];
     pres.locator = std::move(locator);
     if(const auto res_id{pres.locator.path_identifier()}) {
         if(const auto res{_embedded_loader.search(res_id)}) {
@@ -177,7 +177,7 @@ auto resource_data_consumer_node::_query_resource(
             log_info("fetching embedded resource ${locator}")
               .tag("embResCont")
               .arg("locator", pres.locator.str());
-            return {resource_id, pres};
+            return {request_id, pres};
         }
     }
     pres.info = _streamed_resource_info{};
@@ -187,26 +187,26 @@ auto resource_data_consumer_node::_query_resource(
     info.should_search.reset(_config.resource_search_interval.value(), nothing);
     info.blob_timeout.reset(max_time);
     info.blob_priority = priority;
-    return {resource_id, pres};
+    return {request_id, pres};
 }
 //------------------------------------------------------------------------------
 auto resource_data_consumer_node::stream_resource(
   url locator,
   const message_priority priority,
   const std::chrono::seconds max_time) -> std::pair<identifier_t, const url&> {
-    const auto resource_id{_get_resource_id()};
+    const auto request_id{get_request_id()};
     auto result{_query_resource(
-      resource_id,
+      request_id,
       std::move(locator),
-      make_blob_stream_io(resource_id, *this, _buffers),
+      make_blob_stream_io(request_id, *this, _buffers),
       priority,
       max_time)};
     return {std::get<0>(result), std::get<1>(result).locator};
 }
 //------------------------------------------------------------------------------
 auto resource_data_consumer_node::cancel_resource_stream(
-  identifier_t resource_id) noexcept -> bool {
-    const auto pos{_pending_resources.find(resource_id)};
+  identifier_t request_id) noexcept -> bool {
+    const auto pos{_pending_resources.find(request_id)};
     if(pos != _pending_resources.end()) {
         // TODO: cancel in base
         _pending_resources.erase(pos);
@@ -294,8 +294,8 @@ void resource_data_consumer_node::_handle_missing(
 }
 //------------------------------------------------------------------------------
 void resource_data_consumer_node::_handle_stream_done(
-  identifier_t resource_id) noexcept {
-    _pending_resources.erase(resource_id);
+  identifier_t request_id) noexcept {
+    _pending_resources.erase(request_id);
 }
 //------------------------------------------------------------------------------
 void resource_data_consumer_node::_handle_ping_response(

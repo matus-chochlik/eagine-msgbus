@@ -92,13 +92,15 @@ public:
 
     auto update() noexcept -> work_done;
 
+    auto get_request_id() noexcept -> identifier_t;
+
     void query_resource(
       url locator,
       std::shared_ptr<blob_io> io,
       const message_priority priority,
       const std::chrono::seconds max_time) {
         _query_resource(
-          _get_resource_id(),
+          get_request_id(),
           std::move(locator),
           std::move(io),
           priority,
@@ -117,7 +119,7 @@ public:
           std::move(locator), priority, _config.resource_stream_timeout);
     }
 
-    auto cancel_resource_stream(identifier_t resource_id) noexcept -> bool;
+    auto cancel_resource_stream(identifier_t request_id) noexcept -> bool;
 
     auto has_pending_resources() const noexcept -> bool {
         return !_pending_resources.empty();
@@ -152,7 +154,6 @@ private:
     };
 
     auto _has_pending(identifier_t) const noexcept -> bool;
-    auto _get_resource_id() noexcept -> identifier_t;
     auto _query_resource(
       identifier_t res_id,
       url locator,
