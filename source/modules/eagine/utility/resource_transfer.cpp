@@ -121,9 +121,8 @@ public:
 
     auto cancel_resource_stream(identifier_t request_id) noexcept -> bool;
 
-    auto has_pending_resources() const noexcept -> bool {
-        return !_pending_resources.empty();
-    }
+    auto has_pending_resource(identifier_t request_id) const noexcept -> bool;
+    auto has_pending_resources() const noexcept -> bool;
 
 private:
     struct _server_info {
@@ -132,10 +131,12 @@ private:
     };
 
     struct _embedded_resource_info {
+        url locator{};
         embedded_resource resource;
     };
 
     struct _streamed_resource_info {
+        url locator{};
         identifier_t source_server_id{invalid_endpoint_id()};
         std::shared_ptr<blob_io> resource_io{};
         timeout should_search{};
@@ -144,23 +145,13 @@ private:
         message_priority blob_priority{message_priority::normal};
     };
 
-    struct _resource_info {
-        url locator{};
-        std::variant<
-          std::monostate,
-          _embedded_resource_info,
-          _streamed_resource_info>
-          info{};
-    };
-
-    auto _has_pending(identifier_t) const noexcept -> bool;
     auto _query_resource(
       identifier_t res_id,
       url locator,
       std::shared_ptr<blob_io> io,
       const message_priority priority,
       const std::chrono::seconds max_time)
-      -> std::pair<identifier_t, _resource_info&>;
+      -> std::pair<identifier_t, const url&>;
 
     void _handle_server_appeared(identifier_t) noexcept;
     void _handle_server_lost(identifier_t) noexcept;
@@ -184,8 +175,8 @@ private:
 
     embedded_resource_loader _embedded_loader;
     std::map<identifier_t, _server_info> _current_servers;
-    std::map<identifier_t, _resource_info> _pending_resources;
-    std::map<identifier_t, embedded_resource> _embedded_resources;
+    std::map<identifier_t, _streamed_resource_info> _streamed_resources;
+    std::map<identifier_t, _embedded_resource_info> _embedded_resources;
 };
 //------------------------------------------------------------------------------
 } // namespace eagine::msgbus

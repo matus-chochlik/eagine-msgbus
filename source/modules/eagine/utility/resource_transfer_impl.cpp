@@ -91,71 +91,63 @@ void resource_data_consumer_node::_init() {
 auto resource_data_consumer_node::update() noexcept -> work_done {
     some_true something_done;
 
-    for(auto& [server_id, info] : _current_servers) {
-        if(ping_if(server_id, info.should_check)) {
+    for(auto& [server_id, sinfo] : _current_servers) {
+        if(ping_if(server_id, sinfo.should_check)) {
             something_done();
         }
     }
 
-    bool cleanup_embedded = false;
-    for(auto& [request_id, pres] : _pending_resources) {
-        if(std::holds_alternative<_streamed_resource_info>(pres.info)) {
-            auto& rinfo = std::get<_streamed_resource_info>(pres.info);
-            if(!is_valid_endpoint_id(rinfo.source_server_id)) {
-                if(rinfo.should_search) {
-                    for(auto& [server_id, sinfo] : _current_servers) {
-                        if(!sinfo.not_responding) {
-                            search_resource(server_id, pres.locator);
-                        }
+    for(auto& [request_id, info] : _streamed_resources) {
+        if(!is_valid_endpoint_id(info.source_server_id)) {
+            if(info.should_search) {
+                for(auto& [server_id, sinfo] : _current_servers) {
+                    if(!sinfo.not_responding) {
+                        search_resource(server_id, info.locator);
                     }
-                    rinfo.should_search.reset();
-                    log_debug("searching resource: ${locator}")
-                      .tag("resrceSrch")
-                      .arg("streamId", request_id)
-                      .arg("locator", pres.locator.str());
-                    something_done();
                 }
+                info.should_search.reset();
+                log_debug("searching resource: ${locator}")
+                  .tag("resrceSrch")
+                  .arg("streamId", request_id)
+                  .arg("locator", info.locator.str());
+                something_done();
             }
-        } else if(std::holds_alternative<_embedded_resource_info>(pres.info)) {
-            auto& rinfo = std::get<_embedded_resource_info>(pres.info);
-            auto append = [&, offset{span_size(0)}, this](
-                            const memory::const_block data) mutable {
-                blob_stream_data_appended(request_id, offset, view_one(data));
-                offset += data.size();
-                return true;
-            };
-            rinfo.resource.fetch(main_context(), {construct_from, append});
-            cleanup_embedded = true;
         }
     }
-    if(cleanup_embedded) {
-        auto pos{_pending_resources.begin()};
-        while(pos != _pending_resources.end()) {
-            if(std::holds_alternative<_embedded_resource_info>(
-                 std::get<1>(*pos).info)) {
-                pos = _pending_resources.erase(pos);
-            } else {
-                ++pos;
-            }
-        }
+    for(auto& [request_id, info] : _embedded_resources) {
+        auto append = [&, offset{span_size(0)}, this](
+                        const memory::const_block data) mutable {
+            blob_stream_data_appended(request_id, offset, view_one(data));
+            offset += data.size();
+            return true;
+        };
+        info.resource.fetch(main_context(), {construct_from, append});
         something_done();
     }
+    _embedded_resources.clear();
 
     something_done(base::update_and_process_all());
 
     return something_done;
 }
 //------------------------------------------------------------------------------
+auto resource_data_consumer_node::has_pending_resource(
+  identifier_t request_id) const noexcept -> bool {
+    return (_streamed_resources.find(request_id) !=
+            _streamed_resources.end()) ||
+           (_embedded_resources.find(request_id) != _embedded_resources.end());
+}
+//------------------------------------------------------------------------------
+auto resource_data_consumer_node::has_pending_resources() const noexcept
+  -> bool {
+    return !_streamed_resources.empty() || !_embedded_resources.empty();
+}
+//------------------------------------------------------------------------------
 auto resource_data_consumer_node::get_request_id() noexcept -> identifier_t {
     do {
         ++_res_id_seq;
-    } while((_res_id_seq == 0) || _has_pending(_res_id_seq));
+    } while((_res_id_seq == 0) || has_pending_resource(_res_id_seq));
     return _res_id_seq;
-}
-//------------------------------------------------------------------------------
-auto resource_data_consumer_node::_has_pending(
-  identifier_t request_id) const noexcept -> bool {
-    return _pending_resources.find(request_id) != _pending_resources.end();
 }
 //------------------------------------------------------------------------------
 auto resource_data_consumer_node::_query_resource(
@@ -163,31 +155,28 @@ auto resource_data_consumer_node::_query_resource(
   url locator,
   std::shared_ptr<blob_io> io,
   const message_priority priority,
-  const std::chrono::seconds max_time)
-  -> std::pair<identifier_t, resource_data_consumer_node::_resource_info&> {
+  const std::chrono::seconds max_time) -> std::pair<identifier_t, const url&> {
     assert(request_id != 0);
 
-    auto& pres = _pending_resources[request_id];
-    pres.locator = std::move(locator);
-    if(const auto res_id{pres.locator.path_identifier()}) {
+    if(const auto res_id{locator.path_identifier()}) {
         if(const auto res{_embedded_loader.search(res_id)}) {
-            pres.info = _embedded_resource_info{};
-            auto& info = std::get<_embedded_resource_info>(pres.info);
+            auto& info = _embedded_resources[request_id];
+            info.locator = std::move(locator);
             info.resource = std::move(res);
             log_info("fetching embedded resource ${locator}")
               .tag("embResCont")
-              .arg("locator", pres.locator.str());
-            return {request_id, pres};
+              .arg("locator", info.locator.str());
+            return {request_id, info.locator};
         }
     }
-    pres.info = _streamed_resource_info{};
-    auto& info = std::get<_streamed_resource_info>(pres.info);
+    auto& info = _streamed_resources[request_id];
+    info.locator = std::move(locator);
     info.resource_io = std::move(io);
     info.source_server_id = invalid_endpoint_id();
     info.should_search.reset(_config.resource_search_interval.value(), nothing);
     info.blob_timeout.reset(max_time);
     info.blob_priority = priority;
-    return {request_id, pres};
+    return {request_id, info.locator};
 }
 //------------------------------------------------------------------------------
 auto resource_data_consumer_node::stream_resource(
@@ -195,23 +184,29 @@ auto resource_data_consumer_node::stream_resource(
   const message_priority priority,
   const std::chrono::seconds max_time) -> std::pair<identifier_t, const url&> {
     const auto request_id{get_request_id()};
-    auto result{_query_resource(
+    return _query_resource(
       request_id,
       std::move(locator),
       make_blob_stream_io(request_id, *this, _buffers),
       priority,
-      max_time)};
-    return {std::get<0>(result), std::get<1>(result).locator};
+      max_time);
 }
 //------------------------------------------------------------------------------
 auto resource_data_consumer_node::cancel_resource_stream(
   identifier_t request_id) noexcept -> bool {
-    const auto pos{_pending_resources.find(request_id)};
-    if(pos != _pending_resources.end()) {
+    const auto spos{_streamed_resources.find(request_id)};
+    if(spos != _streamed_resources.end()) {
         // TODO: cancel in base
-        _pending_resources.erase(pos);
+        _streamed_resources.erase(spos);
         return true;
     }
+
+    const auto epos{_embedded_resources.find(request_id)};
+    if(epos != _embedded_resources.end()) {
+        _embedded_resources.erase(epos);
+        return true;
+    }
+
     return false;
 }
 //------------------------------------------------------------------------------
@@ -227,13 +222,10 @@ void resource_data_consumer_node::_handle_server_appeared(
 //------------------------------------------------------------------------------
 void resource_data_consumer_node::_handle_server_lost(
   identifier_t server_id) noexcept {
-    for(auto& entry : _pending_resources) {
-        auto& pres = std::get<1>(entry);
-        if(std::holds_alternative<_streamed_resource_info>(pres.info)) {
-            auto& info = std::get<_streamed_resource_info>(pres.info);
-            if(info.source_server_id == server_id) {
-                info.source_server_id = invalid_endpoint_id();
-            }
+    for(auto& entry : _streamed_resources) {
+        auto& info = std::get<1>(entry);
+        if(info.source_server_id == server_id) {
+            info.source_server_id = invalid_endpoint_id();
         }
     }
     _current_servers.erase(server_id);
@@ -245,28 +237,24 @@ void resource_data_consumer_node::_handle_server_lost(
 void resource_data_consumer_node::_handle_resource_found(
   identifier_t server_id,
   const url& locator) noexcept {
-    for(auto& entry : _pending_resources) {
-        auto& pres = std::get<1>(entry);
-        if(pres.locator == locator) {
-            if(std::holds_alternative<_streamed_resource_info>(pres.info)) {
-                auto& info = std::get<_streamed_resource_info>(pres.info);
-                if(!is_valid_endpoint_id(info.source_server_id)) {
-                    if(const auto id{query_resource_content(
-                         server_id,
-                         pres.locator,
-                         info.resource_io,
-                         info.blob_priority,
-                         info.blob_timeout)}) {
-                        info.source_server_id = server_id;
-                        info.blob_stream_id = extract(id);
-                        log_info(
-                          "fetching resource ${locator} from server ${id}")
-                          .tag("qryResCont")
-                          .arg("locator", pres.locator.str())
-                          .arg("priority", info.blob_priority)
-                          .arg("id", server_id);
-                        break;
-                    }
+    for(auto& entry : _streamed_resources) {
+        auto& info = std::get<1>(entry);
+        if(info.locator == locator) {
+            if(!is_valid_endpoint_id(info.source_server_id)) {
+                if(const auto id{query_resource_content(
+                     server_id,
+                     info.locator,
+                     info.resource_io,
+                     info.blob_priority,
+                     info.blob_timeout)}) {
+                    info.source_server_id = server_id;
+                    info.blob_stream_id = extract(id);
+                    log_info("fetching resource ${locator} from server ${id}")
+                      .tag("qryResCont")
+                      .arg("locator", info.locator.str())
+                      .arg("priority", info.blob_priority)
+                      .arg("id", server_id);
+                    break;
                 }
             }
         }
@@ -276,18 +264,15 @@ void resource_data_consumer_node::_handle_resource_found(
 void resource_data_consumer_node::_handle_missing(
   identifier_t server_id,
   const url& locator) noexcept {
-    for(auto& entry : _pending_resources) {
-        auto& pres = std::get<1>(entry);
-        if(pres.locator == locator) {
-            if(std::holds_alternative<_streamed_resource_info>(pres.info)) {
-                auto& info = std::get<_streamed_resource_info>(pres.info);
-                if(info.source_server_id == server_id) {
-                    info.source_server_id = invalid_endpoint_id();
-                    log_debug("resource ${locator} not found on server ${id}")
-                      .tag("resNotFund")
-                      .arg("locator", pres.locator.str())
-                      .arg("id", server_id);
-                }
+    for(auto& entry : _streamed_resources) {
+        auto& info = std::get<1>(entry);
+        if(info.locator == locator) {
+            if(info.source_server_id == server_id) {
+                info.source_server_id = invalid_endpoint_id();
+                log_debug("resource ${locator} not found on server ${id}")
+                  .tag("resNotFund")
+                  .arg("locator", info.locator.str())
+                  .arg("id", server_id);
             }
         }
     }
@@ -295,7 +280,7 @@ void resource_data_consumer_node::_handle_missing(
 //------------------------------------------------------------------------------
 void resource_data_consumer_node::_handle_stream_done(
   identifier_t request_id) noexcept {
-    _pending_resources.erase(request_id);
+    _streamed_resources.erase(request_id);
 }
 //------------------------------------------------------------------------------
 void resource_data_consumer_node::_handle_ping_response(
