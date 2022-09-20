@@ -15,14 +15,6 @@ eagine_add_module(
 )
 
 eagine_add_module(
-	eagine.msgbus.core PARTITION signal
-	IMPORTS
-		eagine.core.types
-		eagine.core.container
-		eagine.core.utility
-)
-
-eagine_add_module(
 	eagine.msgbus.core PARTITION future
 	IMPORTS
 		types
@@ -135,7 +127,7 @@ eagine_add_module(
 eagine_add_module(
 	eagine.msgbus.core PARTITION endpoint
 	IMPORTS
-		types blobs signal message
+		types blobs message
 		interface context
 		eagine.core.types
 		eagine.core.memory
@@ -305,7 +297,6 @@ eagine_add_module(
 	INTERFACES core
 	PARTITIONS
 		types
-		signal
 		future
 		handler_map
 		message

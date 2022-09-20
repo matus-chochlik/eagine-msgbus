@@ -20,7 +20,6 @@ import eagine.core.valid_if;
 import eagine.core.main_ctx;
 import :types;
 import :blobs;
-import :signal;
 import :message;
 import :context;
 import <array>;

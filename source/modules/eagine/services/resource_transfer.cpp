@@ -23,26 +23,6 @@ import <tuple>;
 
 namespace eagine::msgbus {
 //------------------------------------------------------------------------------
-export struct blob_stream_signals {
-    signal<void(
-      const url& locator,
-      const span_size_t offset,
-      const memory::span<const memory::const_block>) noexcept>
-      blob_stream_data_appended;
-
-    signal<void(const url& locator) noexcept> blob_stream_finished;
-
-    signal<void(const url& locator) noexcept> blob_stream_cancelled;
-};
-//------------------------------------------------------------------------------
-export auto make_blob_stream_io(
-  url loc,
-  blob_stream_signals& sigs,
-  memory::buffer_pool& buffers) -> std::unique_ptr<blob_io>;
-//------------------------------------------------------------------------------
-export auto get_blob_io_locator(blob_io&)
-  -> optional_reference_wrapper<const url>;
-//------------------------------------------------------------------------------
 export struct resource_server_driver : interface<resource_server_driver> {
     virtual auto has_resource(const url&) noexcept -> tribool {
         return indeterminate;
@@ -210,6 +190,21 @@ public:
       -> std::optional<message_sequence_t> {
         return _impl->query_resource_content(
           endpoint_id, locator, std::move(write_io), priority, max_time);
+    }
+
+    /// @brief Requests the contents of the file with the specified URL.
+    auto query_resource_content(
+      identifier_t endpoint_id,
+      const url& locator,
+      std::shared_ptr<blob_io> write_io,
+      const message_priority priority,
+      timeout& max_timeout) -> std::optional<message_sequence_t> {
+        return _impl->query_resource_content(
+          endpoint_id,
+          locator,
+          std::move(write_io),
+          priority,
+          std::chrono::ceil<std::chrono::seconds>(max_timeout.period()));
     }
 
     /// @brief Requests the contents of the file with the specified URL.

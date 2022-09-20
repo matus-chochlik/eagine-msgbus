@@ -9,6 +9,7 @@ export module eagine.msgbus.services:statistics;
 
 import eagine.core.types;
 import eagine.core.memory;
+import eagine.core.utility;
 import eagine.msgbus.core;
 
 namespace eagine::msgbus {

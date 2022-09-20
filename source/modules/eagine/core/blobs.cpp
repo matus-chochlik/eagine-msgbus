@@ -63,7 +63,25 @@ export struct blob_io : interface<blob_io> {
 //------------------------------------------------------------------------------
 export class buffer_blob_io;
 //------------------------------------------------------------------------------
+export struct blob_stream_signals {
+    signal<void(
+      identifier_t blob_id,
+      const span_size_t offset,
+      const memory::span<const memory::const_block>) noexcept>
+      blob_stream_data_appended;
+
+    signal<void(identifier_t blob_id) noexcept> blob_stream_finished;
+
+    signal<void(identifier_t blob_id) noexcept> blob_stream_cancelled;
+};
+//------------------------------------------------------------------------------
+export auto make_blob_stream_io(
+  identifier_t blob_id,
+  blob_stream_signals& sigs,
+  memory::buffer_pool& buffers) -> std::unique_ptr<blob_io>;
+//------------------------------------------------------------------------------
 export using blob_id_t = std::uint32_t;
+//------------------------------------------------------------------------------
 struct pending_blob {
     message_id msg_id{};
     identifier_t source_id{0U};

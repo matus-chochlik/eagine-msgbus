@@ -14,6 +14,7 @@ export module eagine.msgbus.services:shutdown;
 import eagine.core.types;
 import eagine.core.memory;
 import eagine.core.identifier;
+import eagine.core.utility;
 import eagine.msgbus.core;
 import <array>;
 import <chrono>;

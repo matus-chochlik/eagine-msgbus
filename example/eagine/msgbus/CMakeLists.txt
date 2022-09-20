@@ -73,3 +73,13 @@ eagine_example_common(013_conn_setup)
 eagine_example_common(014_tracker)
 eagine_example_common(015_stream)
 
+if(WITH_MODULES)
+eagine_example_common(006_stream_histogram)
+eagine_embed_target_resources(
+	TARGET eagine-006_stream_histogram
+	RESOURCES
+		ownSource "${CMAKE_CURRENT_SOURCE_DIR}/006_stream_histogram.cpp"
+	PACKED
+	ENABLE_SEARCH
+)
+endif()
