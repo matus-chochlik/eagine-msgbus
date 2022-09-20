@@ -60,6 +60,7 @@ auto main(main_ctx& ctx) -> int {
     }
     if(!node.has_pending_resources()) {
         enqueue(url("eagires:///zeroes?count=1073741824"));
+        enqueue(url("eagires:///random?count=1073741824"));
         enqueue(url("eagires:///ownSource"));
     }
 
