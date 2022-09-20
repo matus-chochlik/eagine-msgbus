@@ -4,31 +4,11 @@
 /// See accompanying file LICENSE_1_0.txt or copy at
 ///  http://www.boost.org/LICENSE_1_0.txt
 ///
-#if EAGINE_MSGBUS_MODULE
 import eagine.core;
 import eagine.sslplus;
 import eagine.msgbus;
 import <thread>;
 import <cstdint>;
-#else
-#include <eagine/logging/root_logger.hpp>
-#include <eagine/main_ctx.hpp>
-#include <eagine/main_fwd.hpp>
-#include <eagine/math/functions.hpp>
-#include <eagine/message_bus.hpp>
-#include <eagine/msgbus/direct.hpp>
-#include <eagine/msgbus/endpoint.hpp>
-#include <eagine/msgbus/resources.hpp>
-#include <eagine/msgbus/router.hpp>
-#include <eagine/msgbus/service/common_info.hpp>
-#include <eagine/msgbus/service/ping_pong.hpp>
-#include <eagine/msgbus/service/shutdown.hpp>
-#include <eagine/msgbus/service/system_info.hpp>
-#include <eagine/signal_switch.hpp>
-#include <eagine/sslplus/resources.hpp>
-#include <eagine/watchdog.hpp>
-#include <cstdint>
-#endif
 
 namespace eagine {
 //------------------------------------------------------------------------------

@@ -5,29 +5,11 @@
 /// See accompanying file LICENSE_1_0.txt or copy at
 ///  http://www.boost.org/LICENSE_1_0.txt
 ///
-#if EAGINE_MSGBUS_MODULE
 import eagine.core;
 import eagine.sslplus;
 import eagine.msgbus;
 import <queue>;
 import <set>;
-#else
-#include <eagine/interop/valgrind.hpp>
-#include <eagine/main_ctx.hpp>
-#include <eagine/memory/span_algo.hpp>
-#include <eagine/msgbus/acceptor.hpp>
-#include <eagine/msgbus/direct.hpp>
-#include <eagine/msgbus/endpoint.hpp>
-#include <eagine/msgbus/router.hpp>
-#include <eagine/msgbus/subscriber.hpp>
-#include <eagine/serialize/block_sink.hpp>
-#include <eagine/serialize/block_source.hpp>
-#include <eagine/serialize/fast_backend.hpp>
-#include <eagine/serialize/read.hpp>
-#include <eagine/serialize/write.hpp>
-#include <queue>
-#include <set>
-#endif
 
 namespace eagine {
 namespace msgbus {
