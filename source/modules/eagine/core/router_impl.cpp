@@ -526,13 +526,13 @@ auto router::_process_blobs() noexcept -> work_done {
     return something_done;
 }
 //------------------------------------------------------------------------------
-auto router::_do_get_blob_io(
+auto router::_do_get_blob_target_io(
   const message_id msg_id,
   const span_size_t size,
-  blob_manipulator& blobs) noexcept -> std::unique_ptr<blob_io> {
+  blob_manipulator& blobs) noexcept -> std::unique_ptr<target_blob_io> {
     if(is_special_message(msg_id)) {
         if(msg_id.has_method("eptCertPem")) {
-            return blobs.make_io(size);
+            return blobs.make_target_io(size);
         }
     }
     return {};
@@ -900,7 +900,7 @@ auto router::_handle_bye_bye(
 auto router::_handle_blob_fragment(const message_view& message) noexcept
   -> message_handling_result {
     if(_blobs.process_incoming(
-         make_callable_ref<&router::_do_get_blob_io>(this), message)) {
+         make_callable_ref<&router::_do_get_blob_target_io>(this), message)) {
         _blobs.fetch_all(make_callable_ref<&router::_handle_blob>(this));
     }
     return (message.target_id == _id_base) ? was_handled : should_be_forwarded;

@@ -15,7 +15,7 @@ import <vector>;
 namespace eagine {
 namespace msgbus {
 
-class example_blob_io : public blob_io {
+class example_blob_io : public target_blob_io {
 public:
     example_blob_io(const logger& log, url loc) noexcept
       : _log{log}

@@ -29,7 +29,7 @@ export struct resource_server_driver : interface<resource_server_driver> {
     }
 
     virtual auto get_resource_io(const identifier_t, const url&)
-      -> std::unique_ptr<blob_io> {
+      -> std::unique_ptr<source_blob_io> {
         return {};
     }
 
@@ -134,7 +134,7 @@ struct resource_manipulator_intf : interface<resource_manipulator_intf> {
     virtual auto query_resource_content(
       identifier_t endpoint_id,
       const url& locator,
-      std::shared_ptr<blob_io> write_io,
+      std::shared_ptr<target_blob_io> write_io,
       const message_priority priority,
       const std::chrono::seconds max_time)
       -> std::optional<message_sequence_t> = 0;
@@ -184,7 +184,7 @@ public:
     auto query_resource_content(
       identifier_t endpoint_id,
       const url& locator,
-      std::shared_ptr<blob_io> write_io,
+      std::shared_ptr<target_blob_io> write_io,
       const message_priority priority,
       const std::chrono::seconds max_time)
       -> std::optional<message_sequence_t> {
@@ -196,7 +196,7 @@ public:
     auto query_resource_content(
       identifier_t endpoint_id,
       const url& locator,
-      std::shared_ptr<blob_io> write_io,
+      std::shared_ptr<target_blob_io> write_io,
       const message_priority priority,
       timeout& max_timeout) -> std::optional<message_sequence_t> {
         return _impl->query_resource_content(
@@ -211,7 +211,7 @@ public:
     /// @see server_endpoint_id
     auto query_resource_content(
       const url& locator,
-      std::shared_ptr<blob_io> write_io,
+      std::shared_ptr<target_blob_io> write_io,
       const message_priority priority,
       const std::chrono::seconds max_time)
       -> std::optional<message_sequence_t> {

@@ -206,10 +206,10 @@ private:
     void _log_router_stats() noexcept;
 
     auto _process_blobs() noexcept -> work_done;
-    auto _do_get_blob_io(
+    auto _do_get_blob_target_io(
       const message_id,
       const span_size_t,
-      blob_manipulator&) noexcept -> std::unique_ptr<blob_io>;
+      blob_manipulator&) noexcept -> std::unique_ptr<target_blob_io>;
 
     enum message_handling_result { should_be_forwarded, was_handled };
 

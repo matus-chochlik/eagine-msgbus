@@ -25,7 +25,7 @@ import <vector>;
 
 namespace eagine::msgbus {
 //------------------------------------------------------------------------------
-export struct blob_io : interface<blob_io> {
+export struct source_blob_io : interface<source_blob_io> {
 
     virtual auto is_at_eod(const span_size_t offs) noexcept -> bool {
         return offs >= total_size();
@@ -40,6 +40,16 @@ export struct blob_io : interface<blob_io> {
       [[maybe_unused]] memory::block dst) noexcept -> span_size_t {
         return 0;
     }
+};
+//------------------------------------------------------------------------------
+export struct target_blob_io : interface<target_blob_io> {
+
+    virtual void handle_finished(
+      [[maybe_unused]] const message_id msg_id,
+      [[maybe_unused]] const message_age msg_age,
+      [[maybe_unused]] const message_info& message) noexcept {}
+
+    virtual void handle_cancelled() noexcept {}
 
     virtual auto store_fragment(
       [[maybe_unused]] const span_size_t offs,
@@ -52,13 +62,6 @@ export struct blob_io : interface<blob_io> {
       [[maybe_unused]] memory::const_block src) noexcept -> bool {
         return true;
     }
-
-    virtual void handle_finished(
-      [[maybe_unused]] const message_id msg_id,
-      [[maybe_unused]] const message_age msg_age,
-      [[maybe_unused]] const message_info& message) noexcept {}
-
-    virtual void handle_cancelled() noexcept {}
 };
 //------------------------------------------------------------------------------
 export class buffer_blob_io;
@@ -78,7 +81,7 @@ export struct blob_stream_signals {
 export auto make_blob_stream_io(
   identifier_t blob_id,
   blob_stream_signals& sigs,
-  memory::buffer_pool& buffers) -> std::unique_ptr<blob_io>;
+  memory::buffer_pool& buffers) -> std::unique_ptr<target_blob_io>;
 //------------------------------------------------------------------------------
 export using blob_id_t = std::uint32_t;
 //------------------------------------------------------------------------------
@@ -86,7 +89,8 @@ struct pending_blob {
     message_id msg_id{};
     identifier_t source_id{0U};
     identifier_t target_id{0U};
-    std::shared_ptr<blob_io> io{};
+    std::shared_ptr<source_blob_io> source_io{};
+    std::shared_ptr<target_blob_io> target_io{};
     span_size_t total_size{0};
     // TODO: recycle the done parts vectors?
     double_buffer<std::vector<std::tuple<span_size_t, span_size_t>>>
@@ -97,7 +101,8 @@ struct pending_blob {
     blob_id_t target_blob_id{0U};
     message_priority priority{message_priority::normal};
 
-    auto buffer_io() noexcept -> buffer_blob_io*;
+    auto source_buffer_io() noexcept -> buffer_blob_io*;
+    auto target_buffer_io() noexcept -> buffer_blob_io*;
 
     auto done_parts() const noexcept -> const auto& {
         return fragment_parts.front();
@@ -123,18 +128,18 @@ struct pending_blob {
     auto received_everything() const noexcept -> bool;
 
     auto fetch(const span_size_t offs, memory::block dst) noexcept {
-        assert(io);
-        return io->fetch_fragment(offs, dst);
+        assert(source_io);
+        return source_io->fetch_fragment(offs, dst);
     }
 
     auto store(const span_size_t offs, const memory::const_block src) noexcept {
-        assert(io);
-        return io->store_fragment(offs, src);
+        assert(target_io);
+        return target_io->store_fragment(offs, src);
     }
 
     auto check(const span_size_t offs, const memory::const_block blk) noexcept {
-        assert(io);
-        return io->check_stored(offs, blk);
+        assert(target_io);
+        return target_io->check_stored(offs, blk);
     }
 
     auto age() const noexcept -> message_age {
@@ -161,11 +166,13 @@ public:
         return {span_size(_max_blob_size)};
     }
 
-    using io_getter = callable_ref<std::unique_ptr<
-      blob_io>(const message_id, const span_size_t, blob_manipulator&) noexcept>;
+    using target_io_getter = callable_ref<std::unique_ptr<target_blob_io>(
+      const message_id,
+      const span_size_t,
+      blob_manipulator&) noexcept>;
 
-    auto make_io(const span_size_t total_size) noexcept
-      -> std::unique_ptr<blob_io>;
+    auto make_target_io(const span_size_t total_size) noexcept
+      -> std::unique_ptr<target_blob_io>;
 
     using send_handler =
       callable_ref<bool(const message_id, const message_view&) noexcept>;
@@ -177,7 +184,7 @@ public:
       const identifier_t source_id,
       const identifier_t target_id,
       const blob_id_t target_blob_id,
-      std::shared_ptr<blob_io> io,
+      std::shared_ptr<source_blob_io> io,
       const std::chrono::seconds max_time,
       const message_priority priority) noexcept -> blob_id_t;
 
@@ -194,7 +201,7 @@ public:
       const message_id msg_id,
       const identifier_t source_id,
       const blob_id_t target_blob_id,
-      std::shared_ptr<blob_io> io,
+      std::shared_ptr<target_blob_io> io,
       const std::chrono::seconds max_time) noexcept -> bool;
 
     auto push_incoming_fragment(
@@ -204,12 +211,12 @@ public:
       const blob_id_t target_blob_id,
       const std::int64_t offset,
       const std::int64_t total,
-      io_getter get_io,
+      target_io_getter get_io,
       const memory::const_block fragment,
       const message_priority priority) noexcept -> bool;
 
     auto process_incoming(const message_view& message) noexcept -> bool;
-    auto process_incoming(io_getter, const message_view& message) noexcept
+    auto process_incoming(target_io_getter, const message_view& message) noexcept
       -> bool;
     auto process_resend(const message_view& message) noexcept -> bool;
 
@@ -241,10 +248,10 @@ private:
     auto _message_size(const pending_blob&, const span_size_t max_message_size)
       const noexcept -> span_size_t;
 
-    auto _make_io(
+    auto _make_target_io(
       const message_id,
       const span_size_t total_size,
-      blob_manipulator&) noexcept -> std::unique_ptr<blob_io>;
+      blob_manipulator&) noexcept -> std::unique_ptr<target_blob_io>;
 
     auto _scratch_block(const span_size_t size) noexcept -> memory::block;
 };

@@ -32,7 +32,7 @@ namespace eagine::msgbus {
 //------------------------------------------------------------------------------
 // single_byte_blob_io
 //------------------------------------------------------------------------------
-class single_byte_blob_io final : public blob_io {
+class single_byte_blob_io final : public source_blob_io {
 public:
     single_byte_blob_io(const span_size_t size, const byte value) noexcept
       : _size{size}
@@ -54,7 +54,7 @@ private:
 //------------------------------------------------------------------------------
 // random_byte_blob_io
 //------------------------------------------------------------------------------
-class random_byte_blob_io final : public blob_io {
+class random_byte_blob_io final : public source_blob_io {
 public:
     random_byte_blob_io(span_size_t size) noexcept
       : _size{size}
@@ -76,7 +76,9 @@ private:
 //------------------------------------------------------------------------------
 // file_blob_io
 //------------------------------------------------------------------------------
-class file_blob_io final : public blob_io {
+class file_blob_io final
+  : public source_blob_io
+  , public target_blob_io {
 public:
     file_blob_io(
       std::fstream file,
@@ -193,8 +195,11 @@ public:
       const message_context& ctx,
       const url& locator,
       const identifier_t endpoint_id,
-      const message_priority priority) -> std::
-      tuple<std::unique_ptr<blob_io>, std::chrono::seconds, message_priority>;
+      const message_priority priority)
+      -> std::tuple<
+        std::unique_ptr<source_blob_io>,
+        std::chrono::seconds,
+        message_priority>;
 
 private:
     auto _handle_has_resource_query(
@@ -285,8 +290,8 @@ auto resource_server_impl::get_resource(
   const message_context& ctx,
   const url& locator,
   const identifier_t endpoint_id,
-  const message_priority priority)
-  -> std::tuple<std::unique_ptr<blob_io>, std::chrono::seconds, message_priority> {
+  const message_priority priority) -> std::
+  tuple<std::unique_ptr<source_blob_io>, std::chrono::seconds, message_priority> {
     auto read_io = driver.get_resource_io(endpoint_id, locator);
     if(!read_io) {
         if(locator.has_scheme("eagires")) {
@@ -519,7 +524,7 @@ public:
     auto query_resource_content(
       identifier_t endpoint_id,
       const url& locator,
-      std::shared_ptr<blob_io> write_io,
+      std::shared_ptr<target_blob_io> write_io,
       const message_priority priority,
       const std::chrono::seconds max_time)
       -> std::optional<message_sequence_t> final {
