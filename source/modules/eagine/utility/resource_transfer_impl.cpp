@@ -294,6 +294,9 @@ void resource_data_consumer_node::_handle_missing(
 //------------------------------------------------------------------------------
 void resource_data_consumer_node::_handle_stream_done(
   identifier_t request_id) noexcept {
+    log_debug("removing stream request ${reqId} info")
+      .tag("streamDone")
+      .arg("reqId", request_id);
     _streamed_resources.erase(request_id);
 }
 //------------------------------------------------------------------------------

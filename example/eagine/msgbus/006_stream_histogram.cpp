@@ -46,22 +46,31 @@ auto main(main_ctx& ctx) -> int {
 
     node.blob_stream_data_appended.connect({construct_from, consume});
 
-    auto enqueue = [&](url locator) {
+    auto enqueue = [&](url locator, bool chunks) {
         if(locator) {
-            node.stream_resource(
-              std::move(locator),
-              msgbus::message_priority::high,
-              std::chrono::hours{1});
+            if(chunks) {
+                node.fetch_resource_chunks(
+                  std::move(locator),
+                  4 * 1024,
+                  msgbus::message_priority::high,
+                  std::chrono::hours{1});
+            } else {
+                node.stream_resource(
+                  std::move(locator),
+                  msgbus::message_priority::high,
+                  std::chrono::hours{1});
+            }
         }
     };
 
     for(auto& arg : ctx.args()) {
-        enqueue(url(arg.get_string()));
+        enqueue(url(arg.get_string()), false);
     }
     if(!node.has_pending_resources()) {
-        enqueue(url("eagires:///zeroes?count=1073741824"));
-        enqueue(url("eagires:///random?count=1073741824"));
-        enqueue(url("eagires:///ownSource"));
+        enqueue(url("eagires:///ones?count=134217728"), true);
+        enqueue(url("eagires:///zeroes?count=134217728"), true);
+        enqueue(url("eagires:///random?count=1073741824"), false);
+        enqueue(url("eagires:///ownSource"), true);
     }
 
     const auto is_done = [&] {
