@@ -119,6 +119,13 @@ public:
           std::move(locator), priority, _config.resource_stream_timeout);
     }
 
+    auto fetch_resource_chunks(
+      url locator,
+      const span_size_t chunk_size,
+      const message_priority priority,
+      const std::chrono::seconds max_time)
+      -> std::pair<identifier_t, const url&>;
+
     auto cancel_resource_stream(identifier_t request_id) noexcept -> bool;
 
     auto has_pending_resource(identifier_t request_id) const noexcept -> bool;

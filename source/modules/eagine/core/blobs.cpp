@@ -78,8 +78,14 @@ export struct blob_stream_signals {
     signal<void(identifier_t blob_id) noexcept> blob_stream_cancelled;
 };
 //------------------------------------------------------------------------------
-export auto make_blob_stream_io(
+export auto make_target_blob_stream_io(
   identifier_t blob_id,
+  blob_stream_signals& sigs,
+  memory::buffer_pool& buffers) -> std::unique_ptr<target_blob_io>;
+//------------------------------------------------------------------------------
+export auto make_target_blob_chunk_io(
+  identifier_t blob_id,
+  span_size_t chunk_size,
   blob_stream_signals& sigs,
   memory::buffer_pool& buffers) -> std::unique_ptr<target_blob_io>;
 //------------------------------------------------------------------------------

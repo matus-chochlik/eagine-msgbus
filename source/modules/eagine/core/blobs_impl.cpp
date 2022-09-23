@@ -88,7 +88,7 @@ public:
       blob_stream_signals& sigs,
       memory::buffer_pool& buffers) noexcept
       : _blob_id{blob_id}
-      , signals{sigs}
+      , _signals{sigs}
       , _buffers{buffers} {}
 
     auto store_fragment(span_size_t offset, memory::const_block data) noexcept
@@ -98,21 +98,21 @@ public:
       const message_id,
       const message_age,
       const message_info&) noexcept final {
-        signals.blob_stream_finished(_blob_id);
+        _signals.blob_stream_finished(_blob_id);
     }
 
     void handle_cancelled() noexcept final {
-        signals.blob_stream_cancelled(_blob_id);
+        _signals.blob_stream_cancelled(_blob_id);
     }
 
 private:
     const identifier_t _blob_id;
-    blob_stream_signals& signals;
+    blob_stream_signals& _signals;
 
     void _append(
       span_size_t offset,
       const memory::span<const memory::const_block> data) const noexcept {
-        signals.blob_stream_data_appended(_blob_id, offset, data);
+        _signals.blob_stream_data_appended(_blob_id, offset, data);
     }
 
     void _append_one(span_size_t offset, memory::const_block data)
@@ -126,13 +126,6 @@ private:
     std::vector<memory::buffer> _merged;
     std::vector<memory::const_block> _consecutive;
 };
-//------------------------------------------------------------------------------
-auto make_blob_stream_io(
-  identifier_t blob_id,
-  blob_stream_signals& sigs,
-  memory::buffer_pool& buffers) -> std::unique_ptr<target_blob_io> {
-    return std::make_unique<blob_stream_io>(blob_id, sigs, buffers);
-}
 //------------------------------------------------------------------------------
 auto blob_stream_io::store_fragment(
   span_size_t offset,
@@ -188,6 +181,120 @@ auto blob_stream_io::store_fragment(
         }
     }
     return true;
+}
+//------------------------------------------------------------------------------
+auto make_target_blob_stream_io(
+  identifier_t blob_id,
+  blob_stream_signals& sigs,
+  memory::buffer_pool& buffers) -> std::unique_ptr<target_blob_io> {
+    return std::make_unique<blob_stream_io>(blob_id, sigs, buffers);
+}
+//------------------------------------------------------------------------------
+// blob_chunk_io
+//------------------------------------------------------------------------------
+class blob_chunk_io : public target_blob_io {
+public:
+    blob_chunk_io(
+      identifier_t blob_id,
+      span_size_t chunk_size,
+      blob_stream_signals& sigs,
+      memory::buffer_pool& buffers) noexcept
+      : _blob_id{blob_id}
+      , _chunk_size{chunk_size}
+      , _signals{sigs}
+      , _buffers{buffers} {}
+
+    auto store_fragment(span_size_t offset, memory::const_block data) noexcept
+      -> bool final;
+
+    void handle_finished(
+      const message_id,
+      const message_age,
+      const message_info&) noexcept final;
+
+    void handle_cancelled() noexcept final {
+        _recycle_chunks();
+        _signals.blob_stream_cancelled(_blob_id);
+    }
+
+private:
+    const identifier_t _blob_id;
+    const span_size_t _chunk_size;
+    blob_stream_signals& _signals;
+
+    void _recycle_chunks() {
+        for(auto& chunk : _chunks) {
+            _buffers.eat(std::move(chunk));
+        }
+        _chunks.clear();
+    }
+
+    memory::buffer_pool& _buffers;
+    std::vector<memory::buffer> _chunks;
+};
+//------------------------------------------------------------------------------
+auto blob_chunk_io::store_fragment(
+  span_size_t offset,
+  memory::const_block data) noexcept -> bool {
+    assert(!data.empty());
+
+    span_size_t chunk_idx{offset / _chunk_size};
+    const span_size_t last_chunk{(offset + data.size()) / _chunk_size};
+
+    span_size_t copy_srco{0};
+    auto copy_dsto{offset - (chunk_idx * _chunk_size)};
+    auto copy_size{std::min(_chunk_size - copy_dsto, data.size())};
+    auto store = [&, this]() {
+        if(copy_size > 0) {
+            const auto idx{std_size(chunk_idx)};
+            const auto nsz{idx + 1U};
+            if(_chunks.size() < nsz) {
+                _chunks.resize(nsz);
+            }
+            auto& chunk = _chunks[idx];
+            if(chunk.empty()) {
+                chunk = _buffers.get(_chunk_size);
+            }
+            chunk.ensure(copy_dsto + copy_size);
+            memory::copy(
+              head(skip(data, copy_srco), copy_size),
+              head(skip(cover(chunk), copy_dsto), copy_size));
+            copy_srco += copy_size;
+        }
+        ++chunk_idx;
+    };
+    store();
+    while(chunk_idx <= last_chunk) {
+        copy_dsto = 0;
+        copy_size = std::min(_chunk_size, data.size() - copy_srco);
+        store();
+    }
+    return true;
+}
+//------------------------------------------------------------------------------
+void blob_chunk_io::handle_finished(
+  const message_id,
+  const message_age,
+  const message_info&) noexcept {
+    std::vector<memory::const_block> data;
+    data.reserve(_chunks.size());
+    auto prev_size{_chunk_size};
+    for(const auto& chunk : _chunks) {
+        assert(prev_size == _chunk_size);
+        data.push_back(view(chunk));
+        prev_size = span_size(chunk.size());
+    }
+    _signals.blob_stream_data_appended(_blob_id, 0, view(data));
+    _signals.blob_stream_finished(_blob_id);
+    _recycle_chunks();
+}
+//------------------------------------------------------------------------------
+auto make_target_blob_chunk_io(
+  identifier_t blob_id,
+  span_size_t chunk_size,
+  blob_stream_signals& sigs,
+  memory::buffer_pool& buffers) -> std::unique_ptr<target_blob_io> {
+    return std::make_unique<blob_chunk_io>(blob_id, chunk_size, sigs, buffers);
 }
 //------------------------------------------------------------------------------
 // pending blob

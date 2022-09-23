@@ -187,7 +187,21 @@ auto resource_data_consumer_node::stream_resource(
     return _query_resource(
       request_id,
       std::move(locator),
-      make_blob_stream_io(request_id, *this, _buffers),
+      make_target_blob_stream_io(request_id, *this, _buffers),
+      priority,
+      max_time);
+}
+//------------------------------------------------------------------------------
+auto resource_data_consumer_node::fetch_resource_chunks(
+  url locator,
+  const span_size_t chunk_size,
+  const message_priority priority,
+  const std::chrono::seconds max_time) -> std::pair<identifier_t, const url&> {
+    const auto request_id{get_request_id()};
+    return _query_resource(
+      request_id,
+      std::move(locator),
+      make_target_blob_chunk_io(request_id, chunk_size, *this, _buffers),
       priority,
       max_time);
 }
