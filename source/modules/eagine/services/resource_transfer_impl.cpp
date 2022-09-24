@@ -126,7 +126,8 @@ public:
     void handle_finished(
       const message_id,
       const message_age,
-      const message_info&) noexcept final {
+      const message_info&,
+      const blob_info&) noexcept final {
         _file.close();
     }
 

@@ -115,9 +115,14 @@ auto resource_data_consumer_node::update() noexcept -> work_done {
         }
     }
     for(auto& [request_id, info] : _embedded_resources) {
+        blob_info binfo{};
+        binfo.source_id = this->bus_node().get_id();
+        binfo.target_id = binfo.source_id;
+
         auto append = [&, offset{span_size(0)}, this](
                         const memory::const_block data) mutable {
-            blob_stream_data_appended(request_id, offset, view_one(data));
+            blob_stream_data_appended(
+              request_id, offset, view_one(data), binfo);
             offset += data.size();
             return true;
         };

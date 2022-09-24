@@ -95,12 +95,13 @@ public:
     auto store_fragment(
       span_size_t offset,
       memory::const_block data,
-      const blob_info&) noexcept -> bool final;
+      const blob_info& info) noexcept -> bool final;
 
     void handle_finished(
       const message_id,
       const message_age,
-      const message_info&) noexcept final {
+      const message_info&,
+      const blob_info&) noexcept final {
         _signals.blob_stream_finished(_blob_id);
     }
 
@@ -114,13 +115,16 @@ private:
 
     void _append(
       span_size_t offset,
-      const memory::span<const memory::const_block> data) const noexcept {
-        _signals.blob_stream_data_appended(_blob_id, offset, data);
+      const memory::span<const memory::const_block> data,
+      const blob_info& info) const noexcept {
+        _signals.blob_stream_data_appended(_blob_id, offset, data, info);
     }
 
-    void _append_one(span_size_t offset, memory::const_block data)
-      const noexcept {
-        _append(offset, memory::view_one(data));
+    void _append_one(
+      span_size_t offset,
+      memory::const_block data,
+      const blob_info& info) const noexcept {
+        _append(offset, memory::view_one(data), info);
     }
 
     memory::buffer_pool& _buffers;
@@ -139,7 +143,7 @@ auto blob_stream_io::store_fragment(
 
     if(offset == _offs_done) {
         if(_unmerged.empty()) {
-            _append_one(offset, data);
+            _append_one(offset, data, info);
             _offs_done = safe_add(offset + data.size());
         } else {
             assert(_merged.empty());
@@ -164,7 +168,7 @@ auto blob_stream_io::store_fragment(
             }
 
             _offs_done = data_end;
-            _append(offset, view(_consecutive));
+            _append(offset, view(_consecutive), info);
             _consecutive.clear();
             for(auto& buf : _merged) {
                 _buffers.eat(std::move(buf));
@@ -216,7 +220,8 @@ public:
     void handle_finished(
       const message_id,
       const message_age,
-      const message_info&) noexcept final;
+      const message_info&,
+      const blob_info&) noexcept final;
 
     void handle_cancelled() noexcept final {
         _recycle_chunks();
@@ -282,7 +287,8 @@ auto blob_chunk_io::store_fragment(
 void blob_chunk_io::handle_finished(
   const message_id,
   const message_age,
-  const message_info&) noexcept {
+  const message_info&,
+  const blob_info& info) noexcept {
     std::vector<memory::const_block> data;
     data.reserve(_chunks.size());
     auto prev_size{_chunk_size};
@@ -291,7 +297,7 @@ void blob_chunk_io::handle_finished(
         data.push_back(view(chunk));
         prev_size = span_size(chunk.size());
     }
-    _signals.blob_stream_data_appended(_blob_id, 0, view(data));
+    _signals.blob_stream_data_appended(_blob_id, 0, view(data), info);
     _signals.blob_stream_finished(_blob_id);
     _recycle_chunks();
 }
@@ -928,7 +934,8 @@ auto blob_manipulator::handle_complete() noexcept -> span_size_t {
             info.set_sequence_no(pending.target_blob_id);
             info.set_priority(pending.info.priority);
             extract(pending.target_io)
-              .handle_finished(pending.msg_id, pending.age(), info);
+              .handle_finished(
+                pending.msg_id, pending.age(), info, pending.info);
             return true;
         }
         return false;
@@ -964,7 +971,8 @@ auto blob_manipulator::fetch_all(
                 info.set_sequence_no(pending.target_blob_id);
                 info.set_priority(pending.info.priority);
                 extract(pending.target_io)
-                  .handle_finished(pending.msg_id, pending.age(), info);
+                  .handle_finished(
+                    pending.msg_id, pending.age(), info, pending.info);
             }
             return true;
         }

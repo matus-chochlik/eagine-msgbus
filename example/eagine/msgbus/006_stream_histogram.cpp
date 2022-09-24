@@ -29,7 +29,8 @@ auto main(main_ctx& ctx) -> int {
     auto consume = [&](
                      identifier_t,
                      const span_size_t,
-                     const memory::span<const memory::const_block> data) {
+                     const memory::span<const memory::const_block> data,
+                     const msgbus::blob_info&) {
         for(const auto& blk : data) {
             for(auto b : blk) {
                 max_count =

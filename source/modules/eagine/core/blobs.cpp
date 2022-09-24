@@ -58,7 +58,8 @@ export struct target_blob_io : interface<target_blob_io> {
     virtual void handle_finished(
       [[maybe_unused]] const message_id msg_id,
       [[maybe_unused]] const message_age msg_age,
-      [[maybe_unused]] const message_info& message) noexcept {}
+      [[maybe_unused]] const message_info& message,
+      [[maybe_unused]] const blob_info& info) noexcept {}
 
     virtual void handle_cancelled() noexcept {}
 
@@ -82,7 +83,8 @@ export struct blob_stream_signals {
     signal<void(
       identifier_t blob_id,
       const span_size_t offset,
-      const memory::span<const memory::const_block>) noexcept>
+      const memory::span<const memory::const_block>,
+      const blob_info& info) noexcept>
       blob_stream_data_appended;
 
     signal<void(identifier_t blob_id) noexcept> blob_stream_finished;
