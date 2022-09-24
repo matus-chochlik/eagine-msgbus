@@ -25,7 +25,8 @@ public:
 
     auto store_fragment(
       const span_size_t,
-      const memory::const_block src) noexcept -> bool final {
+      const memory::const_block src,
+      const blob_info&) noexcept -> bool final {
         for(auto b : src) {
             _max_count = math::maximum(_max_count, ++_byte_counts[std_size(b)]);
         }

@@ -28,6 +28,14 @@ namespace eagine::msgbus {
 //------------------------------------------------------------------------------
 using blob_options_t = std::underlying_type_t<blob_option>;
 //------------------------------------------------------------------------------
+export struct blob_info {
+    identifier_t source_id{0U};
+    identifier_t target_id{0U};
+    span_size_t total_size{0};
+    blob_options options;
+    message_priority priority{message_priority::normal};
+};
+//------------------------------------------------------------------------------
 export struct source_blob_io : interface<source_blob_io> {
 
     virtual auto is_at_eod(const span_size_t offs) noexcept -> bool {
@@ -56,7 +64,8 @@ export struct target_blob_io : interface<target_blob_io> {
 
     virtual auto store_fragment(
       [[maybe_unused]] const span_size_t offs,
-      [[maybe_unused]] memory::const_block src) noexcept -> bool {
+      [[maybe_unused]] memory::const_block data,
+      [[maybe_unused]] const blob_info& info) noexcept -> bool {
         return false;
     }
 
@@ -96,11 +105,9 @@ export using blob_id_t = std::uint32_t;
 //------------------------------------------------------------------------------
 struct pending_blob {
     message_id msg_id{};
-    identifier_t source_id{0U};
-    identifier_t target_id{0U};
+    blob_info info{};
     std::shared_ptr<source_blob_io> source_io{};
     std::shared_ptr<target_blob_io> target_io{};
-    span_size_t total_size{0};
     // TODO: recycle the done parts vectors?
     double_buffer<std::vector<std::tuple<span_size_t, span_size_t>>>
       fragment_parts{};
@@ -108,8 +115,6 @@ struct pending_blob {
     timeout max_time{};
     blob_id_t source_blob_id{0U};
     blob_id_t target_blob_id{0U};
-    message_priority priority{message_priority::normal};
-    blob_options options{};
 
     auto source_buffer_io() noexcept -> buffer_blob_io*;
     auto target_buffer_io() noexcept -> buffer_blob_io*;
@@ -144,7 +149,7 @@ struct pending_blob {
 
     auto store(const span_size_t offs, const memory::const_block src) noexcept {
         assert(target_io);
-        return target_io->store_fragment(offs, src);
+        return target_io->store_fragment(offs, src, info);
     }
 
     auto check(const span_size_t offs, const memory::const_block blk) noexcept {

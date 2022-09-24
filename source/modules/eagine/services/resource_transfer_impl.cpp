@@ -110,8 +110,10 @@ public:
           read_from_stream(_file, head(dst, _size - _offs - offs)).gcount());
     }
 
-    auto store_fragment(const span_size_t offs, memory::const_block src) noexcept
-      -> bool final {
+    auto store_fragment(
+      const span_size_t offs,
+      const memory::const_block src,
+      const blob_info&) noexcept -> bool final {
         _file.seekg(_offs + offs, std::ios::beg);
         return write_to_stream(_file, head(src, _size - _offs - offs)).good();
     }
