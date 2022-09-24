@@ -478,4 +478,31 @@ export auto parse_ipv4_addr(const string_view addr_str) noexcept
       extract_or(from_string<ipv4_port>(port_str), ipv4_port{34912U})};
 }
 //------------------------------------------------------------------------------
+/// @brief Additional flags / options for a transfered blob.
+/// @ingroup msgbus
+/// @see blob_option
+export enum class blob_option : std::uint8_t {
+    compressed = 1U << 0U,
+    with_metadata = 1U << 1U
+};
+
+export template <typename Selector>
+constexpr auto enumerator_mapping(
+  const std::type_identity<blob_option>,
+  const Selector) noexcept {
+    return enumerator_map_type<blob_option, 2>{
+      {{"compressed", blob_option::compressed},
+       {"with_metadata", blob_option::with_metadata}}};
+}
+//------------------------------------------------------------------------------
+/// @brief Alias for blob options bitfield.
+/// @ingroup msgbus
+/// @see blob_options
+export using blob_options = bitfield<blob_option>;
+
+export auto operator|(const blob_option l, const blob_option r) noexcept
+  -> blob_options {
+    return {l, r};
+}
+//------------------------------------------------------------------------------
 } // namespace eagine::msgbus

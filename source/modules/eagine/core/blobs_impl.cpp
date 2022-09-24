@@ -566,6 +566,7 @@ auto blob_manipulator::push_incoming_fragment(
   const std::int64_t total_size,
   target_io_getter get_io,
   const memory::const_block fragment,
+  const blob_options options,
   const message_priority priority) noexcept -> bool {
 
     auto pos = std::find_if(
@@ -592,6 +593,7 @@ auto blob_manipulator::push_incoming_fragment(
             }
             pending.source_blob_id = source_blob_id;
             pending.priority = priority;
+            pending.options = options;
             pending.total_size = limit_cast<span_size_t>(total_size);
             log_debug("updating expected blob fragment")
               .arg("source", source_id)
@@ -644,6 +646,7 @@ auto blob_manipulator::push_incoming_fragment(
             pending.max_time = timeout{adjusted_duration(
               std::chrono::seconds{60}, memory_access_rate::high)};
             pending.priority = priority;
+            pending.options = options;
             pending.done_parts().clear();
             if(pending.merge_fragment(integer(offset), fragment)) {
                 log_debug("merged first blob fragment")
@@ -676,9 +679,16 @@ auto blob_manipulator::process_incoming(
     blob_id_t target_blob_id{0U};
     std::int64_t offset{0};
     std::int64_t total_size{0};
+    blob_options_t options{0};
 
     auto header = std::tie(
-      class_id, method_id, source_blob_id, target_blob_id, offset, total_size);
+      class_id,
+      method_id,
+      source_blob_id,
+      target_blob_id,
+      offset,
+      total_size,
+      options);
     block_data_source source{message.content()};
     default_deserializer_backend backend(source);
     auto errors = deserialize(header, backend);
@@ -697,6 +707,7 @@ auto blob_manipulator::process_incoming(
                   total_size,
                   get_io,
                   fragment,
+                  blob_options{options},
                   message.priority);
             } else {
                 log_error("invalid blob fragment size ${size}")
@@ -794,6 +805,7 @@ auto blob_manipulator::push_outgoing(
   const blob_id_t target_blob_id,
   std::shared_ptr<source_blob_io> io,
   const std::chrono::seconds max_time,
+  const blob_options options,
   const message_priority priority) noexcept -> blob_id_t {
     assert(io);
     _outgoing.emplace_back();
@@ -807,6 +819,7 @@ auto blob_manipulator::push_outgoing(
     pending.source_io = std::move(io);
     pending.max_time = timeout{max_time};
     pending.priority = priority;
+    pending.options = options;
     pending.todo_parts().emplace_back(0, pending.total_size);
     return pending.source_blob_id;
 }
@@ -818,6 +831,7 @@ auto blob_manipulator::push_outgoing(
   const blob_id_t target_blob_id,
   const memory::const_block src,
   const std::chrono::seconds max_time,
+  const blob_options options,
   const message_priority priority) noexcept -> blob_id_t {
     return push_outgoing(
       msg_id,
@@ -826,6 +840,7 @@ auto blob_manipulator::push_outgoing(
       target_blob_id,
       std::make_unique<buffer_blob_io>(_buffers.get(src.size()), src),
       max_time,
+      options,
       priority);
 }
 //------------------------------------------------------------------------------
@@ -845,7 +860,8 @@ auto blob_manipulator::process_outgoing(
               pending.source_blob_id,
               pending.target_blob_id,
               limit_cast<std::int64_t>(bgn),
-              limit_cast<std::int64_t>(pending.total_size));
+              limit_cast<std::int64_t>(pending.total_size),
+              static_cast<blob_options_t>(pending.options));
 
             block_data_sink sink(
               _scratch_block(_message_size(pending, max_message_size)));

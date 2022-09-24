@@ -22,8 +22,11 @@ import :message;
 import <cstdint>;
 import <chrono>;
 import <vector>;
+import <type_traits>;
 
 namespace eagine::msgbus {
+//------------------------------------------------------------------------------
+using blob_options_t = std::underlying_type_t<blob_option>;
 //------------------------------------------------------------------------------
 export struct source_blob_io : interface<source_blob_io> {
 
@@ -106,6 +109,7 @@ struct pending_blob {
     blob_id_t source_blob_id{0U};
     blob_id_t target_blob_id{0U};
     message_priority priority{message_priority::normal};
+    blob_options options{};
 
     auto source_buffer_io() noexcept -> buffer_blob_io*;
     auto target_buffer_io() noexcept -> buffer_blob_io*;
@@ -192,6 +196,36 @@ public:
       const blob_id_t target_blob_id,
       std::shared_ptr<source_blob_io> io,
       const std::chrono::seconds max_time,
+      const blob_options options,
+      const message_priority priority) noexcept -> blob_id_t;
+
+    auto push_outgoing(
+      const message_id msg_id,
+      const identifier_t source_id,
+      const identifier_t target_id,
+      const blob_id_t target_blob_id,
+      std::shared_ptr<source_blob_io> io,
+      const std::chrono::seconds max_time,
+      const message_priority priority) noexcept -> blob_id_t {
+        return push_outgoing(
+          msg_id,
+          source_id,
+          target_id,
+          target_blob_id,
+          std::move(io),
+          max_time,
+          blob_options{},
+          priority);
+    }
+
+    auto push_outgoing(
+      const message_id msg_id,
+      const identifier_t source_id,
+      const identifier_t target_id,
+      const blob_id_t target_blob_id,
+      const memory::const_block src,
+      const std::chrono::seconds max_time,
+      const blob_options options,
       const message_priority priority) noexcept -> blob_id_t;
 
     auto push_outgoing(
@@ -201,7 +235,17 @@ public:
       const blob_id_t target_blob_id,
       const memory::const_block src,
       const std::chrono::seconds max_time,
-      const message_priority priority) noexcept -> blob_id_t;
+      const message_priority priority) noexcept -> blob_id_t {
+        return push_outgoing(
+          msg_id,
+          source_id,
+          target_id,
+          target_blob_id,
+          src,
+          max_time,
+          blob_options{},
+          priority);
+    }
 
     auto expect_incoming(
       const message_id msg_id,
@@ -219,6 +263,7 @@ public:
       const std::int64_t total,
       target_io_getter get_io,
       const memory::const_block fragment,
+      const blob_options options,
       const message_priority priority) noexcept -> bool;
 
     auto process_incoming(const message_view& message) noexcept -> bool;
