@@ -155,7 +155,7 @@ auto main(main_ctx& ctx) -> int {
     const auto thread_count =
       extract_or(ctx.system().cpu_concurrent_threads(), 4);
 
-    auto acceptor = std::make_unique<msgbus::direct_acceptor>(ctx);
+    auto acceptor = msgbus::make_direct_acceptor(ctx);
 
     msgbus::fibonacci_client client({"FibClient", ctx});
     client.add_connection(acceptor->make_connection());

@@ -119,7 +119,7 @@ private:
 
 auto main(main_ctx& ctx) -> int {
 
-    auto acceptor = std::make_unique<msgbus::direct_acceptor>(ctx);
+    auto acceptor = msgbus::make_direct_acceptor(ctx);
 
     msgbus::endpoint server_endpoint("Server", ctx);
     msgbus::endpoint client_endpoint("Client", ctx);

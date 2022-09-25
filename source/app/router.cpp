@@ -113,7 +113,7 @@ auto main(main_ctx& ctx) -> int {
 
     ctx.system().preinitialize();
 
-    auto local_acceptor{std::make_unique<msgbus::direct_acceptor>(ctx)};
+    auto local_acceptor{msgbus::make_direct_acceptor(ctx)};
     auto node_connection{local_acceptor->make_connection()};
 
     msgbus::router router(ctx);

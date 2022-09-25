@@ -45,7 +45,7 @@ auto main(main_ctx& ctx) -> int {
     const auto worker_count =
       extract_or(ctx.system().cpu_concurrent_threads(), 4) + 1;
 
-    auto acceptor = std::make_unique<msgbus::direct_acceptor>(ctx);
+    auto acceptor = msgbus::make_direct_acceptor(ctx);
 
     msgbus::endpoint solver_endpoint("Solver", ctx);
     solver_endpoint.add_connection(acceptor->make_connection());
