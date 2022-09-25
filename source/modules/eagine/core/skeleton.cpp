@@ -351,7 +351,7 @@ public:
         while(pos != _pending.end()) {
             const auto invocation_id = pos->first;
             const auto& call = pos->second;
-            if(call.finished) {
+            if(call.finished.load()) {
                 _sink.reset(buffer);
                 Serializer write_backend(_sink);
 
@@ -390,7 +390,7 @@ private:
         result_type result{};
 
         identifier_t invoker_id{};
-        bool finished{false};
+        std::atomic<bool> finished{false};
 
         auto do_it() noexcept -> bool final {
             result = std::apply(func, args);
@@ -398,7 +398,7 @@ private:
         }
 
         void deliver() noexcept final {
-            finished = true;
+            finished.store(true);
         }
     };
 
