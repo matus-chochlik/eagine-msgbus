@@ -79,7 +79,13 @@ export struct target_blob_io : interface<target_blob_io> {
 //------------------------------------------------------------------------------
 export class buffer_blob_io;
 //------------------------------------------------------------------------------
+/// @brief Collection of signals emitted by the resource_data_loader_node.
+/// @ingroup msgbus
+/// @see resource_data_loader_node
+/// @see make_target_blob_stream_io
+/// @see make_target_blob_chunk_io
 export struct blob_stream_signals {
+    /// @brief Emitted repeatedly when a new consecutive chunk of data is streamed.
     signal<void(
       identifier_t blob_id,
       const span_size_t offset,
@@ -87,16 +93,32 @@ export struct blob_stream_signals {
       const blob_info& info) noexcept>
       blob_stream_data_appended;
 
+    /// @brief Emitted once when a blob stream is completed.
     signal<void(identifier_t blob_id) noexcept> blob_stream_finished;
 
+    /// @brief Emitted once if a blob stream is cancelled.
     signal<void(identifier_t blob_id) noexcept> blob_stream_cancelled;
 };
 //------------------------------------------------------------------------------
+/// @brief Creates a data stream target I/O object.
+/// @ingroup msgbus
+/// @see blob_stream_signals
+///
+/// This I/O object merges incoming BLOB data into consecutive blocks
+/// so that they appear in the order from the start to the end of the BLOB
+/// and emits the blob_stream_data_appended signal on a blob_stream_signals.
 export auto make_target_blob_stream_io(
   identifier_t blob_id,
   blob_stream_signals& sigs,
   memory::buffer_pool& buffers) -> std::unique_ptr<target_blob_io>;
 //------------------------------------------------------------------------------
+/// @brief Creates a data stream target I/O object.
+/// @ingroup msgbus
+/// @see blob_stream_signals
+///
+/// This I/O object loads the whole BLOB into consecutive chunks of the
+/// specified size and then emits the blob_stream_data_appended signal on a
+/// blob_stream_signals once.
 export auto make_target_blob_chunk_io(
   identifier_t blob_id,
   span_size_t chunk_size,

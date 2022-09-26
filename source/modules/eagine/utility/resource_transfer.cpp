@@ -30,6 +30,9 @@ export using resource_data_server_node_base =
     pingable,
     common_info_providers>>;
 //------------------------------------------------------------------------------
+/// @brief Basic resource server message bus service.
+/// @ingroup msgbus
+/// @see resource_data_consumer_node
 export class resource_data_server_node
   : public main_ctx_object
   , public resource_data_server_node_base {
@@ -38,18 +41,21 @@ export class resource_data_server_node
     void _init();
 
 public:
+    /// @brief Initializing constructor.
     resource_data_server_node(endpoint& bus)
       : main_ctx_object{"RsrcServer", bus}
       , base{bus} {
         _init();
     }
 
+    /// @brief Initializing constructor with explicit driver reference.
     resource_data_server_node(endpoint& bus, resource_server_driver& drvr)
       : main_ctx_object{"RsrcServer", bus}
       , base{bus, drvr} {
         _init();
     }
 
+    /// @brief Indicates if the server received a shutdown request.
     auto is_done() const noexcept -> bool {
         return _done;
     }
@@ -76,6 +82,8 @@ export struct resource_data_consumer_node_config {
     resource_data_consumer_node_config(application_config& c);
 };
 //------------------------------------------------------------------------------
+/// @brief Message bus service consuming resource data blocks.
+/// @ingroup msgbus
 export class resource_data_consumer_node
   : public resource_data_consumer_node_base
   , public blob_stream_signals {
@@ -84,16 +92,25 @@ export class resource_data_consumer_node
     void _init();
 
 public:
+    /// @brief Initializing constructor.
     resource_data_consumer_node(main_ctx& ctx)
       : base{"RsrcCnsmer", ctx}
       , _config{ctx.config()} {
         _init();
     }
 
+    /// @brief Does some work and updates internal state (should be called periodically).
     auto update() noexcept -> work_done;
 
+    /// @brief Returns a new unique id for a resource request.
+    /// @see query_resource
+    /// @see stream_resource
+    /// @see fetch_resource_chunks
     auto get_request_id() noexcept -> identifier_t;
 
+    /// @brief Queries a resource with the specified URL and target I/O object.
+    /// @see stream_resource
+    /// @see fetch_resource_chunks
     void query_resource(
       url locator,
       std::shared_ptr<target_blob_io> io,
@@ -107,18 +124,39 @@ public:
           max_time);
     }
 
+    /// @brief Requests a resource stream with the specified URL.
+    /// @see fetch_resource_chunks
+    ///
+    /// This function uses a streaming target data I/O that
+    /// the blob_stream_data_appended signal is repeatedly emitted as
+    /// consecutive blocks of the resource data arrive in the order from the
+    /// start to the end of the resource BLOB.
+    ///
+    /// Returns a pair of unique resource request identifier and the URL.
     auto stream_resource(
       url locator,
       const message_priority priority,
       const std::chrono::seconds max_time)
       -> std::pair<identifier_t, const url&>;
 
+    /// @brief Requests a resource stream with the specified URL.
+    /// @see fetch_resource_chunks
+    ///
+    /// Returns a pair of unique resource request identifier and the URL.
     auto stream_resource(url locator, const message_priority priority)
       -> std::pair<identifier_t, const url&> {
         return stream_resource(
           std::move(locator), priority, _config.resource_stream_timeout);
     }
 
+    /// @brief Requests a resource as a collection of chunks with the specified URL.
+    /// @see stream_resource
+    ///
+    /// This function uses a chunking target data I/O that
+    /// the blob_stream_data_appended signal is emitted once as all equal-sized
+    /// chunks of the resource data is loaded.
+    ///
+    /// Returns a pair of unique resource request identifier and the URL.
     auto fetch_resource_chunks(
       url locator,
       const span_size_t chunk_size,
@@ -126,9 +164,30 @@ public:
       const std::chrono::seconds max_time)
       -> std::pair<identifier_t, const url&>;
 
+    /// @brief Requests a resource as a collection of chunks with the specified URL.
+    /// @see stream_resource
+    ///
+    /// Returns a pair of unique resource request identifier and the URL.
+    auto fetch_resource_chunks(
+      url locator,
+      const span_size_t chunk_size,
+      const message_priority priority) -> std::pair<identifier_t, const url&> {
+        return fetch_resource_chunks(
+          std::move(locator),
+          chunk_size,
+          priority,
+          _config.resource_stream_timeout);
+    }
+
+    /// @brief Cancels a resource request with the specified identifier.
     auto cancel_resource_stream(identifier_t request_id) noexcept -> bool;
 
+    /// @brief Indicates if a resource request with the specified id is still pending.
+    /// @see has_pending_resources
     auto has_pending_resource(identifier_t request_id) const noexcept -> bool;
+
+    /// @bried Indicates if there are any resource requests pending.
+    /// @see has_pending_resource
     auto has_pending_resources() const noexcept -> bool;
 
 private:
