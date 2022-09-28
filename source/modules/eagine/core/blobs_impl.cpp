@@ -484,38 +484,8 @@ auto blob_manipulator::update(
     const auto now = std::chrono::steady_clock::now();
     some_true something_done{};
 
-    std::erase_if(
-      _incoming, [this, now, do_send, &something_done](auto& pending) {
-          bool should_erase = false;
-          if(pending.max_time.is_expired()) {
-              extract(pending.target_io).handle_cancelled();
-              if(auto buf_io{pending.target_buffer_io()}) {
-                  _buffers.eat(extract(buf_io).release_buffer());
-              }
-              something_done();
-              should_erase = true;
-          } else if(now - pending.latest_update > std::chrono::seconds{2}) {
-              auto& done = pending.done_parts();
-              if(!done.empty()) {
-                  const auto bgn = std::get<1>(done[0]);
-                  const auto end = done.size() > 1 ? std::get<1>(done[0])
-                                                   : pending.info.total_size;
-                  const std::tuple<identifier_t, std::uint64_t, std::uint64_t>
-                    params{pending.source_blob_id, bgn, end};
-                  auto buffer{default_serialize_buffer_for(params)};
-                  auto serialized{default_serialize(params, cover(buffer))};
-                  assert(serialized);
-                  message_view resend_request{extract(serialized)};
-                  resend_request.set_target_id(pending.info.source_id);
-                  pending.latest_update = now;
-                  something_done(do_send(_resend_msg_id, resend_request));
-              }
-          }
-          return should_erase;
-      });
-
     std::erase_if(_outgoing, [this, &something_done](auto& pending) {
-        if(pending.max_time.is_expired()) {
+        if(pending.max_time.is_expired() || pending.sent_everything()) {
             if(auto buf_io{pending.source_buffer_io()}) {
                 _buffers.eat(extract(buf_io).release_buffer());
             }
@@ -524,6 +494,38 @@ auto blob_manipulator::update(
         }
         return false;
     });
+
+    std::erase_if(_incoming, [this, &something_done](auto& pending) {
+        if(pending.max_time.is_expired()) {
+            extract(pending.target_io).handle_cancelled();
+            if(auto buf_io{pending.target_buffer_io()}) {
+                _buffers.eat(extract(buf_io).release_buffer());
+            }
+            something_done();
+            return true;
+        }
+        return false;
+    });
+
+    for(auto& pending : _incoming) {
+        if(now - pending.latest_update > std::chrono::seconds{2}) {
+            auto& done = pending.done_parts();
+            if(!done.empty()) {
+                const auto bgn = std::get<1>(done[0]);
+                const auto end = done.size() > 1 ? std::get<1>(done[0])
+                                                 : pending.info.total_size;
+                const std::tuple<identifier_t, std::uint64_t, std::uint64_t>
+                  params{pending.source_blob_id, bgn, end};
+                auto buffer{default_serialize_buffer_for(params)};
+                auto serialized{default_serialize(params, cover(buffer))};
+                assert(serialized);
+                message_view resend_request{extract(serialized)};
+                resend_request.set_target_id(pending.info.source_id);
+                pending.latest_update = now;
+                something_done(do_send(_resend_msg_id, resend_request));
+            }
+        }
+    }
 
     return something_done;
 }
@@ -880,9 +882,7 @@ auto blob_manipulator::process_outgoing(
               _scratch_block(_message_size(pending, max_message_size)));
             default_serializer_backend backend(sink);
 
-            const auto errors = serialize(header, backend);
-            if(!errors) {
-
+            if(const auto errors{serialize(header, backend)}; !errors) {
                 const auto offset = bgn;
                 if(auto written_size{pending.fetch(offset, sink.free())}) {
 
