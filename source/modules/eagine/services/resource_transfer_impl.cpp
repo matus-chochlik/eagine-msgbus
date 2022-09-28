@@ -468,7 +468,9 @@ public:
     }
 
     auto update() noexcept -> work_done final {
-        some_true something_done{_blobs.handle_complete() > 0};
+        some_true something_done{};
+        something_done(_blobs.handle_complete() > 0);
+        something_done(_blobs.update(base.bus_node().post_callable()));
 
         if(_search_servers) {
             base.bus_node().query_subscribers_of(

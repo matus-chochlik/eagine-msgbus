@@ -39,6 +39,7 @@ auto endpoint::_process_blobs() noexcept -> work_done {
     some_true something_done;
     const auto post_handler{make_callable_ref<&endpoint::post>(this)};
 
+    something_done(_blobs.handle_complete() > 0);
     something_done(_blobs.update(post_handler));
     const auto opt_max_size = max_data_size();
     if(opt_max_size) [[likely]] {

@@ -497,9 +497,10 @@ auto blob_manipulator::update(
              return false;
          })};
        erased_count > 0) {
-        log_debug("erased ${count} incoming blobs")
-          .tag("delIncBlob")
-          .arg("count", erased_count);
+        log_debug("erased ${erased} outgoing blobs")
+          .tag("delOutBlob")
+          .arg("erased", erased_count)
+          .arg("remaining", _outgoing.size());
     }
 
     if(const auto erased_count{std::erase_if(
@@ -516,9 +517,10 @@ auto blob_manipulator::update(
              return false;
          })};
        erased_count > 0) {
-        log_debug("erased ${count} outgoing blobs")
-          .tag("delOutBlob")
-          .arg("count", erased_count);
+        log_debug("erased ${erased} incoming  blobs")
+          .tag("delIncBlob")
+          .arg("erased", erased_count)
+          .arg("remaining", _incoming.size());
     }
 
     for(auto& pending : _incoming) {

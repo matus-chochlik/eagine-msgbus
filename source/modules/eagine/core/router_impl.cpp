@@ -498,6 +498,7 @@ auto router::_process_blobs() noexcept -> work_done {
       [&](message_id msg_id, message_view request) -> bool {
         return this->_route_message(msg_id, _id_base, request);
     };
+    something_done(_blobs.handle_complete() > 0);
     something_done(_blobs.update({construct_from, resend_request}));
 
     if(_blobs.has_outgoing()) {
