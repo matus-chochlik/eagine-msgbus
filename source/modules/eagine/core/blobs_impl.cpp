@@ -484,28 +484,42 @@ auto blob_manipulator::update(
     const auto now = std::chrono::steady_clock::now();
     some_true something_done{};
 
-    std::erase_if(_outgoing, [this, &something_done](auto& pending) {
-        if(pending.max_time.is_expired() || pending.sent_everything()) {
-            if(auto buf_io{pending.source_buffer_io()}) {
-                _buffers.eat(extract(buf_io).release_buffer());
-            }
-            something_done();
-            return true;
-        }
-        return false;
-    });
+    if(const auto erased_count{std::erase_if(
+         _outgoing,
+         [this, &something_done](auto& pending) {
+             if(pending.max_time.is_expired() || pending.sent_everything()) {
+                 if(auto buf_io{pending.source_buffer_io()}) {
+                     _buffers.eat(extract(buf_io).release_buffer());
+                 }
+                 something_done();
+                 return true;
+             }
+             return false;
+         })};
+       erased_count > 0) {
+        log_debug("erased ${count} incoming blobs")
+          .tag("delIncBlob")
+          .arg("count", erased_count);
+    }
 
-    std::erase_if(_incoming, [this, &something_done](auto& pending) {
-        if(pending.max_time.is_expired()) {
-            extract(pending.target_io).handle_cancelled();
-            if(auto buf_io{pending.target_buffer_io()}) {
-                _buffers.eat(extract(buf_io).release_buffer());
-            }
-            something_done();
-            return true;
-        }
-        return false;
-    });
+    if(const auto erased_count{std::erase_if(
+         _incoming,
+         [this, &something_done](auto& pending) {
+             if(pending.max_time.is_expired()) {
+                 extract(pending.target_io).handle_cancelled();
+                 if(auto buf_io{pending.target_buffer_io()}) {
+                     _buffers.eat(extract(buf_io).release_buffer());
+                 }
+                 something_done();
+                 return true;
+             }
+             return false;
+         })};
+       erased_count > 0) {
+        log_debug("erased ${count} outgoing blobs")
+          .tag("delOutBlob")
+          .arg("count", erased_count);
+    }
 
     for(auto& pending : _incoming) {
         if(now - pending.latest_update > std::chrono::seconds{2}) {

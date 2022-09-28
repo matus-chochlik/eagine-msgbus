@@ -62,7 +62,7 @@ void resource_data_server_node::_handle_shutdown(
 resource_data_consumer_node_config::resource_data_consumer_node_config(
   application_config& c)
   : server_check_interval{c, "resource.consumer.server_check_interval", std::chrono::seconds{3}}
-  , server_response_timeout{c, "resource.consumer.server_response_timeout", std::chrono::seconds{10}}
+  , server_response_timeout{c, "resource.consumer.server_response_timeout", std::chrono::seconds{15}}
   , resource_search_interval{c, "resource.consumer.search_interval", std::chrono::seconds{3}}
   , resource_stream_timeout{c, "resource.consumer.stream_timeout", std::chrono::seconds{3600}}
   , _dummy{0} {}
@@ -82,6 +82,8 @@ void resource_data_consumer_node::_init() {
       this, blob_stream_finished);
     connect<&resource_data_consumer_node::_handle_stream_done>(
       this, blob_stream_cancelled);
+    connect<&resource_data_consumer_node::_handle_stream_data>(
+      this, blob_stream_data_appended);
     connect<&resource_data_consumer_node::_handle_ping_response>(
       this, ping_responded);
     connect<&resource_data_consumer_node::_handle_ping_timeout>(
@@ -305,6 +307,22 @@ void resource_data_consumer_node::_handle_stream_done(
     _streamed_resources.erase(request_id);
 }
 //------------------------------------------------------------------------------
+void resource_data_consumer_node::_handle_stream_data(
+  identifier_t request_id,
+  const span_size_t,
+  const memory::span<const memory::const_block>,
+  const blob_info&) noexcept {
+    if(const auto rpos{_streamed_resources.find(request_id)};
+       rpos != _streamed_resources.end()) {
+        auto& rinfo = std::get<1>(*rpos);
+        if(const auto spos{_current_servers.find(rinfo.source_server_id)};
+           spos != _current_servers.end()) {
+            auto& sinfo = std::get<1>(*spos);
+            sinfo.not_responding.reset();
+        }
+    }
+}
+//------------------------------------------------------------------------------
 void resource_data_consumer_node::_handle_ping_response(
   const identifier_t server_id,
   const message_sequence_t,
@@ -312,6 +330,9 @@ void resource_data_consumer_node::_handle_ping_response(
   const verification_bits) noexcept {
     const auto pos{_current_servers.find(server_id)};
     if(pos != _current_servers.end()) {
+        log_debug("resource server ${id} responded to ping")
+          .arg("id", server_id)
+          .arg("age", age);
         auto& info = std::get<1>(*pos);
         info.not_responding.reset();
     }
@@ -320,8 +341,17 @@ void resource_data_consumer_node::_handle_ping_response(
 void resource_data_consumer_node::_handle_ping_timeout(
   const identifier_t server_id,
   const message_sequence_t,
-  const std::chrono::microseconds) noexcept {
-    _handle_server_lost(server_id);
+  const std::chrono::microseconds age) noexcept {
+    const auto pos{_current_servers.find(server_id)};
+    if(pos != _current_servers.end()) {
+        auto& info = std::get<1>(*pos);
+        if(info.not_responding) {
+            log_info("ping to resource server ${id} timeouted")
+              .arg("id", server_id)
+              .arg("age", age);
+            _handle_server_lost(server_id);
+        }
+    }
 }
 //------------------------------------------------------------------------------
 } // namespace eagine::msgbus

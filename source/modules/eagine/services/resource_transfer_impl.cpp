@@ -168,17 +168,15 @@ public:
             &resource_server_impl::_handle_resource_resend_request>{});
     }
     auto update() noexcept -> work_done final {
-        {
-            auto& bus = base.bus_node();
-            some_true something_done{_blobs.update(bus.post_callable())};
-            const auto opt_max_size = bus.max_data_size();
-            if(opt_max_size) [[likely]] {
-                something_done(_blobs.process_outgoing(
-                  bus.post_callable(), extract(opt_max_size)));
-            }
-
-            return something_done;
+        auto& bus = base.bus_node();
+        some_true something_done{_blobs.update(bus.post_callable())};
+        const auto opt_max_size = bus.max_data_size();
+        if(opt_max_size) [[likely]] {
+            something_done(_blobs.process_outgoing(
+              bus.post_callable(), extract(opt_max_size)));
         }
+
+        return something_done;
     }
 
     void set_file_root(const std::filesystem::path& root_path) noexcept final {
