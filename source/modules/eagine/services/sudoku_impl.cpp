@@ -355,7 +355,8 @@ class sudoku_helper_impl : public sudoku_helper_intf {
 
 public:
     sudoku_helper_impl(subscriber& sub) noexcept
-      : base{sub} {}
+      : base{sub}
+      , _compressor{base.bus_node().main_context().buffers()} {}
 
     void add_methods() noexcept final;
     void init() noexcept final;
@@ -392,7 +393,7 @@ private:
 
     subscriber& base;
 
-    data_compressor _compressor{};
+    data_compressor _compressor;
 
     sudoku_rank_tuple<sudoku_helper_rank_info> _infos;
 
@@ -862,7 +863,8 @@ class sudoku_solver_impl : public sudoku_solver_intf {
 public:
     sudoku_solver_impl(subscriber& sub, sudoku_solver_signals& sigs) noexcept
       : base{sub}
-      , signals{sigs} {}
+      , signals{sigs}
+      , compressor{base.bus_node().main_context().buffers()} {}
 
     auto driver() const noexcept -> sudoku_solver_driver& {
         return *_pdriver;
@@ -918,7 +920,7 @@ public:
 
     subscriber& base;
     sudoku_solver_signals& signals;
-    data_compressor compressor{};
+    data_compressor compressor;
 
 private:
     void _on_id_assigned(const identifier_t) noexcept {
