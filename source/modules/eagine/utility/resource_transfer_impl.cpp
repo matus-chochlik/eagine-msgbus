@@ -309,18 +309,14 @@ void resource_data_consumer_node::_handle_stream_done(
 }
 //------------------------------------------------------------------------------
 void resource_data_consumer_node::_handle_stream_data(
-  identifier_t request_id,
+  identifier_t,
   const span_size_t,
   const memory::span<const memory::const_block>,
-  const blob_info&) noexcept {
-    if(const auto rpos{_streamed_resources.find(request_id)};
-       rpos != _streamed_resources.end()) {
-        auto& rinfo = std::get<1>(*rpos);
-        if(const auto spos{_current_servers.find(rinfo.source_server_id)};
-           spos != _current_servers.end()) {
-            auto& sinfo = std::get<1>(*spos);
-            sinfo.not_responding.reset();
-        }
+  const blob_info& binfo) noexcept {
+    if(const auto spos{_current_servers.find(binfo.source_id)};
+       spos != _current_servers.end()) {
+        auto& sinfo = std::get<1>(*spos);
+        sinfo.not_responding.reset();
     }
 }
 //------------------------------------------------------------------------------
