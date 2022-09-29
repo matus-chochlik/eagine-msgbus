@@ -175,7 +175,7 @@ public:
             const auto opt_max_size = bus.max_data_size();
             if(opt_max_size) [[likely]] {
                 something_done(_blobs.process_outgoing(
-                  bus.post_callable(), extract(opt_max_size)));
+                  bus.post_callable(), extract(opt_max_size), 2));
             }
             _should_send_outgoing.reset();
         }

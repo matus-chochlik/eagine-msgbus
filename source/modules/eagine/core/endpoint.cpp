@@ -443,9 +443,8 @@ public:
     }
 
     /// @brief Returns the average message age in the connected router.
-    auto flow_average_message_age() const noexcept
-      -> std::chrono::microseconds {
-        return std::chrono::microseconds{_flow_info.avg_msg_age_ms * 1000};
+    auto flow_average_message_age() const noexcept {
+        return _flow_info.average_message_age();
     }
 
 private:

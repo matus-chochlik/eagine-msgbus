@@ -877,10 +877,13 @@ auto blob_manipulator::push_outgoing(
 //------------------------------------------------------------------------------
 auto blob_manipulator::process_outgoing(
   const send_handler do_send,
-  const span_size_t max_message_size) noexcept -> work_done {
+  const span_size_t max_message_size,
+  span_size_t max_messages) noexcept -> work_done {
     some_true something_done{};
 
-    for(auto& pending : _outgoing) {
+    max_messages = std::min(max_messages, span_size(_outgoing.size()));
+    while(max_messages-- > 0) {
+        auto& pending = _outgoing[_outgoing_index++ % _outgoing.size()];
         if(!pending.sent_everything()) {
             auto& [bgn, end] = pending.todo_parts().back();
             assert(end != 0);

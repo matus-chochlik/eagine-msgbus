@@ -44,7 +44,7 @@ auto endpoint::_process_blobs() noexcept -> work_done {
     const auto opt_max_size = max_data_size();
     if(opt_max_size) [[likely]] {
         something_done(
-          _blobs.process_outgoing(post_handler, extract(opt_max_size)));
+          _blobs.process_outgoing(post_handler, extract(opt_max_size), 2));
     }
     return something_done;
 }
@@ -121,8 +121,24 @@ auto endpoint::_handle_flow_info(const message_view& message) noexcept
     message_flow_info flow_info{};
     default_deserialize(flow_info, message.content());
     if(_flow_info != flow_info) {
+        const std::chrono::milliseconds age_warning{500};
+        if(
+          (_flow_info.average_message_age() < age_warning) &&
+          (flow_info.average_message_age() >= age_warning)) {
+            log_warning("average message age is too high:  ${avgMsgAge}")
+              .tag("msgAgeHigh")
+              .arg("warnLimit", age_warning)
+              .arg("avgMsgAge", flow_info.average_message_age());
+        } else if(
+          (flow_info.average_message_age() < age_warning) &&
+          (_flow_info.average_message_age() >= age_warning)) {
+            log_info("average message age returned to normal: ${avgMsgAge}")
+              .tag("msgAgeNorm")
+              .arg("warnLimit", age_warning)
+              .arg("avgMsgAge", flow_info.average_message_age());
+        }
         _flow_info = flow_info;
-        log_info("changes in message flow information")
+        log_debug("changes in message flow information")
           .tag("msgFlowInf")
           .arg("avgMsgAge", flow_average_message_age());
     }

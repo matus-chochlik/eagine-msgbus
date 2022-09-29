@@ -517,7 +517,8 @@ auto router::_process_blobs() noexcept -> work_done {
                     };
                     if(_blobs.process_outgoing(
                          {construct_from, handle_send},
-                         extract(opt_max_size))) {
+                         extract(opt_max_size),
+                         4)) {
                         something_done();
                     }
                 }
@@ -814,7 +815,8 @@ auto router::_update_stats() noexcept -> work_done {
 
         const bool flow_info_changed =
           _flow_info.avg_msg_age_ms != avg_msg_age_ms;
-        _flow_info.avg_msg_age_ms = avg_msg_age_ms;
+        _flow_info.set_average_message_age(
+          std::chrono::milliseconds{avg_msg_age_ms});
 
         if(flow_info_changed) {
             const auto send_info =

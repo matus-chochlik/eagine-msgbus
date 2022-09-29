@@ -313,7 +313,8 @@ public:
     }
     auto process_outgoing(
       const send_handler,
-      const span_size_t max_data_size) noexcept -> work_done;
+      const span_size_t max_data_size,
+      span_size_t max_messages) noexcept -> work_done;
 
 private:
     const message_id _fragment_msg_id;
@@ -322,6 +323,7 @@ private:
     blob_id_t _blob_id_sequence{0U};
     memory::buffer _scratch_buffer{};
     memory::buffer_pool _buffers{};
+    std::size_t _outgoing_index{};
     std::vector<pending_blob> _outgoing{};
     std::vector<pending_blob> _incoming{};
 
