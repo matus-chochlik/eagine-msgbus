@@ -36,10 +36,10 @@ auto main(main_ctx& ctx) -> int {
           the_file_server.bus_node().flow_average_message_age();
         if(the_file_server.update_and_process_all()) {
             std::this_thread::sleep_for(
-              std::chrono::microseconds(125) + avg_msg_age / 4);
+              std::chrono::microseconds(125) + avg_msg_age / 1024);
         } else {
             std::this_thread::sleep_for(
-              std::chrono::milliseconds(10) + avg_msg_age);
+              std::chrono::milliseconds(10) + avg_msg_age / 32);
         }
         wd.notify_alive();
     }

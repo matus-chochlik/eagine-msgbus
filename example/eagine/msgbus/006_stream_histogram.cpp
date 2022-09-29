@@ -71,6 +71,7 @@ auto main(main_ctx& ctx) -> int {
         enqueue(url("eagires:///ones?count=134217728"), false);
         enqueue(url("eagires:///zeroes?count=134217728"), true);
         enqueue(url("eagires:///random?count=1073741824"), false);
+        enqueue(url("eagires:///random?count=134217728"), true);
         enqueue(url("eagires:///ownSource"), true);
     }
 

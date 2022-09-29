@@ -118,9 +118,14 @@ auto endpoint::_handle_blob_resend(const message_view& message) noexcept
 //------------------------------------------------------------------------------
 auto endpoint::_handle_flow_info(const message_view& message) noexcept
   -> message_handling_result {
-    default_deserialize(_flow_info, message.content());
-    log_debug("changes in message flow information")
-      .arg("avgMsgAge", flow_average_message_age());
+    message_flow_info flow_info{};
+    default_deserialize(flow_info, message.content());
+    if(_flow_info != flow_info) {
+        _flow_info = flow_info;
+        log_info("changes in message flow information")
+          .tag("msgFlowInf")
+          .arg("avgMsgAge", flow_average_message_age());
+    }
     return was_handled;
 }
 //------------------------------------------------------------------------------

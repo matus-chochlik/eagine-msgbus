@@ -452,6 +452,9 @@ constexpr auto data_member_mapping(
 export struct message_flow_info {
     /// @brief The average age of message in seconds.
     std::int16_t avg_msg_age_ms{0};
+
+    auto operator==(const message_flow_info&) const noexcept -> bool = default;
+    auto operator!=(const message_flow_info&) const noexcept -> bool = default;
 };
 
 export template <typename Selector>
