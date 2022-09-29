@@ -185,9 +185,9 @@ public:
 
     void average_message_age(
       const std::chrono::microseconds age) noexcept final {
-        _should_send_outgoing.reset(std::min(
+        _should_send_outgoing.set_duration(std::min(
           std::chrono::microseconds{50} + age / 16,
-          std::chrono::microseconds{100000}));
+          std::chrono::microseconds{50000}));
     }
 
     void set_file_root(const std::filesystem::path& root_path) noexcept final {

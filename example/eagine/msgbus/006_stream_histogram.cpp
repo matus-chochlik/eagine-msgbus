@@ -35,7 +35,7 @@ auto main(main_ctx& ctx) -> int {
             for(auto b : blk) {
                 max_count =
                   math::maximum(max_count, ++byte_counts[std_size(b)]);
-                if((++streamed_bytes % (8 * 1024 * 1024)) == 0) {
+                if((++streamed_bytes % (4 * 1024 * 1024)) == 0) {
                     ctx.log()
                       .info("streamed ${count}")
                       .tag("strmdBytes")
