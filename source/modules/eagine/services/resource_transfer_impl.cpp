@@ -167,16 +167,27 @@ public:
             "fragResend",
             &resource_server_impl::_handle_resource_resend_request>{});
     }
+
     auto update() noexcept -> work_done final {
         auto& bus = base.bus_node();
         some_true something_done{_blobs.update(bus.post_callable())};
-        const auto opt_max_size = bus.max_data_size();
-        if(opt_max_size) [[likely]] {
-            something_done(_blobs.process_outgoing(
-              bus.post_callable(), extract(opt_max_size)));
+        if(_should_send_outgoing) {
+            const auto opt_max_size = bus.max_data_size();
+            if(opt_max_size) [[likely]] {
+                something_done(_blobs.process_outgoing(
+                  bus.post_callable(), extract(opt_max_size)));
+            }
+            _should_send_outgoing.reset();
         }
 
         return something_done;
+    }
+
+    void average_message_age(
+      const std::chrono::microseconds age) noexcept final {
+        _should_send_outgoing.reset(std::min(
+          std::chrono::microseconds{50} + age / 16,
+          std::chrono::microseconds{100000}));
     }
 
     void set_file_root(const std::filesystem::path& root_path) noexcept final {
@@ -218,6 +229,7 @@ private:
     subscriber& base;
     resource_server_driver& driver;
     blob_manipulator _blobs;
+    timeout _should_send_outgoing{std::chrono::microseconds{1}};
     std::filesystem::path _root_path{};
 };
 //------------------------------------------------------------------------------

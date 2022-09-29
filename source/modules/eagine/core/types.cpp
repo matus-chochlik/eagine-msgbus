@@ -451,7 +451,7 @@ constexpr auto data_member_mapping(
 /// @ingroup msgbus
 export struct message_flow_info {
     /// @brief The average age of message in seconds.
-    std::int16_t avg_msg_age_ms{0};
+    std::int32_t avg_msg_age_ms{0};
 
     auto operator==(const message_flow_info&) const noexcept -> bool = default;
     auto operator!=(const message_flow_info&) const noexcept -> bool = default;
@@ -462,7 +462,7 @@ constexpr auto data_member_mapping(
   const std::type_identity<message_flow_info>,
   const Selector) noexcept {
     using S = message_flow_info;
-    return make_data_member_mapping<S, std::int16_t>(
+    return make_data_member_mapping<S, std::int32_t>(
       {"avg_msg_age_ms", &S::avg_msg_age_ms});
 }
 //------------------------------------------------------------------------------

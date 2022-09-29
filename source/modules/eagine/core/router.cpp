@@ -348,7 +348,8 @@ private:
       std::chrono::steady_clock::now()};
     std::chrono::steady_clock::time_point _forwarded_since_stat{
       std::chrono::steady_clock::now()};
-    std::chrono::steady_clock::duration _message_age_sum{};
+    basic_sliding_average<std::chrono::steady_clock::duration, std::int32_t, 8, 64>
+      _message_age_avg{};
     std::int64_t _prev_forwarded_messages{0};
     router_statistics _stats{};
     message_flow_info _flow_info{};

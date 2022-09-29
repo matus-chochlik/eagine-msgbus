@@ -50,6 +50,9 @@ struct resource_server_intf : interface<resource_server_intf> {
     virtual void add_methods() noexcept = 0;
     virtual auto update() noexcept -> work_done = 0;
 
+    virtual void average_message_age(
+      const std::chrono::microseconds) noexcept = 0;
+
     virtual void set_file_root(
       const std::filesystem::path& root_path) noexcept = 0;
 };
@@ -68,6 +71,10 @@ class resource_server : public Base {
     resource_server_driver _default_driver;
 
 public:
+    void average_message_age(const std::chrono::microseconds age) noexcept {
+        _impl->average_message_age(age);
+    }
+
     void set_file_root(const std::filesystem::path& root_path) noexcept {
         _impl->set_file_root(root_path);
     }

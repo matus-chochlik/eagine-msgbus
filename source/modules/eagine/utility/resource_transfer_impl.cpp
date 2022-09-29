@@ -62,7 +62,7 @@ void resource_data_server_node::_handle_shutdown(
 resource_data_consumer_node_config::resource_data_consumer_node_config(
   application_config& c)
   : server_check_interval{c, "resource.consumer.server_check_interval", std::chrono::seconds{3}}
-  , server_response_timeout{c, "resource.consumer.server_response_timeout", std::chrono::seconds{15}}
+  , server_response_timeout{c, "resource.consumer.server_response_timeout", std::chrono::seconds{60}}
   , resource_search_interval{c, "resource.consumer.search_interval", std::chrono::seconds{3}}
   , resource_stream_timeout{c, "resource.consumer.stream_timeout", std::chrono::seconds{3600}}
   , _dummy{0} {}

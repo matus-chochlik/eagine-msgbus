@@ -790,8 +790,7 @@ auto router::_handle_topology_query(const message_view& message) noexcept
 //------------------------------------------------------------------------------
 auto router::_avg_msg_age() const noexcept -> std::chrono::microseconds {
     return std::chrono::duration_cast<std::chrono::microseconds>(
-      _message_age_sum /
-      (_stats.forwarded_messages + _stats.dropped_messages + 1));
+      _message_age_avg.get());
 }
 //------------------------------------------------------------------------------
 auto router::_update_stats() noexcept -> work_done {
@@ -799,7 +798,7 @@ auto router::_update_stats() noexcept -> work_done {
 
     const auto now = std::chrono::steady_clock::now();
     const std::chrono::duration<float> seconds{now - _forwarded_since_stat};
-    if(seconds.count() >= 15.F) [[unlikely]] {
+    if(seconds >= std::chrono::seconds{15}) [[unlikely]] {
         _forwarded_since_stat = now;
 
         _stats.messages_per_second = static_cast<std::int32_t>(
@@ -808,16 +807,16 @@ auto router::_update_stats() noexcept -> work_done {
         _prev_forwarded_messages = _stats.forwarded_messages;
 
         const auto avg_msg_age_us =
-          static_cast<std::int32_t>(_avg_msg_age().count());
+          static_cast<std::int32_t>(_avg_msg_age().count() + 500);
         const auto avg_msg_age_ms = avg_msg_age_us / 1000;
 
         _stats.message_age_us = avg_msg_age_us;
 
         const bool flow_info_changed =
-          _flow_info.avg_msg_age_ms != limit_cast<std::int16_t>(avg_msg_age_ms);
-        _flow_info.avg_msg_age_ms = limit_cast<std::int16_t>(avg_msg_age_ms);
+          _flow_info.avg_msg_age_ms != avg_msg_age_ms;
+        _flow_info.avg_msg_age_ms = avg_msg_age_ms;
 
-        if(flow_info_changed) [[unlikely]] {
+        if(flow_info_changed) {
             const auto send_info =
               [&](const identifier_t remote_id, const auto& conn) {
                   auto buf{default_serialize_buffer_for(_flow_info)};
@@ -1159,7 +1158,7 @@ auto router::_route_node_messages(
                            const message_id msg_id,
                            const message_age msg_age,
                            message_view message) {
-        _message_age_sum += message.add_age(msg_age).age() + message_age_inc;
+        _message_age_avg.add(message.add_age(msg_age).age() + message_age_inc);
         const auto result{
           this->_handle_special(msg_id, incoming_id, node_in, message)};
         if(result == was_handled) {
@@ -1212,8 +1211,8 @@ auto router::_route_parent_messages(
                                message_id msg_id,
                                message_age msg_age,
                                message_view message) noexcept -> bool {
-            this->_message_age_sum +=
-              message.add_age(msg_age).age() + message_age_inc;
+            this->_message_age_avg.add(
+              message.add_age(msg_age).age() + message_age_inc);
 
             if(message.too_old()) [[unlikely]] {
                 ++_stats.dropped_messages;
