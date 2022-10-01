@@ -197,8 +197,33 @@ private:
     };
 
     struct _embedded_resource_info {
-        url locator{};
-        embedded_resource resource;
+        resource_data_consumer_node& _parent;
+        const identifier_t _request_id{0};
+        span_size_t _unpack_offset{0};
+        const url _locator{};
+        block_stream_decompression _unpacker;
+        blob_info _binfo{};
+
+        _embedded_resource_info(
+          resource_data_consumer_node& parent,
+          identifier_t request_id,
+          url locator,
+          const embedded_resource& resource);
+
+        auto _unpack_data(memory::const_block data) noexcept -> bool;
+
+        struct request_id_equal {
+            span_size_t request_id;
+
+            request_id_equal(span_size_t id) noexcept
+              : request_id{id} {}
+
+            auto operator()(auto& entry) const noexcept -> bool {
+                return entry->_request_id == request_id;
+            }
+        };
+
+        auto unpack_next() noexcept -> bool;
     };
 
     struct _streamed_resource_info {
@@ -247,7 +272,7 @@ private:
     embedded_resource_loader _embedded_loader;
     std::map<identifier_t, _server_info> _current_servers;
     std::map<identifier_t, _streamed_resource_info> _streamed_resources;
-    std::map<identifier_t, _embedded_resource_info> _embedded_resources;
+    std::vector<std::unique_ptr<_embedded_resource_info>> _embedded_resources;
 };
 //------------------------------------------------------------------------------
 } // namespace eagine::msgbus

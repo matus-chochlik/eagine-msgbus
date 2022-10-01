@@ -69,6 +69,42 @@ resource_data_consumer_node_config::resource_data_consumer_node_config(
 //------------------------------------------------------------------------------
 // resource_data_consumer_node
 //------------------------------------------------------------------------------
+resource_data_consumer_node::_embedded_resource_info::_embedded_resource_info(
+  resource_data_consumer_node& parent,
+  identifier_t request_id,
+  url locator,
+  const embedded_resource& resource)
+  : _parent{parent}
+  , _request_id{request_id}
+  , _locator{std::move(locator)}
+  , _unpacker{resource.make_unpacker(
+      _parent._buffers,
+      make_callable_ref<&_embedded_resource_info::_unpack_data>(this))} {
+    _binfo.source_id = _parent.bus_node().get_id();
+    _binfo.target_id = _binfo.source_id;
+}
+//------------------------------------------------------------------------------
+auto resource_data_consumer_node::_embedded_resource_info::_unpack_data(
+  memory::const_block data) noexcept -> bool {
+    _parent.blob_stream_data_appended(
+      _request_id, _unpack_offset, view_one(data), _binfo);
+    _unpack_offset += data.size();
+    return true;
+}
+//------------------------------------------------------------------------------
+auto resource_data_consumer_node::_embedded_resource_info::unpack_next() noexcept
+  -> bool {
+    if(!_unpacker.next().is_working()) {
+        if(_unpacker.has_succeeded()) {
+            _parent.blob_stream_finished(_request_id);
+        } else {
+            _parent.blob_stream_cancelled(_request_id);
+        }
+        return false;
+    }
+    return true;
+}
+//------------------------------------------------------------------------------
 void resource_data_consumer_node::_init() {
     connect<&resource_data_consumer_node::_handle_server_appeared>(
       this, resource_server_appeared);
@@ -116,22 +152,12 @@ auto resource_data_consumer_node::update() noexcept -> work_done {
             }
         }
     }
-    for(auto& [request_id, info] : _embedded_resources) {
-        blob_info binfo{};
-        binfo.source_id = this->bus_node().get_id();
-        binfo.target_id = binfo.source_id;
 
-        auto append = [&, offset{span_size(0)}, this](
-                        const memory::const_block data) mutable {
-            blob_stream_data_appended(
-              request_id, offset, view_one(data), binfo);
-            offset += data.size();
-            return true;
-        };
-        info.resource.fetch(main_context(), {construct_from, append});
+    std::erase_if(_embedded_resources, [&, this](auto& entry) {
         something_done();
-    }
-    _embedded_resources.clear();
+        assert(entry);
+        return !entry->unpack_next();
+    });
 
     something_done(base::update_and_process_all());
 
@@ -142,7 +168,11 @@ auto resource_data_consumer_node::has_pending_resource(
   identifier_t request_id) const noexcept -> bool {
     return (_streamed_resources.find(request_id) !=
             _streamed_resources.end()) ||
-           (_embedded_resources.find(request_id) != _embedded_resources.end());
+           (std::find_if(
+              _embedded_resources.begin(),
+              _embedded_resources.end(),
+              _embedded_resource_info::request_id_equal(request_id)) !=
+            _embedded_resources.end());
 }
 //------------------------------------------------------------------------------
 auto resource_data_consumer_node::has_pending_resources() const noexcept
@@ -165,15 +195,17 @@ auto resource_data_consumer_node::_query_resource(
   const std::chrono::seconds max_time) -> std::pair<identifier_t, const url&> {
     assert(request_id != 0);
 
-    if(const auto res_id{locator.path_identifier()}) {
-        if(const auto res{_embedded_loader.search(res_id)}) {
-            auto& info = _embedded_resources[request_id];
-            info.locator = std::move(locator);
-            info.resource = std::move(res);
+    if(const auto resource_id{locator.path_identifier()}) {
+        if(const auto res{_embedded_loader.search(resource_id)}) {
+            _embedded_resources.emplace_back(
+              std::make_unique<_embedded_resource_info>(
+                *this, request_id, std::move(locator), res));
+            auto& info = *_embedded_resources.back();
+
             log_info("fetching embedded resource ${locator}")
               .tag("embResCont")
-              .arg("locator", info.locator.str());
-            return {request_id, info.locator};
+              .arg("locator", info._locator.str());
+            return {info._request_id, info._locator};
         }
     }
     auto& info = _streamed_resources[request_id];
@@ -222,13 +254,9 @@ auto resource_data_consumer_node::cancel_resource_stream(
         return true;
     }
 
-    const auto epos{_embedded_resources.find(request_id)};
-    if(epos != _embedded_resources.end()) {
-        _embedded_resources.erase(epos);
-        return true;
-    }
-
-    return false;
+    return std::erase_if(
+             _embedded_resources,
+             _embedded_resource_info::request_id_equal(request_id)) > 0;
 }
 //------------------------------------------------------------------------------
 void resource_data_consumer_node::_handle_server_appeared(
