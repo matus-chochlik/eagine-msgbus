@@ -149,6 +149,14 @@ public:
           std::move(locator), priority, _config.resource_stream_timeout);
     }
 
+    /// @brief Requests a resource stream with the specified URL.
+    /// @see fetch_resource_chunks
+    ///
+    /// Returns a pair of unique resource request identifier and the URL.
+    auto stream_resource(url locator) -> std::pair<identifier_t, const url&> {
+        return stream_resource(std::move(locator), message_priority::normal);
+    }
+
     /// @brief Requests a resource as a collection of chunks with the specified URL.
     /// @see stream_resource
     ///
@@ -177,6 +185,25 @@ public:
           chunk_size,
           priority,
           _config.resource_stream_timeout);
+    }
+
+    /// @brief Requests a resource as a collection of chunks with the specified URL.
+    /// @see stream_resource
+    ///
+    /// Returns a pair of unique resource request identifier and the URL.
+    auto fetch_resource_chunks(url locator, const span_size_t chunk_size)
+      -> std::pair<identifier_t, const url&> {
+        return fetch_resource_chunks(
+          std::move(locator), chunk_size, message_priority::normal);
+    }
+
+    /// @brief Requests a resource as a collection of chunks with the specified URL.
+    /// @see stream_resource
+    ///
+    /// Returns a pair of unique resource request identifier and the URL.
+    auto fetch_resource_chunks(url locator)
+      -> std::pair<identifier_t, const url&> {
+        return fetch_resource_chunks(std::move(locator), 4096);
     }
 
     /// @brief Cancels a resource request with the specified identifier.
