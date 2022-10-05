@@ -99,6 +99,11 @@ public:
         _init();
     }
 
+    /// @brief Return a reference to the internal buffer pool.
+    auto buffers() noexcept -> memory::buffer_pool& {
+        return _buffers;
+    }
+
     /// @brief Does some work and updates internal state (should be called periodically).
     auto update() noexcept -> work_done;
 
