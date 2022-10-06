@@ -86,9 +86,20 @@ resource_data_consumer_node::_embedded_resource_info::_embedded_resource_info(
 //------------------------------------------------------------------------------
 auto resource_data_consumer_node::_embedded_resource_info::_unpack_data(
   memory::const_block data) noexcept -> bool {
-    _parent.blob_stream_data_appended(
-      _request_id, _unpack_offset, view_one(data), _binfo);
-    _unpack_offset += data.size();
+    if(_is_all_in_one) {
+        if(_unpacker.has_succeeded()) {
+            _parent.blob_stream_data_appended(
+              _request_id, _unpack_offset, view_one(data), _binfo);
+        } else {
+            auto chunk = _parent.buffers().get(data.size());
+            memory::copy_into(data, chunk);
+            _chunks.emplace_back(std::move(chunk));
+        }
+    } else {
+        _parent.blob_stream_data_appended(
+          _request_id, _unpack_offset, view_one(data), _binfo);
+        _unpack_offset += data.size();
+    }
     return true;
 }
 //------------------------------------------------------------------------------
@@ -96,6 +107,25 @@ auto resource_data_consumer_node::_embedded_resource_info::unpack_next() noexcep
   -> bool {
     if(!_unpacker.next().is_working()) {
         if(_unpacker.has_succeeded()) {
+            if(_chunks.size() == 1U) {
+                const auto data{view(_chunks.back())};
+                _parent.blob_stream_data_appended(
+                  _request_id, 0, view_one(data), _binfo);
+                _parent.buffers().eat(std::move(_chunks.back()));
+                _chunks.clear();
+            } else if(!_chunks.empty()) {
+                std::vector<memory::const_block> data;
+                data.reserve(_chunks.size());
+                for(const auto& chunk : _chunks) {
+                    data.emplace_back(view(chunk));
+                }
+                _parent.blob_stream_data_appended(
+                  _request_id, 0, view(data), _binfo);
+                for(auto& chunk : _chunks) {
+                    _parent.buffers().eat(std::move(chunk));
+                }
+                _chunks.clear();
+            }
             _parent.blob_stream_finished(_request_id);
         } else {
             _parent.blob_stream_cancelled(_request_id);
@@ -192,7 +222,8 @@ auto resource_data_consumer_node::_query_resource(
   url locator,
   std::shared_ptr<target_blob_io> io,
   const message_priority priority,
-  const std::chrono::seconds max_time) -> std::pair<identifier_t, const url&> {
+  const std::chrono::seconds max_time,
+  const bool all_in_one) -> std::pair<identifier_t, const url&> {
     assert(request_id != 0);
 
     if(const auto resource_id{locator.path_identifier()}) {
@@ -201,6 +232,7 @@ auto resource_data_consumer_node::_query_resource(
               std::make_unique<_embedded_resource_info>(
                 *this, request_id, std::move(locator), res));
             auto& info = *_embedded_resources.back();
+            info._is_all_in_one = all_in_one;
 
             log_info("fetching embedded resource ${locator}")
               .tag("embResCont")
@@ -228,7 +260,8 @@ auto resource_data_consumer_node::stream_resource(
       std::move(locator),
       make_target_blob_stream_io(request_id, *this, _buffers),
       priority,
-      max_time);
+      max_time,
+      false);
 }
 //------------------------------------------------------------------------------
 auto resource_data_consumer_node::fetch_resource_chunks(
@@ -242,7 +275,8 @@ auto resource_data_consumer_node::fetch_resource_chunks(
       std::move(locator),
       make_target_blob_chunk_io(request_id, chunk_size, *this, _buffers),
       priority,
-      max_time);
+      max_time,
+      true);
 }
 //------------------------------------------------------------------------------
 auto resource_data_consumer_node::cancel_resource_stream(

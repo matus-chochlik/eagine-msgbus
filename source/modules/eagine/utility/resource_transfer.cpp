@@ -120,13 +120,15 @@ public:
       url locator,
       std::shared_ptr<target_blob_io> io,
       const message_priority priority,
-      const std::chrono::seconds max_time) {
+      const std::chrono::seconds max_time,
+      const bool all_in_one) {
         _query_resource(
           get_request_id(),
           std::move(locator),
           std::move(io),
           priority,
-          max_time);
+          max_time,
+          all_in_one);
     }
 
     /// @brief Requests a resource stream with the specified URL.
@@ -235,6 +237,8 @@ private:
         const url _locator{};
         block_stream_decompression _unpacker;
         blob_info _binfo{};
+        std::vector<memory::buffer> _chunks;
+        bool _is_all_in_one{false};
 
         _embedded_resource_info(
           resource_data_consumer_node& parent,
@@ -243,6 +247,7 @@ private:
           const embedded_resource& resource);
 
         auto _unpack_data(memory::const_block data) noexcept -> bool;
+        auto _finish_data() noexcept -> bool;
 
         struct request_id_equal {
             span_size_t request_id;
@@ -273,8 +278,8 @@ private:
       url locator,
       std::shared_ptr<target_blob_io> io,
       const message_priority priority,
-      const std::chrono::seconds max_time)
-      -> std::pair<identifier_t, const url&>;
+      const std::chrono::seconds max_time,
+      const bool all_in_one) -> std::pair<identifier_t, const url&>;
 
     void _handle_server_appeared(identifier_t) noexcept;
     void _handle_server_lost(identifier_t) noexcept;
