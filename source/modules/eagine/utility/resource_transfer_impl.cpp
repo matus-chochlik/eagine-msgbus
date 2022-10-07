@@ -87,7 +87,7 @@ resource_data_consumer_node::_embedded_resource_info::_embedded_resource_info(
 auto resource_data_consumer_node::_embedded_resource_info::_unpack_data(
   memory::const_block data) noexcept -> bool {
     if(_is_all_in_one) {
-        if(_unpacker.has_succeeded()) {
+        if(!_unpacker.is_working() && _unpacker.has_succeeded()) {
             _parent.blob_stream_data_appended(
               _request_id, _unpack_offset, view_one(data), _binfo);
         } else {
