@@ -133,8 +133,9 @@ eagine_add_module(
 		eagine.core.memory
 		eagine.core.identifier
 		eagine.core.container
-		eagine.core.utility
 		eagine.core.valid_if
+		eagine.core.utility
+		eagine.core.logging
 		eagine.core.main_ctx
 )
 

@@ -396,6 +396,7 @@ auto endpoint::add_connection(std::unique_ptr<connection> conn) noexcept
               .arg("type", conn->type_id());
         }
         _connection = std::move(conn);
+        _log_no_connection.reset();
         return true;
     } else {
         log_error("assigning invalid connection");
@@ -476,7 +477,8 @@ auto endpoint::update() noexcept -> work_done {
     something_done(_process_blobs());
 
     if(!_connection) [[unlikely]] {
-        log_warning("endpoint has no connection");
+        log_warning(_log_no_connection, "endpoint has no connection")
+          .tag("noConnect");
     }
 
     const bool had_id{has_id()};
