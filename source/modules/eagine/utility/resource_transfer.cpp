@@ -70,7 +70,7 @@ private:
 };
 //------------------------------------------------------------------------------
 export using resource_data_consumer_node_base =
-  service_node<require_services<subscriber, resource_manipulator, pinger>>;
+  service_composition<require_services<subscriber, resource_manipulator, pinger>>;
 //------------------------------------------------------------------------------
 export struct resource_data_consumer_node_config {
     application_config_value<std::chrono::seconds> server_check_interval;
@@ -85,7 +85,8 @@ export struct resource_data_consumer_node_config {
 /// @brief Message bus service consuming resource data blocks.
 /// @ingroup msgbus
 export class resource_data_consumer_node
-  : public resource_data_consumer_node_base
+  : public main_ctx_object
+  , public resource_data_consumer_node_base
   , public blob_stream_signals {
     using base = resource_data_consumer_node_base;
 
@@ -93,9 +94,10 @@ export class resource_data_consumer_node
 
 public:
     /// @brief Initializing constructor.
-    resource_data_consumer_node(main_ctx& ctx)
-      : base{"RsrcCnsmer", ctx}
-      , _config{ctx.config()} {
+    resource_data_consumer_node(endpoint& bus)
+      : main_ctx_object{"RsrcServer", bus}
+      , base{bus}
+      , _config{main_context().config()} {
         _init();
     }
 

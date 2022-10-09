@@ -18,7 +18,8 @@ auto main(main_ctx& ctx) -> int {
 
     timeout idle_too_long{std::chrono::seconds{30}};
 
-    msgbus::resource_data_consumer_node node{ctx};
+    msgbus::endpoint bus{"Example", ctx};
+    msgbus::resource_data_consumer_node node{bus};
     msgbus::setup_connectors(ctx, node);
 
     span_size_t max_count{0};
