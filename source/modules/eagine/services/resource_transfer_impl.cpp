@@ -194,6 +194,8 @@ public:
         _root_path = std::filesystem::canonical(root_path);
     }
 
+    void notify_resource_available(const string_view locator) noexcept final;
+
     auto is_contained(const std::filesystem::path& file_path) const noexcept
       -> bool;
 
@@ -247,6 +249,19 @@ resource_server_impl::resource_server_impl(
       base,
       message_id{"eagiRsrces", "fragment"},
       message_id{"eagiRsrces", "fragResend"}} {}
+//------------------------------------------------------------------------------
+void resource_server_impl::notify_resource_available(
+  const string_view locator) noexcept {
+    auto buffer = default_serialize_buffer_for(locator);
+
+    if(const auto serialized{default_serialize(locator, cover(buffer))})
+      [[likely]] {
+        const auto msg_id{message_id{"eagiRsrce", "available"}};
+        message_view message{extract(serialized)};
+        message.set_target_id(broadcast_endpoint_id());
+        base.bus_node().post(msg_id, message);
+    }
+}
 //------------------------------------------------------------------------------
 auto resource_server_impl::is_contained(
   const std::filesystem::path& file_path) const noexcept -> bool {
@@ -477,6 +492,12 @@ public:
             "eagiRsrces",
             "fragResend",
             &resource_manipulator_impl::_handle_resource_resend_request>{});
+        base.add_method(
+          this,
+          message_map<
+            "eagiRsrce",
+            "available",
+            &resource_manipulator_impl::_handle_resource_available>{});
     }
 
     auto update() noexcept -> work_done final {
@@ -674,6 +695,21 @@ private:
       const message_context&,
       const stored_message& message) noexcept -> bool {
         _blobs.process_resend(message);
+        return true;
+    }
+
+    auto _handle_resource_available(
+      const message_context&,
+      const stored_message& message) noexcept -> bool {
+        std::string url_str;
+        if(default_deserialize(url_str, message.content())) [[likely]] {
+            const url locator{std::move(url_str)};
+            base.bus_node()
+              .log_info("resource ${locator} is available at ${source}")
+              .arg("source", message.source_id)
+              .arg("locator", locator.str());
+            signals.resource_appeared(message.source_id, locator);
+        }
         return true;
     }
 

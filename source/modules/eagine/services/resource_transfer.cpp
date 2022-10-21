@@ -55,6 +55,9 @@ struct resource_server_intf : interface<resource_server_intf> {
 
     virtual void set_file_root(
       const std::filesystem::path& root_path) noexcept = 0;
+
+    virtual void notify_resource_available(
+      const string_view locator) noexcept = 0;
 };
 //------------------------------------------------------------------------------
 auto make_resource_server_impl(subscriber&, resource_server_driver&)
@@ -77,6 +80,10 @@ public:
 
     void set_file_root(const std::filesystem::path& root_path) noexcept {
         _impl->set_file_root(root_path);
+    }
+
+    void notify_resource_available(const string_view locator) noexcept {
+        _impl->notify_resource_available(locator);
     }
 
 protected:
@@ -115,6 +122,9 @@ export struct resource_manipulator_signals {
     /// @see search_resource
     signal<void(const identifier_t, const url&) noexcept>
       server_has_not_resource;
+
+    /// @brief Triggered when a resource becomes available.
+    signal<void(const identifier_t, const url&) noexcept> resource_appeared;
 
     /// @brief Triggered when a resource server appears on the bus.
     signal<void(const identifier_t) noexcept> resource_server_appeared;
