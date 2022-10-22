@@ -322,7 +322,7 @@ private:
     auto _route_node_messages(
       const std::chrono::steady_clock::duration,
       const identifier_t incoming_id,
-      routed_node&) noexcept -> bool;
+      routed_node&) noexcept -> work_done;
     auto _handle_special_parent_message(
       const message_id msg_id,
       message_view& message) noexcept -> bool;
