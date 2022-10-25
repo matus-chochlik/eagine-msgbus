@@ -183,11 +183,19 @@ auto resource_data_consumer_node::update() noexcept -> work_done {
         }
     }
 
-    std::erase_if(_embedded_resources, [&, this](auto& entry) {
+    if(!_embedded_resources.empty()) {
+        std::vector<std::unique_ptr<_embedded_resource_info>> temp;
+        std::swap(temp, _embedded_resources);
+
+        for(auto& entry : temp) {
+            assert(entry);
+            if(entry->unpack_next()) {
+                _embedded_resources.emplace_back(std::move(entry));
+            }
+        }
+
         something_done();
-        assert(entry);
-        return !entry->unpack_next();
-    });
+    }
 
     something_done(base::update_and_process_all());
 
