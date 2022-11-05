@@ -10,6 +10,7 @@ export module eagine.msgbus.core:router_address;
 import eagine.core.types;
 import eagine.core.memory;
 import eagine.core.identifier;
+import eagine.core.container;
 import eagine.core.logging;
 import eagine.core.main_ctx;
 import <string>;
@@ -70,7 +71,7 @@ public:
     }
 
 private:
-    std::vector<std::string> _addrs{};
+    small_vector<std::string, 2> _addrs{};
 };
 //------------------------------------------------------------------------------
 } // namespace eagine::msgbus

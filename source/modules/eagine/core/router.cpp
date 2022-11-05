@@ -28,7 +28,6 @@ import <vector>;
 namespace eagine::msgbus {
 //------------------------------------------------------------------------------
 struct router_pending {
-
     router_pending(std::unique_ptr<connection> a_connection) noexcept
       : the_connection{std::move(a_connection)} {}
 
@@ -373,7 +372,7 @@ private:
     } _user{*this};
 
     parent_router _parent_router;
-    std::vector<std::shared_ptr<acceptor>> _acceptors;
+    small_vector<std::shared_ptr<acceptor>, 2> _acceptors;
     std::vector<router_pending> _pending;
     flat_map<identifier_t, routed_node> _nodes;
     flat_map<identifier_t, identifier_t> _endpoint_idx;

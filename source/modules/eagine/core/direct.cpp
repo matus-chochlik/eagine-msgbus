@@ -14,6 +14,7 @@ export module eagine.msgbus.core:direct;
 import eagine.core.types;
 import eagine.core.memory;
 import eagine.core.identifier;
+import eagine.core.container;
 import eagine.core.utility;
 import eagine.core.main_ctx;
 import :types;
@@ -139,7 +140,7 @@ public:
     }
 
 private:
-    std::vector<shared_state> _pending;
+    small_vector<shared_state, 4> _pending;
 };
 //------------------------------------------------------------------------------
 /// @brief Implementation of the connection_info interface for direct connections.
