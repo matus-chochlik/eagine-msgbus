@@ -109,6 +109,23 @@ public:
     /// @brief Does some work and updates internal state (should be called periodically).
     auto update() noexcept -> work_done;
 
+    /// @brief Indicates if embedded resource with the specified id is available.
+    auto has_embedded_resource(identifier res_id) noexcept -> bool {
+        return _embedded_loader.has_resource(res_id);
+    }
+
+    /// @brief Returns a URL for embedded resource with the specified id.
+    auto embedded_resource_locator(
+      const string_view scheme,
+      identifier res_id) noexcept -> url {
+        std::string url_str;
+        url_str.reserve(std_size(scheme.size() + 4 + 10));
+        append_to(scheme, url_str);
+        append_to(string_view{":///"}, url_str);
+        append_to(res_id.name().view(), url_str);
+        return url{std::move(url_str)};
+    }
+
     /// @brief Returns a new unique id for a resource request.
     /// @see query_resource
     /// @see stream_resource
