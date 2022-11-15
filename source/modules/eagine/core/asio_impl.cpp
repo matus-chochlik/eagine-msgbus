@@ -65,7 +65,7 @@ public:
     }
 
     void update() noexcept {
-        std::erase_if(
+        erase_if(
           _waiting, [](auto& waiting) { return bool(std::get<0>(waiting)); });
     }
 

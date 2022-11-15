@@ -74,7 +74,7 @@ public:
     }
 
 private:
-    std::shared_ptr<direct_acceptor> _acceptor;
+    std::shared_ptr<direct_acceptor_intf> _acceptor;
     router _router;
     std::vector<registered_entry> _entries;
 

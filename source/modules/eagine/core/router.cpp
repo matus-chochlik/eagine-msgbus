@@ -28,7 +28,6 @@ import <vector>;
 namespace eagine::msgbus {
 //------------------------------------------------------------------------------
 struct router_pending {
-
     router_pending(std::unique_ptr<connection> a_connection) noexcept
       : the_connection{std::move(a_connection)} {}
 
@@ -206,10 +205,10 @@ private:
     void _log_router_stats() noexcept;
 
     auto _process_blobs() noexcept -> work_done;
-    auto _do_get_blob_io(
+    auto _do_get_blob_target_io(
       const message_id,
       const span_size_t,
-      blob_manipulator&) noexcept -> std::unique_ptr<blob_io>;
+      blob_manipulator&) noexcept -> std::unique_ptr<target_blob_io>;
 
     enum message_handling_result { should_be_forwarded, was_handled };
 
@@ -322,7 +321,7 @@ private:
     auto _route_node_messages(
       const std::chrono::steady_clock::duration,
       const identifier_t incoming_id,
-      routed_node&) noexcept -> bool;
+      routed_node&) noexcept -> work_done;
     auto _handle_special_parent_message(
       const message_id msg_id,
       message_view& message) noexcept -> bool;
@@ -348,7 +347,8 @@ private:
       std::chrono::steady_clock::now()};
     std::chrono::steady_clock::time_point _forwarded_since_stat{
       std::chrono::steady_clock::now()};
-    std::chrono::steady_clock::duration _message_age_sum{};
+    basic_sliding_average<std::chrono::steady_clock::duration, std::int32_t, 8, 64>
+      _message_age_avg{};
     std::int64_t _prev_forwarded_messages{0};
     router_statistics _stats{};
     message_flow_info _flow_info{};
@@ -372,7 +372,7 @@ private:
     } _user{*this};
 
     parent_router _parent_router;
-    std::vector<std::shared_ptr<acceptor>> _acceptors;
+    small_vector<std::shared_ptr<acceptor>, 2> _acceptors;
     std::vector<router_pending> _pending;
     flat_map<identifier_t, routed_node> _nodes;
     flat_map<identifier_t, identifier_t> _endpoint_idx;

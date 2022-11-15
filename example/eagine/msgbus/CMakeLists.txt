@@ -24,21 +24,12 @@ function(eagine_example_common EXAMPLE_NAME)
 		${ARGN}
 	)
 	add_dependencies(eagine-msgbus-examples eagine-${EXAMPLE_NAME})
-	if(${WITH_MODULES})
-		eagine_target_modules(
-			eagine-${EXAMPLE_NAME}
-			eagine.core
-			eagine.sslplus
-			eagine.msgbus
-		)
-	else()
-		eagine_add_exe_analysis(eagine-${EXAMPLE_NAME})
-		target_link_libraries(
-			eagine-${EXAMPLE_NAME}
-			PUBLIC EAGine::MsgBus
-			PRIVATE ${ARGN}
-		)
-	endif()
+	eagine_target_modules(
+		eagine-${EXAMPLE_NAME}
+		eagine.core
+		eagine.sslplus
+		eagine.msgbus
+	)
 
 	set_target_properties(
 		eagine-${EXAMPLE_NAME}
@@ -72,8 +63,7 @@ eagine_example_common(012_sudoku_threads)
 eagine_example_common(013_conn_setup)
 eagine_example_common(014_tracker)
 eagine_example_common(015_stream)
-
-if(WITH_MODULES)
+#
 eagine_example_common(006_stream_histogram)
 eagine_embed_target_resources(
 	TARGET eagine-006_stream_histogram
@@ -82,4 +72,3 @@ eagine_embed_target_resources(
 	PACKED
 	ENABLE_SEARCH
 )
-endif()

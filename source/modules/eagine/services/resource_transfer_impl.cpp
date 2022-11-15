@@ -32,7 +32,7 @@ namespace eagine::msgbus {
 //------------------------------------------------------------------------------
 // single_byte_blob_io
 //------------------------------------------------------------------------------
-class single_byte_blob_io final : public blob_io {
+class single_byte_blob_io final : public source_blob_io {
 public:
     single_byte_blob_io(const span_size_t size, const byte value) noexcept
       : _size{size}
@@ -54,7 +54,7 @@ private:
 //------------------------------------------------------------------------------
 // random_byte_blob_io
 //------------------------------------------------------------------------------
-class random_byte_blob_io final : public blob_io {
+class random_byte_blob_io final : public source_blob_io {
 public:
     random_byte_blob_io(span_size_t size) noexcept
       : _size{size}
@@ -76,7 +76,9 @@ private:
 //------------------------------------------------------------------------------
 // file_blob_io
 //------------------------------------------------------------------------------
-class file_blob_io final : public blob_io {
+class file_blob_io final
+  : public source_blob_io
+  , public target_blob_io {
 public:
     file_blob_io(
       std::fstream file,
@@ -108,8 +110,10 @@ public:
           read_from_stream(_file, head(dst, _size - _offs - offs)).gcount());
     }
 
-    auto store_fragment(const span_size_t offs, memory::const_block src) noexcept
-      -> bool final {
+    auto store_fragment(
+      const span_size_t offs,
+      const memory::const_block src,
+      const blob_info&) noexcept -> bool final {
         _file.seekg(_offs + offs, std::ios::beg);
         return write_to_stream(_file, head(src, _size - _offs - offs)).good();
     }
@@ -122,7 +126,8 @@ public:
     void handle_finished(
       const message_id,
       const message_age,
-      const message_info&) noexcept final {
+      const message_info&,
+      const blob_info&) noexcept final {
         _file.close();
     }
 
@@ -162,23 +167,34 @@ public:
             "fragResend",
             &resource_server_impl::_handle_resource_resend_request>{});
     }
+
     auto update() noexcept -> work_done final {
-        {
-            auto& bus = base.bus_node();
-            some_true something_done{_blobs.update(bus.post_callable())};
+        auto& bus = base.bus_node();
+        some_true something_done{_blobs.update(bus.post_callable())};
+        if(_should_send_outgoing) {
             const auto opt_max_size = bus.max_data_size();
             if(opt_max_size) [[likely]] {
                 something_done(_blobs.process_outgoing(
-                  bus.post_callable(), extract(opt_max_size)));
+                  bus.post_callable(), extract(opt_max_size), 2));
             }
-
-            return something_done;
+            _should_send_outgoing.reset();
         }
+
+        return something_done;
+    }
+
+    void average_message_age(
+      const std::chrono::microseconds age) noexcept final {
+        _should_send_outgoing.set_duration(std::min(
+          std::chrono::microseconds{50} + age / 16,
+          std::chrono::microseconds{50000}));
     }
 
     void set_file_root(const std::filesystem::path& root_path) noexcept final {
         _root_path = std::filesystem::canonical(root_path);
     }
+
+    void notify_resource_available(const string_view locator) noexcept final;
 
     auto is_contained(const std::filesystem::path& file_path) const noexcept
       -> bool;
@@ -193,8 +209,11 @@ public:
       const message_context& ctx,
       const url& locator,
       const identifier_t endpoint_id,
-      const message_priority priority) -> std::
-      tuple<std::unique_ptr<blob_io>, std::chrono::seconds, message_priority>;
+      const message_priority priority)
+      -> std::tuple<
+        std::unique_ptr<source_blob_io>,
+        std::chrono::seconds,
+        message_priority>;
 
 private:
     auto _handle_has_resource_query(
@@ -212,6 +231,7 @@ private:
     subscriber& base;
     resource_server_driver& driver;
     blob_manipulator _blobs;
+    timeout _should_send_outgoing{std::chrono::microseconds{1}};
     std::filesystem::path _root_path{};
 };
 //------------------------------------------------------------------------------
@@ -229,6 +249,19 @@ resource_server_impl::resource_server_impl(
       base,
       message_id{"eagiRsrces", "fragment"},
       message_id{"eagiRsrces", "fragResend"}} {}
+//------------------------------------------------------------------------------
+void resource_server_impl::notify_resource_available(
+  const string_view locator) noexcept {
+    auto buffer = default_serialize_buffer_for(locator);
+
+    if(const auto serialized{default_serialize(locator, cover(buffer))})
+      [[likely]] {
+        const auto msg_id{message_id{"eagiRsrce", "available"}};
+        message_view message{extract(serialized)};
+        message.set_target_id(broadcast_endpoint_id());
+        base.bus_node().post(msg_id, message);
+    }
+}
 //------------------------------------------------------------------------------
 auto resource_server_impl::is_contained(
   const std::filesystem::path& file_path) const noexcept -> bool {
@@ -285,8 +318,8 @@ auto resource_server_impl::get_resource(
   const message_context& ctx,
   const url& locator,
   const identifier_t endpoint_id,
-  const message_priority priority)
-  -> std::tuple<std::unique_ptr<blob_io>, std::chrono::seconds, message_priority> {
+  const message_priority priority) -> std::
+  tuple<std::unique_ptr<source_blob_io>, std::chrono::seconds, message_priority> {
     auto read_io = driver.get_resource_io(endpoint_id, locator);
     if(!read_io) {
         if(locator.has_scheme("eagires")) {
@@ -459,10 +492,18 @@ public:
             "eagiRsrces",
             "fragResend",
             &resource_manipulator_impl::_handle_resource_resend_request>{});
+        base.add_method(
+          this,
+          message_map<
+            "eagiRsrce",
+            "available",
+            &resource_manipulator_impl::_handle_resource_available>{});
     }
 
     auto update() noexcept -> work_done final {
-        some_true something_done{_blobs.handle_complete() > 0};
+        some_true something_done{};
+        something_done(_blobs.handle_complete() > 0);
+        something_done(_blobs.update(base.bus_node().post_callable()));
 
         if(_search_servers) {
             base.bus_node().query_subscribers_of(
@@ -519,7 +560,7 @@ public:
     auto query_resource_content(
       identifier_t endpoint_id,
       const url& locator,
-      std::shared_ptr<blob_io> write_io,
+      std::shared_ptr<target_blob_io> write_io,
       const message_priority priority,
       const std::chrono::seconds max_time)
       -> std::optional<message_sequence_t> final {
@@ -654,6 +695,21 @@ private:
       const message_context&,
       const stored_message& message) noexcept -> bool {
         _blobs.process_resend(message);
+        return true;
+    }
+
+    auto _handle_resource_available(
+      const message_context&,
+      const stored_message& message) noexcept -> bool {
+        std::string url_str;
+        if(default_deserialize(url_str, message.content())) [[likely]] {
+            const url locator{std::move(url_str)};
+            base.bus_node()
+              .log_info("resource ${locator} is available at ${source}")
+              .arg("source", message.source_id)
+              .arg("locator", locator.str());
+            signals.resource_appeared(message.source_id, locator);
+        }
         return true;
     }
 

@@ -22,10 +22,21 @@ import :message;
 import <cstdint>;
 import <chrono>;
 import <vector>;
+import <type_traits>;
 
 namespace eagine::msgbus {
 //------------------------------------------------------------------------------
-export struct blob_io : interface<blob_io> {
+using blob_options_t = std::underlying_type_t<blob_option>;
+//------------------------------------------------------------------------------
+export struct blob_info {
+    identifier_t source_id{0U};
+    identifier_t target_id{0U};
+    span_size_t total_size{0};
+    blob_options options;
+    message_priority priority{message_priority::normal};
+};
+//------------------------------------------------------------------------------
+export struct source_blob_io : interface<source_blob_io> {
 
     virtual auto is_at_eod(const span_size_t offs) noexcept -> bool {
         return offs >= total_size();
@@ -40,10 +51,22 @@ export struct blob_io : interface<blob_io> {
       [[maybe_unused]] memory::block dst) noexcept -> span_size_t {
         return 0;
     }
+};
+//------------------------------------------------------------------------------
+export struct target_blob_io : interface<target_blob_io> {
+
+    virtual void handle_finished(
+      [[maybe_unused]] const message_id msg_id,
+      [[maybe_unused]] const message_age msg_age,
+      [[maybe_unused]] const message_info& message,
+      [[maybe_unused]] const blob_info& info) noexcept {}
+
+    virtual void handle_cancelled() noexcept {}
 
     virtual auto store_fragment(
       [[maybe_unused]] const span_size_t offs,
-      [[maybe_unused]] memory::const_block src) noexcept -> bool {
+      [[maybe_unused]] memory::const_block data,
+      [[maybe_unused]] const blob_info& info) noexcept -> bool {
         return false;
     }
 
@@ -52,42 +75,63 @@ export struct blob_io : interface<blob_io> {
       [[maybe_unused]] memory::const_block src) noexcept -> bool {
         return true;
     }
-
-    virtual void handle_finished(
-      [[maybe_unused]] const message_id msg_id,
-      [[maybe_unused]] const message_age msg_age,
-      [[maybe_unused]] const message_info& message) noexcept {}
-
-    virtual void handle_cancelled() noexcept {}
 };
 //------------------------------------------------------------------------------
 export class buffer_blob_io;
 //------------------------------------------------------------------------------
+/// @brief Collection of signals emitted by the resource_data_loader_node.
+/// @ingroup msgbus
+/// @see resource_data_loader_node
+/// @see make_target_blob_stream_io
+/// @see make_target_blob_chunk_io
 export struct blob_stream_signals {
+    /// @brief Emitted repeatedly when a new consecutive chunk of data is streamed.
     signal<void(
       identifier_t blob_id,
       const span_size_t offset,
-      const memory::span<const memory::const_block>) noexcept>
+      const memory::span<const memory::const_block>,
+      const blob_info& info) noexcept>
       blob_stream_data_appended;
 
+    /// @brief Emitted once when a blob stream is completed.
     signal<void(identifier_t blob_id) noexcept> blob_stream_finished;
 
+    /// @brief Emitted once if a blob stream is cancelled.
     signal<void(identifier_t blob_id) noexcept> blob_stream_cancelled;
 };
 //------------------------------------------------------------------------------
-export auto make_blob_stream_io(
+/// @brief Creates a data stream target I/O object.
+/// @ingroup msgbus
+/// @see blob_stream_signals
+///
+/// This I/O object merges incoming BLOB data into consecutive blocks
+/// so that they appear in the order from the start to the end of the BLOB
+/// and emits the blob_stream_data_appended signal on a blob_stream_signals.
+export auto make_target_blob_stream_io(
   identifier_t blob_id,
   blob_stream_signals& sigs,
-  memory::buffer_pool& buffers) -> std::unique_ptr<blob_io>;
+  memory::buffer_pool& buffers) -> std::unique_ptr<target_blob_io>;
+//------------------------------------------------------------------------------
+/// @brief Creates a data stream target I/O object.
+/// @ingroup msgbus
+/// @see blob_stream_signals
+///
+/// This I/O object loads the whole BLOB into consecutive chunks of the
+/// specified size and then emits the blob_stream_data_appended signal on a
+/// blob_stream_signals once.
+export auto make_target_blob_chunk_io(
+  identifier_t blob_id,
+  span_size_t chunk_size,
+  blob_stream_signals& sigs,
+  memory::buffer_pool& buffers) -> std::unique_ptr<target_blob_io>;
 //------------------------------------------------------------------------------
 export using blob_id_t = std::uint32_t;
 //------------------------------------------------------------------------------
 struct pending_blob {
     message_id msg_id{};
-    identifier_t source_id{0U};
-    identifier_t target_id{0U};
-    std::shared_ptr<blob_io> io{};
-    span_size_t total_size{0};
+    blob_info info{};
+    std::shared_ptr<source_blob_io> source_io{};
+    std::shared_ptr<target_blob_io> target_io{};
     // TODO: recycle the done parts vectors?
     double_buffer<std::vector<std::tuple<span_size_t, span_size_t>>>
       fragment_parts{};
@@ -95,9 +139,9 @@ struct pending_blob {
     timeout max_time{};
     blob_id_t source_blob_id{0U};
     blob_id_t target_blob_id{0U};
-    message_priority priority{message_priority::normal};
 
-    auto buffer_io() noexcept -> buffer_blob_io*;
+    auto source_buffer_io() noexcept -> buffer_blob_io*;
+    auto target_buffer_io() noexcept -> buffer_blob_io*;
 
     auto done_parts() const noexcept -> const auto& {
         return fragment_parts.front();
@@ -123,18 +167,18 @@ struct pending_blob {
     auto received_everything() const noexcept -> bool;
 
     auto fetch(const span_size_t offs, memory::block dst) noexcept {
-        assert(io);
-        return io->fetch_fragment(offs, dst);
+        assert(source_io);
+        return source_io->fetch_fragment(offs, dst);
     }
 
     auto store(const span_size_t offs, const memory::const_block src) noexcept {
-        assert(io);
-        return io->store_fragment(offs, src);
+        assert(target_io);
+        return target_io->store_fragment(offs, src, info);
     }
 
     auto check(const span_size_t offs, const memory::const_block blk) noexcept {
-        assert(io);
-        return io->check_stored(offs, blk);
+        assert(target_io);
+        return target_io->check_stored(offs, blk);
     }
 
     auto age() const noexcept -> message_age {
@@ -161,11 +205,13 @@ public:
         return {span_size(_max_blob_size)};
     }
 
-    using io_getter = callable_ref<std::unique_ptr<
-      blob_io>(const message_id, const span_size_t, blob_manipulator&) noexcept>;
+    using target_io_getter = callable_ref<std::unique_ptr<target_blob_io>(
+      const message_id,
+      const span_size_t,
+      blob_manipulator&) noexcept>;
 
-    auto make_io(const span_size_t total_size) noexcept
-      -> std::unique_ptr<blob_io>;
+    auto make_target_io(const span_size_t total_size) noexcept
+      -> std::unique_ptr<target_blob_io>;
 
     using send_handler =
       callable_ref<bool(const message_id, const message_view&) noexcept>;
@@ -177,8 +223,38 @@ public:
       const identifier_t source_id,
       const identifier_t target_id,
       const blob_id_t target_blob_id,
-      std::shared_ptr<blob_io> io,
+      std::shared_ptr<source_blob_io> io,
       const std::chrono::seconds max_time,
+      const blob_options options,
+      const message_priority priority) noexcept -> blob_id_t;
+
+    auto push_outgoing(
+      const message_id msg_id,
+      const identifier_t source_id,
+      const identifier_t target_id,
+      const blob_id_t target_blob_id,
+      std::shared_ptr<source_blob_io> io,
+      const std::chrono::seconds max_time,
+      const message_priority priority) noexcept -> blob_id_t {
+        return push_outgoing(
+          msg_id,
+          source_id,
+          target_id,
+          target_blob_id,
+          std::move(io),
+          max_time,
+          blob_options{},
+          priority);
+    }
+
+    auto push_outgoing(
+      const message_id msg_id,
+      const identifier_t source_id,
+      const identifier_t target_id,
+      const blob_id_t target_blob_id,
+      const memory::const_block src,
+      const std::chrono::seconds max_time,
+      const blob_options options,
       const message_priority priority) noexcept -> blob_id_t;
 
     auto push_outgoing(
@@ -188,13 +264,23 @@ public:
       const blob_id_t target_blob_id,
       const memory::const_block src,
       const std::chrono::seconds max_time,
-      const message_priority priority) noexcept -> blob_id_t;
+      const message_priority priority) noexcept -> blob_id_t {
+        return push_outgoing(
+          msg_id,
+          source_id,
+          target_id,
+          target_blob_id,
+          src,
+          max_time,
+          blob_options{},
+          priority);
+    }
 
     auto expect_incoming(
       const message_id msg_id,
       const identifier_t source_id,
       const blob_id_t target_blob_id,
-      std::shared_ptr<blob_io> io,
+      std::shared_ptr<target_blob_io> io,
       const std::chrono::seconds max_time) noexcept -> bool;
 
     auto push_incoming_fragment(
@@ -204,12 +290,13 @@ public:
       const blob_id_t target_blob_id,
       const std::int64_t offset,
       const std::int64_t total,
-      io_getter get_io,
+      target_io_getter get_io,
       const memory::const_block fragment,
+      const blob_options options,
       const message_priority priority) noexcept -> bool;
 
     auto process_incoming(const message_view& message) noexcept -> bool;
-    auto process_incoming(io_getter, const message_view& message) noexcept
+    auto process_incoming(target_io_getter, const message_view& message) noexcept
       -> bool;
     auto process_resend(const message_view& message) noexcept -> bool;
 
@@ -226,7 +313,8 @@ public:
     }
     auto process_outgoing(
       const send_handler,
-      const span_size_t max_data_size) noexcept -> work_done;
+      const span_size_t max_data_size,
+      span_size_t max_messages) noexcept -> work_done;
 
 private:
     const message_id _fragment_msg_id;
@@ -235,16 +323,17 @@ private:
     blob_id_t _blob_id_sequence{0U};
     memory::buffer _scratch_buffer{};
     memory::buffer_pool _buffers{};
+    std::size_t _outgoing_index{};
     std::vector<pending_blob> _outgoing{};
     std::vector<pending_blob> _incoming{};
 
     auto _message_size(const pending_blob&, const span_size_t max_message_size)
       const noexcept -> span_size_t;
 
-    auto _make_io(
+    auto _make_target_io(
       const message_id,
       const span_size_t total_size,
-      blob_manipulator&) noexcept -> std::unique_ptr<blob_io>;
+      blob_manipulator&) noexcept -> std::unique_ptr<target_blob_io>;
 
     auto _scratch_block(const span_size_t size) noexcept -> memory::block;
 };

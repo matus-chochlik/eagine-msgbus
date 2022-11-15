@@ -5,16 +5,8 @@
 /// See accompanying file LICENSE_1_0.txt or copy at
 ///  http://www.boost.org/LICENSE_1_0.txt
 ///
-#if EAGINE_MSGBUS_MODULE
 import eagine.core;
 import eagine.msgbus;
-#else
-#include <eagine/main_ctx.hpp>
-#include <eagine/memory/span_algo.hpp>
-#include <eagine/msgbus/endpoint.hpp>
-#include <eagine/msgbus/loopback.hpp>
-#include <eagine/msgbus/subscriber.hpp>
-#endif
 
 namespace eagine {
 namespace msgbus {

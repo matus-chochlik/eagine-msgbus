@@ -39,11 +39,12 @@ auto endpoint::_process_blobs() noexcept -> work_done {
     some_true something_done;
     const auto post_handler{make_callable_ref<&endpoint::post>(this)};
 
+    something_done(_blobs.handle_complete() > 0);
     something_done(_blobs.update(post_handler));
     const auto opt_max_size = max_data_size();
     if(opt_max_size) [[likely]] {
         something_done(
-          _blobs.process_outgoing(post_handler, extract(opt_max_size)));
+          _blobs.process_outgoing(post_handler, extract(opt_max_size), 2));
     }
     return something_done;
 }
@@ -117,9 +118,30 @@ auto endpoint::_handle_blob_resend(const message_view& message) noexcept
 //------------------------------------------------------------------------------
 auto endpoint::_handle_flow_info(const message_view& message) noexcept
   -> message_handling_result {
-    default_deserialize(_flow_info, message.content());
-    log_debug("changes in message flow information")
-      .arg("avgMsgAge", flow_average_message_age());
+    message_flow_info flow_info{};
+    default_deserialize(flow_info, message.content());
+    if(_flow_info != flow_info) {
+        const std::chrono::milliseconds age_warning{500};
+        if(
+          (_flow_info.average_message_age() < age_warning) &&
+          (flow_info.average_message_age() >= age_warning)) {
+            log_warning("average message age is too high:  ${avgMsgAge}")
+              .tag("msgAgeHigh")
+              .arg("warnLimit", age_warning)
+              .arg("avgMsgAge", flow_info.average_message_age());
+        } else if(
+          (flow_info.average_message_age() < age_warning) &&
+          (_flow_info.average_message_age() >= age_warning)) {
+            log_info("average message age returned to normal: ${avgMsgAge}")
+              .tag("msgAgeNorm")
+              .arg("warnLimit", age_warning)
+              .arg("avgMsgAge", flow_info.average_message_age());
+        }
+        _flow_info = flow_info;
+        log_debug("changes in message flow information")
+          .tag("msgFlowInf")
+          .arg("avgMsgAge", flow_average_message_age());
+    }
     return was_handled;
 }
 //------------------------------------------------------------------------------
@@ -374,6 +396,7 @@ auto endpoint::add_connection(std::unique_ptr<connection> conn) noexcept
               .arg("type", conn->type_id());
         }
         _connection = std::move(conn);
+        _log_no_connection.reset();
         return true;
     } else {
         log_error("assigning invalid connection");
@@ -454,7 +477,8 @@ auto endpoint::update() noexcept -> work_done {
     something_done(_process_blobs());
 
     if(!_connection) [[unlikely]] {
-        log_warning("endpoint has no connection");
+        log_warning(_log_no_connection, "endpoint has no connection")
+          .tag("noConnect");
     }
 
     const bool had_id{has_id()};

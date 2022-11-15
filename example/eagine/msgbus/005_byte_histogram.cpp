@@ -5,25 +5,12 @@
 /// See accompanying file LICENSE_1_0.txt or copy at
 ///  http://www.boost.org/LICENSE_1_0.txt
 ///
-#if EAGINE_MSGBUS_MODULE
 import eagine.core;
 import eagine.sslplus;
 import eagine.msgbus;
 import <array>;
 import <chrono>;
 import <thread>;
-#else
-#include <eagine/file_contents.hpp>
-#include <eagine/identifier_ctr.hpp>
-#include <eagine/main_ctx.hpp>
-#include <eagine/math/functions.hpp>
-#include <eagine/memory/span_algo.hpp>
-#include <eagine/message_bus.hpp>
-#include <eagine/msgbus/endpoint.hpp>
-#include <eagine/timeout.hpp>
-#include <array>
-#include <thread>
-#endif
 
 namespace eagine {
 

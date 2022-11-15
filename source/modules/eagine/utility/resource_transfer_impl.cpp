@@ -62,12 +62,78 @@ void resource_data_server_node::_handle_shutdown(
 resource_data_consumer_node_config::resource_data_consumer_node_config(
   application_config& c)
   : server_check_interval{c, "resource.consumer.server_check_interval", std::chrono::seconds{3}}
-  , server_response_timeout{c, "resource.consumer.server_response_timeout", std::chrono::seconds{10}}
+  , server_response_timeout{c, "resource.consumer.server_response_timeout", std::chrono::seconds{60}}
   , resource_search_interval{c, "resource.consumer.search_interval", std::chrono::seconds{3}}
   , resource_stream_timeout{c, "resource.consumer.stream_timeout", std::chrono::seconds{3600}}
   , _dummy{0} {}
 //------------------------------------------------------------------------------
 // resource_data_consumer_node
+//------------------------------------------------------------------------------
+resource_data_consumer_node::_embedded_resource_info::_embedded_resource_info(
+  resource_data_consumer_node& parent,
+  identifier_t request_id,
+  url locator,
+  const embedded_resource& resource)
+  : _parent{parent}
+  , _request_id{request_id}
+  , _locator{std::move(locator)}
+  , _unpacker{resource.make_unpacker(
+      _parent._buffers,
+      make_callable_ref<&_embedded_resource_info::_unpack_data>(this))} {
+    _binfo.source_id = _parent.bus_node().get_id();
+    _binfo.target_id = _binfo.source_id;
+}
+//------------------------------------------------------------------------------
+auto resource_data_consumer_node::_embedded_resource_info::_unpack_data(
+  memory::const_block data) noexcept -> bool {
+    if(_is_all_in_one) {
+        if(!_unpacker.is_working() && _unpacker.has_succeeded()) {
+            _parent.blob_stream_data_appended(
+              _request_id, _unpack_offset, view_one(data), _binfo);
+        } else {
+            auto chunk = _parent.buffers().get(data.size());
+            memory::copy_into(data, chunk);
+            _chunks.emplace_back(std::move(chunk));
+        }
+    } else {
+        _parent.blob_stream_data_appended(
+          _request_id, _unpack_offset, view_one(data), _binfo);
+        _unpack_offset += data.size();
+    }
+    return true;
+}
+//------------------------------------------------------------------------------
+auto resource_data_consumer_node::_embedded_resource_info::unpack_next() noexcept
+  -> bool {
+    if(!_unpacker.next().is_working()) {
+        if(_unpacker.has_succeeded()) {
+            if(_chunks.size() == 1U) {
+                const auto data{view(_chunks.back())};
+                _parent.blob_stream_data_appended(
+                  _request_id, 0, view_one(data), _binfo);
+                _parent.buffers().eat(std::move(_chunks.back()));
+                _chunks.clear();
+            } else if(!_chunks.empty()) {
+                std::vector<memory::const_block> data;
+                data.reserve(_chunks.size());
+                for(const auto& chunk : _chunks) {
+                    data.emplace_back(view(chunk));
+                }
+                _parent.blob_stream_data_appended(
+                  _request_id, 0, view(data), _binfo);
+                for(auto& chunk : _chunks) {
+                    _parent.buffers().eat(std::move(chunk));
+                }
+                _chunks.clear();
+            }
+            _parent.blob_stream_finished(_request_id);
+        } else {
+            _parent.blob_stream_cancelled(_request_id);
+        }
+        return false;
+    }
+    return true;
+}
 //------------------------------------------------------------------------------
 void resource_data_consumer_node::_init() {
     connect<&resource_data_consumer_node::_handle_server_appeared>(
@@ -82,6 +148,8 @@ void resource_data_consumer_node::_init() {
       this, blob_stream_finished);
     connect<&resource_data_consumer_node::_handle_stream_done>(
       this, blob_stream_cancelled);
+    connect<&resource_data_consumer_node::_handle_stream_data>(
+      this, blob_stream_data_appended);
     connect<&resource_data_consumer_node::_handle_ping_response>(
       this, ping_responded);
     connect<&resource_data_consumer_node::_handle_ping_timeout>(
@@ -114,17 +182,20 @@ auto resource_data_consumer_node::update() noexcept -> work_done {
             }
         }
     }
-    for(auto& [request_id, info] : _embedded_resources) {
-        auto append = [&, offset{span_size(0)}, this](
-                        const memory::const_block data) mutable {
-            blob_stream_data_appended(request_id, offset, view_one(data));
-            offset += data.size();
-            return true;
-        };
-        info.resource.fetch(main_context(), {construct_from, append});
+
+    if(!_embedded_resources.empty()) {
+        std::vector<std::unique_ptr<_embedded_resource_info>> temp;
+        std::swap(temp, _embedded_resources);
+
+        for(auto& entry : temp) {
+            assert(entry);
+            if(entry->unpack_next()) {
+                _embedded_resources.emplace_back(std::move(entry));
+            }
+        }
+
         something_done();
     }
-    _embedded_resources.clear();
 
     something_done(base::update_and_process_all());
 
@@ -135,7 +206,11 @@ auto resource_data_consumer_node::has_pending_resource(
   identifier_t request_id) const noexcept -> bool {
     return (_streamed_resources.find(request_id) !=
             _streamed_resources.end()) ||
-           (_embedded_resources.find(request_id) != _embedded_resources.end());
+           (std::find_if(
+              _embedded_resources.begin(),
+              _embedded_resources.end(),
+              _embedded_resource_info::request_id_equal(request_id)) !=
+            _embedded_resources.end());
 }
 //------------------------------------------------------------------------------
 auto resource_data_consumer_node::has_pending_resources() const noexcept
@@ -153,20 +228,24 @@ auto resource_data_consumer_node::get_request_id() noexcept -> identifier_t {
 auto resource_data_consumer_node::_query_resource(
   identifier_t request_id,
   url locator,
-  std::shared_ptr<blob_io> io,
+  std::shared_ptr<target_blob_io> io,
   const message_priority priority,
-  const std::chrono::seconds max_time) -> std::pair<identifier_t, const url&> {
+  const std::chrono::seconds max_time,
+  const bool all_in_one) -> std::pair<identifier_t, const url&> {
     assert(request_id != 0);
 
-    if(const auto res_id{locator.path_identifier()}) {
-        if(const auto res{_embedded_loader.search(res_id)}) {
-            auto& info = _embedded_resources[request_id];
-            info.locator = std::move(locator);
-            info.resource = std::move(res);
+    if(const auto resource_id{locator.path_identifier()}) {
+        if(const auto res{_embedded_loader.search(resource_id)}) {
+            _embedded_resources.emplace_back(
+              std::make_unique<_embedded_resource_info>(
+                *this, request_id, std::move(locator), res));
+            auto& info = *_embedded_resources.back();
+            info._is_all_in_one = all_in_one;
+
             log_info("fetching embedded resource ${locator}")
               .tag("embResCont")
-              .arg("locator", info.locator.str());
-            return {request_id, info.locator};
+              .arg("locator", info._locator.str());
+            return {info._request_id, info._locator};
         }
     }
     auto& info = _streamed_resources[request_id];
@@ -187,9 +266,25 @@ auto resource_data_consumer_node::stream_resource(
     return _query_resource(
       request_id,
       std::move(locator),
-      make_blob_stream_io(request_id, *this, _buffers),
+      make_target_blob_stream_io(request_id, *this, _buffers),
       priority,
-      max_time);
+      max_time,
+      false);
+}
+//------------------------------------------------------------------------------
+auto resource_data_consumer_node::fetch_resource_chunks(
+  url locator,
+  const span_size_t chunk_size,
+  const message_priority priority,
+  const std::chrono::seconds max_time) -> std::pair<identifier_t, const url&> {
+    const auto request_id{get_request_id()};
+    return _query_resource(
+      request_id,
+      std::move(locator),
+      make_target_blob_chunk_io(request_id, chunk_size, *this, _buffers),
+      priority,
+      max_time,
+      true);
 }
 //------------------------------------------------------------------------------
 auto resource_data_consumer_node::cancel_resource_stream(
@@ -201,13 +296,9 @@ auto resource_data_consumer_node::cancel_resource_stream(
         return true;
     }
 
-    const auto epos{_embedded_resources.find(request_id)};
-    if(epos != _embedded_resources.end()) {
-        _embedded_resources.erase(epos);
-        return true;
-    }
-
-    return false;
+    return std::erase_if(
+             _embedded_resources,
+             _embedded_resource_info::request_id_equal(request_id)) > 0;
 }
 //------------------------------------------------------------------------------
 void resource_data_consumer_node::_handle_server_appeared(
@@ -281,6 +372,22 @@ void resource_data_consumer_node::_handle_missing(
 void resource_data_consumer_node::_handle_stream_done(
   identifier_t request_id) noexcept {
     _streamed_resources.erase(request_id);
+    log_info("resource request id ${reqId} done")
+      .tag("streamDone")
+      .arg("reqId", request_id)
+      .arg("remaining", _streamed_resources.size());
+}
+//------------------------------------------------------------------------------
+void resource_data_consumer_node::_handle_stream_data(
+  identifier_t,
+  const span_size_t,
+  const memory::span<const memory::const_block>,
+  const blob_info& binfo) noexcept {
+    if(const auto spos{_current_servers.find(binfo.source_id)};
+       spos != _current_servers.end()) {
+        auto& sinfo = std::get<1>(*spos);
+        sinfo.not_responding.reset();
+    }
 }
 //------------------------------------------------------------------------------
 void resource_data_consumer_node::_handle_ping_response(
@@ -290,6 +397,9 @@ void resource_data_consumer_node::_handle_ping_response(
   const verification_bits) noexcept {
     const auto pos{_current_servers.find(server_id)};
     if(pos != _current_servers.end()) {
+        log_debug("resource server ${id} responded to ping")
+          .arg("id", server_id)
+          .arg("age", age);
         auto& info = std::get<1>(*pos);
         info.not_responding.reset();
     }
@@ -298,8 +408,17 @@ void resource_data_consumer_node::_handle_ping_response(
 void resource_data_consumer_node::_handle_ping_timeout(
   const identifier_t server_id,
   const message_sequence_t,
-  const std::chrono::microseconds) noexcept {
-    _handle_server_lost(server_id);
+  const std::chrono::microseconds age) noexcept {
+    const auto pos{_current_servers.find(server_id)};
+    if(pos != _current_servers.end()) {
+        auto& info = std::get<1>(*pos);
+        if(info.not_responding) {
+            log_info("ping to resource server ${id} timeouted")
+              .arg("id", server_id)
+              .arg("age", age);
+            _handle_server_lost(server_id);
+        }
+    }
 }
 //------------------------------------------------------------------------------
 } // namespace eagine::msgbus

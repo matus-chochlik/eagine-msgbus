@@ -15,8 +15,9 @@ import eagine.core.types;
 import eagine.core.memory;
 import eagine.core.identifier;
 import eagine.core.container;
-import eagine.core.utility;
 import eagine.core.valid_if;
+import eagine.core.utility;
+import eagine.core.logging;
 import eagine.core.main_ctx;
 import :types;
 import :blobs;
@@ -443,9 +444,8 @@ public:
     }
 
     /// @brief Returns the average message age in the connected router.
-    auto flow_average_message_age() const noexcept
-      -> std::chrono::microseconds {
-        return std::chrono::microseconds{_flow_info.avg_msg_age_ms * 1000};
+    auto flow_average_message_age() const noexcept {
+        return _flow_info.average_message_age();
     }
 
 private:
@@ -613,6 +613,8 @@ private:
       , _incoming{std::move(temp._incoming)}
       , _blobs{std::move(temp._blobs)}
       , _store_handler{std::move(store_message)} {}
+
+    repeating_log_entry_control _log_no_connection{std::chrono::seconds{1}};
 };
 //------------------------------------------------------------------------------
 /// @brief Base for classes that need access to enpoint internal functionality

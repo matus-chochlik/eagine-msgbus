@@ -5,7 +5,6 @@
 /// See accompanying file LICENSE_1_0.txt or copy at
 ///  http://www.boost.org/LICENSE_1_0.txt
 ///
-#if EAGINE_MSGBUS_MODULE
 import eagine.core;
 import eagine.sslplus;
 import eagine.msgbus;
@@ -13,20 +12,6 @@ import <atomic>;
 import <iostream>;
 import <mutex>;
 import <thread>;
-#else
-#include <eagine/main_ctx.hpp>
-#include <eagine/msgbus/acceptor.hpp>
-#include <eagine/msgbus/direct.hpp>
-#include <eagine/msgbus/endpoint.hpp>
-#include <eagine/msgbus/router.hpp>
-#include <eagine/msgbus/service.hpp>
-#include <eagine/msgbus/service/sudoku.hpp>
-#include <eagine/system_info.hpp>
-#include <atomic>
-#include <iostream>
-#include <mutex>
-#include <thread>
-#endif
 
 namespace eagine {
 namespace msgbus {
@@ -60,7 +45,7 @@ auto main(main_ctx& ctx) -> int {
     const auto worker_count =
       extract_or(ctx.system().cpu_concurrent_threads(), 4) + 1;
 
-    auto acceptor = std::make_unique<msgbus::direct_acceptor>(ctx);
+    auto acceptor = msgbus::make_direct_acceptor(ctx);
 
     msgbus::endpoint solver_endpoint("Solver", ctx);
     solver_endpoint.add_connection(acceptor->make_connection());

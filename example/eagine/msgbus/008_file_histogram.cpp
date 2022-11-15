@@ -5,31 +5,17 @@
 /// See accompanying file LICENSE_1_0.txt or copy at
 ///  http://www.boost.org/LICENSE_1_0.txt
 ///
-#if EAGINE_MSGBUS_MODULE
 import eagine.core;
 import eagine.sslplus;
 import eagine.msgbus;
 import <chrono>;
 import <thread>;
 import <vector>;
-#else
-#include <eagine/identifier_ctr.hpp>
-#include <eagine/main_ctx.hpp>
-#include <eagine/main_fwd.hpp>
-#include <eagine/memory/span_algo.hpp>
-#include <eagine/message_bus.hpp>
-#include <eagine/msgbus/service.hpp>
-#include <eagine/msgbus/service/resource_transfer.hpp>
-#include <eagine/timeout.hpp>
-#include <chrono>
-#include <thread>
-#include <vector>
-#endif
 
 namespace eagine {
 namespace msgbus {
 
-class example_blob_io : public blob_io {
+class example_blob_io : public target_blob_io {
 public:
     example_blob_io(const logger& log, url loc) noexcept
       : _log{log}
@@ -39,7 +25,8 @@ public:
 
     auto store_fragment(
       const span_size_t,
-      const memory::const_block src) noexcept -> bool final {
+      const memory::const_block src,
+      const blob_info&) noexcept -> bool final {
         for(auto b : src) {
             _max_count = math::maximum(_max_count, ++_byte_counts[std_size(b)]);
         }
@@ -49,7 +36,8 @@ public:
     void handle_finished(
       const message_id,
       const message_age,
-      const message_info&) noexcept final {
+      const message_info&,
+      const blob_info&) noexcept final {
         _finished = true;
         _log.info("blob byte counts")
           .arg("url", "URL", _locator.str())

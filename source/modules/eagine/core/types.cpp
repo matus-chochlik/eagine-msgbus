@@ -450,8 +450,23 @@ constexpr auto data_member_mapping(
 /// @brief Structure holding message bus data flow information.
 /// @ingroup msgbus
 export struct message_flow_info {
-    /// @brief The average age of message in seconds.
-    std::int16_t avg_msg_age_ms{0};
+    /// @brief The average age of message in milliseconds.
+    /// @see average_message_age
+    std::int32_t avg_msg_age_ms{0};
+
+    template <typename R, typename P>
+    auto set_average_message_age(std::chrono::duration<R, P> age) noexcept {
+        avg_msg_age_ms = limit_cast<std::int32_t>(
+          std::chrono::duration_cast<std::chrono::milliseconds>(age).count());
+    }
+
+    /// @brief Returns the average message age as chrono duration
+    auto average_message_age() const noexcept {
+        return std::chrono::microseconds{avg_msg_age_ms * 1000};
+    }
+
+    auto operator==(const message_flow_info&) const noexcept -> bool = default;
+    auto operator!=(const message_flow_info&) const noexcept -> bool = default;
 };
 
 export template <typename Selector>
@@ -459,7 +474,7 @@ constexpr auto data_member_mapping(
   const std::type_identity<message_flow_info>,
   const Selector) noexcept {
     using S = message_flow_info;
-    return make_data_member_mapping<S, std::int16_t>(
+    return make_data_member_mapping<S, std::int32_t>(
       {"avg_msg_age_ms", &S::avg_msg_age_ms});
 }
 //------------------------------------------------------------------------------
@@ -476,6 +491,33 @@ export auto parse_ipv4_addr(const string_view addr_str) noexcept
     return {
       to_string(hostname),
       extract_or(from_string<ipv4_port>(port_str), ipv4_port{34912U})};
+}
+//------------------------------------------------------------------------------
+/// @brief Additional flags / options for a transfered blob.
+/// @ingroup msgbus
+/// @see blob_option
+export enum class blob_option : std::uint8_t {
+    compressed = 1U << 0U,
+    with_metadata = 1U << 1U
+};
+
+export template <typename Selector>
+constexpr auto enumerator_mapping(
+  const std::type_identity<blob_option>,
+  const Selector) noexcept {
+    return enumerator_map_type<blob_option, 2>{
+      {{"compressed", blob_option::compressed},
+       {"with_metadata", blob_option::with_metadata}}};
+}
+//------------------------------------------------------------------------------
+/// @brief Alias for blob options bitfield.
+/// @ingroup msgbus
+/// @see blob_options
+export using blob_options = bitfield<blob_option>;
+
+export auto operator|(const blob_option l, const blob_option r) noexcept
+  -> blob_options {
+    return {l, r};
 }
 //------------------------------------------------------------------------------
 } // namespace eagine::msgbus

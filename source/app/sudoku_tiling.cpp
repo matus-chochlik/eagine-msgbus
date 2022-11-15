@@ -5,25 +5,11 @@
 ///  http://www.boost.org/LICENSE_1_0.txt
 ///
 
-#if EAGINE_MSGBUS_MODULE
 import eagine.core;
 import eagine.sslplus;
 import eagine.msgbus;
 import <iostream>;
 import <thread>;
-#else
-#include <eagine/main_ctx.hpp>
-#include <eagine/main_fwd.hpp>
-#include <eagine/message_bus.hpp>
-#include <eagine/msgbus/endpoint.hpp>
-#include <eagine/msgbus/service.hpp>
-#include <eagine/msgbus/service/common_info.hpp>
-#include <eagine/msgbus/service/ping_pong.hpp>
-#include <eagine/msgbus/service/sudoku.hpp>
-#include <eagine/signal_switch.hpp>
-#include <iostream>
-#include <thread>
-#endif
 
 namespace eagine {
 namespace msgbus {

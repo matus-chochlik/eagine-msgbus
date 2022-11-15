@@ -29,7 +29,7 @@ export struct resource_server_driver : interface<resource_server_driver> {
     }
 
     virtual auto get_resource_io(const identifier_t, const url&)
-      -> std::unique_ptr<blob_io> {
+      -> std::unique_ptr<source_blob_io> {
         return {};
     }
 
@@ -50,8 +50,14 @@ struct resource_server_intf : interface<resource_server_intf> {
     virtual void add_methods() noexcept = 0;
     virtual auto update() noexcept -> work_done = 0;
 
+    virtual void average_message_age(
+      const std::chrono::microseconds) noexcept = 0;
+
     virtual void set_file_root(
       const std::filesystem::path& root_path) noexcept = 0;
+
+    virtual void notify_resource_available(
+      const string_view locator) noexcept = 0;
 };
 //------------------------------------------------------------------------------
 auto make_resource_server_impl(subscriber&, resource_server_driver&)
@@ -68,8 +74,16 @@ class resource_server : public Base {
     resource_server_driver _default_driver;
 
 public:
+    void average_message_age(const std::chrono::microseconds age) noexcept {
+        _impl->average_message_age(age);
+    }
+
     void set_file_root(const std::filesystem::path& root_path) noexcept {
         _impl->set_file_root(root_path);
+    }
+
+    void notify_resource_available(const string_view locator) noexcept {
+        _impl->notify_resource_available(locator);
     }
 
 protected:
@@ -109,6 +123,9 @@ export struct resource_manipulator_signals {
     signal<void(const identifier_t, const url&) noexcept>
       server_has_not_resource;
 
+    /// @brief Triggered when a resource becomes available.
+    signal<void(const identifier_t, const url&) noexcept> resource_appeared;
+
     /// @brief Triggered when a resource server appears on the bus.
     signal<void(const identifier_t) noexcept> resource_server_appeared;
 
@@ -134,7 +151,7 @@ struct resource_manipulator_intf : interface<resource_manipulator_intf> {
     virtual auto query_resource_content(
       identifier_t endpoint_id,
       const url& locator,
-      std::shared_ptr<blob_io> write_io,
+      std::shared_ptr<target_blob_io> write_io,
       const message_priority priority,
       const std::chrono::seconds max_time)
       -> std::optional<message_sequence_t> = 0;
@@ -184,7 +201,7 @@ public:
     auto query_resource_content(
       identifier_t endpoint_id,
       const url& locator,
-      std::shared_ptr<blob_io> write_io,
+      std::shared_ptr<target_blob_io> write_io,
       const message_priority priority,
       const std::chrono::seconds max_time)
       -> std::optional<message_sequence_t> {
@@ -196,7 +213,7 @@ public:
     auto query_resource_content(
       identifier_t endpoint_id,
       const url& locator,
-      std::shared_ptr<blob_io> write_io,
+      std::shared_ptr<target_blob_io> write_io,
       const message_priority priority,
       timeout& max_timeout) -> std::optional<message_sequence_t> {
         return _impl->query_resource_content(
@@ -211,7 +228,7 @@ public:
     /// @see server_endpoint_id
     auto query_resource_content(
       const url& locator,
-      std::shared_ptr<blob_io> write_io,
+      std::shared_ptr<target_blob_io> write_io,
       const message_priority priority,
       const std::chrono::seconds max_time)
       -> std::optional<message_sequence_t> {

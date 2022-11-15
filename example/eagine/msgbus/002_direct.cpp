@@ -5,18 +5,8 @@
 /// See accompanying file LICENSE_1_0.txt or copy at
 ///  http://www.boost.org/LICENSE_1_0.txt
 ///
-#if EAGINE_MSGBUS_MODULE
 import eagine.core;
 import eagine.msgbus;
-#else
-#include <eagine/main_ctx.hpp>
-#include <eagine/memory/span_algo.hpp>
-#include <eagine/msgbus/acceptor.hpp>
-#include <eagine/msgbus/direct.hpp>
-#include <eagine/msgbus/endpoint.hpp>
-#include <eagine/msgbus/router.hpp>
-#include <eagine/msgbus/subscriber.hpp>
-#endif
 
 namespace eagine {
 namespace msgbus {
@@ -102,7 +92,7 @@ private:
 } // namespace msgbus
 
 auto main(main_ctx& ctx) -> int {
-    auto acceptor = std::make_unique<msgbus::direct_acceptor>(ctx);
+    auto acceptor = msgbus::make_direct_acceptor(ctx);
 
     msgbus::endpoint server_endpoint{identifier{"ServerEp"}, ctx};
     msgbus::endpoint client_endpoint{identifier{"ClientEp"}, ctx};

@@ -14,6 +14,7 @@ export module eagine.msgbus.core:direct;
 import eagine.core.types;
 import eagine.core.memory;
 import eagine.core.identifier;
+import eagine.core.container;
 import eagine.core.utility;
 import eagine.core.main_ctx;
 import :types;
@@ -31,7 +32,8 @@ namespace eagine::msgbus {
 /// @note Implementation detail. Do not use directly.
 ///
 /// Connectors and acceptors sharing the same shared state object are "connected".
-export class direct_connection_state final : public main_ctx_object {
+template <typename Lockable>
+class direct_connection_state final : public main_ctx_object {
 public:
     /// @brief Construction from a parent main context object.
     direct_connection_state(main_ctx_parent parent) noexcept
@@ -51,7 +53,7 @@ public:
     void send_to_server(
       const message_id msg_id,
       const message_view& message) noexcept {
-        const std::unique_lock lock{_mutex};
+        const std::unique_lock lock{_lockable};
         _client_to_server.back().push(msg_id, message);
     }
 
@@ -60,7 +62,7 @@ public:
       const message_id msg_id,
       const message_view& message) noexcept -> bool {
         if(_client_connected) [[likely]] {
-            const std::unique_lock lock{_mutex};
+            const std::unique_lock lock{_lockable};
             _server_to_client.back().push(msg_id, message);
             return true;
         }
@@ -71,7 +73,7 @@ public:
     auto fetch_from_client(const connection::fetch_handler handler) noexcept
       -> std::tuple<bool, bool> {
         auto& c2s = [this]() -> message_storage& {
-            const std::unique_lock lock{_mutex};
+            const std::unique_lock lock{_lockable};
             _client_to_server.swap();
             return _client_to_server.front();
         }();
@@ -82,7 +84,7 @@ public:
     auto fetch_from_server(const connection::fetch_handler handler) noexcept
       -> bool {
         auto& s2c = [this]() -> message_storage& {
-            const std::unique_lock lock{_mutex};
+            const std::unique_lock lock{_lockable};
             _server_to_client.swap();
             return _server_to_client.front();
         }();
@@ -90,7 +92,7 @@ public:
     }
 
 private:
-    std::mutex _mutex;
+    Lockable _lockable;
     double_buffer<message_storage> _server_to_client;
     double_buffer<message_storage> _client_to_server;
     std::atomic<bool> _client_connected{false};
@@ -103,10 +105,11 @@ private:
 /// @see direct_server_connection
 /// @see direct_connection_factory
 ///
-export class direct_connection_address : public main_ctx_object {
+template <typename Lockable>
+class direct_connection_address : public main_ctx_object {
 public:
     /// @brief Alias for shared pointer to direct state type.
-    using shared_state = std::shared_ptr<direct_connection_state>;
+    using shared_state = std::shared_ptr<direct_connection_state<Lockable>>;
 
     /// @brief Alias for shared state accept handler callable.
     /// @see process_all
@@ -119,7 +122,7 @@ public:
     /// @brief Creates and returns the shared state for a new client connection.
     /// @see process_all
     auto connect() noexcept -> shared_state {
-        auto state{std::make_shared<direct_connection_state>(*this)};
+        auto state{std::make_shared<direct_connection_state<Lockable>>(*this)};
         _pending.push_back(state);
         return state;
     }
@@ -137,7 +140,7 @@ public:
     }
 
 private:
-    std::vector<shared_state> _pending;
+    small_vector<shared_state, 4> _pending;
 };
 //------------------------------------------------------------------------------
 /// @brief Implementation of the connection_info interface for direct connections.
@@ -167,11 +170,12 @@ public:
 /// @see direct_server_connection
 /// @see direct_acceptor
 /// @see direct_connection_factory
-export class direct_client_connection final
+export template <typename Lockable>
+class direct_client_connection final
   : public direct_connection_info<connection> {
 public:
     direct_client_connection(
-      std::shared_ptr<direct_connection_address>& address) noexcept
+      std::shared_ptr<direct_connection_address<Lockable>>& address) noexcept
       : _weak_address{address}
       , _state{address->connect()} {
         if(_state) [[likely]] {
@@ -222,8 +226,8 @@ public:
     void cleanup() noexcept final {}
 
 private:
-    std::weak_ptr<direct_connection_address> _weak_address;
-    std::shared_ptr<direct_connection_state> _state;
+    std::weak_ptr<direct_connection_address<Lockable>> _weak_address;
+    std::shared_ptr<direct_connection_state<Lockable>> _state;
 
     auto _checkup() -> work_done {
         some_true something_done;
@@ -242,11 +246,11 @@ private:
 /// @see direct_client_connection
 /// @see direct_acceptor
 /// @see direct_connection_factory
-export class direct_server_connection
-  : public direct_connection_info<connection> {
+export template <typename Lockable>
+class direct_server_connection : public direct_connection_info<connection> {
 public:
     direct_server_connection(
-      std::shared_ptr<direct_connection_state>& state) noexcept
+      std::shared_ptr<direct_connection_state<Lockable>>& state) noexcept
       : _state{state} {}
 
     auto is_usable() noexcept -> bool final {
@@ -281,30 +285,37 @@ public:
     }
 
 private:
-    std::shared_ptr<direct_connection_state> _state;
+    std::shared_ptr<direct_connection_state<Lockable>> _state;
     bool _is_usable{true};
 };
 //------------------------------------------------------------------------------
+export struct direct_acceptor_intf : direct_connection_info<acceptor> {
+    virtual auto make_connection() noexcept -> std::unique_ptr<connection> = 0;
+};
+//------------------------------------------------------------------------------
+//
 /// @brief Implementation of acceptor for direct connections.
 /// @ingroup msgbus
 /// @see direct_connection_factory
-export class direct_acceptor
-  : public direct_connection_info<acceptor>
+export template <typename Lockable>
+class direct_acceptor
+  : public direct_acceptor_intf
   , public main_ctx_object {
-    using shared_state = std::shared_ptr<direct_connection_state>;
+    using shared_state = std::shared_ptr<direct_connection_state<Lockable>>;
 
 public:
     /// @brief Construction from a parent main context object and an address object.
     direct_acceptor(
       main_ctx_parent parent,
-      std::shared_ptr<direct_connection_address> address) noexcept
+      std::shared_ptr<direct_connection_address<Lockable>> address) noexcept
       : main_ctx_object{"DrctAccptr", parent}
       , _address{std::move(address)} {}
 
     /// @brief Construction from a parent main context object with implicit address.
     direct_acceptor(main_ctx_parent parent) noexcept
       : main_ctx_object{"DrctAccptr", parent}
-      , _address{std::make_shared<direct_connection_address>(*this)} {}
+      , _address{std::make_shared<direct_connection_address<Lockable>>(*this)} {
+    }
 
     auto process_accepted(const accept_handler handler) noexcept
       -> work_done final {
@@ -312,7 +323,7 @@ public:
         if(_address) {
             auto wrapped_handler = [&handler](shared_state& state) {
                 handler(std::unique_ptr<connection>{
-                  std::make_unique<direct_server_connection>(state)});
+                  std::make_unique<direct_server_connection<Lockable>>(state)});
             };
             something_done(
               _address->process_all({construct_from, wrapped_handler}));
@@ -321,22 +332,23 @@ public:
     }
 
     /// @brief Makes a new client-side direct connection.
-    auto make_connection() noexcept -> std::unique_ptr<connection> {
+    auto make_connection() noexcept -> std::unique_ptr<connection> final {
         if(_address) {
             return std::unique_ptr<connection>{
-              std::make_unique<direct_client_connection>(_address)};
+              std::make_unique<direct_client_connection<Lockable>>(_address)};
         }
         return {};
     }
 
 private:
-    std::shared_ptr<direct_connection_address> _address{};
+    std::shared_ptr<direct_connection_address<Lockable>> _address{};
 };
 //------------------------------------------------------------------------------
 /// @brief Implementation of connection_factory for direct connections.
 /// @ingroup msgbus
 /// @see direct_acceptor
-export class direct_connection_factory
+export template <typename Lockable>
+class direct_connection_factory
   : public direct_connection_info<connection_factory>
   , public main_ctx_object {
 public:
@@ -351,33 +363,38 @@ public:
     auto make_acceptor(const string_view addr_str) noexcept
       -> std::unique_ptr<acceptor> final {
         if(addr_str) {
-            return std::make_unique<direct_acceptor>(*this, _get(addr_str));
+            return std::make_unique<direct_acceptor<Lockable>>(
+              *this, _get(addr_str));
         }
-        return std::make_unique<direct_acceptor>(*this, _default_addr);
+        return std::make_unique<direct_acceptor<Lockable>>(
+          *this, _default_addr);
     }
 
     auto make_connector(const string_view addr_str) noexcept
       -> std::unique_ptr<connection> final {
         if(addr_str) {
-            return std::make_unique<direct_client_connection>(_get(addr_str));
+            return std::make_unique<direct_client_connection<Lockable>>(
+              _get(addr_str));
         }
-        return std::make_unique<direct_client_connection>(_default_addr);
+        return std::make_unique<direct_client_connection<Lockable>>(
+          _default_addr);
     }
 
 private:
-    std::shared_ptr<direct_connection_address> _default_addr;
+    std::shared_ptr<direct_connection_address<Lockable>> _default_addr;
     std::map<
       std::string,
-      std::shared_ptr<direct_connection_address>,
+      std::shared_ptr<direct_connection_address<Lockable>>,
       basic_str_view_less<std::string, string_view>>
       _addrs;
 
-    auto _make_addr() noexcept -> std::shared_ptr<direct_connection_address> {
-        return std::make_shared<direct_connection_address>(*this);
+    auto _make_addr() noexcept
+      -> std::shared_ptr<direct_connection_address<Lockable>> {
+        return std::make_shared<direct_connection_address<Lockable>>(*this);
     }
 
     auto _get(const string_view addr_str) noexcept
-      -> std::shared_ptr<direct_connection_address>& {
+      -> std::shared_ptr<direct_connection_address<Lockable>>& {
         auto pos = _addrs.find(addr_str);
         if(pos == _addrs.end()) {
             pos = _addrs.emplace(to_string(addr_str), _make_addr()).first;
@@ -387,9 +404,13 @@ private:
     }
 };
 //------------------------------------------------------------------------------
-export auto make_direct_connection_factory(main_ctx_parent parent)
-  -> std::unique_ptr<direct_connection_factory> {
-    return std::make_unique<direct_connection_factory>(parent);
+export auto make_direct_acceptor(main_ctx_parent parent)
+  -> std::unique_ptr<direct_acceptor_intf> {
+    return std::make_unique<direct_acceptor<std::mutex>>(parent);
+}
+//------------------------------------------------------------------------------
+export auto make_direct_connection_factory(main_ctx_parent parent) {
+    return std::make_unique<direct_connection_factory<std::mutex>>(parent);
 }
 //------------------------------------------------------------------------------
 } // namespace eagine::msgbus

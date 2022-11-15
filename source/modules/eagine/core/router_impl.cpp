@@ -498,6 +498,7 @@ auto router::_process_blobs() noexcept -> work_done {
       [&](message_id msg_id, message_view request) -> bool {
         return this->_route_message(msg_id, _id_base, request);
     };
+    something_done(_blobs.handle_complete() > 0);
     something_done(_blobs.update({construct_from, resend_request}));
 
     if(_blobs.has_outgoing()) {
@@ -516,7 +517,8 @@ auto router::_process_blobs() noexcept -> work_done {
                     };
                     if(_blobs.process_outgoing(
                          {construct_from, handle_send},
-                         extract(opt_max_size))) {
+                         extract(opt_max_size),
+                         4)) {
                         something_done();
                     }
                 }
@@ -526,13 +528,13 @@ auto router::_process_blobs() noexcept -> work_done {
     return something_done;
 }
 //------------------------------------------------------------------------------
-auto router::_do_get_blob_io(
+auto router::_do_get_blob_target_io(
   const message_id msg_id,
   const span_size_t size,
-  blob_manipulator& blobs) noexcept -> std::unique_ptr<blob_io> {
+  blob_manipulator& blobs) noexcept -> std::unique_ptr<target_blob_io> {
     if(is_special_message(msg_id)) {
         if(msg_id.has_method("eptCertPem")) {
-            return blobs.make_io(size);
+            return blobs.make_target_io(size);
         }
     }
     return {};
@@ -789,8 +791,7 @@ auto router::_handle_topology_query(const message_view& message) noexcept
 //------------------------------------------------------------------------------
 auto router::_avg_msg_age() const noexcept -> std::chrono::microseconds {
     return std::chrono::duration_cast<std::chrono::microseconds>(
-      _message_age_sum /
-      (_stats.forwarded_messages + _stats.dropped_messages + 1));
+      _message_age_avg.get());
 }
 //------------------------------------------------------------------------------
 auto router::_update_stats() noexcept -> work_done {
@@ -798,7 +799,7 @@ auto router::_update_stats() noexcept -> work_done {
 
     const auto now = std::chrono::steady_clock::now();
     const std::chrono::duration<float> seconds{now - _forwarded_since_stat};
-    if(seconds.count() >= 15.F) [[unlikely]] {
+    if(seconds >= std::chrono::seconds{15}) [[unlikely]] {
         _forwarded_since_stat = now;
 
         _stats.messages_per_second = static_cast<std::int32_t>(
@@ -807,16 +808,17 @@ auto router::_update_stats() noexcept -> work_done {
         _prev_forwarded_messages = _stats.forwarded_messages;
 
         const auto avg_msg_age_us =
-          static_cast<std::int32_t>(_avg_msg_age().count());
+          static_cast<std::int32_t>(_avg_msg_age().count() + 500);
         const auto avg_msg_age_ms = avg_msg_age_us / 1000;
 
         _stats.message_age_us = avg_msg_age_us;
 
         const bool flow_info_changed =
-          _flow_info.avg_msg_age_ms != limit_cast<std::int16_t>(avg_msg_age_ms);
-        _flow_info.avg_msg_age_ms = limit_cast<std::int16_t>(avg_msg_age_ms);
+          _flow_info.avg_msg_age_ms != avg_msg_age_ms;
+        _flow_info.set_average_message_age(
+          std::chrono::milliseconds{avg_msg_age_ms});
 
-        if(flow_info_changed) [[unlikely]] {
+        if(flow_info_changed) {
             const auto send_info =
               [&](const identifier_t remote_id, const auto& conn) {
                   auto buf{default_serialize_buffer_for(_flow_info)};
@@ -900,7 +902,7 @@ auto router::_handle_bye_bye(
 auto router::_handle_blob_fragment(const message_view& message) noexcept
   -> message_handling_result {
     if(_blobs.process_incoming(
-         make_callable_ref<&router::_do_get_blob_io>(this), message)) {
+         make_callable_ref<&router::_do_get_blob_target_io>(this), message)) {
         _blobs.fetch_all(make_callable_ref<&router::_handle_blob>(this));
     }
     return (message.target_id == _id_base) ? was_handled : should_be_forwarded;
@@ -1158,7 +1160,7 @@ auto router::_route_node_messages(
                            const message_id msg_id,
                            const message_age msg_age,
                            message_view message) {
-        _message_age_sum += message.add_age(msg_age).age() + message_age_inc;
+        _message_age_avg.add(message.add_age(msg_age).age() + message_age_inc);
         const auto result{
           this->_handle_special(msg_id, incoming_id, node_in, message)};
         if(result == was_handled) {
@@ -1211,8 +1213,8 @@ auto router::_route_parent_messages(
                                message_id msg_id,
                                message_age msg_age,
                                message_view message) noexcept -> bool {
-            this->_message_age_sum +=
-              message.add_age(msg_age).age() + message_age_inc;
+            this->_message_age_avg.add(
+              message.add_age(msg_age).age() + message_age_inc);
 
             if(message.too_old()) [[unlikely]] {
                 ++_stats.dropped_messages;

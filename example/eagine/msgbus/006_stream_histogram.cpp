@@ -18,7 +18,8 @@ auto main(main_ctx& ctx) -> int {
 
     timeout idle_too_long{std::chrono::seconds{30}};
 
-    msgbus::resource_data_consumer_node node{ctx};
+    msgbus::endpoint bus{"Example", ctx};
+    msgbus::resource_data_consumer_node node{bus};
     msgbus::setup_connectors(ctx, node);
 
     span_size_t max_count{0};
@@ -29,12 +30,13 @@ auto main(main_ctx& ctx) -> int {
     auto consume = [&](
                      identifier_t,
                      const span_size_t,
-                     const memory::span<const memory::const_block> data) {
+                     const memory::span<const memory::const_block> data,
+                     const msgbus::blob_info&) {
         for(const auto& blk : data) {
             for(auto b : blk) {
                 max_count =
                   math::maximum(max_count, ++byte_counts[std_size(b)]);
-                if((++streamed_bytes % (8 * 1024 * 1024)) == 0) {
+                if((++streamed_bytes % (4 * 1024 * 1024)) == 0) {
                     ctx.log()
                       .info("streamed ${count}")
                       .tag("strmdBytes")
@@ -46,21 +48,32 @@ auto main(main_ctx& ctx) -> int {
 
     node.blob_stream_data_appended.connect({construct_from, consume});
 
-    auto enqueue = [&](url locator) {
+    auto enqueue = [&](url locator, bool chunks) {
         if(locator) {
-            node.stream_resource(
-              std::move(locator),
-              msgbus::message_priority::high,
-              std::chrono::hours{1});
+            if(chunks) {
+                node.fetch_resource_chunks(
+                  std::move(locator),
+                  4 * 1024,
+                  msgbus::message_priority::high,
+                  std::chrono::hours{1});
+            } else {
+                node.stream_resource(
+                  std::move(locator),
+                  msgbus::message_priority::high,
+                  std::chrono::hours{1});
+            }
         }
     };
 
     for(auto& arg : ctx.args()) {
-        enqueue(url(arg.get_string()));
+        enqueue(url(arg.get_string()), false);
     }
     if(!node.has_pending_resources()) {
-        enqueue(url("eagires:///zeroes?count=1073741824"));
-        enqueue(url("eagires:///ownSource"));
+        enqueue(url("eagires:///ones?count=134217728"), false);
+        enqueue(url("eagires:///zeroes?count=134217728"), true);
+        enqueue(url("eagires:///random?count=1073741824"), false);
+        enqueue(url("eagires:///random?count=134217728"), true);
+        enqueue(url("eagires:///ownSource"), true);
     }
 
     const auto is_done = [&] {

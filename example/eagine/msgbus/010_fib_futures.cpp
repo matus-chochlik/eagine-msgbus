@@ -5,20 +5,9 @@
 /// See accompanying file LICENSE_1_0.txt or copy at
 ///  http://www.boost.org/LICENSE_1_0.txt
 ///
-#if EAGINE_MSGBUS_MODULE
 import eagine.core;
 import eagine.sslplus;
 import eagine.msgbus;
-#else
-#include <eagine/console/console.hpp>
-#include <eagine/interop/valgrind.hpp>
-#include <eagine/main_ctx.hpp>
-#include <eagine/msgbus/acceptor.hpp>
-#include <eagine/msgbus/direct.hpp>
-#include <eagine/msgbus/endpoint.hpp>
-#include <eagine/msgbus/router.hpp>
-#include <eagine/msgbus/service.hpp>
-#endif
 
 namespace eagine {
 namespace msgbus {
@@ -100,7 +89,7 @@ using fibonacci_client = service_composition<fibonacci_client_impl<>>;
 
 auto main(main_ctx& ctx) -> int {
 
-    auto acceptor = std::make_unique<msgbus::direct_acceptor>(ctx);
+    auto acceptor = msgbus::make_direct_acceptor(ctx);
 
     msgbus::endpoint server_endpoint("Server", ctx);
     msgbus::endpoint client_endpoint("Client", ctx);
