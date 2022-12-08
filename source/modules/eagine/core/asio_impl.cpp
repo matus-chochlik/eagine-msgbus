@@ -7,7 +7,6 @@
 ///
 module;
 
-#include <asio/connect.hpp>
 #include <asio/io_context.hpp>
 #include <asio/ip/tcp.hpp>
 #include <asio/ip/udp.hpp>
