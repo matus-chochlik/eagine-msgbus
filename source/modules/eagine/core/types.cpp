@@ -118,7 +118,7 @@ export auto operator|(
 /// @brief Message bus connection address kind enumeration.
 /// @ingroup msgbus
 /// @see connection_addr_kind_tag
-export enum class connection_addr_kind {
+export enum class connection_addr_kind : std::uint8_t {
     /// @brief No public address.
     none,
     /// @brief Filesystem path.
@@ -146,7 +146,7 @@ using connection_addr_kind_tag =
 /// @brief Message bus connection protocol.
 /// @ingroup msgbus
 /// @see connection_protocol_tag
-export enum class connection_protocol {
+export enum class connection_protocol : std::uint8_t {
     /// @brief Reliable stream protocol.
     stream,
     /// @brief Datagram protocol.
