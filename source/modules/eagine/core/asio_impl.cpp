@@ -156,18 +156,13 @@ struct asio_connection_group : interface<asio_connection_group<Kind, Proto>> {
     virtual auto has_received() noexcept -> bool = 0;
 };
 //------------------------------------------------------------------------------
-template <connection_addr_kind Kind, connection_protocol Proto>
-struct asio_connection_state
-  : std::enable_shared_from_this<asio_connection_state<Kind, Proto>>
+struct asio_connection_state_base
+  : std::enable_shared_from_this<asio_connection_state_base>
   , main_ctx_object {
-    using endpoint_type = asio_endpoint_type<Kind, Proto>;
     using clock_type = std::chrono::steady_clock;
     using clock_time = typename clock_type::time_point;
 
     const std::shared_ptr<asio_common_state> common;
-    asio_socket_type<Kind, Proto> socket;
-    endpoint_type conn_endpoint{};
-
     const memory::buffer push_buffer{};
     const memory::buffer read_buffer{};
     const memory::buffer write_buffer{};
@@ -181,14 +176,12 @@ struct asio_connection_state
     bool is_sending{false};
     bool is_recving{false};
 
-    asio_connection_state(
+    asio_connection_state_base(
       main_ctx_parent parent,
       std::shared_ptr<asio_common_state> asio_state,
-      asio_socket_type<Kind, Proto> sock,
       const span_size_t block_size) noexcept
       : main_ctx_object{"AsioConnSt", parent}
       , common{std::move(asio_state)}
-      , socket{std::move(sock)}
       , push_buffer{block_size, max_span_align()}
       , read_buffer{block_size, max_span_align()}
       , write_buffer{block_size, max_span_align()} {
@@ -206,6 +199,28 @@ struct asio_connection_state
           .arg("size", "ByteSize", read_buffer.size());
     }
 
+    auto self_ref() noexcept {
+        return this->shared_from_this();
+    }
+};
+//------------------------------------------------------------------------------
+template <connection_addr_kind Kind, connection_protocol Proto>
+struct asio_connection_state : asio_connection_state_base {
+    using endpoint_type = asio_endpoint_type<Kind, Proto>;
+    using clock_type = std::chrono::steady_clock;
+    using clock_time = typename clock_type::time_point;
+
+    asio_socket_type<Kind, Proto> socket;
+    endpoint_type conn_endpoint{};
+
+    asio_connection_state(
+      main_ctx_parent parent,
+      std::shared_ptr<asio_common_state> asio_state,
+      asio_socket_type<Kind, Proto> sock,
+      const span_size_t block_size) noexcept
+      : asio_connection_state_base{parent, std::move(asio_state), block_size}
+      , socket{std::move(sock)} {}
+
     asio_connection_state(
       main_ctx_parent parent,
       const std::shared_ptr<asio_common_state>& asio_state,
@@ -215,10 +230,6 @@ struct asio_connection_state
           asio_state,
           asio_socket_type<Kind, Proto>{asio_state->context},
           block_size} {}
-
-    auto weak_ref() noexcept {
-        return std::weak_ptr(this->shared_from_this());
-    }
 
     auto is_usable() const noexcept -> bool {
         if(common) [[likely]] {
@@ -298,32 +309,30 @@ struct asio_connection_state
               connection_protocol_tag<Proto>{},
               target_endpoint,
               view(write_buffer),
-              [this, &group, target_endpoint, packed, selfref{weak_ref()}](
+              [this, &group, target_endpoint, packed, self{self_ref()}](
                 const std::error_code error,
                 [[maybe_unused]] const std::size_t length) {
-                  if(const auto self{selfref.lock()}) [[likely]] {
-                      if(!error) [[likely]] {
-                          assert(span_size(length) == packed.total());
-                          log_trace("sent data")
-                            .arg("usedSize", "ByteSize", packed.used())
-                            .arg("sentSize", "ByteSize", packed.total());
+                  if(!error) [[likely]] {
+                      assert(span_size(length) == packed.total());
+                      log_trace("sent data")
+                        .arg("usedSize", "ByteSize", packed.used())
+                        .arg("sentSize", "ByteSize", packed.total());
 
-                          total_used_size += packed.used();
-                          total_sent_size += packed.total();
-                          total_sent_messages += packed.count();
-                          total_sent_blocks += 1;
+                      total_used_size += packed.used();
+                      total_sent_size += packed.total();
+                      total_sent_messages += packed.count();
+                      total_sent_blocks += 1;
 
-                          if(this->log_usage_stats(span_size(2U << 27U)))
-                            [[unlikely]] {
-                              total_used_size = 0;
-                              total_sent_size = 0;
-                              send_start_time = clock_type::now();
-                          }
-
-                          this->handle_sent(group, target_endpoint, packed);
-                      } else {
-                          this->handle_send_error(error);
+                      if(this->log_usage_stats(span_size(2U << 27U)))
+                        [[unlikely]] {
+                          total_used_size = 0;
+                          total_sent_size = 0;
+                          send_start_time = clock_type::now();
                       }
+
+                      this->handle_sent(group, target_endpoint, packed);
+                  } else {
+                      this->handle_send_error(error);
                   }
               });
         } else {
@@ -393,18 +402,16 @@ struct asio_connection_state
         do_start_receive(
           connection_protocol_tag<Proto>{},
           blk,
-          [this, &group, selfref{weak_ref()}, blk](
+          [this, &group, selfref{self_ref()}, blk](
             const std::error_code error, const std::size_t length) {
-              if(const auto self{selfref.lock()}) [[likely]] {
-                  memory::const_block rcvd{head(blk, span_size(length))};
-                  if(!error) [[likely]] {
-                      log_trace("received data (size: ${size})")
-                        .arg("size", "ByteSize", length);
+              memory::const_block rcvd{head(blk, span_size(length))};
+              if(!error) [[likely]] {
+                  log_trace("received data (size: ${size})")
+                    .arg("size", "ByteSize", length);
 
-                      this->handle_received(rcvd, group);
-                  } else {
-                      this->handle_receive_error(rcvd, group, error);
-                  }
+                  this->handle_received(rcvd, group);
+              } else {
+                  this->handle_receive_error(rcvd, group, error);
               }
           });
     }
