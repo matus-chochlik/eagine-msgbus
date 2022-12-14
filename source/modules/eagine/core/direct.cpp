@@ -175,7 +175,8 @@ class direct_client_connection final
   : public direct_connection_info<connection> {
 public:
     direct_client_connection(
-      std::shared_ptr<direct_connection_address<Lockable>>& address) noexcept
+      const std::shared_ptr<direct_connection_address<Lockable>>&
+        address) noexcept
       : _weak_address{address}
       , _state{address->connect()} {
         if(_state) [[likely]] {
@@ -226,7 +227,7 @@ public:
     void cleanup() noexcept final {}
 
 private:
-    std::weak_ptr<direct_connection_address<Lockable>> _weak_address;
+    const std::weak_ptr<direct_connection_address<Lockable>> _weak_address;
     std::shared_ptr<direct_connection_state<Lockable>> _state;
 
     auto _checkup() -> work_done {
@@ -341,7 +342,7 @@ public:
     }
 
 private:
-    std::shared_ptr<direct_connection_address<Lockable>> _address{};
+    const std::shared_ptr<direct_connection_address<Lockable>> _address{};
 };
 //------------------------------------------------------------------------------
 /// @brief Implementation of connection_factory for direct connections.

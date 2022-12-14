@@ -418,7 +418,7 @@ struct asio_connection_state
     }
 
     void handle_received(
-      memory::const_block data,
+      const memory::const_block data,
       asio_connection_group<Kind, Proto>& group) noexcept {
         group.on_received(conn_endpoint, data);
         do_start_receive(group);
@@ -492,7 +492,7 @@ public:
     }
 
 protected:
-    std::shared_ptr<asio_connection_state<Kind, Proto>> _state;
+    const std::shared_ptr<asio_connection_state<Kind, Proto>> _state;
 
     asio_connection_base(
       main_ctx_parent parent,
@@ -987,8 +987,8 @@ public:
     }
 
 private:
-    std::shared_ptr<asio_common_state> _asio_state;
-    std::tuple<std::string, ipv4_port> _addr;
+    const std::shared_ptr<asio_common_state> _asio_state;
+    const std::tuple<std::string, ipv4_port> _addr;
     asio::ip::tcp::acceptor _acceptor;
     asio::ip::tcp::socket _socket;
     const span_size_t _block_size;
@@ -1155,8 +1155,8 @@ public:
     }
 
 private:
-    std::shared_ptr<asio_common_state> _asio_state;
-    std::tuple<std::string, ipv4_port> _addr;
+    const std::shared_ptr<asio_common_state> _asio_state;
+    const std::tuple<std::string, ipv4_port> _addr;
 
     asio_datagram_server_connection<connection_addr_kind::ipv4> _conn;
 };
@@ -1326,7 +1326,7 @@ public:
     }
 
 private:
-    std::shared_ptr<asio_common_state> _asio_state;
+    const std::shared_ptr<asio_common_state> _asio_state;
     std::string _addr_str;
     asio::local::stream_protocol::acceptor _acceptor;
     const span_size_t _block_size;
@@ -1420,7 +1420,7 @@ public:
     }
 
 private:
-    std::shared_ptr<asio_common_state> _asio_state;
+    const std::shared_ptr<asio_common_state> _asio_state;
 
     template <connection_addr_kind K, connection_protocol P>
     static constexpr auto _default_block_size(
