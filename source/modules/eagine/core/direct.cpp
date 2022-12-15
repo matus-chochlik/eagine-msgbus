@@ -21,6 +21,7 @@ import :types;
 import :message;
 import :interface;
 import <atomic>;
+import <array>;
 import <map>;
 import <memory>;
 import <mutex>;
