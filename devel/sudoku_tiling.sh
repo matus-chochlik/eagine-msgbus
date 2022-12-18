@@ -14,6 +14,7 @@ case "${1}" in
 	local|*) conn_args+=("--msgbus-asio-local-stream");;
 esac
 #
+tilings=${3:-2}
 pids=()
 termpids=()
 #
@@ -33,21 +34,17 @@ ${install_prefix}/bin/eagine-msgbus-sudoku_helper \
 	--msgbus-router-id-count 100 \
 	& termpids+=($!)
 sleep 5
-${install_prefix}/bin/eagine-msgbus-tiling \
-	"${log_args[@]}" \
-	"${conn_args[@]}" \
-	--msgbus-sudoku-solver-width ${2} \
-	--msgbus-sudoku-solver-height ${2} \
-	--msgbus-sudoku-solver-output-path /tmp/tiling1.txt \
-	& pids+=($!)
-sleep 2
-${install_prefix}/bin/eagine-msgbus-tiling \
-	"${log_args[@]}" \
-	"${conn_args[@]}" \
-	--msgbus-sudoku-solver-width ${2} \
-	--msgbus-sudoku-solver-height ${2} \
-	--msgbus-sudoku-solver-output-path /tmp/tiling2.txt \
-	& pids+=($!)
+for t in $(seq 1 ${tilings})
+do
+	${install_prefix}/bin/eagine-msgbus-tiling \
+		"${log_args[@]}" \
+		"${conn_args[@]}" \
+		--msgbus-sudoku-solver-width ${2} \
+		--msgbus-sudoku-solver-height ${2} \
+		--msgbus-sudoku-solver-output-path /tmp/tiling${t}.txt \
+		& pids+=($!)
+	sleep 2
+done
 
 for pid in ${pids[@]}
 do wait ${pid}
