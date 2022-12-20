@@ -69,12 +69,13 @@ private:
         _source.reset(request.content());
         Deserializer read_backend(_source);
 
-        if(request.has_serializer_id(read_backend.type_id())) {
+        if(request.has_serializer_id(read_backend.type_id())) [[likely]] {
             if(deserialize(args, read_backend)) [[likely]] {
                 _sink.reset(buffer);
                 Serializer write_backend(_sink);
 
-                if(serialize(std::apply(func, args), write_backend)) {
+                if(serialize(std::apply(func, args), write_backend))
+                  [[likely]] {
                     message_view msg_out{_sink.done()};
                     msg_out.set_serializer_id(write_backend.type_id());
                     msg_ctx.bus_node().respond_to(
@@ -213,9 +214,10 @@ public:
                 _source.reset(request.content());
                 Deserializer read_backend(_source);
 
-                if(request.has_serializer_id(read_backend.type_id())) {
+                if(request.has_serializer_id(read_backend.type_id()))
+                  [[likely]] {
                     auto& call = pos->second;
-                    if(deserialize(call.args, read_backend)) {
+                    if(deserialize(call.args, read_backend)) [[likely]] {
                         call.too_late.reset(_default_timeout);
                         call.response_id = response_id;
                         call.invoker_id = request.source_id;
@@ -315,9 +317,10 @@ public:
                 _source.reset(request.content());
                 Deserializer read_backend(_source);
 
-                if(request.has_serializer_id(read_backend.type_id())) {
+                if(request.has_serializer_id(read_backend.type_id()))
+                  [[likely]] {
                     auto& call = pos->second;
-                    if(deserialize(call.args, read_backend)) {
+                    if(deserialize(call.args, read_backend)) [[likely]] {
                         call.response_id = response_id;
                         call.invoker_id = request.source_id;
                         call.func = func;

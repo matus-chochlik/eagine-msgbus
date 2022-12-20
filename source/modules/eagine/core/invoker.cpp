@@ -70,8 +70,8 @@ public:
         _source.reset(response.content());
         Deserializer read_backend(_source);
 
-        if(response.has_serializer_id(read_backend.type_id())) {
-            if(deserialize(result, read_backend)) {
+        if(response.has_serializer_id(read_backend.type_id())) [[likely]] {
+            if(deserialize(result, read_backend)) [[likely]] {
                 const result_context res_ctx{
                   msg_ctx, response.source_id, response.sequence_no};
                 _callback(res_ctx, std::move(result));
@@ -168,7 +168,7 @@ public:
         _sink.reset(buffer);
         Serializer write_backend(_sink);
 
-        if(serialize(tupl, write_backend)) {
+        if(serialize(tupl, write_backend)) [[likely]] {
             message_view message{_sink.done()};
             message.set_serializer_id(write_backend.type_id());
             message.set_target_id(target_id);
@@ -217,8 +217,8 @@ public:
         _source.reset(message.content());
         Deserializer read_backend(_source);
 
-        if(message.has_serializer_id(read_backend.type_id())) {
-            if(deserialize(result, read_backend)) {
+        if(message.has_serializer_id(read_backend.type_id())) [[likely]] {
+            if(deserialize(result, read_backend)) [[likely]] {
                 _results.fulfill(invocation_id, result);
             }
         }
