@@ -71,8 +71,7 @@ public:
         Deserializer read_backend(_source);
 
         if(response.has_serializer_id(read_backend.type_id())) {
-            const auto errors{deserialize(result, read_backend)};
-            if(!errors) {
+            if(deserialize(result, read_backend)) {
                 const result_context res_ctx{
                   msg_ctx, response.source_id, response.sequence_no};
                 _callback(res_ctx, std::move(result));
@@ -169,8 +168,7 @@ public:
         _sink.reset(buffer);
         Serializer write_backend(_sink);
 
-        const auto errors = serialize(tupl, write_backend);
-        if(!errors) {
+        if(serialize(tupl, write_backend)) {
             message_view message{_sink.done()};
             message.set_serializer_id(write_backend.type_id());
             message.set_target_id(target_id);
@@ -220,8 +218,7 @@ public:
         Deserializer read_backend(_source);
 
         if(message.has_serializer_id(read_backend.type_id())) {
-            const auto errors{deserialize(result, read_backend)};
-            if(!errors) {
+            if(deserialize(result, read_backend)) {
                 _results.fulfill(invocation_id, result);
             }
         }
@@ -289,8 +286,7 @@ public:
         block_data_sink sink(buffer);
         Serializer write_backend(sink);
 
-        const auto errors = serialize(tupl, write_backend);
-        if(!errors) {
+        if(serialize(tupl, write_backend)) {
             message_view message{sink.done()};
             message.set_serializer_id(write_backend.type_id());
             message.set_target_id(target_id);

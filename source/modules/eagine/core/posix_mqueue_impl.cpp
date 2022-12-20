@@ -424,8 +424,7 @@ public:
         if(is_usable()) [[likely]] {
             block_data_sink sink(cover(_buffer));
             default_serializer_backend backend(sink);
-            auto errors = serialize_message(msg_id, message, backend);
-            if(!errors) [[likely]] {
+            if(serialize_message(msg_id, message, backend)) [[likely]] {
                 const std::unique_lock lock{_mutex};
                 _outgoing.push(sink.done());
                 return true;
@@ -467,11 +466,10 @@ protected:
 
                         block_data_sink sink(cover(_buffer));
                         default_serializer_backend backend(sink);
-                        const auto errors = serialize_message(
-                          msgbus_id{"pmqConnect"},
-                          message_view(_data_queue.get_name()),
-                          backend);
-                        if(!errors) [[likely]] {
+                        if(serialize_message(
+                             msgbus_id{"pmqConnect"},
+                             message_view(_data_queue.get_name()),
+                             backend)) [[likely]] {
                             connect_queue.send(1, as_chars(sink.done()));
                             _buffer.resize(_data_queue.data_size());
                             something_done();
@@ -528,8 +526,7 @@ protected:
             message_id& msg_id, message_timestamp&, stored_message& message) {
               block_data_source source(as_bytes(data));
               default_deserializer_backend backend(source);
-              const auto errors = deserialize_message(msg_id, message, backend);
-              return !errors;
+              return bool(deserialize_message(msg_id, message, backend));
           });
     }
 
@@ -715,10 +712,11 @@ private:
             message_id& msg_id, message_timestamp&, stored_message& message) {
               block_data_source source(as_bytes(data));
               default_deserializer_backend backend(source);
-              const auto errors = deserialize_message(msg_id, message, backend);
+              const auto deserialized{
+                deserialize_message(msg_id, message, backend)};
               if(is_special_message(msg_id)) [[likely]] {
                   if(msg_id.has_method("pmqConnect")) [[likely]] {
-                      return !errors;
+                      return bool(deserialized);
                   }
               }
               return false;

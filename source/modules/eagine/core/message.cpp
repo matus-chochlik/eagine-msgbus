@@ -426,7 +426,7 @@ export template <typename Backend>
 auto serialize_message_header(
   const message_id msg_id,
   const message_view& msg,
-  Backend& backend) noexcept -> serialization_errors
+  Backend& backend) noexcept -> serialization_result<message_id>
     requires(std::is_base_of_v<serializer_backend, Backend>)
 {
     const auto message_params = std::make_tuple(
@@ -440,7 +440,7 @@ auto serialize_message_header(
       msg.age_quarter_seconds,
       msg.priority,
       msg.crypto_flags);
-    return serialize(message_params, backend);
+    return rebind<message_id>(msg_id, serialize(message_params, backend));
 }
 //------------------------------------------------------------------------------
 /// @brief Serializes a bus message with the specified serializer backend.
@@ -452,20 +452,21 @@ export template <typename Backend>
 auto serialize_message(
   const message_id msg_id,
   const message_view& msg,
-  Backend& backend) noexcept -> serialization_errors
+  Backend& backend) noexcept -> serialization_result<message_id>
     requires(std::is_base_of_v<serializer_backend, Backend>)
 {
-    auto errors = serialize_message_header(msg_id, msg, backend);
+    auto serialized{serialize_message_header(msg_id, msg, backend)};
 
-    if(!errors) [[likely]] {
+    if(serialized) [[likely]] {
         if(auto sink{backend.sink()}) [[likely]] {
-            errors |= extract(sink).write(msg.data());
+            serialized = merge(serialized, extract(sink).write(msg.data()));
         } else {
-            errors |= serialization_error_code::backend_error;
+            serialized =
+              merge(serialized, serialization_error_code::backend_error);
         }
     }
 
-    return errors;
+    return serialized;
 }
 //------------------------------------------------------------------------------
 /// @brief Uses the default backend to serialize a value into a memory block.
@@ -478,8 +479,8 @@ inline auto default_serialize(const T& value, memory::block blk) noexcept
   -> serialization_result<memory::const_block> {
     block_data_sink sink(blk);
     default_serializer_backend backend(sink);
-    const auto errors = serialize(value, backend);
-    return {sink.done(), errors};
+    const auto serialized{serialize(value, backend)};
+    return rebind<memory::const_block>(sink.done(), serialized);
 }
 //------------------------------------------------------------------------------
 /// @brief Uses backend and compressor to serialize and pack a value into a memory block.
@@ -496,8 +497,8 @@ auto default_serialize_packed(
   -> serialization_result<memory::const_block> {
     packed_block_data_sink sink(std::move(compressor), blk);
     default_serializer_backend backend(sink);
-    const auto errors = serialize(value, backend);
-    return {sink.done(), errors};
+    const auto serialized{serialize(value, backend)};
+    return rebind<memory::const_block>(sink.done(), serialized);
 }
 //------------------------------------------------------------------------------
 /// @brief Default-serializes the specified message id into a memory block.
@@ -669,7 +670,7 @@ auto deserialize_message_header(
   identifier& class_id,
   identifier& method_id,
   stored_message& msg,
-  Backend& backend) noexcept -> deserialization_errors
+  Backend& backend) noexcept -> deserialization_result<message_id>
     requires(std::is_base_of_v<deserializer_backend, Backend>)
 {
 
@@ -684,7 +685,8 @@ auto deserialize_message_header(
       msg.age_quarter_seconds,
       msg.priority,
       msg.crypto_flags);
-    return deserialize(message_params, backend);
+    return rebind<message_id>(
+      message_id{class_id, method_id}, deserialize(message_params, backend));
 }
 //------------------------------------------------------------------------------
 /// @brief Deserializes a bus message with the specified deserializer backend.
@@ -697,21 +699,23 @@ auto deserialize_message(
   identifier& class_id,
   identifier& method_id,
   stored_message& msg,
-  Backend& backend) noexcept -> deserialization_errors
+  Backend& backend) noexcept -> deserialization_result<message_id>
     requires(std::is_base_of_v<deserializer_backend, Backend>)
 {
 
-    auto errors = deserialize_message_header(class_id, method_id, msg, backend);
+    auto deserialized{
+      deserialize_message_header(class_id, method_id, msg, backend)};
 
-    if(!errors) [[likely]] {
+    if(deserialized) [[likely]] {
         if(auto source{backend.source()}) [[likely]] {
             msg.fetch_all_from(extract(source));
         } else {
-            errors |= deserialization_error_code::backend_error;
+            deserialized =
+              merge(deserialized, deserialization_error_code::backend_error);
         }
     }
 
-    return errors;
+    return deserialized;
 }
 //------------------------------------------------------------------------------
 /// @brief Deserializes a bus message with the specified deserializer backend.
@@ -722,18 +726,18 @@ export template <typename Backend>
 auto deserialize_message(
   message_id& msg_id,
   stored_message& msg,
-  Backend& backend) noexcept -> deserialization_errors
+  Backend& backend) noexcept -> deserialization_result<message_id>
     requires(std::is_base_of_v<deserializer_backend, Backend>)
 {
 
     identifier class_id{};
     identifier method_id{};
-    deserialization_errors errors =
-      deserialize_message(class_id, method_id, msg, backend);
-    if(!errors) [[likely]] {
+    const auto deserialized{
+      deserialize_message(class_id, method_id, msg, backend)};
+    if(deserialized) [[likely]] {
         msg_id = {class_id, method_id};
     }
-    return errors;
+    return deserialized;
 }
 //------------------------------------------------------------------------------
 // default_deserialize
@@ -748,8 +752,8 @@ auto default_deserialize(T& value, const memory::const_block blk) noexcept
   -> deserialization_result<memory::const_block> {
     block_data_source source(blk);
     default_deserializer_backend backend(source);
-    auto errors = deserialize(value, backend);
-    return {source.remaining(), errors};
+    const auto deserialized{deserialize(value, backend)};
+    return rebind<memory::const_block>(source.remaining(), deserialized);
 }
 //------------------------------------------------------------------------------
 /// @brief Uses backend and compressor to deserialize and unpack a value from a block.
@@ -766,8 +770,8 @@ auto default_deserialize_packed(
   -> deserialization_result<memory::const_block> {
     packed_block_data_source source(std::move(compressor), blk);
     default_deserializer_backend backend(source);
-    auto errors = deserialize(value, backend);
-    return {source.remaining(), errors};
+    const auto deserialized{deserialize(value, backend)};
+    return rebind<memory::const_block>(source.remaining(), deserialized);
 }
 //------------------------------------------------------------------------------
 /// @brief Default-deserializes the specified message id from a memory block.
@@ -793,8 +797,7 @@ auto stored_message::do_store_value(
     _buffer.resize(max_size);
     block_data_sink sink(cover(_buffer));
     Backend backend(sink);
-    auto errors = serialize(value, backend);
-    if(!errors) [[likely]] {
+    if(serialize(value, backend)) [[likely]] {
         set_serializer_id(backend.type_id());
         _buffer.resize(sink.done().size());
         return true;
@@ -813,8 +816,7 @@ template <typename Backend, typename Value>
 auto stored_message::do_fetch_value(Value& value) noexcept -> bool {
     block_data_source source(view(_buffer));
     Backend backend(source);
-    auto errors = deserialize(value, backend);
-    return !errors;
+    return bool(deserialize(value, backend));
 }
 //------------------------------------------------------------------------------
 template <typename Value>

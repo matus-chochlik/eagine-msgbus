@@ -43,18 +43,20 @@ struct fibonacci_server : static_subscriber<2> {
         // deserialize
         block_data_source source(msg_in.content());
         fast_deserializer_backend read_backend(source);
-        deserialize(arg, read_backend);
-        // call
-        result = fib(arg);
-        // serialize
-        std::array<byte, 64> buffer{};
-        block_data_sink sink(cover(buffer));
-        fast_serializer_backend write_backend(sink);
-        serialize(std::tie(arg, result), write_backend);
-        // send
-        message_view msg_out{sink.done()};
-        msg_out.set_serializer_id(write_backend.type_id());
-        bus_node().respond_to(msg_in, {"Fibonacci", "Result"}, msg_out);
+        if(deserialize(arg, read_backend)) {
+            // call
+            result = fib(arg);
+            // serialize
+            std::array<byte, 64> buffer{};
+            block_data_sink sink(cover(buffer));
+            fast_serializer_backend write_backend(sink);
+            if(serialize(std::tie(arg, result), write_backend)) {
+                // send
+                message_view msg_out{sink.done()};
+                msg_out.set_serializer_id(write_backend.type_id());
+                bus_node().respond_to(msg_in, {"Fibonacci", "Result"}, msg_out);
+            }
+        }
         return true;
     }
 };
@@ -90,11 +92,12 @@ struct fibonacci_client : static_subscriber<2> {
             std::array<byte, 32> buffer{};
             block_data_sink sink(cover(buffer));
             fast_serializer_backend write_backend(sink);
-            serialize(arg, write_backend);
-            //
-            message_view msg_out{sink.done()};
-            msg_out.set_serializer_id(write_backend.type_id());
-            bus_node().respond_to(msg_in, {"Fibonacci", "Calculate"}, msg_out);
+            if(serialize(arg, write_backend)) {
+                message_view msg_out{sink.done()};
+                msg_out.set_serializer_id(write_backend.type_id());
+                bus_node().respond_to(
+                  msg_in, {"Fibonacci", "Calculate"}, msg_out);
+            }
         }
         return true;
     }
@@ -107,14 +110,15 @@ struct fibonacci_client : static_subscriber<2> {
         block_data_source source(msg_in.content());
         fast_deserializer_backend read_backend(source);
         auto tup = std::tie(arg, result);
-        deserialize(tup, read_backend);
-        // print
-        bus_node()
-          .cio_print("fib(${arg}) = ${fib}")
-          .arg("arg", arg)
-          .arg("fib", result);
-        // remove
-        _pending.erase(arg);
+        if(deserialize(tup, read_backend)) {
+            // print
+            bus_node()
+              .cio_print("fib(${arg}) = ${fib}")
+              .arg("arg", arg)
+              .arg("fib", result);
+            // remove
+            _pending.erase(arg);
+        }
         return true;
     }
 

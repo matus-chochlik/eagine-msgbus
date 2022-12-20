@@ -246,17 +246,18 @@ auto connection_outgoing_messages::enqueue(
 
     block_data_sink sink(temp);
     default_serializer_backend backend(sink);
-    const auto errors{serialize_message(msg_id, message, backend)};
-    if(!errors) [[likely]] {
+    if(const auto serialized{serialize_message(msg_id, message, backend)})
+      [[likely]] {
         user.log_trace("enqueuing message ${message} to be sent")
           .arg("message", msg_id);
         _serialized.push(sink.done());
         return true;
+    } else {
+        user.log_error("failed to serialize message ${message}")
+          .arg("message", msg_id)
+          .arg("errors", get_errors(serialized))
+          .arg("content", message.content());
     }
-    user.log_error("failed to serialize message ${message}")
-      .arg("message", msg_id)
-      .arg("errors", errors)
-      .arg("content", message.content());
     return false;
 }
 //------------------------------------------------------------------------------
@@ -276,16 +277,15 @@ auto connection_incoming_messages::fetch_messages(
                                   stored_message& message) {
                   block_data_source source(blk);
                   default_deserializer_backend backend(source);
-                  const auto errors =
-                    deserialize_message(msg_id, message, backend);
-                  if(!errors) [[likely]] {
+                  if(const auto deserialized{deserialize_message(
+                       msg_id, message, backend)}) [[likely]] {
                       user.log_trace("fetched message ${message}")
                         .arg("message", msg_id);
                       msg_ts = data_ts;
                       return true;
                   } else {
                       user.log_error("failed to deserialize message")
-                        .arg("errorBits", errors.bits())
+                        .arg("errors", get_errors(deserialized))
                         .arg("block", blk);
                       return false;
                   }

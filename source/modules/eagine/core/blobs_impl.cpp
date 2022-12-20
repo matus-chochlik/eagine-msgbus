@@ -722,9 +722,8 @@ auto blob_manipulator::process_incoming(
       options);
     block_data_source source{message.content()};
     default_deserializer_backend backend(source);
-    auto errors = deserialize(header, backend);
-    const message_id msg_id{class_id, method_id};
-    if(!errors) [[likely]] {
+    if(const auto deserialized{deserialize(header, backend)}) [[likely]] {
+        const message_id msg_id{class_id, method_id};
         if((offset >= 0) && (offset < total_size)) {
             const auto fragment = source.remaining();
             const auto max_frag_size = span_size(total_size - offset);
@@ -753,7 +752,7 @@ auto blob_manipulator::process_incoming(
         }
     } else {
         log_error("failed to deserialize header of blob")
-          .arg("errors", errors)
+          .arg("errors", get_errors(deserialized))
           .arg("data", message.content());
     }
     return false;
@@ -901,7 +900,7 @@ auto blob_manipulator::process_outgoing(
               _scratch_block(_message_size(pending, max_message_size)));
             default_serializer_backend backend(sink);
 
-            if(const auto errors{serialize(header, backend)}; !errors) {
+            if(const auto serialized{serialize(header, backend)}) {
                 const auto offset = bgn;
                 if(auto written_size{pending.fetch(offset, sink.free())}) {
 
@@ -928,7 +927,7 @@ auto blob_manipulator::process_outgoing(
                 }
             } else {
                 log_error("failed to serialize header of blob ${message}")
-                  .arg("errors", errors)
+                  .arg("errors", get_errors(serialized))
                   .arg("message", pending.msg_id);
             }
         }

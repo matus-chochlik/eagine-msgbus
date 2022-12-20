@@ -158,10 +158,9 @@ public:
             identifier class_id{};
             identifier method_id{};
             _recv_dest.clear_data();
-            const auto errors = deserialize_message_header(
-              class_id, method_id, _recv_dest, backend);
 
-            if(!errors) [[likely]] {
+            if(deserialize_message_header(
+                 class_id, method_id, _recv_dest, backend)) [[likely]] {
                 _buffer.ensure(source.remaining().size());
                 span_size_t i = 0;
                 span_size_t o = 0;
