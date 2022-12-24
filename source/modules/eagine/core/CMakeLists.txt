@@ -346,3 +346,10 @@ eagine_add_module(
 		"${PROJECT_SOURCE_DIR}/submodules/asio/asio/include"
 )
 
+eagine_add_module_tests(
+	eagine.msgbus.core
+	UNITS
+		message
+	IMPORTS
+		eagine.core
+)

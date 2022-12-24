@@ -18,6 +18,7 @@ add_subdirectory(submodules)
 include(EAGineCoreCommon)
 include(EAGineMsgBusResources)
 
+enable_testing()
 add_subdirectory(source)
 add_subdirectory(example)
 add_subdirectory(doc)
