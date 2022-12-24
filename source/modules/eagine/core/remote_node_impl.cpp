@@ -162,7 +162,7 @@ auto remote_instance::application_name() const noexcept
 }
 //------------------------------------------------------------------------------
 auto remote_instance::compiler() const noexcept
-  -> optional_reference_wrapper<const compiler_info> {
+  -> optional_reference<const compiler_info> {
     if(auto impl{_impl()}) {
         auto& i = extract(impl);
         if(i.cmplr_info) {
@@ -173,7 +173,7 @@ auto remote_instance::compiler() const noexcept
 }
 //------------------------------------------------------------------------------
 auto remote_instance::build_version() const noexcept
-  -> optional_reference_wrapper<const version_info> {
+  -> optional_reference<const version_info> {
     if(auto impl{_impl()}) {
         auto& i = extract(impl);
         if(i.ver_info) {

@@ -653,12 +653,11 @@ public:
     auto application_name() const noexcept -> valid_if_not_empty<string_view>;
 
     /// @brief Returns the compiler information about the program running in the instance.
-    auto compiler() const noexcept
-      -> optional_reference_wrapper<const compiler_info>;
+    auto compiler() const noexcept -> optional_reference<const compiler_info>;
 
     /// @brief Returns the build information about the program running in the instance.
     auto build_version() const noexcept
-      -> optional_reference_wrapper<const version_info>;
+      -> optional_reference<const version_info>;
 
 private:
     process_instance_id_t _inst_id{0U};
