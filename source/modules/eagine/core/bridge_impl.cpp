@@ -109,23 +109,26 @@ public:
                                message_view message) {
             if(!message.add_age(msg_age).too_old()) [[likely]] {
                 default_serializer_backend backend(_sink);
-                serialize_message_header(msg_id, message, backend);
+                if(serialize_message_header(msg_id, message, backend))
+                  [[likely]] {
+                    span_size_t i = 0;
+                    do_dissolve_bits(
+                      make_span_getter(i, message.data()),
+                      [this](byte b) {
+                          const auto encode{make_base64_encode_transform()};
+                          if(auto opt_c{encode(b)}) {
+                              this->_output << extract(opt_c);
+                              return true;
+                          }
+                          return false;
+                      },
+                      6);
 
-                span_size_t i = 0;
-                do_dissolve_bits(
-                  make_span_getter(i, message.data()),
-                  [this](byte b) {
-                      const auto encode{make_base64_encode_transform()};
-                      if(auto opt_c{encode(b)}) {
-                          this->_output << extract(opt_c);
-                          return true;
-                      }
-                      return false;
-                  },
-                  6);
-
-                _output << '\n' << std::flush;
-                ++_forwarded_messages;
+                    _output << '\n' << std::flush;
+                    ++_forwarded_messages;
+                } else {
+                    ++_dropped_messages;
+                }
             } else {
                 ++_dropped_messages;
             }
