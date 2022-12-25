@@ -116,68 +116,6 @@ export using message_timestamp = std::chrono::steady_clock::time_point;
 export using message_age =
   std::chrono::duration<std::int16_t, std::ratio<1, 100>>;
 //------------------------------------------------------------------------------
-/// @brief Message priority enumeration.
-/// @ingroup msgbus
-export enum class message_priority : std::uint8_t {
-    /// @brief Idle, sent only when no messages with higher priority are enqueued.
-    idle,
-    /// @brief Low message priority.
-    low,
-    /// @brief Normal, default message priority.
-    normal,
-    /// @brief High, sent before messages with lower priority.
-    high,
-    /// @brief Critical, sent as soon as possible.
-    critical
-};
-//------------------------------------------------------------------------------
-/// @brief Message priority ordering.
-/// @ingroup msgbus
-/// @relates message_priority
-export [[nodiscard]] auto operator<(
-  const message_priority l,
-  const message_priority r) noexcept -> bool {
-    using U = std::underlying_type_t<message_priority>;
-    return U(l) < U(r);
-}
-//------------------------------------------------------------------------------
-export template <typename Selector>
-constexpr auto enumerator_mapping(
-  const std::type_identity<message_priority>,
-  const Selector) noexcept {
-    return enumerator_map_type<message_priority, 5>{
-      {{"critical", message_priority::critical},
-       {"high", message_priority::high},
-       {"normal", message_priority::normal},
-       {"low", message_priority::low},
-       {"idle", message_priority::idle}}};
-}
-//------------------------------------------------------------------------------
-/// @brief Message cryptography-related flag bits enumeration.
-/// @ingroup msgbus
-/// @see message_crypto_flags
-export enum class message_crypto_flag : std::uint8_t {
-    /// @brief Assymetric cipher is used (symmetric otherwise).
-    asymmetric = 1U << 0U,
-    /// @brief The message header is signed.
-    signed_header = 1U << 1U,
-    /// @brief The message content is signed.
-    signed_content = 1U << 2U
-};
-/// @brief  Alias for message crypto flags bitfield.
-/// @ingroup msgbus
-export using message_crypto_flags = bitfield<message_crypto_flag>;
-//------------------------------------------------------------------------------
-export template <typename Selector>
-constexpr auto enumerator_mapping(
-  const std::type_identity<message_crypto_flag>,
-  const Selector) noexcept {
-    return enumerator_map_type<message_crypto_flag, 3>{
-      {{"asymmetric", message_crypto_flag::asymmetric},
-       {"signed_header", message_crypto_flag::signed_header},
-       {"signed_content", message_crypto_flag::signed_content}}};
-}
-//------------------------------------------------------------------------------
 /// @brief Structure storing information about a sigle message bus message
 /// @ingroup msgbus
 /// @see message_view
