@@ -37,7 +37,7 @@ struct connection_info : interface<connection_info> {
 /// @ingroup msgbus
 /// @see connection_user
 /// @see acceptor
-struct connection : connection_info {
+export struct connection : connection_info {
 
     /// @brief Alias for fetch handler callable reference type.
     using fetch_handler = callable_ref<
@@ -95,7 +95,7 @@ struct connection_user : interface<connection_user> {
 /// @ingroup msgbus
 /// @see acceptor_user
 /// @see connection
-struct acceptor : connection_info {
+export struct acceptor : connection_info {
 
     /// @brief Alias for accepted connection handler callable reference type.
     using accept_handler =

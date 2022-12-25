@@ -255,4 +255,4 @@ auto main(int argc, const char** argv) -> int {
     return eagine::test_main_impl(argc, argv, test_main);
 }
 //------------------------------------------------------------------------------
-#include <eagine/testing/unit_end.hpp>
+#include <eagine/testing/unit_end_ctx.hpp>

@@ -351,6 +351,7 @@ eagine_add_module_tests(
 	UNITS
 		message
 		loopback
+		direct
 	IMPORTS
 		eagine.core
 )
