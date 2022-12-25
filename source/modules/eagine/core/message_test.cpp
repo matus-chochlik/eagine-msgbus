@@ -104,9 +104,9 @@ void message_serialize_header_roundtrip(auto& s) {
     message_serialize_header_roundtrip_m(test, {"another", "operation"});
 }
 //------------------------------------------------------------------------------
-// serialize message roundtrip
+// serialize message roundtrip 1
 //------------------------------------------------------------------------------
-void message_serialize_message_roundtrip_m(
+void message_serialize_message_roundtrip_m_1(
   eagitest::case_& test,
   eagine::message_id msg_id) {
 
@@ -164,22 +164,90 @@ void message_serialize_message_roundtrip_m(
     }
 }
 //------------------------------------------------------------------------------
-void message_serialize_message_roundtrip(auto& s) {
+void message_serialize_message_roundtrip_1(auto& s) {
     eagitest::case_ test{s, 4, "serialize message round-trip"};
 
-    message_serialize_message_roundtrip_m(test, {"some", "message"});
-    message_serialize_message_roundtrip_m(test, {"other", "message"});
-    message_serialize_message_roundtrip_m(test, {"another", "operation"});
+    message_serialize_message_roundtrip_m_1(test, {"some", "message"});
+    message_serialize_message_roundtrip_m_1(test, {"other", "message"});
+    message_serialize_message_roundtrip_m_1(test, {"another", "operation"});
+}
+//------------------------------------------------------------------------------
+// serialize message roundtrip 2
+//------------------------------------------------------------------------------
+void message_serialize_message_roundtrip_m_2(
+  eagitest::case_& test,
+  eagine::message_id msg_id) {
+
+    std::vector<eagine::byte> buffer{};
+    buffer.resize(2048);
+    auto& rg{test.random()};
+
+    std::vector<eagine::byte> content{};
+
+    eagine::msgbus::message_sequence_t sequence_no{0};
+    for(unsigned i = 0; i < test.repeats(1000); ++i) {
+        for(const auto& info : eagine::enumerator_mapping(
+              std::type_identity<eagine::msgbus::message_priority>{},
+              eagine::default_selector)) {
+            eagine::block_data_sink sink{eagine::cover(buffer)};
+
+            content.resize(rg.get_between<std::size_t>(0, 1920));
+            rg.fill(content);
+
+            eagine::msgbus::message_view message{eagine::view(content)};
+            const auto age{rg.get_between(
+              eagine::msgbus::message_age{1}, eagine::msgbus::message_age{25})};
+            message.set_sequence_no(sequence_no);
+            message.set_priority(info.enumerator);
+            message.add_age(age);
+            eagine::msgbus::default_serializer_backend write_backend{sink};
+
+            const auto serialized{eagine::msgbus::serialize_message(
+              msg_id, message, write_backend)};
+            test.ensure(bool(serialized), "serialized");
+
+            eagine::block_data_source source{sink.done()};
+            eagine::msgbus::default_deserializer_backend read_backend{source};
+            eagine::message_id msg_id_d;
+            eagine::msgbus::stored_message dest;
+
+            const auto deserialized{eagine::msgbus::deserialize_message(
+              msg_id_d, dest, read_backend)};
+            test.ensure(bool(deserialized), "deserialized");
+
+            test.check(msg_id.class_() == msg_id_d.class_(), "class ok");
+            test.check(msg_id.method() == msg_id_d.method(), "method ok");
+            test.check_equal(
+              eagine::view(content).size(),
+              dest.content().size(),
+              "content size ok");
+            test.check(
+              eagine::are_equal(eagine::view(content), dest.const_content()),
+              "content ok");
+            test.check(dest.sequence_no == sequence_no, "sequence ok");
+            test.check(dest.priority == info.enumerator, "priority ok");
+            test.check(dest.age() >= age, "age ok");
+        }
+    }
+}
+//------------------------------------------------------------------------------
+void message_serialize_message_roundtrip_2(auto& s) {
+    eagitest::case_ test{s, 5, "serialize message round-trip 2"};
+
+    message_serialize_message_roundtrip_m_2(test, {"some", "message"});
+    message_serialize_message_roundtrip_m_2(test, {"other", "message"});
+    message_serialize_message_roundtrip_m_2(test, {"another", "operation"});
 }
 //------------------------------------------------------------------------------
 // main
 //------------------------------------------------------------------------------
 auto test_main(eagine::test_ctx& ctx) -> int {
-    eagitest::ctx_suite test{ctx, "message", 4};
+    eagitest::ctx_suite test{ctx, "message", 5};
     test.once(message_valid_endpoint_id);
     test.once(message_is_special);
     test.once(message_serialize_header_roundtrip);
-    test.once(message_serialize_message_roundtrip);
+    test.once(message_serialize_message_roundtrip_1);
+    test.once(message_serialize_message_roundtrip_2);
     return test.exit_code();
 }
 //------------------------------------------------------------------------------
