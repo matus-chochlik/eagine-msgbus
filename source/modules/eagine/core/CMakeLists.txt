@@ -350,6 +350,7 @@ eagine_add_module_tests(
 	eagine.msgbus.core
 	UNITS
 		message
+		loopback
 	IMPORTS
 		eagine.core
 )
