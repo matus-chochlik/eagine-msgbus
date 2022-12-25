@@ -119,28 +119,29 @@ auto endpoint::_handle_blob_resend(const message_view& message) noexcept
 auto endpoint::_handle_flow_info(const message_view& message) noexcept
   -> message_handling_result {
     message_flow_info flow_info{};
-    default_deserialize(flow_info, message.content());
-    if(_flow_info != flow_info) {
-        const std::chrono::milliseconds age_warning{500};
-        if(
-          (_flow_info.average_message_age() < age_warning) &&
-          (flow_info.average_message_age() >= age_warning)) {
-            log_warning("average message age is too high:  ${avgMsgAge}")
-              .tag("msgAgeHigh")
-              .arg("warnLimit", age_warning)
-              .arg("avgMsgAge", flow_info.average_message_age());
-        } else if(
-          (flow_info.average_message_age() < age_warning) &&
-          (_flow_info.average_message_age() >= age_warning)) {
-            log_info("average message age returned to normal: ${avgMsgAge}")
-              .tag("msgAgeNorm")
-              .arg("warnLimit", age_warning)
-              .arg("avgMsgAge", flow_info.average_message_age());
+    if(default_deserialize(flow_info, message.content())) [[likely]] {
+        if(_flow_info != flow_info) {
+            const std::chrono::milliseconds age_warning{500};
+            if(
+              (_flow_info.average_message_age() < age_warning) &&
+              (flow_info.average_message_age() >= age_warning)) {
+                log_warning("average message age is too high:  ${avgMsgAge}")
+                  .tag("msgAgeHigh")
+                  .arg("warnLimit", age_warning)
+                  .arg("avgMsgAge", flow_info.average_message_age());
+            } else if(
+              (flow_info.average_message_age() < age_warning) &&
+              (_flow_info.average_message_age() >= age_warning)) {
+                log_info("average message age returned to normal: ${avgMsgAge}")
+                  .tag("msgAgeNorm")
+                  .arg("warnLimit", age_warning)
+                  .arg("avgMsgAge", flow_info.average_message_age());
+            }
+            _flow_info = flow_info;
+            log_debug("changes in message flow information")
+              .tag("msgFlowInf")
+              .arg("avgMsgAge", flow_average_message_age());
         }
-        _flow_info = flow_info;
-        log_debug("changes in message flow information")
-          .tag("msgFlowInf")
-          .arg("avgMsgAge", flow_average_message_age());
     }
     return was_handled;
 }

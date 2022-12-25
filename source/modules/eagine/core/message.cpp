@@ -49,7 +49,7 @@ export using default_deserializer_backend = portable_deserializer_backend;
 /// @brief Returns count of bytes required for serialization of the specified object.
 /// @ingroup msgbus
 export template <typename T>
-auto default_serialize_buffer_size_for(const T& inst) noexcept {
+[[nodiscard]] auto default_serialize_buffer_size_for(const T& inst) noexcept {
     return serialize_buffer_size_for<default_serializer_backend::id_value>(
       inst, default_selector_t{});
 }
@@ -57,7 +57,7 @@ auto default_serialize_buffer_size_for(const T& inst) noexcept {
 /// @brief Returns a vector for the serialization of the specified object.
 /// @ingroup msgbus
 export template <typename T>
-auto default_serialize_vector_for(const T& inst) noexcept {
+[[nodiscard]] auto default_serialize_vector_for(const T& inst) noexcept {
     return get_serialize_vector_for<default_serializer_backend::id_value>(
       inst, default_selector_t{});
 }
@@ -65,7 +65,7 @@ auto default_serialize_vector_for(const T& inst) noexcept {
 /// @brief Returns a suitable buffer for the serialization of the specified object.
 /// @ingroup msgbus
 export template <typename T>
-auto default_serialize_buffer_for(const T& inst) noexcept {
+[[nodiscard]] auto default_serialize_buffer_for(const T& inst) noexcept {
     return serialize_buffer_for<default_serializer_backend::id_value>(inst);
 }
 //------------------------------------------------------------------------------
@@ -77,29 +77,31 @@ export struct msgbus_id : message_id {
 //------------------------------------------------------------------------------
 /// @brief Indicates if the specified message id denotes a special message bus message.
 /// @ingroup msgbus
-export constexpr auto is_special_message(const message_id msg_id) noexcept
-  -> bool {
+export [[nodiscard]] constexpr auto is_special_message(
+  const message_id msg_id) noexcept -> bool {
     return msg_id.has_class("eagiMsgBus");
 }
 //------------------------------------------------------------------------------
 /// @brief Returns the special broadcast message bus endpoint id.
 /// @ingroup msgbus
-export constexpr auto broadcast_endpoint_id() noexcept -> identifier_t {
+export [[nodiscard]] constexpr auto broadcast_endpoint_id() noexcept
+  -> identifier_t {
     return 0U;
 }
 //------------------------------------------------------------------------------
 /// @brief Returns the special invalid message bus endpoint id.
 /// @ingroup msgbus
 /// @see is_valid_id
-export constexpr auto invalid_endpoint_id() noexcept -> identifier_t {
+export [[nodiscard]] constexpr auto invalid_endpoint_id() noexcept
+  -> identifier_t {
     return 0U;
 }
 //------------------------------------------------------------------------------
 /// @brief Indicates if the specified endpoint id is valid.
 /// @ingroup msgbus
 /// @see invalid_endpoint_id
-export constexpr auto is_valid_endpoint_id(const identifier_t id) noexcept
-  -> bool {
+export [[nodiscard]] constexpr auto is_valid_endpoint_id(
+  const identifier_t id) noexcept -> bool {
     return id != 0U;
 }
 //------------------------------------------------------------------------------
@@ -132,7 +134,7 @@ export enum class message_priority : std::uint8_t {
 /// @brief Message priority ordering.
 /// @ingroup msgbus
 /// @relates message_priority
-export auto operator<(
+export [[nodiscard]] auto operator<(
   const message_priority l,
   const message_priority r) noexcept -> bool {
     using U = std::underlying_type_t<message_priority>;
@@ -241,7 +243,7 @@ export struct message_info {
     /// @brief Indicates that the message made too many hops.
     /// @see hop_count
     /// @see add_hop
-    auto too_many_hops() const noexcept -> bool {
+    [[nodiscard]] auto too_many_hops() const noexcept -> bool {
         return hop_count >= hop_count_t(64);
     }
 
@@ -257,7 +259,7 @@ export struct message_info {
     /// @brief Indicates that the message is too old.
     /// @see age
     /// @see add_age
-    auto too_old() const noexcept -> bool {
+    [[nodiscard]] auto too_old() const noexcept -> bool {
         switch(priority) {
             case message_priority::idle:
                 return age_quarter_seconds > 10 * 4;
@@ -291,7 +293,7 @@ export struct message_info {
     /// @brief Returns the message age
     /// @see too_old
     /// @see add_age
-    auto age() const noexcept -> message_age {
+    [[nodiscard]] auto age() const noexcept -> message_age {
         return message_age{age_quarter_seconds * 25};
     }
 
@@ -316,7 +318,8 @@ export struct message_info {
     /// @brief Tests if a data serializer with the specified id was used.
     /// @see serializer_id
     /// @see set_serializer_id
-    auto has_serializer_id(const identifier id) const noexcept -> bool {
+    [[nodiscard]] auto has_serializer_id(const identifier id) const noexcept
+      -> bool {
         return serializer_id == id.value();
     }
 
@@ -376,20 +379,20 @@ public:
 
     /// @brief Indicates if the header or the content is signed.
     /// @see signature
-    auto is_signed() const noexcept -> bool {
+    [[nodiscard]] auto is_signed() const noexcept -> bool {
         return crypto_flags.has(message_crypto_flag::signed_content) ||
                crypto_flags.has(message_crypto_flag::signed_header);
     }
 
     /// @brief Returns a const view of the storage buffer.
-    auto data() const noexcept -> memory::const_block {
+    [[nodiscard]] auto data() const noexcept -> memory::const_block {
         return _data;
     }
 
     /// @brief Returns the message signature.
     /// @see is_signed
     /// @see content
-    auto signature() const noexcept -> memory::const_block {
+    [[nodiscard]] auto signature() const noexcept -> memory::const_block {
         if(is_signed()) {
             return skip(data(), skip_data_with_size(data()));
         }
@@ -400,7 +403,7 @@ public:
     /// @see signature
     /// @see text_content
     /// @see const_content
-    auto content() const noexcept -> memory::const_block {
+    [[nodiscard]] auto content() const noexcept -> memory::const_block {
         if(is_signed()) [[unlikely]] {
             return get_data_with_size(data());
         }
@@ -409,7 +412,7 @@ public:
 
     /// @brief Returns the content as a const string view.
     /// @see content
-    auto text_content() const noexcept {
+    [[nodiscard]] auto text_content() const noexcept {
         return as_chars(content());
     }
 
@@ -423,7 +426,7 @@ private:
 /// @see serialize_message
 /// @see deserialize_message_header
 export template <typename Backend>
-auto serialize_message_header(
+[[nodiscard]] auto serialize_message_header(
   const message_id msg_id,
   const message_view& msg,
   Backend& backend) noexcept -> serialization_result<message_id>
@@ -449,7 +452,7 @@ auto serialize_message_header(
 /// @see deserialize_message
 /// @see default_serialize
 export template <typename Backend>
-auto serialize_message(
+[[nodiscard]] auto serialize_message(
   const message_id msg_id,
   const message_view& msg,
   Backend& backend) noexcept -> serialization_result<message_id>
@@ -475,7 +478,7 @@ auto serialize_message(
 /// @see default_deserialize
 /// @see serialize
 export template <typename T>
-inline auto default_serialize(const T& value, memory::block blk) noexcept
+[[nodiscard]] auto default_serialize(const T& value, memory::block blk) noexcept
   -> serialization_result<memory::const_block> {
     block_data_sink sink(blk);
     default_serializer_backend backend(sink);
@@ -490,7 +493,7 @@ inline auto default_serialize(const T& value, memory::block blk) noexcept
 /// @see data_compressor
 /// @see serialize
 export template <typename T>
-auto default_serialize_packed(
+[[nodiscard]] auto default_serialize_packed(
   T& value,
   memory::block blk,
   data_compressor compressor) noexcept
@@ -506,7 +509,7 @@ auto default_serialize_packed(
 /// @see default_serializer_backend
 /// @see default_serialize
 /// @see message_id
-export auto default_serialize_message_type(
+export [[nodiscard]] auto default_serialize_message_type(
   const message_id msg_id,
   memory::block blk) noexcept {
     const auto value{msg_id.id_tuple()};
@@ -530,7 +533,7 @@ public:
     }
 
     /// @brief Conversion to message view.
-    operator message_view() const noexcept {
+    [[nodiscard]] operator message_view() const noexcept {
         return {*this, data()};
     }
 
@@ -559,21 +562,21 @@ public:
 
     /// @brief Deserializes the stored content into the specified value.
     template <typename Value>
-    auto fetch_value(Value& value) noexcept -> bool;
+    [[nodiscard]] auto fetch_value(Value& value) noexcept -> bool;
 
     /// @brief Returns a mutable view of the storage buffer.
-    auto storage() noexcept -> memory::block {
+    [[nodiscard]] auto storage() noexcept -> memory::block {
         return cover(_buffer);
     }
 
     /// @brief Returns a const view of the storage buffer.
-    auto data() const noexcept -> memory::const_block {
+    [[nodiscard]] auto data() const noexcept -> memory::const_block {
         return view(_buffer);
     }
 
     /// @brief Indicates if the header or the content is signed.
     /// @see signature
-    auto is_signed() const noexcept -> bool {
+    [[nodiscard]] auto is_signed() const noexcept -> bool {
         return crypto_flags.has(message_crypto_flag::signed_content) ||
                crypto_flags.has(message_crypto_flag::signed_header);
     }
@@ -581,7 +584,7 @@ public:
     /// @brief Returns the message signature.
     /// @see is_signed
     /// @see content
-    auto signature() const noexcept -> memory::const_block {
+    [[nodiscard]] auto signature() const noexcept -> memory::const_block {
         if(is_signed()) {
             return skip(data(), skip_data_with_size(data()));
         }
@@ -590,7 +593,7 @@ public:
 
     /// @brief Returns a mutable view of the data content of the message.
     /// @see signature
-    auto content() noexcept -> memory::block {
+    [[nodiscard]] auto content() noexcept -> memory::block {
         if(is_signed()) [[unlikely]] {
             return get_data_with_size(storage());
         }
@@ -601,7 +604,7 @@ public:
     /// @see signature
     /// @see text_content
     /// @see const_content
-    auto content() const noexcept -> memory::const_block {
+    [[nodiscard]] auto content() const noexcept -> memory::const_block {
         if(is_signed()) [[unlikely]] {
             return get_data_with_size(data());
         }
@@ -612,19 +615,19 @@ public:
     /// @see signature
     /// @see content
     /// @see text_content
-    auto const_content() const noexcept -> memory::const_block {
+    [[nodiscard]] auto const_content() const noexcept -> memory::const_block {
         return content();
     }
 
     /// @brief Returns the content as a mutable string view.
     /// @see content
-    auto text_content() noexcept {
+    [[nodiscard]] auto text_content() noexcept {
         return as_chars(content());
     }
 
     /// @brief Returns the content as a const string view.
     /// @see content
-    auto text_content() const noexcept {
+    [[nodiscard]] auto text_content() const noexcept {
         return as_chars(content());
     }
 
@@ -632,7 +635,7 @@ public:
     /// @see content
     /// @see text_content
     /// @see const_content
-    auto const_text_content() const noexcept {
+    [[nodiscard]] auto const_text_content() const noexcept {
         return as_chars(const_content());
     }
 
@@ -647,14 +650,14 @@ public:
     }
 
     /// @brief Stores the specified data and signs it.
-    auto store_and_sign(
+    [[nodiscard]] auto store_and_sign(
       const memory::const_block data,
       const span_size_t max_size,
       context&,
       main_ctx_object&) noexcept -> bool;
 
     /// @brief Verifies the signatures of this message.
-    auto verify_bits(context&, main_ctx_object&) const noexcept
+    [[nodiscard]] auto verify_bits(context&, main_ctx_object&) const noexcept
       -> verification_bits;
 
 private:
@@ -666,7 +669,7 @@ private:
 /// @see deserialize_message
 /// @see serialize_message_header
 export template <typename Backend>
-auto deserialize_message_header(
+[[nodiscard]] auto deserialize_message_header(
   identifier& class_id,
   identifier& method_id,
   stored_message& msg,
@@ -695,7 +698,7 @@ auto deserialize_message_header(
 /// @see serialize_message
 /// @see default_deserialize
 export template <typename Backend>
-auto deserialize_message(
+[[nodiscard]] auto deserialize_message(
   identifier& class_id,
   identifier& method_id,
   stored_message& msg,
@@ -723,7 +726,7 @@ auto deserialize_message(
 /// @see deserialize_message_header
 /// @see serialize_message
 export template <typename Backend>
-auto deserialize_message(
+[[nodiscard]] auto deserialize_message(
   message_id& msg_id,
   stored_message& msg,
   Backend& backend) noexcept -> deserialization_result<message_id>
@@ -748,7 +751,9 @@ auto deserialize_message(
 /// @see default_serialize
 /// @see deserialize
 export template <typename T>
-auto default_deserialize(T& value, const memory::const_block blk) noexcept
+[[nodiscard]] auto default_deserialize(
+  T& value,
+  const memory::const_block blk) noexcept
   -> deserialization_result<memory::const_block> {
     block_data_source source(blk);
     default_deserializer_backend backend(source);
@@ -763,7 +768,7 @@ auto default_deserialize(T& value, const memory::const_block blk) noexcept
 /// @see data_compressor
 /// @see deserialize
 export template <typename T>
-auto default_deserialize_packed(
+[[nodiscard]] auto default_deserialize_packed(
   T& value,
   const memory::const_block blk,
   data_compressor compressor) noexcept
@@ -779,7 +784,7 @@ auto default_deserialize_packed(
 /// @see default_deserializer_backend
 /// @see default_deserialize
 /// @see message_id
-export auto default_deserialize_message_type(
+export [[nodiscard]] auto default_deserialize_message_type(
   message_id& msg_id,
   const memory::const_block blk) noexcept {
     std::tuple<identifier, identifier> value{};
@@ -835,12 +840,12 @@ public:
     }
 
     /// @brief Indicates if the storage is empty.
-    auto empty() const noexcept -> bool {
+    [[nodiscard]] auto empty() const noexcept -> bool {
         return _messages.empty();
     }
 
     /// @brief Returns the coung of messages in the storage.
-    auto count() const noexcept -> span_size_t {
+    [[nodiscard]] auto count() const noexcept -> span_size_t {
         return span_size(_messages.size());
     }
 
@@ -916,19 +921,19 @@ public:
     message_pack_info(const span_size_t total_size) noexcept
       : _total_size{limit_cast<std::uint16_t>(total_size)} {}
 
-    operator bool() const noexcept {
+    [[nodiscard]] operator bool() const noexcept {
         return !is_empty();
     }
 
-    auto is_empty() const noexcept -> bool {
+    [[nodiscard]] auto is_empty() const noexcept -> bool {
         return _packed_bits == 0U;
     }
 
-    auto bits() const noexcept -> bit_set {
+    [[nodiscard]] auto bits() const noexcept -> bit_set {
         return _packed_bits;
     }
 
-    auto count() const noexcept -> span_size_t {
+    [[nodiscard]] auto count() const noexcept -> span_size_t {
         span_size_t result = 0;
         auto bits = _packed_bits;
         while(bits) {
@@ -938,15 +943,15 @@ public:
         return result;
     }
 
-    auto used() const noexcept -> span_size_t {
+    [[nodiscard]] auto used() const noexcept -> span_size_t {
         return span_size(_packed_size);
     }
 
-    auto total() const noexcept -> span_size_t {
+    [[nodiscard]] auto total() const noexcept -> span_size_t {
         return span_size(_total_size);
     }
 
-    auto usage() const noexcept {
+    [[nodiscard]] auto usage() const noexcept {
         return float(used()) / float(total());
     }
 
@@ -972,15 +977,15 @@ public:
         _messages.reserve(32);
     }
 
-    auto empty() const noexcept -> bool {
+    [[nodiscard]] auto empty() const noexcept -> bool {
         return _messages.empty();
     }
 
-    auto count() const noexcept -> span_size_t {
+    [[nodiscard]] auto count() const noexcept -> span_size_t {
         return span_size(_messages.size());
     }
 
-    auto top() const noexcept -> memory::const_block {
+    [[nodiscard]] auto top() const noexcept -> memory::const_block {
         if(!_messages.empty()) {
             return view(std::get<0>(_messages.front()));
         }
@@ -1000,9 +1005,10 @@ public:
         _messages.emplace_back(std::move(buf), _clock_t::now());
     }
 
-    auto fetch_all(const fetch_handler handler) noexcept -> bool;
+    [[nodiscard]] auto fetch_all(const fetch_handler handler) noexcept -> bool;
 
-    auto pack_into(memory::block dest) noexcept -> message_pack_info;
+    [[nodiscard]] auto pack_into(memory::block dest) noexcept
+      -> message_pack_info;
 
     void cleanup(const message_pack_info& to_be_removed) noexcept;
 
@@ -1025,11 +1031,11 @@ public:
       : _bus{ep}
       , _msg_id{std::move(mi)} {}
 
-    auto bus_node() const noexcept -> endpoint& {
+    [[nodiscard]] auto bus_node() const noexcept -> endpoint& {
         return _bus;
     }
 
-    auto msg_id() const noexcept -> const message_id& {
+    [[nodiscard]] auto msg_id() const noexcept -> const message_id& {
         return _msg_id;
     }
 
@@ -1052,7 +1058,7 @@ public:
         _messages.reserve(128);
     }
 
-    auto size() const noexcept {
+    [[nodiscard]] auto size() const noexcept -> span_size_t {
         return _messages.size();
     }
 
@@ -1104,21 +1110,22 @@ private:
 //------------------------------------------------------------------------------
 export class connection_outgoing_messages {
 public:
-    auto count() const noexcept -> span_size_t {
-        return _serialized.count();
-    }
-
-    auto empty() const noexcept -> bool {
+    [[nodiscard]] auto empty() const noexcept -> bool {
         return _serialized.empty();
     }
 
-    auto enqueue(
+    [[nodiscard]] auto count() const noexcept -> span_size_t {
+        return _serialized.count();
+    }
+
+    [[nodiscard]] auto enqueue(
       main_ctx_object& user,
       const message_id,
       const message_view&,
       memory::block) noexcept -> bool;
 
-    auto pack_into(memory::block dest) noexcept -> message_pack_info {
+    [[nodiscard]] auto pack_into(memory::block dest) noexcept
+      -> message_pack_info {
         return _serialized.pack_into(dest);
     }
 
@@ -1139,11 +1146,11 @@ public:
     using fetch_handler = callable_ref<
       bool(const message_id, const message_age, const message_view&) noexcept>;
 
-    auto empty() const noexcept -> bool {
+    [[nodiscard]] auto empty() const noexcept -> bool {
         return _packed.empty();
     }
 
-    auto count() const noexcept -> span_size_t {
+    [[nodiscard]] auto count() const noexcept -> span_size_t {
         return _packed.count();
     }
 
