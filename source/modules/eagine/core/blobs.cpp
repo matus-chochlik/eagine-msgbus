@@ -309,7 +309,7 @@ public:
     auto fetch_all(const fetch_handler) noexcept -> span_size_t;
 
     auto has_outgoing() const noexcept -> bool {
-        return !_outgoing.empty();
+        return not _outgoing.empty();
     }
     auto process_outgoing(
       const send_handler,

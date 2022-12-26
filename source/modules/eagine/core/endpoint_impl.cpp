@@ -53,9 +53,9 @@ auto endpoint::_do_send(const message_id msg_id, message_view message) noexcept
   -> bool {
     assert(has_id());
     message.set_source_id(_endpoint_id);
-    if(_connection && _connection->send(msg_id, message)) [[likely]] {
+    if(_connection and _connection->send(msg_id, message)) [[likely]] {
         ++_stats.sent_messages;
-        if(!_had_working_connection) [[unlikely]] {
+        if(not _had_working_connection) [[unlikely]] {
             _had_working_connection = true;
             connection_established(has_id());
         }
@@ -75,7 +75,7 @@ auto endpoint::_do_send(const message_id msg_id, message_view message) noexcept
 //------------------------------------------------------------------------------
 auto endpoint::_handle_assign_id(const message_view& message) noexcept
   -> message_handling_result {
-    if(!has_id()) {
+    if(not has_id()) {
         _endpoint_id = message.target_id;
         id_assigned(_endpoint_id);
         log_debug("assigned endpoint id ${id} by router").arg("id", get_id());
@@ -85,7 +85,7 @@ auto endpoint::_handle_assign_id(const message_view& message) noexcept
 //------------------------------------------------------------------------------
 auto endpoint::_handle_confirm_id(const message_view& message) noexcept
   -> message_handling_result {
-    if(!has_id()) {
+    if(not has_id()) {
         _endpoint_id = message.target_id;
         if(get_id() == get_preconfigured_id()) [[likely]] {
             id_assigned(_endpoint_id);
@@ -123,14 +123,14 @@ auto endpoint::_handle_flow_info(const message_view& message) noexcept
         if(_flow_info != flow_info) {
             const std::chrono::milliseconds age_warning{500};
             if(
-              (_flow_info.average_message_age() < age_warning) &&
+              (_flow_info.average_message_age() < age_warning) and
               (flow_info.average_message_age() >= age_warning)) {
                 log_warning("average message age is too high:  ${avgMsgAge}")
                   .tag("msgAgeHigh")
                   .arg("warnLimit", age_warning)
                   .arg("avgMsgAge", flow_info.average_message_age());
             } else if(
-              (flow_info.average_message_age() < age_warning) &&
+              (flow_info.average_message_age() < age_warning) and
               (_flow_info.average_message_age() >= age_warning)) {
                 log_info("average message age returned to normal: ${avgMsgAge}")
                   .tag("msgAgeNorm")
@@ -311,7 +311,7 @@ auto endpoint::_handle_special(
                 return should_be_stored;
         }
 
-        if(has_id() && (message.source_id == _endpoint_id)) [[unlikely]] {
+        if(has_id() and (message.source_id == _endpoint_id)) [[unlikely]] {
             ++_stats.dropped_messages;
             log_warning("received own special message ${message}")
               .arg("message", msg_id);
@@ -331,8 +331,9 @@ auto endpoint::_store_message(
   const message_view& message) noexcept -> bool {
     ++_stats.received_messages;
     if(_handle_special(msg_id, message) == should_be_stored) {
-        if((message.target_id == _endpoint_id) || !is_valid_id(message.target_id))
-          [[likely]] {
+        if(
+          (message.target_id == _endpoint_id) or
+          not is_valid_id(message.target_id)) [[likely]] {
             if(auto found{_find_incoming(msg_id)}) [[likely]] {
                 log_trace("stored message ${message}").arg("message", msg_id);
                 extract(found).queue.push(message).add_age(msg_age);
@@ -362,7 +363,9 @@ auto endpoint::_accept_message(
         return true;
     }
     if(auto found{_find_incoming(msg_id)}) [[likely]] {
-        if((message.target_id == _endpoint_id) || !is_valid_id(message.target_id)) {
+        if(
+          (message.target_id == _endpoint_id) or
+          not is_valid_id(message.target_id)) {
             log_trace("accepted message ${message}").arg("message", msg_id);
             extract(found).queue.push(message);
         }
@@ -406,7 +409,7 @@ auto endpoint::add_connection(std::unique_ptr<connection> conn) noexcept
 }
 //------------------------------------------------------------------------------
 auto endpoint::is_usable() const noexcept -> bool {
-    return _connection && _connection->is_usable();
+    return _connection and _connection->is_usable();
 }
 //------------------------------------------------------------------------------
 auto endpoint::max_data_size() const noexcept
@@ -477,19 +480,19 @@ auto endpoint::update() noexcept -> work_done {
 
     something_done(_process_blobs());
 
-    if(!_connection) [[unlikely]] {
+    if(not _connection) [[unlikely]] {
         log_warning(_log_no_connection, "endpoint has no connection")
           .tag("noConnect");
     }
 
     const bool had_id{has_id()};
     if(_connection) [[likely]] {
-        if(!_had_working_connection) [[unlikely]] {
+        if(not _had_working_connection) [[unlikely]] {
             _had_working_connection = true;
             connection_established(had_id);
         }
-        if(!had_id && _no_id_timeout) [[unlikely]] {
-            if(!has_preconfigured_id()) {
+        if(not had_id and _no_id_timeout) [[unlikely]] {
+            if(not has_preconfigured_id()) {
                 log_debug("requesting endpoint id");
                 _connection->send(msgbus_id{"requestId"}, {});
                 ++_stats.sent_messages;
@@ -502,7 +505,7 @@ auto endpoint::update() noexcept -> work_done {
     }
 
     // if processing the messages assigned the endpoint id
-    if(!had_id) [[unlikely]] {
+    if(not had_id) [[unlikely]] {
         if(_connection) {
             if(has_id()) {
                 log_debug("announcing endpoint id ${id} assigned by router")
@@ -533,7 +536,7 @@ auto endpoint::update() noexcept -> work_done {
     }
 
     // if we have a valid id and we have messages in outbox
-    if(has_id() && !_outgoing.empty()) [[unlikely]] {
+    if(has_id() and not _outgoing.empty()) [[unlikely]] {
         log_debug("sending ${count} messages from outbox")
           .arg("count", _outgoing.count());
         something_done(_outgoing.fetch_all(
@@ -545,7 +548,7 @@ auto endpoint::update() noexcept -> work_done {
 //------------------------------------------------------------------------------
 void endpoint::subscribe(const message_id msg_id) noexcept {
     auto& state = _ensure_incoming(msg_id);
-    if(!state.subscription_count) {
+    if(not state.subscription_count) {
         log_debug("subscribing to message ${message}").arg("message", msg_id);
     }
     ++state.subscription_count;

@@ -138,7 +138,7 @@ auto blob_stream_io::store_fragment(
   span_size_t offset,
   memory::const_block data,
   const blob_info& info) noexcept -> bool {
-    assert(!data.empty());
+    assert(not data.empty());
     assert(offset >= _offs_done);
 
     if(offset == _offs_done) {
@@ -152,7 +152,7 @@ auto blob_stream_io::store_fragment(
             _consecutive.push_back(data);
 
             auto data_end{safe_add(offset, data.size())};
-            while(!_unmerged.empty()) {
+            while(not _unmerged.empty()) {
                 auto& [merge_offs, merge_buf] = _unmerged.back();
 
                 assert(data_end <= merge_offs);
@@ -248,7 +248,7 @@ auto blob_chunk_io::store_fragment(
   span_size_t offset,
   memory::const_block data,
   const blob_info& info) noexcept -> bool {
-    assert(!data.empty());
+    assert(not data.empty());
 
     span_size_t chunk_idx{offset / _chunk_size};
     const span_size_t last_chunk{(offset + data.size()) / _chunk_size};
@@ -338,11 +338,11 @@ auto pending_blob::received_size() const noexcept -> span_size_t {
 //------------------------------------------------------------------------------
 auto pending_blob::total_size_mismatch(const span_size_t size) const noexcept
   -> bool {
-    return (info.total_size != 0) && (info.total_size != size);
+    return (info.total_size != 0) and (info.total_size != size);
 }
 //------------------------------------------------------------------------------
 auto pending_blob::sent_everything() const noexcept -> bool {
-    if(!todo_parts().empty()) {
+    if(not todo_parts().empty()) {
         assert(source_io);
         return source_io->is_at_eod(std::get<0>(todo_parts().front()));
     }
@@ -353,9 +353,10 @@ auto pending_blob::received_everything() const noexcept -> bool {
     auto& done = done_parts();
     if(done.size() == 1) {
         const auto [bgn, end] = done.front();
-        return (bgn == 0) && (info.total_size != 0) && (end >= info.total_size);
+        return (bgn == 0) and (info.total_size != 0) and
+               (end >= info.total_size);
     }
-    return (info.total_size != 0) && done.empty();
+    return (info.total_size != 0) and done.empty();
 }
 //------------------------------------------------------------------------------
 auto pending_blob::merge_fragment(
@@ -373,7 +374,7 @@ auto pending_blob::merge_fragment(
     for(const auto& [src_bgn, src_end] : src) {
         if(bgn < src_bgn) {
             if(end < src_bgn) {
-                if(!new_done) {
+                if(not new_done) {
                     dst.emplace_back(bgn, end);
                     result &= store(bgn, fragment);
                     new_done = true;
@@ -389,7 +390,7 @@ auto pending_blob::merge_fragment(
                 }
                 result &= check(src_bgn, skip(fragment, src_bgn - bgn));
             } else {
-                if(!new_done) {
+                if(not new_done) {
                     dst.emplace_back(bgn, end);
                     result &= store(bgn, head(fragment, src_bgn - bgn));
                     result &= store(src_end, skip(fragment, src_end - bgn));
@@ -414,7 +415,7 @@ auto pending_blob::merge_fragment(
             dst.emplace_back(src_bgn, src_end);
         }
     }
-    if(!new_done) {
+    if(not new_done) {
         dst.emplace_back(bgn, end);
         result &= store(bgn, fragment);
     }
@@ -440,7 +441,7 @@ void pending_blob::merge_resend_request(
         for(const auto& [src_bgn, src_end] : src) {
             if(bgn < src_bgn) {
                 if(end < src_bgn) {
-                    if(!new_done) {
+                    if(not new_done) {
                         dst.emplace_back(bgn, end);
                         new_done = true;
                     }
@@ -453,7 +454,7 @@ void pending_blob::merge_resend_request(
                         new_done = true;
                     }
                 } else {
-                    if(!new_done) {
+                    if(not new_done) {
                         dst.emplace_back(bgn, end);
                         new_done = true;
                     }
@@ -470,7 +471,7 @@ void pending_blob::merge_resend_request(
                 dst.emplace_back(src_bgn, src_end);
             }
         }
-        if(!new_done) {
+        if(not new_done) {
             dst.emplace_back(bgn, end);
         }
     }
@@ -487,7 +488,7 @@ auto blob_manipulator::update(
     if(const auto erased_count{std::erase_if(
          _outgoing,
          [this, &something_done](auto& pending) {
-             if(pending.max_time.is_expired() || pending.sent_everything()) {
+             if(pending.max_time.is_expired() or pending.sent_everything()) {
                  if(auto buf_io{pending.source_buffer_io()}) {
                      _buffers.eat(extract(buf_io).release_buffer());
                  }
@@ -526,7 +527,7 @@ auto blob_manipulator::update(
     for(auto& pending : _incoming) {
         if(now - pending.latest_update > std::chrono::seconds{2}) {
             auto& done = pending.done_parts();
-            if(!done.empty()) {
+            if(not done.empty()) {
                 const auto bgn = std::get<1>(done[0]);
                 const auto end = done.size() > 1 ? std::get<1>(done[0])
                                                  : pending.info.total_size;
@@ -604,7 +605,7 @@ auto blob_manipulator::push_incoming_fragment(
       _incoming.begin(),
       _incoming.end(),
       [source_id, source_blob_id](const auto& pending) {
-          return (pending.info.source_id == source_id) &&
+          return (pending.info.source_id == source_id) and
                  (pending.source_blob_id == source_blob_id);
       });
     if(pos == _incoming.end()) {
@@ -612,9 +613,9 @@ auto blob_manipulator::push_incoming_fragment(
           _incoming.begin(),
           _incoming.end(),
           [msg_id, source_id, target_blob_id](const auto& pending) {
-              return (pending.msg_id == msg_id) &&
-                     (pending.target_blob_id == target_blob_id) &&
-                     ((pending.info.source_id == source_id) ||
+              return (pending.msg_id == msg_id) and
+                     (pending.target_blob_id == target_blob_id) and
+                     ((pending.info.source_id == source_id) or
                       (pending.info.source_id == broadcast_endpoint_id()));
           });
         if(pos != _incoming.end()) {
@@ -636,7 +637,7 @@ auto blob_manipulator::push_incoming_fragment(
     }
     if(pos != _incoming.end()) {
         auto& pending = *pos;
-        if(!pending.total_size_mismatch(integer(total_size))) [[likely]] {
+        if(not pending.total_size_mismatch(integer(total_size))) [[likely]] {
             if(pending.msg_id == msg_id) [[likely]] {
                 pending.max_time.reset();
                 if(pending.info.priority < priority) [[unlikely]] {
@@ -724,7 +725,7 @@ auto blob_manipulator::process_incoming(
     default_deserializer_backend backend(source);
     if(const auto deserialized{deserialize(header, backend)}) [[likely]] {
         const message_id msg_id{class_id, method_id};
-        if((offset >= 0) && (offset < total_size)) {
+        if((offset >= 0) and (offset < total_size)) {
             const auto fragment = source.remaining();
             const auto max_frag_size = span_size(total_size - offset);
             if(fragment.size() <= max_frag_size) [[likely]] {
@@ -883,7 +884,7 @@ auto blob_manipulator::process_outgoing(
     max_messages = std::min(max_messages, span_size(_outgoing.size()));
     while(max_messages-- > 0) {
         auto& pending = _outgoing[_outgoing_index++ % _outgoing.size()];
-        if(!pending.sent_everything()) {
+        if(not pending.sent_everything()) {
             auto& [bgn, end] = pending.todo_parts().back();
             assert(end != 0);
 

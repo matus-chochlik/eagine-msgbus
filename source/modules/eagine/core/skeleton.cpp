@@ -245,7 +245,7 @@ public:
             const auto invocation_id = pos->first;
             const auto& call = pos->second;
             ++pos;
-            if(!call.too_late) {
+            if(not call.too_late) {
                 _sink.reset(cover(buffer));
                 Serializer write_backend(_sink);
 

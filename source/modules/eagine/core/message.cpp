@@ -318,7 +318,7 @@ public:
     /// @brief Indicates if the header or the content is signed.
     /// @see signature
     [[nodiscard]] auto is_signed() const noexcept -> bool {
-        return crypto_flags.has(message_crypto_flag::signed_content) ||
+        return crypto_flags.has(message_crypto_flag::signed_content) or
                crypto_flags.has(message_crypto_flag::signed_header);
     }
 
@@ -515,7 +515,7 @@ public:
     /// @brief Indicates if the header or the content is signed.
     /// @see signature
     [[nodiscard]] auto is_signed() const noexcept -> bool {
-        return crypto_flags.has(message_crypto_flag::signed_content) ||
+        return crypto_flags.has(message_crypto_flag::signed_content) or
                crypto_flags.has(message_crypto_flag::signed_header);
     }
 
@@ -809,7 +809,7 @@ public:
         (void)(insert_time);
         bool rollback = false;
         try {
-            if(!function(msg_id, insert_time, message)) [[unlikely]] {
+            if(not function(msg_id, insert_time, message)) [[unlikely]] {
                 rollback = true;
             }
         } catch(...) {
@@ -860,7 +860,7 @@ public:
       : _total_size{limit_cast<std::uint16_t>(total_size)} {}
 
     [[nodiscard]] operator bool() const noexcept {
-        return !is_empty();
+        return not is_empty();
     }
 
     [[nodiscard]] auto is_empty() const noexcept -> bool {
@@ -924,20 +924,20 @@ public:
     }
 
     [[nodiscard]] auto top() const noexcept -> memory::const_block {
-        if(!_messages.empty()) {
+        if(not _messages.empty()) {
             return view(std::get<0>(_messages.front()));
         }
         return {};
     }
 
     void pop() noexcept {
-        assert(!_messages.empty());
+        assert(not _messages.empty());
         _buffers.eat(std::move(std::get<0>(_messages.front())));
         _messages.erase(_messages.begin());
     }
 
     void push(const memory::const_block message) noexcept {
-        assert(!message.empty());
+        assert(not message.empty());
         auto buf = _buffers.get(message.size());
         memory::copy_into(message, buf);
         _messages.emplace_back(std::move(buf), _clock_t::now());
@@ -1014,7 +1014,7 @@ public:
     auto process_one(
       const message_context& msg_ctx,
       const handler_type handler) noexcept -> bool {
-        if(!_messages.empty()) {
+        if(not _messages.empty()) {
             if(handler(msg_ctx, _messages.back())) {
                 _buffers.eat(_messages.back().release_buffer());
                 _messages.pop_back();

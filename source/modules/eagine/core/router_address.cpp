@@ -44,7 +44,7 @@ public:
 
     /// @brief Indicates if this instance contains at least one address.
     explicit operator bool() const noexcept {
-        return !_addrs.empty();
+        return not _addrs.empty();
     }
 
     /// @brief Implicit conversion to string_view, returning the first address.

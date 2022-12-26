@@ -233,7 +233,7 @@ private:
 
     auto _checkup() -> work_done {
         some_true something_done;
-        if(!_state) [[unlikely]] {
+        if(not _state) [[unlikely]] {
             if(const auto address{_weak_address.lock()}) {
                 _state = extract(address).connect();
                 something_done();

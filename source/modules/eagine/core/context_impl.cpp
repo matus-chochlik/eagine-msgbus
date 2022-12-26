@@ -28,7 +28,7 @@ context::context(main_ctx_parent parent) noexcept
         _ssl_store = std::move(make_result.get());
     } else {
         log_error("failed to create certificate store: ${reason}")
-          .arg("reason", (!make_result).message());
+          .arg("reason", (not make_result).message());
     }
 }
 //------------------------------------------------------------------------------
@@ -78,14 +78,14 @@ auto context::verify_certificate(const sslplus::x509 cert) noexcept -> bool {
                 return true;
             } else {
                 log_debug("failed to verify x509 certificate")
-                  .arg("reason", (!verify_res).message());
+                  .arg("reason", (not verify_res).message());
             }
         } else {
             log_debug("failed to init x509 certificate store context");
         }
     } else {
         log_error("failed to create x509 certificate store")
-          .arg("reason", (!vrfy_ctx).message());
+          .arg("reason", (not vrfy_ctx).message());
     }
     return false;
 }
@@ -112,7 +112,7 @@ auto context::add_own_certificate_pem(const memory::const_block blk) noexcept
             return verify_certificate(_own_cert);
         } else {
             log_error("failed to parse own x509 certificate from pem")
-              .arg("reason", (!cert).message())
+              .arg("reason", (not cert).message())
               .arg("pem", blk);
         }
     }
@@ -129,15 +129,15 @@ auto context::add_ca_certificate_pem(const memory::const_block blk) noexcept
                 }
                 _ca_cert = std::move(cert.get());
                 memory::copy_into(blk, _ca_cert_pem);
-                return !_own_cert || verify_certificate(_own_cert);
+                return not _own_cert or verify_certificate(_own_cert);
             } else {
                 log_error("failed to add x509 CA certificate to store")
-                  .arg("reason", (!cert).message())
+                  .arg("reason", (not cert).message())
                   .arg("pem", blk);
             }
         } else {
             log_error("failed to parse CA x509 certificate from pem")
-              .arg("reason", (!cert).message())
+              .arg("reason", (not cert).message())
               .arg("pem", blk);
         }
     }
@@ -166,7 +166,7 @@ auto context::add_remote_certificate_pem(
                 } else {
                     log_error("failed to get remote node x509 public key")
                       .arg("nodeId", node_id)
-                      .arg("reason", (!pubkey).message())
+                      .arg("reason", (not pubkey).message())
                       .arg("pem", blk);
                 }
             } else {
@@ -176,7 +176,7 @@ auto context::add_remote_certificate_pem(
         } else {
             log_error("failed to parse remote node x509 certificate from pem")
               .arg("nodeId", node_id)
-              .arg("reason", (!cert).message())
+              .arg("reason", (not cert).message())
               .arg("pem", blk);
         }
     } else {
@@ -267,7 +267,7 @@ auto context::get_own_signature(const memory::const_block nonce) noexcept
                     } else {
                         log_debug("failed to finish ssl signature")
                           .arg("freeSize", free.size())
-                          .arg("reason", (!sig).message());
+                          .arg("reason", (not sig).message());
                     }
                 } else {
                     log_debug("failed to update ssl signature");
@@ -277,11 +277,11 @@ auto context::get_own_signature(const memory::const_block nonce) noexcept
             }
         } else {
             log_debug("failed to create ssl message digest")
-              .arg("reason", (!md_ctx).message());
+              .arg("reason", (not md_ctx).message());
         }
     } else {
         log_debug("failed to get ssl message digest type")
-          .arg("reason", (!md_type).message());
+          .arg("reason", (not md_type).message());
     }
     return {};
 }
@@ -293,7 +293,7 @@ auto context::verify_remote_signature(
   const bool verified_key) noexcept -> verification_bits {
     verification_bits result{};
 
-    if(content && signature) {
+    if(content and signature) {
         if(ok md_type{default_message_digest()}) {
             if(ok md_ctx{_ssl.new_message_digest()}) {
                 auto cleanup{_ssl.delete_message_digest.raii(md_ctx)};
@@ -305,7 +305,7 @@ auto context::verify_remote_signature(
                         if(_ssl.message_digest_verify_final(
                              md_ctx, signature)) {
 
-                            if(verified_key || verified_remote_key(node_id)) {
+                            if(verified_key or verified_remote_key(node_id)) {
                                 result |= verification_bit::source_private_key;
                             }
 
@@ -322,11 +322,11 @@ auto context::verify_remote_signature(
                 }
             } else {
                 log_debug("failed to create ssl message digest")
-                  .arg("reason", (!md_ctx).message());
+                  .arg("reason", (not md_ctx).message());
             }
         } else {
             log_debug("failed to get ssl message digest type")
-              .arg("reason", (!md_type).message());
+              .arg("reason", (not md_type).message());
         }
     }
     return result;

@@ -48,7 +48,7 @@ auto stored_message::store_and_sign(
                         } else {
                             user.log_debug("failed to finish ssl signature")
                               .arg("freeSize", free.size())
-                              .arg("reason", (!sig).message());
+                              .arg("reason", (not sig).message());
                         }
                     } else {
                         user.log_debug("failed to update ssl signature");
@@ -58,7 +58,7 @@ auto stored_message::store_and_sign(
                 }
             } else {
                 user.log_debug("failed to create ssl message digest")
-                  .arg("reason", (!md_ctx).message());
+                  .arg("reason", (not md_ctx).message());
             }
         } else {
             user.log_debug("not enough space for message signature")
@@ -66,7 +66,7 @@ auto stored_message::store_and_sign(
         }
     } else {
         user.log_debug("failed to get ssl message digest type")
-          .arg("reason", (!md_type).message());
+          .arg("reason", (not md_type).message());
     }
     copy_into(data, _buffer);
     return true;
@@ -95,7 +95,7 @@ auto message_storage::fetch_all(const fetch_handler handler) noexcept -> bool {
     }
     if(keep_some) {
         std::erase_if(
-          _messages, [](auto& t) { return !std::get<0>(t).is_valid(); });
+          _messages, [](auto& t) { return not std::get<0>(t).is_valid(); });
     } else {
         _messages.clear();
     }
