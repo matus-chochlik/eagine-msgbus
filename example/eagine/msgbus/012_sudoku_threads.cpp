@@ -92,13 +92,13 @@ auto main(main_ctx& ctx) -> int {
               helper.update();
               worker_mutex.unlock();
 
-              while(!start) {
+              while(not start) {
                   std::this_thread::sleep_for(std::chrono::milliseconds(100));
               }
 
-              while(!done) {
+              while(not done) {
                   helper.update();
-                  if(!helper.process_all()) {
+                  if(not helper.process_all()) {
                       std::this_thread::sleep_for(std::chrono::milliseconds(1));
                   }
               }
@@ -112,7 +112,7 @@ auto main(main_ctx& ctx) -> int {
     worker_mutex.unlock();
 
     start = true;
-    while(!solver.is_done()) {
+    while(not solver.is_done()) {
         router.update();
         solver.update();
         solver.process_all();

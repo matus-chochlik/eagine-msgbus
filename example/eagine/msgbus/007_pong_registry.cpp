@@ -83,8 +83,8 @@ auto main(main_ctx& ctx) -> int {
 
     auto& ponger = the_reg.emplace<msgbus::pong_example>("PongEndpt");
 
-    while(!ponger.is_done()) {
-        if(!the_reg.update_all()) {
+    while(not ponger.is_done()) {
+        if(not the_reg.update_all()) {
             std::this_thread::sleep_for(std::chrono::milliseconds(1));
         }
     }

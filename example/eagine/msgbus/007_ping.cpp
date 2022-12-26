@@ -202,19 +202,20 @@ public:
     }
 
     auto is_done() const noexcept -> bool {
-        return !(((_rcvd + _tout + _mod) < _max) || this->has_pending_pings());
+        return not(
+          ((_rcvd + _tout + _mod) < _max) or this->has_pending_pings());
     }
 
     auto do_update() -> work_done {
         some_true something_done{};
-        if(!_targets.empty()) {
+        if(not _targets.empty()) {
             const auto lim{
               _rcvd +
               static_cast<std::intmax_t>(
                 static_cast<float>(_mod) *
                 (1.F + std::log(static_cast<float>(1 + _targets.size()))))};
             for(auto& [pingable_id, entry] : _targets) {
-                if((_rcvd < _max) && (_sent < lim)) {
+                if((_rcvd < _max) and (_sent < lim)) {
                     this->ping(pingable_id, std::chrono::seconds(3 + _rep));
                     if((++_sent % _mod) == 0) [[unlikely]] {
                         log_info("sent ${sent} pings")
@@ -223,7 +224,7 @@ public:
                     }
 
                     if(entry.should_check_info) [[unlikely]] {
-                        if(!entry.host_id) {
+                        if(not entry.host_id) {
                             this->query_host_id(pingable_id);
                         }
                         if(entry.hostname.empty()) {
@@ -329,9 +330,9 @@ auto main(main_ctx& ctx) -> int {
 
     resetting_timeout do_chart_stats{std::chrono::seconds(15), nothing};
 
-    while(!the_pinger.is_done()) {
+    while(not the_pinger.is_done()) {
         the_pinger.process_all();
-        if(!the_pinger.update()) {
+        if(not the_pinger.update()) {
             std::this_thread::sleep_for(std::chrono::milliseconds(1));
             if(do_chart_stats) {
                 the_pinger.log_chart_sample(

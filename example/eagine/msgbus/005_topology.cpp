@@ -134,12 +134,12 @@ auto main(main_ctx& ctx) -> int {
     timeout waited_enough{std::chrono::seconds(30)};
     resetting_timeout resend_query{std::chrono::seconds(5), nothing};
 
-    while(!(interrupted || waited_enough)) {
+    while(not(interrupted or waited_enough)) {
         if(resend_query) {
             topo_prn.discover_topology();
         }
         topo_prn.update();
-        if(!topo_prn.process_all()) {
+        if(not topo_prn.process_all()) {
             std::this_thread::sleep_for(std::chrono::milliseconds(250));
         }
     }

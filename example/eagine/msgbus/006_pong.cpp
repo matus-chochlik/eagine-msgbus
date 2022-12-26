@@ -54,7 +54,7 @@ public:
     }
 
     void update() noexcept {
-        if(!_sent && _ready_timeout) {
+        if(not _sent and _ready_timeout) {
             bus_node().broadcast({"PingPong", "Ready"});
             _ready_timeout.reset();
         } else {
@@ -63,7 +63,7 @@ public:
     }
 
     auto is_done() const noexcept {
-        return _done || _timeout;
+        return _done or _timeout;
     }
 
 private:
@@ -82,7 +82,7 @@ auto main(main_ctx& ctx) -> int {
 
     msgbus::pong pong(ctx, conn_setup, address);
 
-    while(!pong.is_done()) {
+    while(not pong.is_done()) {
         pong.process_all();
         pong.update();
     }

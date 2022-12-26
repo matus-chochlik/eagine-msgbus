@@ -37,7 +37,7 @@ auto main(main_ctx& ctx) -> int {
     }
 
     timeout done{std::chrono::seconds{3}};
-    while(!done) {
+    while(not done) {
         if(bus.update()) {
             done.reset();
         } else {

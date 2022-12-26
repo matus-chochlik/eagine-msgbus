@@ -91,9 +91,9 @@ auto main(main_ctx& ctx) -> int {
     msgbus::setup_connectors(ctx, sub_log);
     timeout waited_too_long{std::chrono::minutes(1)};
 
-    while(!(interrupted || sub_log.is_done() || waited_too_long)) {
+    while(not(interrupted or sub_log.is_done() or waited_too_long)) {
         sub_log.update();
-        if(!sub_log.process_all()) {
+        if(not sub_log.process_all()) {
             std::this_thread::sleep_for(std::chrono::milliseconds(250));
         }
     }

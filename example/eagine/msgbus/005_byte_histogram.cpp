@@ -54,9 +54,9 @@ auto main(main_ctx& ctx) -> int {
     msgbus::setup_connectors(ctx, bus);
 
     timeout idle_too_long{std::chrono::seconds{30}};
-    while(!idle_too_long) {
+    while(not idle_too_long) {
         if(
-          bus.update() ||
+          bus.update() or
           bus.process_everything({construct_from, log_byte_hist})) {
             idle_too_long.reset();
         } else {

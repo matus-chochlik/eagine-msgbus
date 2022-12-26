@@ -66,14 +66,14 @@ struct fibonacci_client : static_subscriber<2> {
     }
 
     void update() {
-        if(!_remaining.empty()) {
+        if(not _remaining.empty()) {
             bus_node().broadcast({"Fibonacci", "FindServer"});
         }
     }
 
     auto dispatch(const message_context&, const stored_message& msg_in) noexcept
       -> bool {
-        if(!_remaining.empty()) {
+        if(not _remaining.empty()) {
             const auto arg = _remaining.front();
             _remaining.pop();
 
@@ -100,7 +100,7 @@ struct fibonacci_client : static_subscriber<2> {
     }
 
     auto is_done() const {
-        return _remaining.empty() && _calc_invoker.is_done();
+        return _remaining.empty() and _calc_invoker.is_done();
     }
 
 private:
@@ -139,7 +139,7 @@ auto main(main_ctx& ctx) -> int {
         client.enqueue(i);
     }
 
-    while(!client.is_done()) {
+    while(not client.is_done()) {
         router.update();
         client_endpoint.update();
         server_endpoint.update();

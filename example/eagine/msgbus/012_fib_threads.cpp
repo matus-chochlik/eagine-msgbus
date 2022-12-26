@@ -98,14 +98,14 @@ public:
     }
 
     void update() {
-        if(!_remaining.empty()) {
+        if(not _remaining.empty()) {
             bus_node().broadcast({"Fibonacci", "FindServer"});
         }
     }
 
     auto dispatch(const message_context&, const stored_message& msg_in) noexcept
       -> bool {
-        if(!_remaining.empty()) {
+        if(not _remaining.empty()) {
             auto arg = _remaining.front();
             _pending.insert(arg);
             _remaining.pop();
@@ -144,7 +144,7 @@ public:
     }
 
     auto is_done() const -> bool {
-        return _remaining.empty() && _pending.empty();
+        return _remaining.empty() and _pending.empty();
     }
 
 private:
@@ -175,8 +175,8 @@ auto main(main_ctx& ctx) -> int {
             msgbus::fibonacci_server server(std::move(srv_obj));
             server.add_connection(std::move(connection));
 
-            while(!server.is_done()) {
-                if(!server.process_one()) {
+            while(not server.is_done()) {
+                if(not server.process_one()) {
                     std::this_thread::sleep_for(std::chrono::milliseconds(10));
                 }
             }
@@ -192,10 +192,10 @@ auto main(main_ctx& ctx) -> int {
         client.enqueue(i);
     }
 
-    while(!client.is_done()) {
+    while(not client.is_done()) {
         router.update();
         client.update();
-        if(!client.process_one()) {
+        if(not client.process_one()) {
             std::this_thread::sleep_for(std::chrono::milliseconds(10));
         }
     }

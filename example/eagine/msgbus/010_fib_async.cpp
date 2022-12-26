@@ -118,7 +118,7 @@ auto main(main_ctx& ctx) -> int {
           .otherwise([&ctx]() { ctx.cio().print("MsgBus", "failed"); });
     }
 
-    while(!client.is_done()) {
+    while(not client.is_done()) {
         router.update();
         client.update();
         server.update();

@@ -95,9 +95,9 @@ auto main(main_ctx& ctx) -> int {
     msgbus::pong_example the_ponger{bus};
     msgbus::setup_connectors(ctx, the_ponger);
 
-    while(!the_ponger.is_done()) {
+    while(not the_ponger.is_done()) {
         the_ponger.process_all();
-        if(!the_ponger.update()) {
+        if(not the_ponger.update()) {
             std::this_thread::sleep_for(std::chrono::milliseconds(1));
         }
     }

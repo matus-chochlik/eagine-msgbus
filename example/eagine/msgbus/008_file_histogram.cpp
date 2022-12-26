@@ -110,7 +110,7 @@ auto main(main_ctx& ctx) -> int {
             return true;
         }
         for(const auto& blob : blobs) {
-            if(!blob->is_done()) {
+            if(not blob->is_done()) {
                 return false;
             }
         }
@@ -122,7 +122,7 @@ auto main(main_ctx& ctx) -> int {
 
     const auto on_server_appeared = [&](identifier_t endpoint_id) {
         for(const auto& blob_io : blobs) {
-            if(!blob_io->is_done()) {
+            if(not blob_io->is_done()) {
                 node.search_resource(endpoint_id, blob_io->locator());
             }
         }
@@ -132,7 +132,7 @@ auto main(main_ctx& ctx) -> int {
     const auto on_resource_found =
       [&](identifier_t endpoint_id, const url& locator) {
           for(const auto& blob_io : blobs) {
-              if(!blob_io->is_active() && !blob_io->is_done()) {
+              if(not blob_io->is_active() and not blob_io->is_done()) {
                   if(blob_io->locator() == locator) {
                       blob_io->activate();
                       node.query_resource_content(
@@ -149,7 +149,7 @@ auto main(main_ctx& ctx) -> int {
 
     const auto on_resource_missing = [&](identifier_t, const url& locator) {
         for(const auto& blob_io : blobs) {
-            if(!blob_io->is_active() && !blob_io->is_done()) {
+            if(not blob_io->is_active() and not blob_io->is_done()) {
                 if(blob_io->locator() == locator) {
                     blob_io->handle_cancelled();
                 }
@@ -158,7 +158,7 @@ auto main(main_ctx& ctx) -> int {
     };
     node.server_has_not_resource.connect({construct_from, on_resource_missing});
 
-    while(!is_done()) {
+    while(not is_done()) {
         if(node.update_and_process_all()) {
             idle_too_long.reset();
         } else {

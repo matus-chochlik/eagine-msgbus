@@ -96,9 +96,9 @@ auto main(main_ctx& ctx) -> int {
         auto& bus = the_reg.establish("PongEndpt");
         workers.emplace_back([&still_working, &bus]() {
             msgbus::pong_example ponger(bus);
-            while(!ponger.is_done()) {
+            while(not ponger.is_done()) {
                 ponger.process_all();
-                if(!ponger.update()) {
+                if(not ponger.update()) {
                     std::this_thread::sleep_for(std::chrono::milliseconds(1));
                 }
             }

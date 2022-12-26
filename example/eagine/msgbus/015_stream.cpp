@@ -41,7 +41,7 @@ public:
     }
 
     auto is_done() const noexcept -> bool {
-        return _done && _stream_ids.empty();
+        return _done and _stream_ids.empty();
     }
 
 protected:
@@ -89,7 +89,7 @@ public:
     }
 
     auto is_done() const noexcept -> bool {
-        return _had_streams && _current_streams.empty();
+        return _had_streams and _current_streams.empty();
     }
 
 private:
@@ -168,8 +168,8 @@ auto main(main_ctx& ctx) -> int {
         .emplace<msgbus::service_composition<msgbus::data_consumer_example<>>>(
           "CnsmrEndpt");
 
-    while(!interrupted && !(provider.is_done() && consumer.is_done())) {
-        if(!the_reg.update_all()) {
+    while(not interrupted and not(provider.is_done() and consumer.is_done())) {
+        if(not the_reg.update_all()) {
             std::this_thread::sleep_for(std::chrono::milliseconds{1});
         }
     }
