@@ -352,6 +352,7 @@ eagine_add_module_tests(
 		message
 		loopback
 		direct
+		blobs
 	IMPORTS
 		eagine.core
 )
