@@ -67,7 +67,7 @@ void SolutionIntervalViewModel::timerEvent(QTimerEvent*) {
         }
     }
     const std::chrono::duration<float> current{now - _previousSolutionTime};
-    assert(!_intervalList.empty());
+    assert(not _intervalList.empty());
     _maxInterval = std::max(_maxInterval, current);
     _intervalList.back() = current.count();
     _fixedIntervalList.back() = fixInterval(current.count());

@@ -93,8 +93,8 @@ auto main(main_ctx& ctx) -> int {
         }
     }
 
-    while(!the_pingable.is_done()) {
-        if(!the_pingable.update_and_process_all()) {
+    while(not the_pingable.is_done()) {
+        if(not the_pingable.update_and_process_all()) {
             std::this_thread::sleep_for(std::chrono::milliseconds(1));
         }
     }

@@ -298,14 +298,14 @@ auto resource_server_impl::has_resource(
         return true;
     } else if(has_res.is(indeterminate)) {
         if(locator.has_scheme("eagires")) {
-            return locator.has_path("/zeroes") || locator.has_path("/ones") ||
+            return locator.has_path("/zeroes") or locator.has_path("/ones") or
                    locator.has_path("/random");
         } else if(locator.has_scheme("file")) {
             const auto file_path = get_file_path(locator);
             if(is_contained(file_path)) {
                 try {
                     const auto stat = std::filesystem::status(file_path);
-                    return exists(stat) && !is_directory(stat);
+                    return exists(stat) and not is_directory(stat);
                 } catch(...) {
                 }
             }
@@ -321,7 +321,7 @@ auto resource_server_impl::get_resource(
   const message_priority priority) -> std::
   tuple<std::unique_ptr<source_blob_io>, std::chrono::seconds, message_priority> {
     auto read_io = driver.get_resource_io(endpoint_id, locator);
-    if(!read_io) {
+    if(not read_io) {
         if(locator.has_scheme("eagires")) {
             if(const auto count{locator.argument("count")}) {
                 if(const auto bytes{from_string<span_size_t>(extract(count))}) {

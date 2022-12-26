@@ -16,11 +16,11 @@ NodeParameterViewModel::NodeParameterViewModel(MonitorBackend& backend)
   , _pingSuccessRateModel{*this, pingSuccessRateRole} {}
 //------------------------------------------------------------------------------
 void NodeParameterViewModel::notifyUpdated() {
-    if(_nodeId && !_parameters) {
+    if(_nodeId and not _parameters) {
         if(auto tracker{_backend.trackerModel()}) {
             _parameters = tracker->nodeParameters(_nodeId);
         }
-    } else if(!_nodeId && _parameters) {
+    } else if(not _nodeId and _parameters) {
         _parameters.reset();
     }
     emit modelReset({});
@@ -71,7 +71,7 @@ auto NodeParameterViewModel::data(const QModelIndex& index, int role) const
     if(_parameters) {
         const auto row = index.row();
         auto& params = *_parameters;
-        if((row >= 0) && (row < params.count())) {
+        if((row >= 0) and (row < params.count())) {
             auto get = [row](const auto& v) {
                 return QVariant{*(v.rbegin() + row)};
             };

@@ -40,7 +40,7 @@ void TilingModel::initialize() {
 }
 //------------------------------------------------------------------------------
 void TilingModel::reinitialize(int w, int h) {
-    if((_width != w) || (_height != h)) {
+    if((_width != w) or (_height != h)) {
         _width = w;
         _height = h;
         _cellCache.resize(eagine::std_size(w * h));
@@ -58,7 +58,7 @@ void TilingModel::reinitialize(int w, int h) {
 }
 //------------------------------------------------------------------------------
 void TilingModel::update() {
-    if(!_tiling.tiling_complete()) {
+    if(not _tiling.tiling_complete()) {
         _tiling.process_all();
         _tiling.update();
         if(_tiling.solution_timeouted(eagine::unsigned_constant<4>{})) {
@@ -160,7 +160,7 @@ void TilingModel::onQueueLengthChanged(
   std::size_t keyCount,
   std::size_t boardCount) noexcept {
     if(rank == 4) [[likely]] {
-        if((_keyCount != keyCount) || (_boardCount != boardCount)) {
+        if((_keyCount != keyCount) or (_boardCount != boardCount)) {
             _keyCount = keyCount;
             _boardCount = boardCount;
             emit queueLengthChanged();

@@ -87,7 +87,7 @@ resource_data_consumer_node::_embedded_resource_info::_embedded_resource_info(
 auto resource_data_consumer_node::_embedded_resource_info::_unpack_data(
   memory::const_block data) noexcept -> bool {
     if(_is_all_in_one) {
-        if(!_unpacker.is_working() && _unpacker.has_succeeded()) {
+        if(not _unpacker.is_working() and _unpacker.has_succeeded()) {
             _parent.blob_stream_data_appended(
               _request_id, _unpack_offset, view_one(data), _binfo);
         } else {
@@ -105,7 +105,7 @@ auto resource_data_consumer_node::_embedded_resource_info::_unpack_data(
 //------------------------------------------------------------------------------
 auto resource_data_consumer_node::_embedded_resource_info::unpack_next() noexcept
   -> bool {
-    if(!_unpacker.next().is_working()) {
+    if(not _unpacker.next().is_working()) {
         if(_unpacker.has_succeeded()) {
             if(_chunks.size() == 1U) {
                 const auto data{view(_chunks.back())};
@@ -113,7 +113,7 @@ auto resource_data_consumer_node::_embedded_resource_info::unpack_next() noexcep
                   _request_id, 0, view_one(data), _binfo);
                 _parent.buffers().eat(std::move(_chunks.back()));
                 _chunks.clear();
-            } else if(!_chunks.empty()) {
+            } else if(not _chunks.empty()) {
                 std::vector<memory::const_block> data;
                 data.reserve(_chunks.size());
                 for(const auto& chunk : _chunks) {
@@ -166,10 +166,10 @@ auto resource_data_consumer_node::update() noexcept -> work_done {
     }
 
     for(auto& [request_id, info] : _streamed_resources) {
-        if(!is_valid_endpoint_id(info.source_server_id)) {
+        if(not is_valid_endpoint_id(info.source_server_id)) {
             if(info.should_search) {
                 for(auto& [server_id, sinfo] : _current_servers) {
-                    if(!sinfo.not_responding) {
+                    if(not sinfo.not_responding) {
                         search_resource(server_id, info.locator);
                     }
                 }
@@ -183,7 +183,7 @@ auto resource_data_consumer_node::update() noexcept -> work_done {
         }
     }
 
-    if(!_embedded_resources.empty()) {
+    if(not _embedded_resources.empty()) {
         std::vector<std::unique_ptr<_embedded_resource_info>> temp;
         std::swap(temp, _embedded_resources);
 
@@ -205,7 +205,7 @@ auto resource_data_consumer_node::update() noexcept -> work_done {
 auto resource_data_consumer_node::has_pending_resource(
   identifier_t request_id) const noexcept -> bool {
     return (_streamed_resources.find(request_id) !=
-            _streamed_resources.end()) ||
+            _streamed_resources.end()) or
            (std::find_if(
               _embedded_resources.begin(),
               _embedded_resources.end(),
@@ -215,13 +215,13 @@ auto resource_data_consumer_node::has_pending_resource(
 //------------------------------------------------------------------------------
 auto resource_data_consumer_node::has_pending_resources() const noexcept
   -> bool {
-    return !_streamed_resources.empty() || !_embedded_resources.empty();
+    return not _streamed_resources.empty() or not _embedded_resources.empty();
 }
 //------------------------------------------------------------------------------
 auto resource_data_consumer_node::get_request_id() noexcept -> identifier_t {
     do {
         ++_res_id_seq;
-    } while((_res_id_seq == 0) || has_pending_resource(_res_id_seq));
+    } while((_res_id_seq == 0) or has_pending_resource(_res_id_seq));
     return _res_id_seq;
 }
 //------------------------------------------------------------------------------
@@ -331,7 +331,7 @@ void resource_data_consumer_node::_handle_resource_found(
     for(auto& entry : _streamed_resources) {
         auto& info = std::get<1>(entry);
         if(info.locator == locator) {
-            if(!is_valid_endpoint_id(info.source_server_id)) {
+            if(not is_valid_endpoint_id(info.source_server_id)) {
                 if(const auto id{query_resource_content(
                      server_id,
                      info.locator,

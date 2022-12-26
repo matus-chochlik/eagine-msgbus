@@ -44,7 +44,7 @@ private:
         if(_print_progress) {
             tiles.print_progress(std::cerr) << std::flush;
         }
-        if(_print_incomplete || tiles.are_complete()) {
+        if(_print_incomplete or tiles.are_complete()) {
             if(_block_cells) {
                 tiles.print(std::cout, block_sudoku_board_traits<S>{})
                   << std::endl;
@@ -99,22 +99,25 @@ auto main(main_ctx& ctx) -> int {
     }
 
     const auto keep_running = [&] {
-        return !(interrupted || tiling_generator.tiling_complete());
+        return not(interrupted or tiling_generator.tiling_complete());
     };
 
     int idle_streak = 0;
     while(keep_running()) {
         tiling_generator.update();
-        if(rank == 3 && tiling_generator.solution_timeouted(unsigned_constant<3>{}))
-          [[unlikely]] {
+        if(
+          rank == 3 and tiling_generator.solution_timeouted(
+                          unsigned_constant<3>{})) [[unlikely]] {
             enqueue(default_sudoku_board_traits<3>());
         }
-        if(rank == 4 && tiling_generator.solution_timeouted(unsigned_constant<4>{}))
-          [[unlikely]] {
+        if(
+          rank == 4 and tiling_generator.solution_timeouted(
+                          unsigned_constant<4>{})) [[unlikely]] {
             enqueue(default_sudoku_board_traits<4>());
         }
-        if(rank == 5 && tiling_generator.solution_timeouted(unsigned_constant<5>{}))
-          [[unlikely]] {
+        if(
+          rank == 5 and tiling_generator.solution_timeouted(
+                          unsigned_constant<5>{})) [[unlikely]] {
             enqueue(default_sudoku_board_traits<5>());
         }
         if(tiling_generator.process_all()) {

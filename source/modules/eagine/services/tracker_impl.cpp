@@ -112,7 +112,7 @@ public:
 
     void update_node_info(
       callable_ref<void(const identifier_t)> update_node) noexcept final {
-        if(!_update_node_ids.empty()) {
+        if(not _update_node_ids.empty()) {
             for(const auto node_id : _update_node_ids) {
                 update_node(node_id);
             }
@@ -443,7 +443,7 @@ private:
         valid_if_positive<kelvins_t<float>>,
         valid_if_positive<kelvins_t<float>>>& value) noexcept {
         const auto& [min, max] = value;
-        if(min && max) {
+        if(min and max) {
             auto& node = _get_node(ctx.source_id()).notice_alive();
             if(const auto host_id{node.host_id()}) {
                 auto& host = _get_host(extract(host_id)).notice_alive();

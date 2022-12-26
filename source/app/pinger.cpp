@@ -122,7 +122,7 @@ public:
       const message_id sub_msg) noexcept {
         if(sub_msg == this->ping_msg_id()) {
             auto& stats = _targets[info.endpoint_id];
-            if(!stats.is_active) {
+            if(not stats.is_active) {
                 stats.is_active = true;
                 log_info("new pingable ${id} appeared")
                   .arg("id", info.endpoint_id);
@@ -219,7 +219,8 @@ public:
     }
 
     auto is_done() const noexcept -> bool {
-        return !(((_rcvd + _tout + _mod) < _max) || this->has_pending_pings());
+        return not(
+          ((_rcvd + _tout + _mod) < _max) or this->has_pending_pings());
     }
 
     auto do_ping() -> work_done {
@@ -228,7 +229,7 @@ public:
             log_info("searching for pingable nodes");
             query_pingables();
         }
-        if(!_targets.empty()) {
+        if(not _targets.empty()) {
             for(auto& [pingable_id, entry] : _targets) {
                 if(_rcvd < _max) {
                     if(entry.is_active) {
@@ -245,7 +246,7 @@ public:
                             }
 
                             if(entry.should_check_info) [[unlikely]] {
-                                if(!entry.host_id) {
+                                if(not entry.host_id) {
                                     this->query_host_id(pingable_id);
                                 }
                                 if(entry.hostname.empty()) {
@@ -332,9 +333,9 @@ auto main(main_ctx& ctx) -> int {
 
     resetting_timeout do_chart_stats{std::chrono::seconds{15}, nothing};
 
-    while(!the_pinger.is_done() || interrupted) {
+    while(not the_pinger.is_done() or interrupted) {
         the_pinger.process_all();
-        if(!the_pinger.update()) {
+        if(not the_pinger.update()) {
             std::this_thread::sleep_for(std::chrono::milliseconds{1});
             if(do_chart_stats) {
                 the_pinger.log_chart_sample(

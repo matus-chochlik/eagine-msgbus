@@ -16,11 +16,11 @@ HostParameterViewModel::HostParameterViewModel(MonitorBackend& backend)
   , _shortLoadModel{*this, shortLoadRole} {}
 //------------------------------------------------------------------------------
 void HostParameterViewModel::notifyUpdated() {
-    if(_hostId && !_parameters) {
+    if(_hostId and not _parameters) {
         if(auto tracker{_backend.trackerModel()}) {
             _parameters = tracker->hostParameters(_hostId);
         }
-    } else if(!_hostId && _parameters) {
+    } else if(not _hostId and _parameters) {
         _parameters.reset();
     }
     emit modelReset({});
@@ -71,7 +71,7 @@ auto HostParameterViewModel::data(const QModelIndex& index, int role) const
     if(_parameters) {
         const auto row = index.row();
         auto& params = *_parameters;
-        if((row >= 0) && (row < params.count())) {
+        if((row >= 0) and (row < params.count())) {
             auto get = [row](const auto& v) {
                 return QVariant{*(v.rbegin() + row)};
             };

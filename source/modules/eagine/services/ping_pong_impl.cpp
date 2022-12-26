@@ -62,7 +62,7 @@ public:
     }
 
     auto has_pending_pings() noexcept -> bool final {
-        return !_pending.empty();
+        return not _pending.empty();
     }
 
 private:
@@ -71,7 +71,7 @@ private:
       const stored_message& message) noexcept -> bool {
         std::erase_if(_pending, [this, &message](auto& entry) {
             auto& [pingable_id, sequence_no, ping_time] = entry;
-            const bool is_response = (message.source_id == pingable_id) &&
+            const bool is_response = (message.source_id == pingable_id) and
                                      (message.sequence_no == sequence_no);
             if(is_response) {
                 signals.ping_responded(

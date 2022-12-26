@@ -251,7 +251,7 @@ public:
     /// @see enqueue
     /// @see has_work.
     auto is_done() const noexcept -> bool {
-        return !has_work();
+        return not has_work();
     }
 
     void init() noexcept {
@@ -486,7 +486,7 @@ public:
     auto is_in_extent(const int x, const int y) const noexcept -> bool {
         const int u = x * S * (S - 2);
         const int v = y * S * (S - 2);
-        return (u >= _minu) && (u < _maxu) && (v >= _minv) && (v < _maxv);
+        return (u >= _minu) and (u < _maxu) and (v >= _minv) and (v < _maxv);
     }
 
     /// @brief Returns the extent between min and max in units of boards.
@@ -516,7 +516,7 @@ public:
         const auto [xmin, ymin, xmax, ymax] = boards_extent(min, max);
         for(const auto y : integer_range(ymin, ymax)) {
             for(const auto x : integer_range(xmin, xmax)) {
-                if(!get_board(x, y)) {
+                if(not get_board(x, y)) {
                     return false;
                 }
             }

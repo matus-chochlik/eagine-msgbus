@@ -31,7 +31,7 @@ auto main(main_ctx& ctx) -> int {
     auto& wd = ctx.watchdog();
     wd.declare_initialized();
 
-    while(!(the_file_server.is_done() || interrupted)) {
+    while(not(the_file_server.is_done() or interrupted)) {
         the_file_server.average_message_age(
           the_file_server.bus_node().flow_average_message_age());
         if(the_file_server.update_and_process_all()) {

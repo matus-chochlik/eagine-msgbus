@@ -302,7 +302,7 @@ auto sudoku_helper_rank_info<S>::process_board(
           if(intermediate.is_solved()) {
               send_board(intermediate, true);
               done = true;
-          } else if(!done) {
+          } else if(not done) {
               if(levels > 0) {
                   process_recursive(intermediate);
               } else {
@@ -329,7 +329,7 @@ auto sudoku_helper_rank_info<S>::update(
     }
     searches.clear();
 
-    if(!boards.empty()) {
+    if(not boards.empty()) {
         const auto target_id = std::get<0>(boards.back());
         const auto sequence_no = std::get<1>(boards.back());
         auto board = std::get<2>(boards.back());
@@ -533,7 +533,7 @@ struct sudoku_solver_rank_info {
     sudoku_solver_rank_info() noexcept = default;
 
     auto has_work() const noexcept {
-        return !key_boards.empty() || !pending.empty();
+        return not key_boards.empty() or not pending.empty();
     }
 
     void queue_length_changed(auto& solver) const noexcept {
@@ -579,7 +579,7 @@ struct sudoku_solver_rank_info {
         std::erase_if(pending, [&](auto& entry) {
             if(entry.too_late) {
                 const unsigned_constant<S> rank{};
-                if(!solver.driver().already_done(entry.key, rank)) {
+                if(not solver.driver().already_done(entry.key, rank)) {
                     entry.board.for_each_alternative(
                       entry.board.find_unsolved(), [&](auto& candidate) {
                           if(candidate.is_solved()) {
@@ -683,7 +683,7 @@ struct sudoku_solver_rank_info {
       endpoint& bus,
       data_compressor& compressor,
       const identifier_t helper_id) noexcept -> bool {
-        if(!key_boards.empty()) {
+        if(not key_boards.empty()) {
             const auto kbpos =
               std::next(key_boards.begin(), query_sequence % key_boards.size());
             assert(kbpos < key_boards.end());
@@ -755,7 +755,7 @@ struct sudoku_solver_rank_info {
 
         for(const auto helper_id :
             head(shuffle(find_helpers(cover(found_helpers)), randeng), 8)) {
-            if(!send_board_to(solver, bus, compressor, helper_id)) {
+            if(not send_board_to(solver, bus, compressor, helper_id)) {
                 break;
             }
             something_done();
@@ -800,7 +800,7 @@ struct sudoku_solver_rank_info {
                  key_boards.end(),
                  [&](const auto& entry) {
                      return std::get<0>(entry) == key;
-                 }) != key_boards.end() ||
+                 }) != key_boards.end() or
                std::find_if(
                  pending.begin(), pending.end(), [&](const auto& entry) {
                      return entry.key == key;
@@ -1168,7 +1168,7 @@ struct sudoku_tiling_rank_info : sudoku_tiles<S> {
             if(x > 0) {
                 const auto left = this->get_board(x - 1, y);
                 const auto down = this->get_board(x, y - 1);
-                if(left && down) {
+                if(left and down) {
                     for(const auto by : integer_range(S - 1U)) {
                         board.set_block(
                           0U, by, extract(left).get_block(S - 1U, by));
@@ -1182,7 +1182,7 @@ struct sudoku_tiling_rank_info : sudoku_tiles<S> {
             } else if(x < 0) {
                 const auto right = this->get_board(x + 1, y);
                 const auto down = this->get_board(x, y - 1);
-                if(right && down) {
+                if(right and down) {
                     for(const auto by : integer_range(S - 1U)) {
                         board.set_block(
                           S - 1U, by, extract(right).get_block(0U, by));
@@ -1207,7 +1207,7 @@ struct sudoku_tiling_rank_info : sudoku_tiles<S> {
             if(x > 0) {
                 const auto left = this->get_board(x - 1, y);
                 const auto up = this->get_board(x, y + 1);
-                if(left && up) {
+                if(left and up) {
                     for(const auto by : integer_range(1U, S)) {
                         board.set_block(
                           0U, by, extract(left).get_block(S - 1U, by));
@@ -1221,7 +1221,7 @@ struct sudoku_tiling_rank_info : sudoku_tiles<S> {
             } else if(x < 0) {
                 const auto right = this->get_board(x + 1, y);
                 const auto up = this->get_board(x, y + 1);
-                if(right && up) {
+                if(right and up) {
                     for(const auto by : integer_range(1U, S)) {
                         board.set_block(
                           S - 1U, by, extract(right).get_block(0U, by));
@@ -1278,8 +1278,8 @@ struct sudoku_tiling_rank_info : sudoku_tiles<S> {
         const auto [xmin, ymin, xmax, ymax] = this->boards_extent();
         for(const auto y : integer_range(ymin, ymax)) {
             for(const auto x : integer_range(xmin, xmax)) {
-                if(!this->get_board(x, y)) {
-                    if(!tiling.solver.has_enqueued(Coord{x, y}, rank)) {
+                if(not this->get_board(x, y)) {
+                    if(not tiling.solver.has_enqueued(Coord{x, y}, rank)) {
                         do_enqueue(tiling, x, y);
                     }
                 }

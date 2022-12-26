@@ -151,7 +151,9 @@ private:
       const subscriber_info& sub_info,
       const message_id msg_id) noexcept {
         if(msg_id == message_id{"eagiStream", "startFrwrd"}) {
-            if(!has_stream_relay() || (_stream_relay_hops > sub_info.hop_count)) {
+            if(
+              not has_stream_relay() or
+              (_stream_relay_hops > sub_info.hop_count)) {
                 set_stream_relay(sub_info.endpoint_id, sub_info.hop_count);
             }
         }
@@ -556,12 +558,12 @@ private:
                 added = true;
             }
             auto& stream = pos->second;
-            const bool changed = (stream.info.kind || info.kind) ||
-                                 (stream.info.encoding || info.encoding) ||
+            const bool changed = (stream.info.kind or info.kind) or
+                                 (stream.info.encoding or info.encoding) or
                                  (stream.info.description != info.description);
-            if(added || changed) {
+            if(added or changed) {
                 if(changed) {
-                    if(!added) {
+                    if(not added) {
                         _forward_stream_retract(
                           message.source_id,
                           stream,

@@ -108,9 +108,9 @@ auto main(main_ctx& ctx) -> int {
                     return false;
                 }
             }
-            return !(
-              helper_node.is_shut_down() ||
-              (shutdown_when_idle &&
+            return not(
+              helper_node.is_shut_down() or
+              (shutdown_when_idle and
                (helper_node.idle_time() > max_idle_time)));
         };
 
@@ -149,7 +149,7 @@ auto main(main_ctx& ctx) -> int {
     wd.declare_initialized();
 
     int idle_streak = 0;
-    while(!(interrupted || the_reg.is_done())) {
+    while(not(interrupted or the_reg.is_done())) {
         if(the_reg.update()) {
             idle_streak = 0;
             std::this_thread::sleep_for(std::chrono::milliseconds(1));

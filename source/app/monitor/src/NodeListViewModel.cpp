@@ -18,7 +18,7 @@ auto NodeListViewModel::NodeInfo::totalCount() const noexcept -> int {
 }
 //------------------------------------------------------------------------------
 void NodeListViewModel::NodeInfo::update(MonitorBackend& backend) noexcept {
-    if(!parameters) {
+    if(not parameters) {
         if(auto nodeId{node.id()}) {
             if(auto trackerModel{backend.trackerModel()}) {
                 parameters =
@@ -43,7 +43,7 @@ auto NodeListViewModel::InstanceInfo::totalCount() const noexcept -> int {
 }
 //------------------------------------------------------------------------------
 auto NodeListViewModel::InstanceInfo::indexOk(int i) const noexcept -> bool {
-    return (i >= 0) && (i < eagine::limit_cast<int>(nodes.size()));
+    return (i >= 0) and (i < eagine::limit_cast<int>(nodes.size()));
 }
 //------------------------------------------------------------------------------
 auto NodeListViewModel::InstanceInfo::id(int i) const noexcept
@@ -73,7 +73,7 @@ auto NodeListViewModel::HostInfo::totalCount() const noexcept -> int {
 }
 //------------------------------------------------------------------------------
 void NodeListViewModel::HostInfo::update(MonitorBackend& backend) noexcept {
-    if(!parameters) {
+    if(not parameters) {
         if(auto hostId{host.id()}) {
             if(auto trackerModel{backend.trackerModel()}) {
                 parameters =
@@ -255,7 +255,7 @@ void NodeListViewModel::Data::fixupHierarchy(
 
             instInfo.nodes.erase_if([this, nodeId, instId, &instEntry](
                                       auto& nodeEntry) {
-                if((instEntry.first != instId) && (nodeEntry.first == nodeId)) {
+                if((instEntry.first != instId) and (nodeEntry.first == nodeId)) {
                     node2Inst.erase(nodeId);
                     return true;
                 }
@@ -266,7 +266,7 @@ void NodeListViewModel::Data::fixupHierarchy(
 
         hostInfo.instances.erase_if(
           [this, instId, hostId, &hostEntry](auto& instEntry) {
-              if((hostEntry.first != hostId) && (instEntry.first == instId)) {
+              if((hostEntry.first != hostId) and (instEntry.first == instId)) {
                   inst2Host.erase(instId);
                   return true;
               }
@@ -292,7 +292,7 @@ auto NodeListViewModel::Data::updateNode(
     auto& instInfo = hostInfo.instances[instId];
     if(prevInstIdPos != node2Inst.end()) {
 
-        if(hostId && instId) {
+        if(hostId and instId) {
             bool relocated = false;
             const auto prevInstId = prevInstIdPos->second;
             const auto prevHostIdPos = inst2Host.find(prevInstId);
@@ -307,7 +307,7 @@ auto NodeListViewModel::Data::updateNode(
             auto& prevInstInfo = prevInstPos->second;
 
             if(instId != prevInstId) {
-                if(!instInfo.instance) {
+                if(not instInfo.instance) {
                     instInfo.instance = node.instance();
                 }
                 node2Inst[nodeId] = instId;
@@ -328,7 +328,7 @@ auto NodeListViewModel::Data::updateNode(
             }
 
             if(hostId != prevHostId) {
-                if(!hostInfo.host) {
+                if(not hostInfo.host) {
                     hostInfo.host = inst.host();
                 }
                 inst2Host[instId] = hostId;
@@ -415,7 +415,7 @@ auto NodeListViewModel::Data::updateInst(
         const auto instPos = instances.find(instId);
         if(instPos != instances.end()) {
             auto& instInfo = instPos->second;
-            if(!instInfo.instance) {
+            if(not instInfo.instance) {
                 instInfo.instance = inst;
             }
             int row = 1;
@@ -438,7 +438,7 @@ auto NodeListViewModel::Data::updateHost(
     const auto hostPos = hosts.find(hostId);
     if(hostPos != hosts.end()) {
         auto& hostInfo = hostPos->second;
-        if(!hostInfo.host) {
+        if(not hostInfo.host) {
             hostInfo.host = host;
         }
         int row = 0;
@@ -588,13 +588,13 @@ void NodeListViewModel::onItemSelected(int row) {
     _selectedRow = row;
     emit selectedRowChanged();
 
-    if(row < 0 || row >= _model.totalCount()) {
+    if(row < 0 or row >= _model.totalCount()) {
         _unselect();
         return;
     }
     int skip = row;
     for(auto& [hostId, host] : _model.hosts) {
-        if(!skip) {
+        if(not skip) {
             _select(hostId, 0, 0);
             return;
         }
@@ -602,7 +602,7 @@ void NodeListViewModel::onItemSelected(int row) {
         auto subtotal = host.subCount();
         if(skip < subtotal) {
             for(auto& [instId, inst] : host.instances) {
-                if(!skip) {
+                if(not skip) {
                     _select(hostId, instId, 0);
                     return;
                 }
@@ -623,14 +623,14 @@ auto NodeListViewModel::index(int row, int, const QModelIndex&) const
   -> QModelIndex {
     int skip = row;
     for(auto& [hostId, host] : _model.hosts) {
-        if(!skip) {
+        if(not skip) {
             return QAbstractItemModel::createIndex(row, hostItem, hostId);
         }
         skip--;
         auto subtotal = host.subCount();
         if(skip < subtotal) {
             for(auto& [instId, inst] : host.instances) {
-                if(!skip) {
+                if(not skip) {
                     return QAbstractItemModel::createIndex(
                       row, instItem, instId);
                 }
@@ -715,7 +715,7 @@ auto NodeListViewModel::isResponsiveData(const remote_node& node) const
     if(node.is_responsive()) {
         return {true};
     }
-    if(!node.is_responsive()) {
+    if(not node.is_responsive()) {
         return {false};
     }
     return {};
@@ -769,7 +769,7 @@ auto NodeListViewModel::data(const QModelIndex& index, int role) const
     } else if(index.column() == nodeItem) {
         const auto nodeId =
           eagine::limit_cast<eagine::identifier_t>(index.internalId());
-        if(!_model.forNode(nodeId, [this, role, &result](auto& info) {
+        if(not _model.forNode(nodeId, [this, role, &result](auto& info) {
                auto& node = info.node;
                if(role == NodeListViewModel::itemKindRole) {
                    result = itemKindData(node);
