@@ -371,13 +371,165 @@ void blobs_roundtrip_bfs_single(auto& s) {
     }
 }
 //------------------------------------------------------------------------------
+// round-trip ces
+//------------------------------------------------------------------------------
+class ces_source_blob_io final : public eagine::msgbus::source_blob_io {
+public:
+    ces_source_blob_io(const eagine::span_size_t size) noexcept
+      : _size{size} {}
+
+    auto total_size() noexcept -> eagine::span_size_t final {
+        return _size;
+    }
+
+    auto fetch_fragment(
+      const eagine::span_size_t offs,
+      eagine::memory::block dst) noexcept -> eagine::span_size_t final {
+        using namespace eagine::memory;
+        return fill(head(dst, _size - offs), 0xCEU).size();
+    }
+
+private:
+    eagine::span_size_t _size;
+};
+//------------------------------------------------------------------------------
+class ces_target_blob_io final : public eagine::msgbus::target_blob_io {
+public:
+    ces_target_blob_io(
+      eagitest::case_& test,
+      eagitest::track& trck,
+      const eagine::span_size_t size,
+      unsigned& done) noexcept
+      : _test{test}
+      , _trck{trck}
+      , _expected_size{size}
+      , _done{done} {}
+
+    void handle_finished(
+      const eagine::message_id msg_id,
+      [[maybe_unused]] const eagine::msgbus::message_age msg_age,
+      [[maybe_unused]] const eagine::msgbus::message_info& message,
+      [[maybe_unused]] const eagine::msgbus::blob_info& info) noexcept final {
+
+        _test.check(
+          msg_id.method() == eagine::identifier{"test"}, "message id");
+        ++_done;
+        _trck.passed_part(2);
+    }
+
+    void handle_cancelled() noexcept final {
+        _test.fail("blob cancelled");
+        ++_done;
+    }
+
+    auto store_fragment(
+      [[maybe_unused]] const eagine::span_size_t offs,
+      [[maybe_unused]] eagine::memory::const_block data,
+      [[maybe_unused]] const eagine::msgbus::blob_info& info) noexcept
+      -> bool final {
+
+        _test.check(offs >= 0, "offset ok 1");
+        _test.check(offs < _expected_size, "offset ok 2");
+        for(const auto b : data) {
+            _test.check_equal(b, eagine::byte{0xCE}, "is 0xCE");
+        }
+        _done_size += data.size();
+        _trck.passed_part(3);
+        return true;
+    }
+
+    auto check_stored(
+      [[maybe_unused]] const eagine::span_size_t offs,
+      [[maybe_unused]] eagine::memory::const_block data) noexcept
+      -> bool final {
+
+        _test.check(offs >= 0, "offset ok 3");
+        _test.check(offs < _expected_size, "offset ok 4");
+        for(const auto b : data) {
+            _test.check_equal(b, eagine::byte{0xCE}, "is 0xCE");
+        }
+        _trck.passed_part(4);
+        return true;
+    }
+
+private:
+    eagitest::case_& _test;
+    eagitest::track& _trck;
+    eagine::span_size_t _expected_size;
+    eagine::span_size_t _done_size{0};
+    unsigned& _done;
+};
+//------------------------------------------------------------------------------
+void blobs_roundtrip_ces_multiple(auto& s) {
+    eagitest::case_ test{s, 4, "round-trip 0xCEs"};
+    eagitest::track trck{test, 1, 4};
+
+    const eagine::message_id test_msg_id{eagine::random_identifier(), "test"};
+    const eagine::message_id send_msg_id{"check", "send"};
+    const eagine::message_id resend_msg_id{"check", "resend"};
+    eagine::msgbus::blob_manipulator sender{
+      s.context(), send_msg_id, resend_msg_id};
+    eagine::msgbus::blob_manipulator receiver{
+      s.context(), send_msg_id, resend_msg_id};
+
+    auto send_s2r = [&](
+                      const eagine::message_id msg_id,
+                      const eagine::msgbus::message_view& message) -> bool {
+        test.check(msg_id == send_msg_id, "message id");
+
+        receiver.process_incoming(message);
+
+        trck.passed_part(1);
+        return true;
+    };
+    const eagine::msgbus::blob_manipulator::send_handler handler_s2r{
+      eagine::construct_from, send_s2r};
+
+    auto send_r2s = [&](
+                      const eagine::message_id,
+                      const eagine::msgbus::message_view&) -> bool {
+        return true;
+    };
+    const eagine::msgbus::blob_manipulator::send_handler handler_r2s{
+      eagine::construct_from, send_r2s};
+
+    const unsigned todo{test.repeats(10)};
+    unsigned done{0};
+
+    for(unsigned r = 0; r < todo; ++r) {
+        sender.push_outgoing(
+          test_msg_id,
+          1,
+          0,
+          eagine::msgbus::blob_id_t(r),
+          std::make_unique<ces_source_blob_io>(128 * 1024),
+          std::chrono::hours{1},
+          eagine::msgbus::message_priority::normal);
+
+        receiver.expect_incoming(
+          test_msg_id,
+          1,
+          eagine::msgbus::blob_id_t(r),
+          std::make_unique<ces_target_blob_io>(test, trck, 128 * 1024, done),
+          std::chrono::hours{1});
+    }
+
+    while(done < todo) {
+        sender.update(handler_s2r);
+        sender.process_outgoing(handler_s2r, 1024, 6);
+        receiver.update(handler_r2s);
+        receiver.handle_complete();
+    }
+}
+//------------------------------------------------------------------------------
 // main
 //------------------------------------------------------------------------------
 auto test_main(eagine::test_ctx& ctx) -> int {
-    eagitest::ctx_suite test{ctx, "blobs", 3};
+    eagitest::ctx_suite test{ctx, "blobs", 4};
     test.once(blobs_roundtrip_zeroes_single_big);
     test.repeat(5, blobs_roundtrip_zeroes_single);
     test.once(blobs_roundtrip_bfs_single);
+    test.once(blobs_roundtrip_ces_multiple);
     return test.exit_code();
 }
 //------------------------------------------------------------------------------
