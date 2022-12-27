@@ -762,16 +762,114 @@ void blobs_roundtrip_stream_signals_finished(auto& s) {
     test.check(blob_sizes.empty(), "all blobs finished");
 }
 //------------------------------------------------------------------------------
+// chunk signals failed
+//------------------------------------------------------------------------------
+void blobs_roundtrip_chunk_signals_failed(auto& s) {
+    eagitest::case_ test{s, 7, "chunk signals failed"};
+    eagitest::track trck{test, 1, 2};
+    auto& rg{test.random()};
+
+    const eagine::message_id test_msg_id{eagine::random_identifier(), "test"};
+    const eagine::message_id send_msg_id{"check", "send"};
+    const eagine::message_id resend_msg_id{"check", "resend"};
+    eagine::msgbus::blob_manipulator sender{
+      s.context(), send_msg_id, resend_msg_id};
+    eagine::msgbus::blob_manipulator receiver{
+      s.context(), send_msg_id, resend_msg_id};
+
+    eagine::msgbus::blob_stream_signals signals;
+
+    bool done{false};
+    const auto check_stream_cancelled = [&](const eagine::identifier_t) {
+        done = true;
+        trck.passed_part(2);
+    };
+    signals.blob_stream_cancelled.connect(
+      {eagine::construct_from, check_stream_cancelled});
+
+    auto send_s2r = [&](
+                      const eagine::message_id msg_id,
+                      const eagine::msgbus::message_view& message) -> bool {
+        test.check(msg_id == send_msg_id, "message id");
+
+        if(rg.one_of(1000000)) {
+            if(rg.one_of(1000000)) {
+                if(rg.one_of(1000000)) {
+                    receiver.process_incoming(message);
+                }
+            }
+        }
+
+        trck.passed_part(1);
+        return true;
+    };
+    const eagine::msgbus::blob_manipulator::send_handler handler_s2r{
+      eagine::construct_from, send_s2r};
+
+    auto send_r2s = [&](
+                      const eagine::message_id,
+                      const eagine::msgbus::message_view&) -> bool {
+        return true;
+    };
+    const eagine::msgbus::blob_manipulator::send_handler handler_r2s{
+      eagine::construct_from, send_r2s};
+
+    const unsigned todo{test.repeats(10)};
+
+    eagine::memory::buffer_pool buffers;
+
+    for(unsigned r = 0; r < todo; ++r) {
+        const auto blob_id{eagine::msgbus::blob_id_t(r)};
+        if(rg.get_bool()) {
+            const auto blob_size{rg.get_between(4, 48) * 1024};
+            sender.push_outgoing(
+              test_msg_id,
+              1,
+              0,
+              blob_id,
+              std::make_unique<bfs_source_blob_io>(blob_size),
+              std::chrono::seconds{1},
+              eagine::msgbus::message_priority::normal);
+        } else {
+            const auto blob_size{rg.get_between(48, 96) * 1024};
+            sender.push_outgoing(
+              test_msg_id,
+              1,
+              0,
+              blob_id,
+              std::make_unique<ces_source_blob_io>(blob_size),
+              std::chrono::seconds{1},
+              eagine::msgbus::message_priority::normal);
+        }
+
+        receiver.expect_incoming(
+          test_msg_id,
+          1,
+          eagine::msgbus::blob_id_t(r),
+          eagine::msgbus::make_target_blob_chunk_io(
+            eagine::msgbus::blob_id_t(r), 1024, signals, buffers),
+          std::chrono::seconds{1});
+    }
+
+    while(not done) {
+        sender.update(handler_s2r);
+        sender.process_outgoing(handler_s2r, 2048, 3);
+        receiver.update(handler_r2s);
+        receiver.handle_complete();
+    }
+}
+//------------------------------------------------------------------------------
 // main
 //------------------------------------------------------------------------------
 auto test_main(eagine::test_ctx& ctx) -> int {
-    eagitest::ctx_suite test{ctx, "blobs", 6};
+    eagitest::ctx_suite test{ctx, "blobs", 7};
     test.once(blobs_roundtrip_zeroes_single_big);
     test.repeat(5, blobs_roundtrip_zeroes_single);
     test.once(blobs_roundtrip_bfs_single);
     test.once(blobs_roundtrip_ces_multiple);
     test.once(blobs_roundtrip_chunk_signals_finished);
     test.once(blobs_roundtrip_stream_signals_finished);
+    test.once(blobs_roundtrip_chunk_signals_failed);
     return test.exit_code();
 }
 //------------------------------------------------------------------------------
