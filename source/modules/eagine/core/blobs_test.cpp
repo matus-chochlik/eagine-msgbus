@@ -140,7 +140,7 @@ void blobs_roundtrip_zeroes_single_big(auto& s) {
       1234,
       2345,
       0,
-      std::make_unique<zeroes_source_blob_io>(32 * 1024 * 1024),
+      std::make_unique<zeroes_source_blob_io>(16 * 1024 * 1024),
       std::chrono::hours{1},
       eagine::msgbus::message_priority::normal);
 
@@ -151,7 +151,7 @@ void blobs_roundtrip_zeroes_single_big(auto& s) {
       1234,
       eagine::msgbus::blob_id_t(0),
       std::make_unique<zeroes_target_blob_io>(
-        test, trck, 32 * 1024 * 1024, done),
+        test, trck, 16 * 1024 * 1024, done),
       std::chrono::hours{1});
 
     const eagine::span_size_t max_message_size{4096};
@@ -351,7 +351,7 @@ void blobs_roundtrip_bfs_single(auto& s) {
           1,
           0,
           eagine::msgbus::blob_id_t(r),
-          std::make_unique<bfs_source_blob_io>(2 * 1024 * 1024),
+          std::make_unique<bfs_source_blob_io>(1024 * 1024),
           std::chrono::hours{1},
           eagine::msgbus::message_priority::normal);
 
@@ -361,8 +361,7 @@ void blobs_roundtrip_bfs_single(auto& s) {
           test_msg_id,
           1,
           eagine::msgbus::blob_id_t(r),
-          std::make_unique<bfs_target_blob_io>(
-            test, trck, 2 * 1024 * 1024, done),
+          std::make_unique<bfs_target_blob_io>(test, trck, 1024 * 1024, done),
           std::chrono::hours{1});
 
         const eagine::span_size_t max_message_size{1024};
@@ -909,7 +908,7 @@ void blobs_roundtrip_resend_1(auto& s) {
     const eagine::msgbus::blob_manipulator::send_handler handler_r2s{
       eagine::construct_from, send_r2s};
 
-    for(unsigned r = 0; r < test.repeats(4); ++r) {
+    for(unsigned r = 0; r < test.repeats(3); ++r) {
         sender.push_outgoing(
           test_msg_id,
           1,
@@ -928,7 +927,7 @@ void blobs_roundtrip_resend_1(auto& s) {
           std::make_unique<bfs_target_blob_io>(test, trck, 48 * 1024, done),
           std::chrono::hours{1});
 
-        const eagine::span_size_t max_message_size{1024};
+        const eagine::span_size_t max_message_size{2048};
         while(not done) {
             sender.update(handler_s2r, max_message_size);
             sender.process_outgoing(handler_s2r, max_message_size, 7);
@@ -938,10 +937,83 @@ void blobs_roundtrip_resend_1(auto& s) {
     }
 }
 //------------------------------------------------------------------------------
+// round-trip resend 2
+//------------------------------------------------------------------------------
+void blobs_roundtrip_resend_2(auto& s) {
+    eagitest::case_ test{s, 9, "round-trip resend 2"};
+    eagitest::track trck{test, 1, 5};
+    auto& rg{test.random()};
+
+    const eagine::message_id test_msg_id{eagine::random_identifier(), "test"};
+    const eagine::message_id send_msg_id{"check", "send"};
+    const eagine::message_id resend_msg_id{"check", "resend"};
+    eagine::msgbus::blob_manipulator sender{
+      s.context(), send_msg_id, resend_msg_id};
+    eagine::msgbus::blob_manipulator receiver{
+      s.context(), send_msg_id, resend_msg_id};
+
+    auto send_s2r = [&](
+                      const eagine::message_id msg_id,
+                      const eagine::msgbus::message_view& message) -> bool {
+        test.check(msg_id == send_msg_id, "message id");
+
+        if(not rg.one_of(5)) {
+            receiver.process_incoming(message);
+            trck.passed_part(1);
+        }
+        return true;
+    };
+    const eagine::msgbus::blob_manipulator::send_handler handler_s2r{
+      eagine::construct_from, send_s2r};
+
+    auto send_r2s = [&](
+                      const eagine::message_id msg_id,
+                      const eagine::msgbus::message_view& message) -> bool {
+        if(not rg.one_of(11)) {
+            if(msg_id == resend_msg_id) {
+                sender.process_resend(message);
+                trck.passed_part(5);
+            }
+        }
+        return true;
+    };
+    const eagine::msgbus::blob_manipulator::send_handler handler_r2s{
+      eagine::construct_from, send_r2s};
+
+    const auto todo{test.repeats(4)};
+    unsigned done{0};
+
+    for(unsigned r = 0; r < todo; ++r) {
+        sender.push_outgoing(
+          test_msg_id,
+          1,
+          0,
+          eagine::msgbus::blob_id_t(r),
+          std::make_unique<ces_source_blob_io>(32 * 1024),
+          std::chrono::hours{1},
+          eagine::msgbus::message_priority::normal);
+
+        receiver.expect_incoming(
+          test_msg_id,
+          1,
+          eagine::msgbus::blob_id_t(r),
+          std::make_unique<ces_target_blob_io>(test, trck, 32 * 1024, done),
+          std::chrono::hours{1});
+    }
+
+    const eagine::span_size_t max_message_size{1024};
+    while(done < todo) {
+        sender.update(handler_s2r, max_message_size);
+        sender.process_outgoing(handler_s2r, max_message_size, 9);
+        receiver.update(handler_r2s, max_message_size);
+        receiver.handle_complete();
+    }
+}
+//------------------------------------------------------------------------------
 // main
 //------------------------------------------------------------------------------
 auto test_main(eagine::test_ctx& ctx) -> int {
-    eagitest::ctx_suite test{ctx, "blobs", 8};
+    eagitest::ctx_suite test{ctx, "blobs", 9};
     test.once(blobs_roundtrip_zeroes_single_big);
     test.repeat(5, blobs_roundtrip_zeroes_single);
     test.once(blobs_roundtrip_bfs_single);
@@ -950,6 +1022,7 @@ auto test_main(eagine::test_ctx& ctx) -> int {
     test.once(blobs_roundtrip_stream_signals_finished);
     test.once(blobs_roundtrip_chunk_signals_failed);
     test.once(blobs_roundtrip_resend_1);
+    test.once(blobs_roundtrip_resend_2);
     return test.exit_code();
 }
 //------------------------------------------------------------------------------
