@@ -356,3 +356,7 @@ eagine_add_module_tests(
 	IMPORTS
 		eagine.core
 )
+set_tests_properties(execute-test.eagine.msgbus.core.loopback PROPERTIES COST 20)
+set_tests_properties(execute-test.eagine.msgbus.core.direct PROPERTIES COST 20)
+set_tests_properties(execute-test.eagine.msgbus.core.message PROPERTIES COST 55)
+set_tests_properties(execute-test.eagine.msgbus.core.blobs PROPERTIES COST 70)

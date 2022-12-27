@@ -496,7 +496,7 @@ void blobs_roundtrip_ces_multiple(auto& s) {
     const eagine::msgbus::blob_manipulator::send_handler handler_r2s{
       eagine::construct_from, send_r2s};
 
-    const unsigned todo{test.repeats(10)};
+    const unsigned todo{test.repeats(5)};
     unsigned done{0};
 
     for(unsigned r = 0; r < todo; ++r) {
@@ -597,7 +597,7 @@ void blobs_roundtrip_chunk_signals_finished(auto& s) {
     const eagine::msgbus::blob_manipulator::send_handler handler_r2s{
       eagine::construct_from, send_r2s};
 
-    const unsigned todo{test.repeats(10)};
+    const unsigned todo{test.repeats(6)};
 
     eagine::memory::buffer_pool buffers;
 
@@ -717,7 +717,7 @@ void blobs_roundtrip_stream_signals_finished(auto& s) {
     const eagine::msgbus::blob_manipulator::send_handler handler_r2s{
       eagine::construct_from, send_r2s};
 
-    const unsigned todo{test.repeats(10)};
+    const unsigned todo{test.repeats(6)};
 
     eagine::memory::buffer_pool buffers;
 
@@ -819,7 +819,7 @@ void blobs_roundtrip_chunk_signals_failed(auto& s) {
     const eagine::msgbus::blob_manipulator::send_handler handler_r2s{
       eagine::construct_from, send_r2s};
 
-    const unsigned todo{test.repeats(10)};
+    const unsigned todo{test.repeats(6)};
 
     eagine::memory::buffer_pool buffers;
 
