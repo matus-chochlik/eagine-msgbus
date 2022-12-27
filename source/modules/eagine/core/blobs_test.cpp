@@ -859,6 +859,77 @@ void blobs_roundtrip_chunk_signals_failed(auto& s) {
     }
 }
 //------------------------------------------------------------------------------
+// round-trip resend
+//------------------------------------------------------------------------------
+void blobs_roundtrip_resend(auto& s) {
+    eagitest::case_ test{s, 8, "round-trip resend"};
+    eagitest::track trck{test, 1, 5};
+    auto& rg{test.random()};
+
+    const eagine::message_id test_msg_id{eagine::random_identifier(), "test"};
+    const eagine::message_id send_msg_id{"check", "send"};
+    const eagine::message_id resend_msg_id{"check", "resend"};
+    eagine::msgbus::blob_manipulator sender{
+      s.context(), send_msg_id, resend_msg_id};
+    eagine::msgbus::blob_manipulator receiver{
+      s.context(), send_msg_id, resend_msg_id};
+
+    auto send_s2r = [&](
+                      const eagine::message_id msg_id,
+                      const eagine::msgbus::message_view& message) -> bool {
+        test.check(msg_id == send_msg_id, "message id");
+
+        if(not rg.one_of(5)) {
+            receiver.process_incoming(message);
+            trck.passed_part(1);
+        }
+        return true;
+    };
+    const eagine::msgbus::blob_manipulator::send_handler handler_s2r{
+      eagine::construct_from, send_s2r};
+
+    auto send_r2s = [&](
+                      const eagine::message_id msg_id,
+                      const eagine::msgbus::message_view& message) -> bool {
+        if(not rg.one_of(11)) {
+            if(msg_id == resend_msg_id) {
+                sender.process_resend(message);
+                trck.passed_part(5);
+            }
+        }
+        return true;
+    };
+    const eagine::msgbus::blob_manipulator::send_handler handler_r2s{
+      eagine::construct_from, send_r2s};
+
+    for(unsigned r = 0; r < test.repeats(3); ++r) {
+        const auto recv_blob_id{sender.push_outgoing(
+          test_msg_id,
+          1,
+          0,
+          eagine::msgbus::blob_id_t(r),
+          std::make_unique<bfs_source_blob_io>(32 * 1024),
+          std::chrono::hours{1},
+          eagine::msgbus::message_priority::normal)};
+
+        bool done{false};
+
+        receiver.expect_incoming(
+          test_msg_id,
+          1,
+          recv_blob_id,
+          std::make_unique<bfs_target_blob_io>(test, trck, 32 * 1024, done),
+          std::chrono::hours{1});
+
+        while(not done) {
+            sender.update(handler_s2r);
+            sender.process_outgoing(handler_s2r, 1024, 7);
+            receiver.update(handler_r2s);
+            receiver.handle_complete();
+        }
+    }
+}
+//------------------------------------------------------------------------------
 // main
 //------------------------------------------------------------------------------
 auto test_main(eagine::test_ctx& ctx) -> int {
@@ -870,6 +941,8 @@ auto test_main(eagine::test_ctx& ctx) -> int {
     test.once(blobs_roundtrip_chunk_signals_finished);
     test.once(blobs_roundtrip_stream_signals_finished);
     test.once(blobs_roundtrip_chunk_signals_failed);
+    // TODO
+    // test.once(blobs_roundtrip_resend);
     return test.exit_code();
 }
 //------------------------------------------------------------------------------

@@ -371,7 +371,7 @@ auto pending_blob::merge_fragment(
     bool result = true;
     bool new_done = false;
 
-    for(const auto& [src_bgn, src_end] : src) {
+    for(const auto [src_bgn, src_end] : src) {
         if(bgn < src_bgn) {
             if(end < src_bgn) {
                 if(not new_done) {
@@ -488,7 +488,10 @@ auto blob_manipulator::update(
     if(const auto erased_count{std::erase_if(
          _outgoing,
          [this, &something_done](auto& pending) {
-             if(pending.max_time.is_expired() or pending.sent_everything()) {
+             if(
+               pending.max_time.is_expired() or
+               (pending.sent_everything() and
+                pending.linger_time.is_expired())) {
                  if(auto buf_io{pending.source_buffer_io()}) {
                      _buffers.eat(extract(buf_io).release_buffer());
                  }
@@ -525,11 +528,11 @@ auto blob_manipulator::update(
     }
 
     for(auto& pending : _incoming) {
-        if(now - pending.latest_update > std::chrono::seconds{2}) {
-            auto& done = pending.done_parts();
-            if(not done.empty()) {
+        auto& done = pending.done_parts();
+        if(not done.empty()) {
+            if(now - pending.latest_update > std::chrono::milliseconds{25}) {
                 const auto bgn = std::get<1>(done[0]);
-                const auto end = done.size() > 1 ? std::get<1>(done[0])
+                const auto end = done.size() > 1 ? std::get<1>(done[1])
                                                  : pending.info.total_size;
                 const std::tuple<identifier_t, std::uint64_t, std::uint64_t>
                   params{pending.source_blob_id, bgn, end};
@@ -850,6 +853,7 @@ auto blob_manipulator::push_outgoing(
     pending.source_blob_id = ++_blob_id_sequence;
     pending.target_blob_id = target_blob_id;
     pending.source_io = std::move(io);
+    pending.linger_time.reset();
     pending.max_time = timeout{max_time};
     pending.todo_parts().emplace_back(0, pending.info.total_size);
     return pending.source_blob_id;
@@ -931,6 +935,7 @@ auto blob_manipulator::process_outgoing(
                   .arg("errors", get_errors(serialized))
                   .arg("message", pending.msg_id);
             }
+            pending.linger_time.reset();
         }
     }
 
