@@ -7,6 +7,7 @@
 ///
 
 #include <eagine/testing/unit_begin_ctx.hpp>
+import <array>;
 import <memory>;
 import <type_traits>;
 import eagine.core;
@@ -522,14 +523,134 @@ void blobs_roundtrip_ces_multiple(auto& s) {
     }
 }
 //------------------------------------------------------------------------------
+// signals
+//------------------------------------------------------------------------------
+void blobs_roundtrip_stream_signals_finished(auto& s) {
+    eagitest::case_ test{s, 5, "stream signals"};
+    eagitest::track trck{test, 1, 3};
+    auto& rg{test.random()};
+
+    const eagine::message_id test_msg_id{eagine::random_identifier(), "test"};
+    const eagine::message_id send_msg_id{"check", "send"};
+    const eagine::message_id resend_msg_id{"check", "resend"};
+    eagine::msgbus::blob_manipulator sender{
+      s.context(), send_msg_id, resend_msg_id};
+    eagine::msgbus::blob_manipulator receiver{
+      s.context(), send_msg_id, resend_msg_id};
+
+    eagine::msgbus::blob_stream_signals signals;
+    std::map<eagine::identifier_t, std::array<eagine::span_size_t, 2>>
+      blob_sizes;
+    const auto check_stream_data =
+      [&](
+        eagine::identifier_t blob_id,
+        const eagine::span_size_t offset,
+        const eagine::memory::span<const eagine::memory::const_block> data,
+        const eagine::msgbus::blob_info&) {
+          for(const auto blk : data) {
+              for(const auto b : blk) {
+                  test.check(
+                    b == eagine::byte{0xBF} or b == eagine::byte{0xCE},
+                    "content is ok");
+                  trck.passed_part(2);
+              }
+              test.check_equal(blob_sizes[blob_id][1], offset, "offset ok");
+              blob_sizes[blob_id][1] += blk.size();
+          }
+      };
+    signals.blob_stream_data_appended.connect(
+      {eagine::construct_from, check_stream_data});
+
+    unsigned done{0};
+    const auto check_stream_finished = [&](const eagine::identifier_t blob_id) {
+        test.check_equal(
+          blob_sizes[blob_id][0], blob_sizes[blob_id][1], "blob data complete");
+        blob_sizes.erase(blob_id);
+        ++done;
+        trck.passed_part(3);
+    };
+    signals.blob_stream_finished.connect(
+      {eagine::construct_from, check_stream_finished});
+
+    auto send_s2r = [&](
+                      const eagine::message_id msg_id,
+                      const eagine::msgbus::message_view& message) -> bool {
+        test.check(msg_id == send_msg_id, "message id");
+
+        receiver.process_incoming(message);
+
+        trck.passed_part(1);
+        return true;
+    };
+    const eagine::msgbus::blob_manipulator::send_handler handler_s2r{
+      eagine::construct_from, send_s2r};
+
+    auto send_r2s = [&](
+                      const eagine::message_id,
+                      const eagine::msgbus::message_view&) -> bool {
+        return true;
+    };
+    const eagine::msgbus::blob_manipulator::send_handler handler_r2s{
+      eagine::construct_from, send_r2s};
+
+    const unsigned todo{test.repeats(10)};
+
+    eagine::memory::buffer_pool buffers;
+
+    for(unsigned r = 0; r < todo; ++r) {
+        const auto blob_id{eagine::msgbus::blob_id_t(r)};
+        if(rg.get_bool()) {
+            const auto blob_size{rg.get_between(4, 64) * 1024};
+            sender.push_outgoing(
+              test_msg_id,
+              1,
+              0,
+              blob_id,
+              std::make_unique<bfs_source_blob_io>(blob_size),
+              std::chrono::hours{1},
+              eagine::msgbus::message_priority::normal);
+            blob_sizes[blob_id] = {blob_size, 0};
+        } else {
+            const auto blob_size{rg.get_between(64, 128) * 1024};
+            sender.push_outgoing(
+              test_msg_id,
+              1,
+              0,
+              blob_id,
+              std::make_unique<ces_source_blob_io>(blob_size),
+              std::chrono::hours{1},
+              eagine::msgbus::message_priority::normal);
+            blob_sizes[blob_id] = {blob_size, 0};
+        }
+
+        receiver.expect_incoming(
+          test_msg_id,
+          1,
+          eagine::msgbus::blob_id_t(r),
+          eagine::msgbus::make_target_blob_stream_io(
+            eagine::msgbus::blob_id_t(r), signals, buffers),
+          std::chrono::hours{1});
+    }
+
+    while(done < todo) {
+        sender.update(handler_s2r);
+        sender.process_outgoing(handler_s2r, 1024, 6);
+        receiver.update(handler_r2s);
+        receiver.handle_complete();
+    }
+
+    test.check(blob_sizes.empty(), "all blobs finished");
+}
+//------------------------------------------------------------------------------
 // main
 //------------------------------------------------------------------------------
 auto test_main(eagine::test_ctx& ctx) -> int {
-    eagitest::ctx_suite test{ctx, "blobs", 4};
+    eagitest::ctx_suite test{ctx, "blobs", 5};
     test.once(blobs_roundtrip_zeroes_single_big);
     test.repeat(5, blobs_roundtrip_zeroes_single);
     test.once(blobs_roundtrip_bfs_single);
     test.once(blobs_roundtrip_ces_multiple);
+    test.once(blobs_roundtrip_stream_signals_finished);
     return test.exit_code();
 }
 //------------------------------------------------------------------------------

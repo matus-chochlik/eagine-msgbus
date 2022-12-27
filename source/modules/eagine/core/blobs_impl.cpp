@@ -85,7 +85,7 @@ private:
 class blob_stream_io : public target_blob_io {
 public:
     blob_stream_io(
-      identifier_t blob_id,
+      blob_id_t blob_id,
       blob_stream_signals& sigs,
       memory::buffer_pool& buffers) noexcept
       : _blob_id{blob_id}
@@ -192,7 +192,7 @@ auto blob_stream_io::store_fragment(
 }
 //------------------------------------------------------------------------------
 auto make_target_blob_stream_io(
-  identifier_t blob_id,
+  blob_id_t blob_id,
   blob_stream_signals& sigs,
   memory::buffer_pool& buffers) -> std::unique_ptr<target_blob_io> {
     return std::make_unique<blob_stream_io>(blob_id, sigs, buffers);
@@ -303,7 +303,7 @@ void blob_chunk_io::handle_finished(
 }
 //------------------------------------------------------------------------------
 auto make_target_blob_chunk_io(
-  identifier_t blob_id,
+  blob_id_t blob_id,
   span_size_t chunk_size,
   blob_stream_signals& sigs,
   memory::buffer_pool& buffers) -> std::unique_ptr<target_blob_io> {

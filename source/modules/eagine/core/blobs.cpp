@@ -100,6 +100,8 @@ export struct blob_stream_signals {
     signal<void(identifier_t blob_id) noexcept> blob_stream_cancelled;
 };
 //------------------------------------------------------------------------------
+export using blob_id_t = std::uint32_t;
+//------------------------------------------------------------------------------
 /// @brief Creates a data stream target I/O object.
 /// @ingroup msgbus
 /// @see blob_stream_signals
@@ -108,7 +110,7 @@ export struct blob_stream_signals {
 /// so that they appear in the order from the start to the end of the BLOB
 /// and emits the blob_stream_data_appended signal on a blob_stream_signals.
 export auto make_target_blob_stream_io(
-  identifier_t blob_id,
+  blob_id_t blob_id,
   blob_stream_signals& sigs,
   memory::buffer_pool& buffers) -> std::unique_ptr<target_blob_io>;
 //------------------------------------------------------------------------------
@@ -120,12 +122,10 @@ export auto make_target_blob_stream_io(
 /// specified size and then emits the blob_stream_data_appended signal on a
 /// blob_stream_signals once.
 export auto make_target_blob_chunk_io(
-  identifier_t blob_id,
+  blob_id_t blob_id,
   span_size_t chunk_size,
   blob_stream_signals& sigs,
   memory::buffer_pool& buffers) -> std::unique_ptr<target_blob_io>;
-//------------------------------------------------------------------------------
-export using blob_id_t = std::uint32_t;
 //------------------------------------------------------------------------------
 struct pending_blob {
     message_id msg_id{};
