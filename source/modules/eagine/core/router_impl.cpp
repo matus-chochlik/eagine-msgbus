@@ -500,7 +500,8 @@ auto router::_process_blobs() noexcept -> work_done {
         return this->_route_message(msg_id, _id_base, request);
     };
     something_done(_blobs.handle_complete() > 0);
-    something_done(_blobs.update({construct_from, resend_request}));
+    something_done(_blobs.update(
+      {construct_from, resend_request}, min_connection_data_size));
 
     if(_blobs.has_outgoing()) {
         for(auto& nd : _nodes) {

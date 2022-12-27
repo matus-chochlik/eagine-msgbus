@@ -170,7 +170,8 @@ public:
 
     auto update() noexcept -> work_done final {
         auto& bus = base.bus_node();
-        some_true something_done{_blobs.update(bus.post_callable())};
+        some_true something_done{
+          _blobs.update(bus.post_callable(), min_connection_data_size)};
         if(_should_send_outgoing) {
             const auto opt_max_size = bus.max_data_size();
             if(opt_max_size) [[likely]] {
@@ -503,7 +504,8 @@ public:
     auto update() noexcept -> work_done final {
         some_true something_done{};
         something_done(_blobs.handle_complete() > 0);
-        something_done(_blobs.update(base.bus_node().post_callable()));
+        something_done(_blobs.update(
+          base.bus_node().post_callable(), min_connection_data_size));
 
         if(_search_servers) {
             base.bus_node().query_subscribers_of(

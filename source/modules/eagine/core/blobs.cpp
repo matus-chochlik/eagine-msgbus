@@ -217,7 +217,9 @@ public:
     using send_handler =
       callable_ref<bool(const message_id, const message_view&) noexcept>;
 
-    auto update(const send_handler do_send) noexcept -> work_done;
+    auto update(
+      const send_handler do_send,
+      const span_size_t max_message_size) noexcept -> work_done;
 
     auto push_outgoing(
       const message_id msg_id,

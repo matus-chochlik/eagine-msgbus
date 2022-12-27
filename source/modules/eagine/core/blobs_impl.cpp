@@ -480,7 +480,8 @@ void pending_blob::merge_resend_request(
 // blob manipulator
 //------------------------------------------------------------------------------
 auto blob_manipulator::update(
-  const blob_manipulator::send_handler do_send) noexcept -> work_done {
+  const blob_manipulator::send_handler do_send,
+  const span_size_t max_message_size) noexcept -> work_done {
     const auto exec_time{measure_time_interval("blobUpdate")};
     const auto now = std::chrono::steady_clock::now();
     some_true something_done{};
@@ -530,10 +531,31 @@ auto blob_manipulator::update(
     for(auto& pending : _incoming) {
         auto& done = pending.done_parts();
         if(not done.empty()) {
-            if(now - pending.latest_update > std::chrono::milliseconds{25}) {
-                const auto bgn = std::get<1>(done[0]);
-                const auto end = done.size() > 1 ? std::get<1>(done[1])
-                                                 : pending.info.total_size;
+            if(now - pending.latest_update > std::chrono::milliseconds{250}) {
+                const auto [bgn, end] =
+                  [&]() -> std::tuple<span_size_t, span_size_t> {
+                    const auto max{2 * max_message_size / 3};
+                    if(std::get<0>(done[0]) > 0) {
+                        return {0, std::min(std::get<0>(done[0]), max)};
+                    } else {
+                        if(done.size() == 1) {
+                            return {
+                              std::get<1>(done[0]),
+                              std::get<1>(done[0]) + std::min(
+                                                       pending.info.total_size -
+                                                         std::get<1>(done[0]),
+                                                       max)};
+                        } else {
+                            return {
+                              std::get<1>(done[0]),
+                              std::get<1>(done[0]) +
+                                std::min(
+                                  std::get<0>(done[1]) - std::get<1>(done[0]),
+                                  max)};
+                        }
+                    }
+                }();
+
                 const std::tuple<identifier_t, std::uint64_t, std::uint64_t>
                   params{pending.source_blob_id, bgn, end};
                 auto buffer{default_serialize_buffer_for(params)};
