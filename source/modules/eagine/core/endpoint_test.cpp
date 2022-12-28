@@ -190,7 +190,7 @@ void endpoint_preconfigure_id(unsigned r, auto& s) {
             router.update();
         }
         if(get_id_time.is_expired()) {
-            test.fail("too late");
+            test.fail("failed to confirm id");
             break;
         }
     }
@@ -234,7 +234,7 @@ void endpoint_get_id(unsigned r, auto& s) {
             router.update();
         }
         if(get_id_time.is_expired()) {
-            test.fail("too late");
+            test.fail("failed to get id");
             break;
         }
     }
@@ -244,17 +244,74 @@ void endpoint_get_id(unsigned r, auto& s) {
     test.check(endpoint_c.get_id() != endpoint_a.get_id(), "different ids ca");
 }
 //------------------------------------------------------------------------------
+// is assigned signal
+//------------------------------------------------------------------------------
+void endpoint_id_assigned(unsigned, auto& s) {
+    eagitest::case_ test{s, 5, "id assigned"};
+    eagitest::track trck{test, 0, 3};
+    auto& ctx{s.context()};
+
+    eagine::msgbus::endpoint endpoint_a{"EndpointA", ctx};
+    eagine::msgbus::endpoint endpoint_b{"EndpointB", ctx};
+    eagine::msgbus::endpoint endpoint_c{"EndpointC", ctx};
+
+    auto acceptor = eagine::msgbus::make_direct_acceptor(ctx);
+    endpoint_a.add_connection(acceptor->make_connection());
+    endpoint_b.add_connection(acceptor->make_connection());
+    endpoint_c.add_connection(acceptor->make_connection());
+
+    eagine::msgbus::router router(ctx);
+    router.add_acceptor(std::move(acceptor));
+
+    bool has_a{false};
+    const auto slot_a = [&](bool has_id) {
+        test.check_equal(has_id, endpoint_a.has_id(), "a has id");
+        trck.passed_part(1);
+        has_a = true;
+    };
+    endpoint_a.connection_established.connect({eagine::construct_from, slot_a});
+
+    bool has_b{false};
+    const auto slot_b = [&](bool has_id) {
+        test.check_equal(has_id, endpoint_b.has_id(), "b has id");
+        trck.passed_part(2);
+        has_b = true;
+    };
+    endpoint_b.connection_established.connect({eagine::construct_from, slot_b});
+
+    bool has_c{false};
+    const auto slot_c = [&](bool has_id) {
+        test.check_equal(has_id, endpoint_c.has_id(), "c has id");
+        trck.passed_part(3);
+        has_c = true;
+    };
+    endpoint_c.connection_established.connect({eagine::construct_from, slot_c});
+
+    eagine::timeout get_id_time{std::chrono::seconds{5}};
+    while(not(has_a and has_b and has_c)) {
+        if(get_id_time.is_expired()) {
+            test.fail("failed to get id");
+            break;
+        }
+        router.update();
+        endpoint_a.update();
+        endpoint_b.update();
+        endpoint_c.update();
+    }
+}
+//------------------------------------------------------------------------------
 // main
 //------------------------------------------------------------------------------
 auto test_main(eagine::test_ctx& ctx) -> int {
     enable_message_bus(ctx);
     ctx.preinitialize();
 
-    eagitest::ctx_suite test{ctx, "endpoint", 4};
+    eagitest::ctx_suite test{ctx, "endpoint", 5};
     test.repeat(5, endpoint_connection_established);
     test.repeat(5, endpoint_connection_lost);
     test.repeat(5, endpoint_preconfigure_id);
     test.repeat(5, endpoint_get_id);
+    test.repeat(5, endpoint_id_assigned);
     return test.exit_code();
 }
 //------------------------------------------------------------------------------
