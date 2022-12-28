@@ -247,6 +247,7 @@ eagine_add_module(
 eagine_add_module_tests(
 	eagine.msgbus.services
 	UNITS
+		shutdown
 		ping_pong
 	IMPORTS
 		eagine.core
