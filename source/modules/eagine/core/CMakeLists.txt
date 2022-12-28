@@ -353,6 +353,7 @@ eagine_add_module_tests(
 		loopback
 		direct
 		blobs
+		endpoint
 	IMPORTS
 		eagine.core
 )
