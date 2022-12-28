@@ -483,11 +483,20 @@ auto endpoint::update() noexcept -> work_done {
     if(not _connection) [[unlikely]] {
         log_warning(_log_no_connection, "endpoint has no connection")
           .tag("noConnect");
+        if(_had_working_connection) {
+            _had_working_connection = false;
+            connection_lost();
+        }
     }
 
     const bool had_id{has_id()};
     if(_connection) [[likely]] {
-        if(not _had_working_connection) [[unlikely]] {
+        if(_had_working_connection) [[likely]] {
+            if(not _connection->is_usable()) [[unlikely]] {
+                _had_working_connection = false;
+                connection_lost();
+            }
+        } else {
             _had_working_connection = true;
             connection_established(had_id);
         }
