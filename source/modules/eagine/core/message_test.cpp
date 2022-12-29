@@ -270,16 +270,116 @@ void message_serialize_message_type_roundtrip(unsigned, auto& s) {
     }
 }
 //------------------------------------------------------------------------------
+// mesage storage push cleanup
+//------------------------------------------------------------------------------
+void message_storage_push_cleanup(unsigned, auto& s) {
+    eagitest::case_ test{s, 7, "message storage push cleanup"};
+    eagitest::track trck{test, 0, 2};
+
+    eagine::msgbus::message_storage storage;
+    test.check(storage.empty(), "is empty");
+    test.check_equal(storage.count(), 0U, "count is zero");
+
+    const auto rc{test.random().get_between(1U, 200U)};
+    for(unsigned r = 0; r < rc; ++r) {
+        const eagine::message_id msg_id{
+          eagine::random_identifier(), eagine::random_identifier()};
+        storage.push(
+          msg_id, eagine::memory::as_bytes(msg_id.method().name().view()));
+
+        test.check(not storage.empty(), "is not empty");
+        test.check_equal(storage.count(), r + 1, "count");
+    }
+
+    storage.cleanup(
+      {eagine::construct_from, [&](const eagine::msgbus::message_age) {
+           trck.passed_part(1);
+           return false;
+       }});
+
+    test.check(not storage.empty(), "is not empty");
+    test.check_equal(storage.count(), rc, "count");
+
+    storage.cleanup(
+      {eagine::construct_from, [&](const eagine::msgbus::message_age) {
+           trck.passed_part(2);
+           return true;
+       }});
+    test.check(storage.empty(), "is empty");
+    test.check_equal(storage.count(), 0U, "count is zero");
+}
+//------------------------------------------------------------------------------
+// mesage storage push fetch
+//------------------------------------------------------------------------------
+void message_storage_push_fetch(unsigned, auto& s) {
+    eagitest::case_ test{s, 8, "message storage push fetch"};
+    eagitest::track trck{test, 0, 2};
+
+    eagine::msgbus::message_storage storage;
+    test.check(storage.empty(), "is empty");
+    test.check_equal(storage.count(), 0U, "count is zero");
+
+    const auto rc{test.random().get_between(1U, 200U)};
+    for(unsigned r = 0; r < rc; ++r) {
+        const eagine::message_id msg_id{
+          eagine::random_identifier(), eagine::random_identifier()};
+        storage.push(
+          msg_id, eagine::memory::as_bytes(msg_id.method().name().view()));
+
+        test.check(not storage.empty(), "is not empty");
+        test.check_equal(storage.count(), r + 1, "count");
+    }
+
+    storage.fetch_all(
+      {eagine::construct_from,
+       [&](
+         const eagine::message_id msg_id,
+         const eagine::msgbus::message_age msg_age,
+         const eagine::msgbus::message_view& msg) {
+           test.check(msg_age.count() >= 0, "age");
+           test.check(
+             eagine::are_equal(
+               msg.content(),
+               eagine::memory::as_bytes(msg_id.method().name().view())),
+             "content");
+           trck.passed_part(1);
+           return false;
+       }});
+
+    test.check(not storage.empty(), "is not empty");
+    test.check_equal(storage.count(), rc, "count");
+
+    storage.fetch_all(
+      {eagine::construct_from,
+       [&](
+         const eagine::message_id msg_id,
+         const eagine::msgbus::message_age msg_age,
+         const eagine::msgbus::message_view& msg) {
+           test.check(msg_age.count() >= 0, "age");
+           test.check(
+             eagine::are_equal(
+               msg.content(),
+               eagine::memory::as_bytes(msg_id.method().name().view())),
+             "content");
+           trck.passed_part(2);
+           return true;
+       }});
+    test.check(storage.empty(), "is empty");
+    test.check_equal(storage.count(), 0U, "count is zero");
+}
+//------------------------------------------------------------------------------
 // main
 //------------------------------------------------------------------------------
 auto test_main(eagine::test_ctx& ctx) -> int {
-    eagitest::ctx_suite test{ctx, "message", 6};
+    eagitest::ctx_suite test{ctx, "message", 8};
     test.once(message_valid_endpoint_id);
     test.once(message_is_special);
     test.once(message_serialize_header_roundtrip);
     test.once(message_serialize_message_roundtrip_1);
     test.once(message_serialize_message_roundtrip_2);
     test.repeat(1000, message_serialize_message_type_roundtrip);
+    test.repeat(10, message_storage_push_cleanup);
+    test.repeat(10, message_storage_push_fetch);
     return test.exit_code();
 }
 //------------------------------------------------------------------------------
