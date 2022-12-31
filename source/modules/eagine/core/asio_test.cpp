@@ -141,6 +141,7 @@ void asio_roundtrip_F(eagitest::case_& test, Fact fact) {
 
     for(unsigned r = 0; r < test.repeats(100); ++r) {
         for(unsigned i = 0, n = rg.get_between<unsigned>(0, 20); i < n; ++i) {
+            cacc->update();
             read_conn->update();
             write_conn->update();
             src.resize(rg.get_std_size(0, 1024));
@@ -189,7 +190,7 @@ auto test_main(eagine::test_ctx& ctx) -> int {
     test.once(asio_tcp_ipv4_addr_kind);
     test.once(asio_udp_ipv4_addr_kind);
     // TODO
-    // test.once(asio_tcp_ipv4_roundtrip);
+    test.once(asio_tcp_ipv4_roundtrip);
     // test.once(asio_udp_ipv4_roundtrip);
     return test.exit_code();
 }
