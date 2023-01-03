@@ -806,7 +806,6 @@ public:
           stored_message{{}, _buffers.get(req_size)},
           _clock_t::now());
         auto& [msg_id, message, insert_time] = _messages.back();
-        (void)(insert_time);
         bool rollback = false;
         try {
             if(not function(msg_id, insert_time, message)) [[unlikely]] {
