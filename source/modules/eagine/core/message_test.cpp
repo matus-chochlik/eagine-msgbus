@@ -261,7 +261,7 @@ void message_serialize_message_type_roundtrip(unsigned, auto& s) {
              eagine::msgbus::default_deserialize_message_type(
                read_msg_id, eagine::extract(serialized))}) {
 
-            trck.passed_part(1);
+            trck.checkpoint(1);
         } else {
             test.fail("deserialize message id");
         }
@@ -293,7 +293,7 @@ void message_storage_push_cleanup(unsigned, auto& s) {
 
     storage.cleanup(
       {eagine::construct_from, [&](const eagine::msgbus::message_age) {
-           trck.passed_part(1);
+           trck.checkpoint(1);
            return false;
        }});
 
@@ -302,7 +302,7 @@ void message_storage_push_cleanup(unsigned, auto& s) {
 
     storage.cleanup(
       {eagine::construct_from, [&](const eagine::msgbus::message_age) {
-           trck.passed_part(2);
+           trck.checkpoint(2);
            return true;
        }});
     test.check(storage.empty(), "is empty");
@@ -342,7 +342,7 @@ void message_storage_push_fetch(unsigned, auto& s) {
                msg.content(),
                eagine::memory::as_bytes(msg_id.method().name().view())),
              "content");
-           trck.passed_part(1);
+           trck.checkpoint(1);
            return false;
        }});
 
@@ -361,7 +361,7 @@ void message_storage_push_fetch(unsigned, auto& s) {
                msg.content(),
                eagine::memory::as_bytes(msg_id.method().name().view())),
              "content");
-           trck.passed_part(2);
+           trck.checkpoint(2);
            return true;
        }});
     test.check(storage.empty(), "is empty");
@@ -391,7 +391,7 @@ void message_storage_push_if_fetch(unsigned, auto& s) {
               message.store_content(
                 eagine::memory::as_bytes(msg_id.method().name().view()));
               dst_msg_id = msg_id;
-              trck.passed_part(1);
+              trck.checkpoint(1);
               return r % 2 == 0;
           });
 
@@ -411,7 +411,7 @@ void message_storage_push_if_fetch(unsigned, auto& s) {
                msg.content(),
                eagine::memory::as_bytes(msg_id.method().name().view())),
              "content");
-           trck.passed_part(2);
+           trck.checkpoint(2);
            return true;
        }});
     test.check(storage.empty(), "is empty");

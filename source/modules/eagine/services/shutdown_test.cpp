@@ -57,10 +57,10 @@ void shutdown_1(auto& s) {
                                   const eagine::msgbus::verification_bits) {
         if(source_id == source_1_ept.get_id()) {
             handled_1 = true;
-            trck.passed_part(1);
+            trck.checkpoint(1);
         } else if(source_id == source_2_ept.get_id()) {
             handled_2 = true;
-            trck.passed_part(2);
+            trck.checkpoint(2);
         }
     };
     target.shutdown_requested.connect({eagine::construct_from, handle_request});

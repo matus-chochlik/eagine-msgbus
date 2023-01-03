@@ -25,7 +25,7 @@ void endpoint_connection_established(unsigned, auto& s) {
     bool est_a{false};
     const auto slot_a = [&](bool has_id) {
         test.check_equal(has_id, endpoint_a.has_id(), "a has id");
-        trck.passed_part(1);
+        trck.checkpoint(1);
         est_a = true;
     };
     endpoint_a.connection_established.connect({eagine::construct_from, slot_a});
@@ -33,7 +33,7 @@ void endpoint_connection_established(unsigned, auto& s) {
     bool est_b{false};
     const auto slot_b = [&](bool has_id) {
         test.check_equal(has_id, endpoint_b.has_id(), "b has id");
-        trck.passed_part(2);
+        trck.checkpoint(2);
         est_b = true;
     };
     endpoint_b.connection_established.connect({eagine::construct_from, slot_b});
@@ -41,7 +41,7 @@ void endpoint_connection_established(unsigned, auto& s) {
     bool est_c{false};
     const auto slot_c = [&](bool has_id) {
         test.check_equal(has_id, endpoint_c.has_id(), "c has id");
-        trck.passed_part(3);
+        trck.checkpoint(3);
         est_c = true;
     };
     endpoint_c.connection_established.connect({eagine::construct_from, slot_c});
@@ -87,7 +87,7 @@ void endpoint_connection_lost(unsigned, auto& s) {
       {eagine::construct_from, established_a});
     const auto lost_a = [&]() {
         lst_a = true;
-        trck.passed_part(2);
+        trck.checkpoint(2);
     };
     endpoint_a.connection_lost.connect({eagine::construct_from, lost_a});
 
@@ -100,7 +100,7 @@ void endpoint_connection_lost(unsigned, auto& s) {
       {eagine::construct_from, established_b});
     const auto lost_b = [&]() {
         lst_b = true;
-        trck.passed_part(3);
+        trck.checkpoint(3);
     };
     endpoint_b.connection_lost.connect({eagine::construct_from, lost_b});
 
@@ -113,7 +113,7 @@ void endpoint_connection_lost(unsigned, auto& s) {
       {eagine::construct_from, established_c});
     const auto lost_c = [&]() {
         lst_c = true;
-        trck.passed_part(4);
+        trck.checkpoint(4);
     };
     endpoint_c.connection_lost.connect({eagine::construct_from, lost_c});
 
@@ -137,7 +137,7 @@ void endpoint_connection_lost(unsigned, auto& s) {
             endpoint_b.update();
             endpoint_c.update();
         }
-        trck.passed_part(1);
+        trck.checkpoint(1);
     }
     eagine::timeout loose_time{std::chrono::seconds{3}};
     while(not(lst_a and lst_b and lst_c)) {
@@ -266,7 +266,7 @@ void endpoint_id_assigned(unsigned, auto& s) {
     bool has_a{false};
     const auto slot_a = [&](bool has_id) {
         test.check_equal(has_id, endpoint_a.has_id(), "a has id");
-        trck.passed_part(1);
+        trck.checkpoint(1);
         has_a = true;
     };
     endpoint_a.connection_established.connect({eagine::construct_from, slot_a});
@@ -274,7 +274,7 @@ void endpoint_id_assigned(unsigned, auto& s) {
     bool has_b{false};
     const auto slot_b = [&](bool has_id) {
         test.check_equal(has_id, endpoint_b.has_id(), "b has id");
-        trck.passed_part(2);
+        trck.checkpoint(2);
         has_b = true;
     };
     endpoint_b.connection_established.connect({eagine::construct_from, slot_b});
@@ -282,7 +282,7 @@ void endpoint_id_assigned(unsigned, auto& s) {
     bool has_c{false};
     const auto slot_c = [&](bool has_id) {
         test.check_equal(has_id, endpoint_c.has_id(), "c has id");
-        trck.passed_part(3);
+        trck.checkpoint(3);
         has_c = true;
     };
     endpoint_c.connection_established.connect({eagine::construct_from, slot_c});

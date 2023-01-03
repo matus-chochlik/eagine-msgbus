@@ -56,11 +56,11 @@ void ping_pong_1(auto& s) {
           test.check_equal(pingable_id, pingable_ept_id, "pingable id ok");
           if(pingable_id == pingable_ept_id) {
               --todo;
-              trck.passed_part(1);
+              trck.checkpoint(1);
           }
           if(prev_seq_no > 0) {
               test.check(prev_seq_no < seq_no, "sequence ok");
-              trck.passed_part(2);
+              trck.checkpoint(2);
           }
           prev_seq_no = seq_no;
           test.check(age < ping_time.period(), "age ok");
@@ -130,11 +130,11 @@ void ping_pong_2(auto& s) {
           test.check_equal(pingable_id, pingable_ept_id, "pingable id ok");
           if(pingable_id == pingable_ept_id) {
               --todo;
-              trck.passed_part(1);
+              trck.checkpoint(1);
           }
           if(prev_seq_no > 0) {
               test.check(prev_seq_no < seq_no, "sequence ok");
-              trck.passed_part(2);
+              trck.checkpoint(2);
           }
           prev_seq_no = seq_no;
       };

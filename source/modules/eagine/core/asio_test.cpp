@@ -138,7 +138,7 @@ void asio_roundtrip_F(
         }
         test.check_equal(h, hashes[msg.sequence_no], "same hash");
         hashes.erase(msg.sequence_no);
-        trck.passed_part(1);
+        trck.checkpoint(1);
         return true;
     };
 

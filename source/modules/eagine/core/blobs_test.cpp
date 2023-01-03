@@ -56,7 +56,7 @@ public:
         _test.check(
           msg_id.class_() == eagine::identifier{"test"}, "message id");
         _done = true;
-        _trck.passed_part(2);
+        _trck.checkpoint(2);
     }
 
     void handle_cancelled() noexcept final {
@@ -76,7 +76,7 @@ public:
             _test.check_equal(b, eagine::byte{0}, "is zero");
         }
         _done_size += data.size();
-        _trck.passed_part(3);
+        _trck.checkpoint(3);
         return true;
     }
 
@@ -90,7 +90,7 @@ public:
         for(const auto b : data) {
             _test.check_equal(b, eagine::byte{0}, "is zero");
         }
-        _trck.passed_part(4);
+        _trck.checkpoint(4);
         return true;
     }
 
@@ -121,7 +121,7 @@ void blobs_roundtrip_zeroes_single_big(auto& s) {
 
         receiver.process_incoming(message);
 
-        trck.passed_part(1);
+        trck.checkpoint(1);
         return true;
     };
     const eagine::msgbus::blob_manipulator::send_handler handler_s2r{
@@ -182,7 +182,7 @@ void blobs_roundtrip_zeroes_single(unsigned r, auto& s) {
 
         receiver.process_incoming(message);
 
-        trck.passed_part(1);
+        trck.checkpoint(1);
         return true;
     };
     const eagine::msgbus::blob_manipulator::send_handler handler_s2r{
@@ -266,7 +266,7 @@ public:
         _test.check(
           msg_id.method() == eagine::identifier{"test"}, "message id");
         _done = true;
-        _trck.passed_part(2);
+        _trck.checkpoint(2);
     }
 
     void handle_cancelled() noexcept final {
@@ -286,7 +286,7 @@ public:
             _test.check_equal(b, eagine::byte{0xBF}, "is 0xBF");
         }
         _done_size += data.size();
-        _trck.passed_part(3);
+        _trck.checkpoint(3);
         return true;
     }
 
@@ -300,7 +300,7 @@ public:
         for(const auto b : data) {
             _test.check_equal(b, eagine::byte{0xBF}, "is 0xBF");
         }
-        _trck.passed_part(4);
+        _trck.checkpoint(4);
         return true;
     }
 
@@ -331,7 +331,7 @@ void blobs_roundtrip_bfs_single(auto& s) {
 
         receiver.process_incoming(message);
 
-        trck.passed_part(1);
+        trck.checkpoint(1);
         return true;
     };
     const eagine::msgbus::blob_manipulator::send_handler handler_s2r{
@@ -417,7 +417,7 @@ public:
         _test.check(
           msg_id.method() == eagine::identifier{"test"}, "message id");
         ++_done;
-        _trck.passed_part(2);
+        _trck.checkpoint(2);
     }
 
     void handle_cancelled() noexcept final {
@@ -437,7 +437,7 @@ public:
             _test.check_equal(b, eagine::byte{0xCE}, "is 0xCE");
         }
         _done_size += data.size();
-        _trck.passed_part(3);
+        _trck.checkpoint(3);
         return true;
     }
 
@@ -451,7 +451,7 @@ public:
         for(const auto b : data) {
             _test.check_equal(b, eagine::byte{0xCE}, "is 0xCE");
         }
-        _trck.passed_part(4);
+        _trck.checkpoint(4);
         return true;
     }
 
@@ -482,7 +482,7 @@ void blobs_roundtrip_ces_multiple(auto& s) {
 
         receiver.process_incoming(message);
 
-        trck.passed_part(1);
+        trck.checkpoint(1);
         return true;
     };
     const eagine::msgbus::blob_manipulator::send_handler handler_s2r{
@@ -557,7 +557,7 @@ void blobs_roundtrip_chunk_signals_finished(auto& s) {
                   test.check(
                     b == eagine::byte{0xBF} or b == eagine::byte{0xCE},
                     "content is ok");
-                  trck.passed_part(2);
+                  trck.checkpoint(2);
               }
               blob_sizes[blob_id][1] += blk.size();
           }
@@ -571,7 +571,7 @@ void blobs_roundtrip_chunk_signals_finished(auto& s) {
           blob_sizes[blob_id][0], blob_sizes[blob_id][1], "blob data complete");
         blob_sizes.erase(blob_id);
         ++done;
-        trck.passed_part(3);
+        trck.checkpoint(3);
     };
     signals.blob_stream_finished.connect(
       {eagine::construct_from, check_stream_finished});
@@ -583,7 +583,7 @@ void blobs_roundtrip_chunk_signals_finished(auto& s) {
 
         receiver.process_incoming(message);
 
-        trck.passed_part(1);
+        trck.checkpoint(1);
         return true;
     };
     const eagine::msgbus::blob_manipulator::send_handler handler_s2r{
@@ -676,7 +676,7 @@ void blobs_roundtrip_stream_signals_finished(auto& s) {
                   test.check(
                     b == eagine::byte{0xBF} or b == eagine::byte{0xCE},
                     "content is ok");
-                  trck.passed_part(2);
+                  trck.checkpoint(2);
               }
               test.check_equal(blob_sizes[blob_id][1], offset, "offset ok");
               blob_sizes[blob_id][1] += blk.size();
@@ -691,7 +691,7 @@ void blobs_roundtrip_stream_signals_finished(auto& s) {
           blob_sizes[blob_id][0], blob_sizes[blob_id][1], "blob data complete");
         blob_sizes.erase(blob_id);
         ++done;
-        trck.passed_part(3);
+        trck.checkpoint(3);
     };
     signals.blob_stream_finished.connect(
       {eagine::construct_from, check_stream_finished});
@@ -703,7 +703,7 @@ void blobs_roundtrip_stream_signals_finished(auto& s) {
 
         receiver.process_incoming(message);
 
-        trck.passed_part(1);
+        trck.checkpoint(1);
         return true;
     };
     const eagine::msgbus::blob_manipulator::send_handler handler_s2r{
@@ -787,7 +787,7 @@ void blobs_roundtrip_chunk_signals_failed(auto& s) {
     bool done{false};
     const auto check_stream_cancelled = [&](const eagine::identifier_t) {
         done = true;
-        trck.passed_part(2);
+        trck.checkpoint(2);
     };
     signals.blob_stream_cancelled.connect(
       {eagine::construct_from, check_stream_cancelled});
@@ -805,7 +805,7 @@ void blobs_roundtrip_chunk_signals_failed(auto& s) {
             }
         }
 
-        trck.passed_part(1);
+        trck.checkpoint(1);
         return true;
     };
     const eagine::msgbus::blob_manipulator::send_handler handler_s2r{
@@ -887,7 +887,7 @@ void blobs_roundtrip_resend_1(auto& s) {
 
         if(not rg.one_of(5)) {
             receiver.process_incoming(message);
-            trck.passed_part(1);
+            trck.checkpoint(1);
         }
         return true;
     };
@@ -900,7 +900,7 @@ void blobs_roundtrip_resend_1(auto& s) {
         if(not rg.one_of(11)) {
             if(msg_id == resend_msg_id) {
                 sender.process_resend(message);
-                trck.passed_part(5);
+                trck.checkpoint(5);
             }
         }
         return true;
@@ -959,7 +959,7 @@ void blobs_roundtrip_resend_2(auto& s) {
 
         if(not rg.one_of(5)) {
             receiver.process_incoming(message);
-            trck.passed_part(1);
+            trck.checkpoint(1);
         }
         return true;
     };
@@ -972,7 +972,7 @@ void blobs_roundtrip_resend_2(auto& s) {
         if(not rg.one_of(11)) {
             if(msg_id == resend_msg_id) {
                 sender.process_resend(message);
-                trck.passed_part(5);
+                trck.checkpoint(5);
             }
         }
         return true;

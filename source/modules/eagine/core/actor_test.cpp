@@ -34,7 +34,7 @@ public:
       const eagine::msgbus::stored_message& msg_in) noexcept -> bool {
         bus_node().respond_to(msg_in, {"PingPong", "Pong"});
         _timeout.reset();
-        _trck.passed_part(2);
+        _trck.checkpoint(2);
         return true;
     }
 
@@ -81,7 +81,7 @@ public:
       const eagine::msgbus::message_context&,
       const eagine::msgbus::stored_message&) noexcept -> bool {
         _ready = true;
-        _trck.passed_part(3);
+        _trck.checkpoint(3);
         return true;
     }
 
@@ -91,7 +91,7 @@ public:
         ++_rcvd;
         if(_rcvd < _max) {
             _timeout.reset();
-            _trck.passed_part(4);
+            _trck.checkpoint(4);
         }
         return true;
     }
@@ -161,7 +161,7 @@ void actor_ping_pong(auto& s) {
         router.update();
         ping.update();
         pong.update();
-        trck.passed_part(1);
+        trck.checkpoint(1);
     }
 }
 //------------------------------------------------------------------------------

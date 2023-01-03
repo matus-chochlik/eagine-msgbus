@@ -81,7 +81,7 @@ void direct_roundtrip(auto& s) {
         }
         test.check_equal(h, hashes[msg.sequence_no], "same hash");
         hashes.erase(msg.sequence_no);
-        trck.passed_part(1);
+        trck.checkpoint(1);
         return true;
     };
 
@@ -152,7 +152,7 @@ void direct_roundtrip_thread(auto& s) {
                    for(const auto b : msg.content()) {
                        h ^= std::hash<eagine::byte>{}(b);
                    }
-                   trck.passed_part(1);
+                   trck.checkpoint(1);
 
                    const std::lock_guard<std::mutex> lock{sync};
                    test.check(msg_id == test_msg_id, "message id");
