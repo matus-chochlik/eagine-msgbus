@@ -942,7 +942,7 @@ public:
         _messages.emplace_back(std::move(buf), _clock_t::now());
     }
 
-    [[nodiscard]] auto fetch_all(const fetch_handler handler) noexcept -> bool;
+    auto fetch_all(const fetch_handler handler) noexcept -> bool;
 
     [[nodiscard]] auto pack_into(memory::block dest) noexcept
       -> message_pack_info;
