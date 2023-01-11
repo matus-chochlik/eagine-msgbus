@@ -641,10 +641,82 @@ void serialized_message_storage_push_if_fetch(unsigned, auto& s) {
     test.check_equal(storage.count(), 0U, "count is zero");
 }
 //------------------------------------------------------------------------------
+// connection incoming/outgoing messages
+//------------------------------------------------------------------------------
+void connection_in_out_messages_push_fetch(unsigned, auto& s) {
+    eagitest::case_ test{s, 14, "connection in/out messages push fetch"};
+    eagitest::track trck{test, 0, 2};
+    auto& rg{test.random()};
+
+    eagine::msgbus::connection_outgoing_messages out;
+    eagine::msgbus::connection_incoming_messages inc;
+
+    test.check(out.empty(), "out is empty");
+    test.check_equal(out.count(), 0U, "out count is zero");
+    test.check(inc.empty(), "inc is empty");
+    test.check_equal(inc.count(), 0U, "inc count is zero");
+
+    eagine::main_ctx_object user{"Test", s.context()};
+    eagine::span_size_t nout{0};
+    eagine::span_size_t ninc{0};
+
+    const auto fetch_func = [&](
+                              const eagine::message_id msg_id,
+                              const eagine::msgbus::message_age msg_age,
+                              const eagine::msgbus::message_view& msg) {
+        test.check(msg_age.count() >= 0, "age");
+        test.check(
+          eagine::are_equal(
+            msg.content(),
+            eagine::memory::as_bytes(msg_id.class_().name().view())),
+          "content");
+        trck.checkpoint(2);
+        ++ninc;
+        return true;
+    };
+
+    std::vector<eagine::byte> temp;
+    for(unsigned r = 0; r < test.repeats(10); ++r) {
+        temp.resize(1U << rg.get_std_size(8, 15));
+        const auto mc{test.random().get_between(1U, 100U)};
+        for(unsigned m = 0; m < mc; ++m) {
+            const eagine::message_id msg_id{
+              eagine::random_identifier(), eagine::random_identifier()};
+            eagine::msgbus::message_view message{
+              eagine::memory::as_bytes(msg_id.class_().name().view())};
+            const bool enqueued{
+              out.enqueue(user, msg_id, message, eagine::cover(temp))};
+            ++nout;
+            test.check(enqueued, "enqueued");
+            trck.checkpoint(1);
+        }
+
+        const auto packed{out.pack_into(eagine::cover(temp))};
+        inc.push(head(eagine::view(temp), packed.used()));
+        out.cleanup(packed);
+
+        if(rg.get_bool()) {
+            inc.fetch_messages(user, {eagine::construct_from, fetch_func});
+        }
+    }
+    while(not out.empty()) {
+        const auto packed{out.pack_into(eagine::cover(temp))};
+        inc.push(head(eagine::view(temp), packed.used()));
+        out.cleanup(packed);
+    }
+
+    while(not inc.empty()) {
+        test.check(inc.count() > 0, "has items");
+        inc.fetch_messages(user, {eagine::construct_from, fetch_func});
+    }
+
+    test.check_equal(nout, ninc, "all transferred");
+}
+//------------------------------------------------------------------------------
 // main
 //------------------------------------------------------------------------------
 auto test_main(eagine::test_ctx& ctx) -> int {
-    eagitest::ctx_suite test{ctx, "message", 13};
+    eagitest::ctx_suite test{ctx, "message", 14};
     test.once(message_valid_endpoint_id);
     test.once(message_is_special);
     test.once(message_serialize_header_roundtrip);
@@ -658,6 +730,7 @@ auto test_main(eagine::test_ctx& ctx) -> int {
     test.repeat(10, serialized_message_storage_push_top_pop);
     test.repeat(10, serialized_message_storage_push_fetch);
     test.repeat(10, serialized_message_storage_push_if_fetch);
+    test.repeat(10, connection_in_out_messages_push_fetch);
     return test.exit_code();
 }
 //------------------------------------------------------------------------------
