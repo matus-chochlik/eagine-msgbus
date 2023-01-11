@@ -353,6 +353,7 @@ eagine_add_module_tests(
 		loopback
 		direct
 		asio
+		posix_mqueue
 		blobs
 		endpoint
 		actor
