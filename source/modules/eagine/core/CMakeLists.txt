@@ -357,11 +357,15 @@ eagine_add_module_tests(
 		blobs
 		endpoint
 		actor
+		registry
 	IMPORTS
 		eagine.core
 )
 set_tests_properties(execute-test.eagine.msgbus.core.loopback PROPERTIES COST 20)
 set_tests_properties(execute-test.eagine.msgbus.core.direct PROPERTIES COST 20)
+set_tests_properties(execute-test.eagine.msgbus.core.posix_mqueue PROPERTIES COST 10)
+set_tests_properties(execute-test.eagine.msgbus.core.asio PROPERTIES COST 35)
 set_tests_properties(execute-test.eagine.msgbus.core.message PROPERTIES COST 55)
 set_tests_properties(execute-test.eagine.msgbus.core.blobs PROPERTIES COST 70)
 set_tests_properties(execute-test.eagine.msgbus.core.actor PROPERTIES COST 10)
+set_tests_properties(execute-test.eagine.msgbus.core.registry PROPERTIES COST 15)
