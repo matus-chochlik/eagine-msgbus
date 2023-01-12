@@ -12,8 +12,7 @@ import eagine.core;
 import eagine.msgbus.core;
 import <thread>;
 import <chrono>;
-//------------------------------------------------------------------------------
-// ping / pong
+import <vector>;
 //------------------------------------------------------------------------------
 template <typename Base = eagine::msgbus::subscriber>
 class test_pong : public Base {
@@ -108,8 +107,62 @@ private:
     eagitest::track* _ptrck{nullptr};
 };
 //------------------------------------------------------------------------------
+// get-id
+//------------------------------------------------------------------------------
+void registry_get_id(auto& s) {
+    eagitest::case_ test{s, 1, "get-id"};
+    eagitest::track trck{test, 0, 1};
+    auto& ctx{s.context()};
+    eagine::msgbus::registry the_reg{ctx};
+
+    using pinger_t = eagine::msgbus::service_composition<
+      eagine::msgbus::require_services<eagine::msgbus::subscriber, test_ping>>;
+    using ponger_t = eagine::msgbus::service_composition<
+      eagine::msgbus::require_services<eagine::msgbus::subscriber, test_pong>>;
+
+    std::vector<std::reference_wrapper<pinger_t>> pingers;
+    std::vector<std::reference_wrapper<ponger_t>> pongers;
+
+    for(unsigned i = 0; i < test.repeats(100); ++i) {
+        pingers.emplace_back(
+          the_reg.emplace<pinger_t>(eagine::random_identifier()));
+        pongers.emplace_back(
+          the_reg.emplace<ponger_t>(eagine::random_identifier()));
+    }
+
+    const auto ids_assigned = [&]() -> bool {
+        for(const auto& p : pingers) {
+            if(not p.get().bus_node().has_id()) {
+                return false;
+            }
+        }
+        for(const auto& p : pongers) {
+            if(not p.get().bus_node().has_id()) {
+                return false;
+            }
+        }
+        return true;
+    };
+
+    eagine::timeout get_id_time{std::chrono::minutes{1}};
+    while(not ids_assigned()) {
+        if(get_id_time.is_expired()) {
+            test.fail("get-id timeout");
+            break;
+        }
+        if(not the_reg.update_all()) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(1));
+        }
+        trck.checkpoint(1);
+    }
+
+    the_reg.finish();
+}
+//------------------------------------------------------------------------------
+// ping/pong
+//------------------------------------------------------------------------------
 void registry_ping_pong(auto& s) {
-    eagitest::case_ test{s, 1, "ping-pong"};
+    eagitest::case_ test{s, 2, "ping-pong"};
     eagitest::track trck{test, 0, 4};
     auto& ctx{s.context()};
     eagine::msgbus::registry the_reg{ctx};
@@ -151,7 +204,8 @@ void registry_ping_pong(auto& s) {
             trck.checkpoint(4);
         }
     }
-};
+    the_reg.finish();
+}
 //------------------------------------------------------------------------------
 // main
 //------------------------------------------------------------------------------
@@ -159,7 +213,8 @@ auto test_main(eagine::test_ctx& ctx) -> int {
     enable_message_bus(ctx);
     ctx.preinitialize();
 
-    eagitest::ctx_suite test{ctx, "registry", 1};
+    eagitest::ctx_suite test{ctx, "registry", 2};
+    test.once(registry_get_id);
     test.once(registry_ping_pong);
     return test.exit_code();
 }
