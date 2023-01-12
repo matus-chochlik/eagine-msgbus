@@ -132,12 +132,12 @@ void registry_get_id(auto& s) {
 
     const auto ids_assigned = [&]() -> bool {
         for(const auto& p : pingers) {
-            if(not p.get().bus_node().has_id()) {
+            if(not p.get().has_id()) {
                 return false;
             }
         }
         for(const auto& p : pongers) {
-            if(not p.get().bus_node().has_id()) {
+            if(not p.get().has_id()) {
                 return false;
             }
         }
@@ -178,7 +178,7 @@ void registry_ping_pong(auto& s) {
     pinger.assign(trck);
 
     eagine::timeout get_id_time{std::chrono::minutes{1}};
-    while(not(ponger.bus_node().has_id() and pinger.bus_node().has_id())) {
+    while(not(ponger.has_id() and pinger.has_id())) {
         if(get_id_time.is_expired()) {
             test.fail("get-id timeout");
             break;
@@ -189,7 +189,7 @@ void registry_ping_pong(auto& s) {
         trck.checkpoint(3);
     }
 
-    if(ponger.bus_node().has_id()) {
+    if(ponger.has_id()) {
         pinger.assign_target(ponger.bus_node().get_id());
 
         eagine::timeout ping_time{std::chrono::minutes{1}};

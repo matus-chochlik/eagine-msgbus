@@ -20,6 +20,7 @@ import :skeleton;
 import :endpoint;
 import :subscriber;
 import :handler_map;
+import <optional>;
 import <type_traits>;
 
 namespace eagine::msgbus {
@@ -75,6 +76,22 @@ public:
         something_done(this->update());
         something_done(this->process_all());
         return something_done;
+    }
+
+    /// @brief Indicates if the underlying endpoint as an assigned id.
+    /// @see get_id
+    auto has_id() const noexcept -> bool {
+        return this->bus_node().has_id();
+    }
+
+    /// @brief Returns the underlying endpoint identifier if one is assigned.
+    /// @see has_id
+    auto get_id() const noexcept -> std::optional<identifier_t> {
+        const auto id{this->bus_node().get_id()};
+        if(is_valid_endpoint_id(id)) {
+            return {id};
+        }
+        return {};
     }
 
 protected:
