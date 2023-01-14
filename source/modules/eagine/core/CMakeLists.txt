@@ -247,8 +247,8 @@ eagine_add_module(
 eagine_add_module(
 	eagine.msgbus.core PARTITION registry
 	IMPORTS
-		types interface setup
-		direct endpoint router
+		types interface setup direct
+		service endpoint router
 		eagine.core.types
 		eagine.core.memory
 		eagine.core.identifier

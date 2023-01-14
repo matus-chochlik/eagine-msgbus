@@ -128,6 +128,12 @@ private:
     }
 };
 //------------------------------------------------------------------------------
+template <typename T>
+concept composed_service = requires(T x) {
+    []<typename Base>(service_composition<Base>&) {
+    }(x);
+};
+//------------------------------------------------------------------------------
 export template <typename Base = subscriber>
 class service_node
   : public main_ctx_object

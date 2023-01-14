@@ -21,7 +21,9 @@ import :interface;
 import :endpoint;
 import :router;
 import :setup;
+import :service;
 import <concepts>;
+import <chrono>;
 import <vector>;
 
 namespace eagine::msgbus {
@@ -49,6 +51,7 @@ public:
 
     /// @brief Establishes an endpoint and instantiates a service object tied to it.
     /// @see establish
+    /// @see remove
     template <std::derived_from<service_interface> Service, typename... Args>
     auto emplace(const identifier log_id, Args&&... args) noexcept
       -> Service& requires(std::is_base_of_v<service_interface, Service>) {
@@ -60,10 +63,32 @@ public:
           return *static_cast<Service*>(entry._service.get());
       }
 
+    /// @brief Updates this registry until all specified services have id or timeout.
+    /// @return Indicates if the service has_id
+    template <typename R, typename P, composed_service... Service>
+    auto wait_for_id_of(
+      const std::chrono::duration<R, P> t,
+      Service&... service) noexcept {
+        timeout get_id_time{t};
+        while(not(... and service.has_id())) {
+            if(get_id_time.is_expired()) [[unlikely]] {
+                return false;
+            }
+            update_all();
+        }
+        return true;
+    }
+
     /// @brief Removes a previously emplaced service.
+    /// @see emplace
     void remove(service_interface&) noexcept;
 
+    /// @brief Updates the internal router.
+    /// @see update_all
     auto update() noexcept -> work_done;
+
+    /// @brief Updates the internal router and all emplaced services.
+    /// @see update
     auto update_all() noexcept -> work_done;
 
     auto is_done() noexcept -> bool {

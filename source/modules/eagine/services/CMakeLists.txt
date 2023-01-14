@@ -249,6 +249,7 @@ eagine_add_module_tests(
 	UNITS
 		shutdown
 		ping_pong
+		discovery
 	IMPORTS
 		eagine.core
 )

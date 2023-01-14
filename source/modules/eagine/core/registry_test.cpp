@@ -159,7 +159,7 @@ void registry_get_id(auto& s) {
     the_reg.finish();
 }
 //------------------------------------------------------------------------------
-// ping/pong
+// ping/pong 1
 //------------------------------------------------------------------------------
 void registry_ping_pong(auto& s) {
     eagitest::case_ test{s, 2, "ping-pong"};
@@ -207,15 +207,52 @@ void registry_ping_pong(auto& s) {
     the_reg.finish();
 }
 //------------------------------------------------------------------------------
+// ping/pong 2
+//------------------------------------------------------------------------------
+void registry_wait_ping_pong(auto& s) {
+    eagitest::case_ test{s, 3, "wait / ping-pong"};
+    eagitest::track trck{test, 0, 3};
+    auto& ctx{s.context()};
+    eagine::msgbus::registry the_reg{ctx};
+
+    auto& ponger = the_reg.emplace<eagine::msgbus::service_composition<
+      eagine::msgbus::require_services<eagine::msgbus::subscriber, test_pong>>>(
+      "TestPong");
+    auto& pinger = the_reg.emplace<eagine::msgbus::service_composition<
+      eagine::msgbus::require_services<eagine::msgbus::subscriber, test_ping>>>(
+      "TestPing");
+
+    ponger.assign(trck);
+    pinger.assign(trck);
+
+    if(the_reg.wait_for_id_of(std::chrono::minutes{1}, pinger, ponger)) {
+        pinger.assign_target(ponger.bus_node().get_id());
+
+        eagine::timeout ping_time{std::chrono::minutes{1}};
+        while(not pinger.success()) {
+            if(ping_time.is_expired()) {
+                test.fail("ping timeout");
+                break;
+            }
+            if(not the_reg.update_all()) {
+                std::this_thread::sleep_for(std::chrono::milliseconds(1));
+            }
+            trck.checkpoint(3);
+        }
+    }
+    the_reg.finish();
+}
+//------------------------------------------------------------------------------
 // main
 //------------------------------------------------------------------------------
 auto test_main(eagine::test_ctx& ctx) -> int {
     enable_message_bus(ctx);
     ctx.preinitialize();
 
-    eagitest::ctx_suite test{ctx, "registry", 2};
+    eagitest::ctx_suite test{ctx, "registry", 3};
     test.once(registry_get_id);
     test.once(registry_ping_pong);
+    test.once(registry_wait_ping_pong);
     return test.exit_code();
 }
 //------------------------------------------------------------------------------
