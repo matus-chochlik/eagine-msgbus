@@ -17,7 +17,7 @@ import :types;
 import :message;
 import <array>;
 import <map>;
-import <random>;
+export import <random>;
 
 namespace eagine::msgbus {
 //------------------------------------------------------------------------------
