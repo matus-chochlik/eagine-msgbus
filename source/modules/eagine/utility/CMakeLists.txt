@@ -23,7 +23,7 @@ eagine_add_module(
 	PARTITIONS
 		resource_transfer
 	SOURCES
-		resource_transfer_impl
+		resource_transfer
 	IMPORTS
 		eagine.core.reflection
 		eagine.core.valid_if

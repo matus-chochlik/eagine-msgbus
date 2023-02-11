@@ -232,15 +232,15 @@ eagine_add_module(
 		sudoku
 		tracker
 	SOURCES
-		shutdown_impl
-		discovery_impl
-		topology_impl
-		ping_pong_impl
-		statistics_impl
-		system_info_impl
-		resource_transfer_impl
-		tracker_impl
-		sudoku_impl
+		shutdown
+		discovery
+		topology
+		ping_pong
+		statistics
+		system_info
+		resource_transfer
+		tracker
+		sudoku
 	IMPORTS
 )
 

@@ -324,17 +324,17 @@ eagine_add_module(
 		resources
 		embedded
 	SOURCES
-		message_impl
-		context_impl
-		blobs_impl
-		connection_setup_impl
-		posix_mqueue_impl
-		asio_impl
-		endpoint_impl
-		router_impl
-		bridge_impl
-		registry_impl
-		remote_node_impl
+		message
+		context
+		blobs
+		connection_setup
+		posix_mqueue
+		asio
+		endpoint
+		router
+		bridge
+		registry
+		remote_node
 	IMPORTS
 		eagine.core.debug
 		eagine.core.container
