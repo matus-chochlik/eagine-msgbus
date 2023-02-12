@@ -166,7 +166,7 @@ auto test_main(eagine::test_ctx& ctx) -> int {
     enable_message_bus(ctx);
     ctx.preinitialize();
 
-    eagitest::ctx_suite test{ctx, "ping-pong", 1};
+    eagitest::ctx_suite test{ctx, "ping-pong", 2};
     test.once(ping_pong_1);
     test.once(ping_pong_2);
     return test.exit_code();
