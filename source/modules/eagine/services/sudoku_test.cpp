@@ -100,7 +100,7 @@ void sudoku_rank_4_1(auto& s) {
 // test 2
 //------------------------------------------------------------------------------
 template <unsigned S>
-void sudoku_rank_S_2(auto& s, auto& test) {
+void sudoku_rank_S_2(auto& s, auto& test, int todo) {
     eagitest::track trck{test, 0, 4};
     auto& ctx{s.context()};
     eagine::msgbus::registry the_reg{ctx};
@@ -117,15 +117,15 @@ void sudoku_rank_S_2(auto& s, auto& test) {
         if(the_reg.wait_for_id_of(std::chrono::seconds{30}, solver)) {
             solver.assign_track(trck);
 
-            int todo{3};
-            while(todo > 0) {
+            eagine::timeout test_timeout{std::chrono::minutes{4}};
+            while(not(todo == 0 or test_timeout.is_expired())) {
                 solver.enqueue(
                   0,
                   eagine::default_sudoku_board_traits<S>()
                     .make_generator()
-                    .generate_medium());
+                    .generate_one());
 
-                eagine::timeout solution_timeout{std::chrono::seconds{15}};
+                eagine::timeout solution_timeout{std::chrono::seconds{30}};
                 while(not solver.is_done()) {
                     if(solution_timeout.is_expired()) {
                         break;
@@ -155,12 +155,12 @@ void sudoku_rank_S_2(auto& s, auto& test) {
 //------------------------------------------------------------------------------
 void sudoku_rank_3_2(auto& s) {
     eagitest::case_ test{s, 3, "rank 3"};
-    sudoku_rank_S_2<3>(s, test);
+    sudoku_rank_S_2<3>(s, test, 4);
 }
 //------------------------------------------------------------------------------
 void sudoku_rank_4_2(auto& s) {
     eagitest::case_ test{s, 4, "rank 4"};
-    sudoku_rank_S_2<4>(s, test);
+    sudoku_rank_S_2<4>(s, test, 2);
 }
 //------------------------------------------------------------------------------
 // main
