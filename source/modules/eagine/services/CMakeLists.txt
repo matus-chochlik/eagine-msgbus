@@ -250,6 +250,7 @@ eagine_add_module_tests(
 		shutdown
 		ping_pong
 		discovery
+		sudoku
 	IMPORTS
 		eagine.core
 )
