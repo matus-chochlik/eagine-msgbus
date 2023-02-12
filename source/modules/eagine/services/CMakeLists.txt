@@ -255,3 +255,4 @@ eagine_add_module_tests(
 		eagine.core
 )
 set_tests_properties(execute-test.eagine.msgbus.services.ping_pong PROPERTIES COST 12)
+set_tests_properties(execute-test.eagine.msgbus.services.sudoku PROPERTIES COST 30)

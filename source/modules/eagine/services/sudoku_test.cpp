@@ -11,8 +11,6 @@ import eagine.core;
 import eagine.msgbus.core;
 import eagine.msgbus.services;
 //------------------------------------------------------------------------------
-// test 1
-//------------------------------------------------------------------------------
 template <typename Base = eagine::msgbus::subscriber>
 class test_solver : public eagine::msgbus::sudoku_solver<Base> {
     using base = eagine::msgbus::sudoku_solver<Base>;
@@ -26,8 +24,6 @@ public:
 
     void assign_track(eagitest::track& trck) noexcept {
         _ptrck = &trck;
-        // TODO: remove this
-        _ptrck->checkpoint(1);
     }
 
     template <unsigned S>
@@ -46,9 +42,11 @@ private:
     eagitest::track* _ptrck{nullptr};
 };
 //------------------------------------------------------------------------------
+// test 1
+//------------------------------------------------------------------------------
 template <unsigned S>
 void sudoku_rank_S_1(auto& s, auto& test) {
-    eagitest::track trck{test, 0, 3};
+    eagitest::track trck{test, 0, 4};
     auto& ctx{s.context()};
     eagine::msgbus::registry the_reg{ctx};
 
@@ -63,13 +61,30 @@ void sudoku_rank_S_1(auto& s, auto& test) {
 
         if(the_reg.wait_for_id_of(std::chrono::seconds{30}, solver)) {
             solver.assign_track(trck);
-            // TODO
-            trck.checkpoint(2);
+
+            for(unsigned r = 0; r < test.repeats(3); ++r) {
+                solver.enqueue(
+                  0,
+                  eagine::default_sudoku_board_traits<S>()
+                    .make_generator()
+                    .generate_medium());
+
+                eagine::timeout solution_timeout{std::chrono::minutes{1}};
+                while(not solver.is_done()) {
+                    if(solution_timeout.is_expired()) {
+                        test.fail("receive timeout");
+                        break;
+                    }
+                    the_reg.update_all();
+                    trck.checkpoint(2);
+                }
+            }
+            trck.checkpoint(3);
         } else {
             test.fail("get id solver");
         }
 
-        trck.checkpoint(3);
+        trck.checkpoint(4);
     } else {
         test.fail("get id helper");
     }
