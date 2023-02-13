@@ -252,9 +252,13 @@ eagine_add_module_tests(
 		discovery
 		application_info
 		compiler_info
+		endpoint_info
 		sudoku
 	IMPORTS
 		eagine.core
 )
 set_tests_properties(execute-test.eagine.msgbus.services.ping_pong PROPERTIES COST 12)
+set_tests_properties(execute-test.eagine.msgbus.services.application_info PROPERTIES COST 2)
+set_tests_properties(execute-test.eagine.msgbus.services.compiler_info PROPERTIES COST 2)
+set_tests_properties(execute-test.eagine.msgbus.services.endpoint_info PROPERTIES COST 2)
 set_tests_properties(execute-test.eagine.msgbus.services.sudoku PROPERTIES COST 60)
