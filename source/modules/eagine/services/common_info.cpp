@@ -34,7 +34,7 @@ using common_info_providers = require_services<
 /// @ingroup msgbus
 /// @see service_composition
 /// @see common_info_providers
-template <typename Base = subscriber>
+export template <typename Base = subscriber>
 using common_info_consumers = require_services<
   Base,
   compiler_info_consumer,
