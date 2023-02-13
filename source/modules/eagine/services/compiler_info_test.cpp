@@ -14,42 +14,42 @@ import <chrono>;
 //------------------------------------------------------------------------------
 // test 1
 //------------------------------------------------------------------------------
-void application_info_1(auto& s) {
+void compiler_info_1(auto& s) {
     eagitest::case_ test{s, 1, "1"};
     eagitest::track trck{test, 0, 2};
     auto& ctx{s.context()};
     eagine::msgbus::registry the_reg{ctx};
 
     auto& provider = the_reg.emplace<eagine::msgbus::service_composition<
-      eagine::msgbus::application_info_provider<>>>("Provider");
+      eagine::msgbus::compiler_info_provider<>>>("Provider");
     auto& consumer = the_reg.emplace<eagine::msgbus::service_composition<
-      eagine::msgbus::application_info_consumer<>>>("Consumer");
+      eagine::msgbus::compiler_info_consumer<>>>("Consumer");
 
     if(the_reg.wait_for_id_of(std::chrono::seconds{30}, provider, consumer)) {
-        bool has_application_name{false};
+        bool has_compiler_info{false};
 
         const auto received_all{[&] {
-            return has_application_name;
+            return has_compiler_info;
         }};
 
-        const auto handle_application_name{
+        const auto handle_compiler_info{
           [&](
             const eagine::msgbus::result_context& rc,
-            const eagine::valid_if_not_empty<std::string>& name) {
-              has_application_name = name.has_value();
-              test.check(name.has_value(), "has application name");
+            const eagine::compiler_info& info) {
+              has_compiler_info =
+                info.name().has_value() or info.architecture_name().has_value();
               test.check(provider.get_id() == rc.source_id(), "from provider");
               trck.checkpoint(1);
           }};
 
-        consumer.application_name_received.connect(
-          {eagine::construct_from, handle_application_name});
+        consumer.compiler_info_received.connect(
+          {eagine::construct_from, handle_compiler_info});
 
         eagine::timeout query_timeout{std::chrono::seconds{5}, eagine::nothing};
         eagine::timeout receive_timeout{std::chrono::seconds{30}};
         while(not received_all()) {
             if(query_timeout.is_expired()) {
-                consumer.query_application_name(provider.get_id().value());
+                consumer.query_compiler_info(provider.get_id().value());
                 query_timeout.reset();
                 trck.checkpoint(2);
             }
@@ -70,8 +70,8 @@ auto test_main(eagine::test_ctx& ctx) -> int {
     enable_message_bus(ctx);
     ctx.preinitialize();
 
-    eagitest::ctx_suite test{ctx, "application info", 1};
-    test.once(application_info_1);
+    eagitest::ctx_suite test{ctx, "compiler info", 1};
+    test.once(compiler_info_1);
     return test.exit_code();
 }
 //------------------------------------------------------------------------------

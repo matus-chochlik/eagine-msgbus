@@ -251,6 +251,7 @@ eagine_add_module_tests(
 		ping_pong
 		discovery
 		application_info
+		compiler_info
 		sudoku
 	IMPORTS
 		eagine.core
