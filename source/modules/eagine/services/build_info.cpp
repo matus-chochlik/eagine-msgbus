@@ -59,7 +59,7 @@ export struct build_version_info_consumer_signals {
 /// @see service_composition
 /// @see build_info_provider
 /// @see build_info
-template <typename Base = subscriber>
+export template <typename Base = subscriber>
 class build_version_info_consumer
   : public Base
   , public build_version_info_consumer_signals {
