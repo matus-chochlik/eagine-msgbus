@@ -255,6 +255,7 @@ eagine_add_module_tests(
 		endpoint_info
 		build_info
 		host_info
+		system_info
 		sudoku
 	IMPORTS
 		eagine.core
@@ -265,4 +266,5 @@ set_tests_properties(execute-test.eagine.msgbus.services.compiler_info PROPERTIE
 set_tests_properties(execute-test.eagine.msgbus.services.endpoint_info PROPERTIES COST 2)
 set_tests_properties(execute-test.eagine.msgbus.services.build_info PROPERTIES COST 2)
 set_tests_properties(execute-test.eagine.msgbus.services.host_info PROPERTIES COST 2)
+set_tests_properties(execute-test.eagine.msgbus.services.system_info PROPERTIES COST 10)
 set_tests_properties(execute-test.eagine.msgbus.services.sudoku PROPERTIES COST 60)
