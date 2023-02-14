@@ -49,6 +49,11 @@ public:
         return extract(_add_entry(log_id)._endpoint);
     }
 
+    /// @brief Returns the id of the internal router.
+    auto router_id() const noexcept -> identifier_t {
+        return _router.get_id();
+    }
+
     /// @brief Establishes an endpoint and instantiates a service object tied to it.
     /// @see establish
     /// @see remove

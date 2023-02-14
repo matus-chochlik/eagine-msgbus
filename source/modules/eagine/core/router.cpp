@@ -135,6 +135,11 @@ public:
         return _user;
     }
 
+    /// @brief Returns the unique id of this router.
+    auto get_id() const noexcept {
+        return _id_base;
+    }
+
     void add_certificate_pem(const memory::const_block blk) noexcept;
     void add_ca_certificate_pem(const memory::const_block blk) noexcept;
 
