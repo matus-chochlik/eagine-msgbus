@@ -24,7 +24,6 @@ namespace eagine::msgbus {
 /// @see build_info_consumer
 export template <typename Base = subscriber>
 class build_version_info_provider : public Base {
-    using This = build_version_info_provider;
 
 protected:
     using Base::Base;
@@ -63,8 +62,6 @@ export template <typename Base = subscriber>
 class build_version_info_consumer
   : public Base
   , public build_version_info_consumer_signals {
-
-    using This = build_version_info_consumer;
 
 public:
     /// @brief Queries endpoint's build version information.
