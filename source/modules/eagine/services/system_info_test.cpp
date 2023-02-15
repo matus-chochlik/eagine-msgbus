@@ -16,7 +16,7 @@ import <chrono>;
 //------------------------------------------------------------------------------
 void system_info_1(auto& s) {
     eagitest::case_ test{s, 1, "1"};
-    eagitest::track trck{test, 0, 5};
+    eagitest::track trck{test, 0, 7};
     auto& ctx{s.context()};
     eagine::msgbus::registry the_reg{ctx};
 
@@ -32,11 +32,17 @@ void system_info_1(auto& s) {
         bool has_short_average_load{false};
         bool has_long_average_load{false};
         bool has_memory_page_size{false};
+        bool has_free_ram_size{false};
+        bool has_total_ram_size{false};
+        bool has_free_swap_size{false};
+        bool has_total_swap_size{false};
 
         const auto received_all{[&] {
             return has_uptime and has_cpu_concurrent_threads and
                    has_short_average_load and has_long_average_load and
-                   has_memory_page_size;
+                   has_memory_page_size and has_free_ram_size and
+                   has_total_ram_size and has_free_swap_size and
+                   has_total_swap_size;
         }};
 
         // uptime
@@ -98,6 +104,54 @@ void system_info_1(auto& s) {
         consumer.memory_page_size_received.connect(
           {eagine::construct_from, handle_memory_page_size});
 
+        // free ram size
+        const auto handle_free_ram_size{
+          [&](
+            const eagine::msgbus::result_context& rc,
+            const eagine::valid_if_positive<eagine::span_size_t>& value) {
+              has_free_ram_size = value.has_value();
+              test.check(provider.get_id() == rc.source_id(), "from provider");
+              trck.checkpoint(6);
+          }};
+        consumer.free_ram_size_received.connect(
+          {eagine::construct_from, handle_free_ram_size});
+
+        // total ram size
+        const auto handle_total_ram_size{
+          [&](
+            const eagine::msgbus::result_context& rc,
+            const eagine::valid_if_positive<eagine::span_size_t>& value) {
+              has_total_ram_size = value.has_value();
+              test.check(provider.get_id() == rc.source_id(), "from provider");
+              trck.checkpoint(7);
+          }};
+        consumer.total_ram_size_received.connect(
+          {eagine::construct_from, handle_total_ram_size});
+
+        // free swap size
+        const auto handle_free_swap_size{
+          [&](
+            const eagine::msgbus::result_context& rc,
+            const eagine::valid_if_nonnegative<eagine::span_size_t>& value) {
+              has_free_swap_size = value.has_value();
+              test.check(provider.get_id() == rc.source_id(), "from provider");
+              trck.checkpoint(6);
+          }};
+        consumer.free_swap_size_received.connect(
+          {eagine::construct_from, handle_free_swap_size});
+
+        // total swap size
+        const auto handle_total_swap_size{
+          [&](
+            const eagine::msgbus::result_context& rc,
+            const eagine::valid_if_nonnegative<eagine::span_size_t>& value) {
+              has_total_swap_size = value.has_value();
+              test.check(provider.get_id() == rc.source_id(), "from provider");
+              trck.checkpoint(7);
+          }};
+        consumer.total_swap_size_received.connect(
+          {eagine::construct_from, handle_total_swap_size});
+
         // test
         eagine::timeout query_timeout{std::chrono::seconds{5}, eagine::nothing};
         eagine::timeout receive_timeout{std::chrono::seconds{30}};
@@ -119,6 +173,18 @@ void system_info_1(auto& s) {
                 }
                 if(not has_memory_page_size) {
                     consumer.query_memory_page_size(provider.get_id().value());
+                }
+                if(not has_free_ram_size) {
+                    consumer.query_free_ram_size(provider.get_id().value());
+                }
+                if(not has_total_ram_size) {
+                    consumer.query_total_ram_size(provider.get_id().value());
+                }
+                if(not has_free_swap_size) {
+                    consumer.query_free_swap_size(provider.get_id().value());
+                }
+                if(not has_total_swap_size) {
+                    consumer.query_total_swap_size(provider.get_id().value());
                 }
                 query_timeout.reset();
             }
