@@ -273,4 +273,4 @@ set_tests_properties(execute-test.eagine.msgbus.services.build_info PROPERTIES C
 set_tests_properties(execute-test.eagine.msgbus.services.host_info PROPERTIES COST 2)
 set_tests_properties(execute-test.eagine.msgbus.services.system_info PROPERTIES COST 10)
 set_tests_properties(execute-test.eagine.msgbus.services.common_info PROPERTIES COST 10)
-set_tests_properties(execute-test.eagine.msgbus.services.sudoku PROPERTIES COST 80)
+set_tests_properties(execute-test.eagine.msgbus.services.sudoku PROPERTIES COST 160)
