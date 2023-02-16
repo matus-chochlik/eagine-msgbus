@@ -173,8 +173,7 @@ public:
         some_true something_done{
           _blobs.update(bus.post_callable(), min_connection_data_size)};
         if(_should_send_outgoing) {
-            const auto opt_max_size = bus.max_data_size();
-            if(opt_max_size) [[likely]] {
+            if(const auto opt_max_size{bus.max_data_size()}) [[likely]] {
                 something_done(_blobs.process_outgoing(
                   bus.post_callable(), extract(opt_max_size), 2));
             }
