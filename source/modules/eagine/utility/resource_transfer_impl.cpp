@@ -156,7 +156,8 @@ void resource_data_consumer_node::_init() {
       this, ping_timeouted);
 }
 //------------------------------------------------------------------------------
-auto resource_data_consumer_node::update() noexcept -> work_done {
+auto resource_data_consumer_node::update_and_process_all() noexcept
+  -> work_done {
     some_true something_done;
 
     for(auto& [server_id, sinfo] : _current_servers) {

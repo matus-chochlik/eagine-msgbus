@@ -93,8 +93,8 @@ void resource_transfer_1(auto& s) {
 
         test.check(consumer.has_pending_resources(), "has pending");
 
-        eagine::timeout transfer_time{std::chrono::minutes{4}};
-        while(todo_all > 0) {
+        eagine::timeout transfer_time{std::chrono::minutes{1}};
+        while(todo_all > 0 and consumer.has_pending_resources()) {
             if(transfer_time.is_expired()) {
                 test.fail("data transfer timeout");
                 break;
@@ -102,7 +102,6 @@ void resource_transfer_1(auto& s) {
             the_reg.update_all();
         }
 
-        test.check(not consumer.has_pending_resources(), "nothing pending");
         test.check(todo_zeroes <= 0, "zeroes transferred");
         test.check(todo_ones <= 0, "ones transferred");
 

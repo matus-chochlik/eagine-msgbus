@@ -102,7 +102,6 @@ protected:
     auto update() noexcept -> work_done {
         some_true something_done{Base::update()};
         something_done(_impl->update());
-
         return something_done;
     }
 
@@ -256,7 +255,6 @@ protected:
     auto update() noexcept -> work_done {
         some_true something_done{base::update()};
         something_done(_impl->update());
-
         return something_done;
     }
 

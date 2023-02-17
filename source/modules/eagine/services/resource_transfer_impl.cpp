@@ -173,10 +173,8 @@ public:
         some_true something_done{
           _blobs.update(bus.post_callable(), min_connection_data_size)};
         if(_should_send_outgoing) {
-            if(const auto opt_max_size{bus.max_data_size()}) [[likely]] {
-                something_done(_blobs.process_outgoing(
-                  bus.post_callable(), extract(opt_max_size), 2));
-            }
+            something_done(_blobs.process_outgoing(
+              bus.post_callable(), min_connection_data_size, 2));
             _should_send_outgoing.reset();
         }
 
@@ -256,7 +254,7 @@ void resource_server_impl::notify_resource_available(
 
     if(const auto serialized{default_serialize(locator, cover(buffer))})
       [[likely]] {
-        const auto msg_id{message_id{"eagiRsrce", "available"}};
+        const auto msg_id{message_id{"eagiRsrces", "available"}};
         message_view message{extract(serialized)};
         message.set_target_id(broadcast_endpoint_id());
         base.bus_node().post(msg_id, message);
@@ -495,7 +493,7 @@ public:
         base.add_method(
           this,
           message_map<
-            "eagiRsrce",
+            "eagiRsrces",
             "available",
             &resource_manipulator_impl::_handle_resource_available>{});
     }

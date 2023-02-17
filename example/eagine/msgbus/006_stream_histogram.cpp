@@ -84,7 +84,7 @@ auto main(main_ctx& ctx) -> int {
     };
 
     while(not is_done()) {
-        if(node.update()) {
+        if(node.update_and_process_all()) {
             idle_too_long.reset();
         } else {
             std::this_thread::sleep_for(std::chrono::milliseconds(1));
