@@ -40,5 +40,5 @@ eagine_add_module_tests(
 		eagine.msgbus.core
 		eagine.msgbus.services
 )
-set_tests_properties(execute-test.eagine.msgbus.utility.resource_transfer PROPERTIES COST 10)
+set_tests_properties(execute-test.eagine.msgbus.utility.resource_transfer PROPERTIES COST 25)
 

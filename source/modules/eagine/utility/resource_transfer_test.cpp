@@ -27,7 +27,7 @@ void resource_transfer_1(auto& s) {
     if(the_reg.wait_for_id_of(std::chrono::seconds{30}, server, consumer)) {
         eagine::span_size_t todo_zeroes{16777216};
         eagine::span_size_t todo_ones{16777216};
-        eagine::span_size_t todo_all{4 * 16777216};
+        eagine::span_size_t todo_all{5 * 16777216};
 
         const auto consume{
           [&](
@@ -74,6 +74,10 @@ void resource_transfer_1(auto& s) {
               }
           }};
 
+        enqueue(
+          eagine::url("eagires:///random?count=16777216"),
+          eagine::msgbus::message_priority::idle,
+          true);
         enqueue(
           eagine::url("eagires:///ones?count=16777216"),
           eagine::msgbus::message_priority::low,
