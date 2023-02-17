@@ -30,3 +30,15 @@ eagine_add_module(
 		eagine.core.logging
 )
 
+
+eagine_add_module_tests(
+	eagine.msgbus.utility
+	UNITS
+		resource_transfer
+	IMPORTS
+		eagine.core
+		eagine.msgbus.core
+		eagine.msgbus.services
+)
+set_tests_properties(execute-test.eagine.msgbus.utility.resource_transfer PROPERTIES COST 10)
+
