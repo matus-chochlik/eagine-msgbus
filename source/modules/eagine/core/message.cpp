@@ -996,6 +996,10 @@ public:
         _messages.reserve(128);
     }
 
+    [[nodiscard]] auto empty() const noexcept -> bool {
+        return _messages.empty();
+    }
+
     [[nodiscard]] auto size() const noexcept -> span_size_t {
         return _messages.size();
     }
