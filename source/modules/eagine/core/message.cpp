@@ -21,6 +21,7 @@ import eagine.core.runtime;
 import eagine.core.main_ctx;
 import :types;
 import <chrono>;
+import <coroutine>;
 import <cstdint>;
 import <limits>;
 import <vector>;
@@ -1038,6 +1039,15 @@ public:
             }
         }
         return count;
+    }
+
+    [[nodiscard]] auto give_messages() noexcept
+      -> pointee_generator<std::vector<stored_message>::iterator> {
+        for(auto pos{_messages.begin()}; pos != _messages.end(); ++pos) {
+            co_yield pos;
+            _buffers.eat(pos->release_buffer());
+        }
+        _messages.clear();
     }
 
 private:
