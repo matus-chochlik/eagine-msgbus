@@ -23,6 +23,7 @@ import :endpoint;
 import <array>;
 import <coroutine>;
 import <type_traits>;
+import <variant>;
 import <vector>;
 
 namespace eagine::msgbus {
@@ -66,6 +67,31 @@ private:
     message_priority_queue& _queue;
     const method_handler& _handler;
 };
+//------------------------------------------------------------------------------
+template <typename DecodedList>
+struct make_decoded_result;
+
+template <typename... Decoded>
+struct make_decoded_result<mp_list<Decoded...>>
+  : std::type_identity<std::variant<Decoded...>> {};
+
+template <typename Variant, typename... Decoded>
+struct merge_decode_results;
+
+template <typename... L, typename... R>
+struct merge_decode_results<std::variant<L...>, R...>
+  : make_decoded_result<mp_union_t<mp_list<L...>, mp_list<R...>>> {};
+
+export template <typename Base, typename... Decoded>
+struct get_decode_result
+  : merge_decode_results<
+      decltype(std::declval<Base>().decode(
+        std::declval<const message_context>(),
+        std::declval<const stored_message>())),
+      Decoded...> {};
+
+export template <typename Base, typename... Decoded>
+using decode_result_t = typename get_decode_result<Base, Decoded...>::type;
 //------------------------------------------------------------------------------
 /// @brief Base class for message bus subscribers.
 /// @ingroup msgbus
@@ -114,6 +140,43 @@ public:
     /// @see query_subscriptions_of
     void query_subscribers_of(const message_id sub_msg) noexcept {
         _endpoint.query_subscribers_of(sub_msg);
+    }
+
+    auto decode(const message_context&, const stored_message& message)
+      const noexcept -> std::variant<std::monostate> {
+        return {};
+    }
+
+    template <typename Base, typename Unused>
+    auto decode_chain(
+      const message_context& msg_ctx,
+      const stored_message& message,
+      Base& base,
+      const Unused&) noexcept {
+        return base.decode(msg_ctx, message);
+    }
+
+    template <
+      typename Base,
+      typename Derived,
+      typename Decoded0,
+      typename... Decoded>
+    auto decode_chain(
+      const message_context& msg_ctx,
+      const stored_message& message,
+      Base& base,
+      Derived& obj,
+      std::optional<Decoded0> (Derived::*decoder)(
+        const message_context&,
+        const stored_message&) noexcept,
+      std::optional<Decoded> (Derived::*... decoders)(
+        const message_context&,
+        const stored_message&) noexcept) noexcept
+      -> decode_result_t<Base, Decoded...> {
+        if(const auto decoded{obj.*decoder(msg_ctx)}) {
+            return {extract(decoded)};
+        }
+        return decode_chain(msg_ctx, message, base, obj, decoders...);
     }
 
     /// @brief Not copy assignable.
