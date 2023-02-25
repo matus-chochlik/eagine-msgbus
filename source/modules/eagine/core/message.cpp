@@ -16,6 +16,7 @@ import eagine.core.memory;
 import eagine.core.identifier;
 import eagine.core.reflection;
 import eagine.core.serialization;
+import eagine.core.valid_if;
 import eagine.core.utility;
 import eagine.core.runtime;
 import eagine.core.main_ctx;
@@ -688,6 +689,7 @@ export template <typename Backend>
 /// @see default_deserializer_backend
 /// @see default_deserialize_packed
 /// @see default_serialize
+/// @see default_deserialized
 /// @see deserialize
 export template <typename T>
 [[nodiscard]] auto default_deserialize(
@@ -698,6 +700,22 @@ export template <typename T>
     default_deserializer_backend backend(source);
     const auto deserialized{deserialize(value, backend)};
     return rebind<memory::const_block>(source.remaining(), deserialized);
+}
+//------------------------------------------------------------------------------
+/// @brief Uses the default backend to get a value deserialized from a memory block.
+/// @see default_deserializer_backend
+/// @see default_deserialize_packed
+/// @see default_serialize
+/// @see default_deserialize
+/// @see deserialize
+export template <typename T>
+[[nodiscard]] auto default_deserialized(const memory::const_block blk) noexcept
+  -> optionally_valid<T> {
+    T result{};
+    if(default_deserialize(result, blk)) {
+        return {std::move(result), true};
+    }
+    return {};
 }
 //------------------------------------------------------------------------------
 /// @brief Uses backend and compressor to deserialize and unpack a value from a block.
@@ -718,6 +736,22 @@ export template <typename T>
     return rebind<memory::const_block>(source.remaining(), deserialized);
 }
 //------------------------------------------------------------------------------
+/// @brief Uses the default backend to get a value deserialized from a packed memory block.
+/// @see default_deserializer_backend
+/// @see default_deserialize
+/// @see default_serialize_packed
+/// @see default_deserialize_packed
+/// @see deserialize
+export template <typename T>
+[[nodiscard]] auto default_deserialized_packed(
+  const memory::const_block blk) noexcept -> optionally_valid<T> {
+    T result{};
+    if(default_deserialize_packed(result, blk)) {
+        return {std::move(result)};
+    }
+    return {};
+}
+//------------------------------------------------------------------------------
 /// @brief Default-deserializes the specified message id from a memory block.
 /// @ingroup msgbus
 /// @see default_deserializer_backend
@@ -732,6 +766,20 @@ export [[nodiscard]] auto default_deserialize_message_type(
         msg_id = {value};
     }
     return result;
+}
+//------------------------------------------------------------------------------
+/// @brief Uses the default backend to get a message id deserialized from a memory block.
+/// @see default_deserializer_backend
+/// @see default_serialize_message_type
+/// @see default_deserialize_message_type
+/// @see deserialize
+export [[nodiscard]] auto default_deserialized_message_type(
+  const memory::const_block blk) noexcept -> optionally_valid<message_id> {
+    message_id result{};
+    if(default_deserialize_message_type(result, blk)) {
+        return {std::move(result), true};
+    }
+    return {};
 }
 //------------------------------------------------------------------------------
 template <typename Backend, typename Value>
