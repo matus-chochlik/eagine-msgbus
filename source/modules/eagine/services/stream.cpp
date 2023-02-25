@@ -150,7 +150,7 @@ private:
     void _handle_stream_relay_subscribed(
       const subscriber_info& sub_info,
       const message_id msg_id) noexcept {
-        if(msg_id == message_id{"eagiStream", "startFrwrd"}) {
+        if(msg_id.is("eagiStream", "startFrwrd")) {
             if(
               not has_stream_relay() or
               (_stream_relay_hops > sub_info.hop_count)) {
@@ -162,7 +162,7 @@ private:
     void _handle_stream_relay_unsubscribed(
       const subscriber_info& sub_info,
       const message_id msg_id) noexcept {
-        if(msg_id == message_id{"eagiStream", "startFrwrd"}) {
+        if(msg_id.is("eagiStream", "startFrwrd")) {
             if(_stream_relay_id == sub_info.endpoint_id) {
                 reset_stream_relay();
             }
@@ -659,7 +659,7 @@ private:
     void _handle_stream_relay_subscribed(
       const subscriber_info& sub_info,
       const message_id msg_id) noexcept {
-        if(msg_id == message_id{"eagiStream", "startFrwrd"}) {
+        if(msg_id.is("eagiStream", "startFrwrd")) {
             auto pos = _relays.find(sub_info.endpoint_id);
             if(pos == _relays.end()) {
                 pos =
@@ -672,7 +672,7 @@ private:
     void _handle_stream_relay_unsubscribed(
       const subscriber_info& sub_info,
       const message_id msg_id) noexcept {
-        if(msg_id == message_id{"eagiStream", "startFrwrd"}) {
+        if(msg_id.is("eagiStream", "startFrwrd")) {
             auto pos = _relays.find(sub_info.endpoint_id);
             if(pos != _relays.end()) {
                 _relays.erase(pos);

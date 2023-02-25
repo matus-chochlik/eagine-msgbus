@@ -40,7 +40,7 @@ public:
     void on_subscribed(
       const subscriber_info& info,
       const message_id sub_msg) noexcept {
-        if(sub_msg == message_id{"Shutdown", "shutdown"}) {
+        if(sub_msg.is("Shutdown", "shutdown")) {
             log_info("target ${id} appeared").arg("id", info.endpoint_id);
             _targets.insert(info.endpoint_id);
             this->bus_node().post_certificate(info.endpoint_id, 0);
@@ -50,7 +50,7 @@ public:
     void on_unsubscribed(
       const subscriber_info& info,
       const message_id sub_msg) noexcept {
-        if(sub_msg == message_id{"Shutdown", "shutdown"}) {
+        if(sub_msg.is("Shutdown", "shutdown")) {
             log_info("target ${id} disappeared").arg("id", info.endpoint_id);
             _targets.erase(info.endpoint_id);
         }
@@ -59,7 +59,7 @@ public:
     void on_not_subscribed(
       const subscriber_info& info,
       const message_id sub_msg) noexcept {
-        if(sub_msg == message_id{"Shutdown", "shutdown"}) {
+        if(sub_msg.is("Shutdown", "shutdown")) {
             log_info("target ${id} does not support shutdown")
               .arg("id", info.endpoint_id);
             _targets.erase(info.endpoint_id);

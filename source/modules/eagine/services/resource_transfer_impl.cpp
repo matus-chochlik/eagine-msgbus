@@ -600,7 +600,7 @@ private:
     void _handle_subscribed(
       const subscriber_info& sub_info,
       const message_id msg_id) noexcept {
-        if(msg_id == message_id{"eagiRsrces", "getContent"}) {
+        if(msg_id.is("eagiRsrces", "getContent")) {
             auto spos = _server_endpoints.find(sub_info.endpoint_id);
             if(spos == _server_endpoints.end()) {
                 spos = _server_endpoints.emplace(sub_info.endpoint_id).first;
@@ -633,7 +633,7 @@ private:
     void _handle_unsubscribed(
       const subscriber_info& sub_info,
       const message_id msg_id) noexcept {
-        if(msg_id == message_id{"eagiRsrces", "getContent"}) {
+        if(msg_id.is("eagiRsrces", "getContent")) {
             _remove_server(sub_info.endpoint_id);
         }
     }
