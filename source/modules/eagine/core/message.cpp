@@ -1030,6 +1030,12 @@ public:
         return *this;
     }
 
+    [[nodiscard]] auto is_special_message(identifier_value method) const noexcept
+      -> bool {
+        return msgbus::is_special_message(_msg_id) and
+               _msg_id.has_method(method);
+    }
+
 private:
     endpoint& _bus;
     message_id _msg_id{};
