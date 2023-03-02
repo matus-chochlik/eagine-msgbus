@@ -28,46 +28,6 @@ import <vector>;
 
 namespace eagine::msgbus {
 //------------------------------------------------------------------------------
-/// @brief Class tying information about subscriber message queue and its handler.
-/// @ingroup msgbus
-/// @see static_subscriber
-/// @see subscriber
-export class subscriber_message_queue {
-public:
-    using method_handler = basic_callable_ref<
-      bool(const message_context&, const stored_message&) noexcept,
-      true>;
-
-    subscriber_message_queue(
-      endpoint& bus,
-      const message_id msg_id,
-      message_priority_queue& msg_que,
-      const method_handler& msg_hndlr) noexcept
-      : _msg_ctx{bus, msg_id}
-      , _queue{msg_que}
-      , _handler{msg_hndlr} {}
-
-    /// @brief Returns the context for the messages in the queue.
-    auto context() const noexcept -> const message_context& {
-        return _msg_ctx;
-    }
-
-    /// @brief Returns a reference to the message queue.
-    auto queue() const noexcept -> message_priority_queue& {
-        return _queue;
-    }
-
-    /// @brief Returns the handler registerd with the message id.
-    auto handler() const noexcept -> const method_handler& {
-        return _handler;
-    }
-
-private:
-    const message_context _msg_ctx;
-    message_priority_queue& _queue;
-    const method_handler& _handler;
-};
-//------------------------------------------------------------------------------
 template <typename DecodedList>
 struct make_decoded_result;
 
