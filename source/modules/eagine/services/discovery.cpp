@@ -49,6 +49,11 @@ export struct subscriber_unsubscribed {
     subscriber_info source{};
     message_id message_type{};
 };
+
+export struct subscriber_not_subscribed {
+    subscriber_info source{};
+    message_id message_type{};
+};
 //------------------------------------------------------------------------------
 /// @brief Collection of signals emitted by the subscriber discovery service.
 /// @ingroup msgbus
@@ -86,6 +91,11 @@ struct subscriber_discovery_intf : interface<subscriber_discovery_intf> {
       const message_context& msg_ctx,
       const stored_message& message) noexcept
       -> std::optional<subscriber_unsubscribed> = 0;
+
+    virtual auto decode_subscriber_not_subscribed(
+      const message_context& msg_ctx,
+      const stored_message& message) noexcept
+      -> std::optional<subscriber_not_subscribed> = 0;
 };
 //------------------------------------------------------------------------------
 auto make_subscriber_discovery_impl(
@@ -122,6 +132,13 @@ public:
         return _impl->decode_subscriber_unsubscribed(msg_ctx, message);
     }
 
+    auto decode_subscriber_not_subscribed(
+      const message_context& msg_ctx,
+      const stored_message& message) noexcept
+      -> std::optional<subscriber_not_subscribed> {
+        return _impl->decode_subscriber_not_subscribed(msg_ctx, message);
+    }
+
     auto decode(const message_context& msg_ctx, const stored_message& message) {
         return this->decode_chain(
           msg_ctx,
@@ -130,7 +147,8 @@ public:
           *this,
           &subscriber_discovery::decode_subscriber_alive,
           &subscriber_discovery::decode_subscriber_subscribed,
-          &subscriber_discovery::decode_subscriber_unsubscribed);
+          &subscriber_discovery::decode_subscriber_unsubscribed,
+          &subscriber_discovery::decode_subscriber_not_subscribed);
     }
 
 protected:

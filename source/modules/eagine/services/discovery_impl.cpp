@@ -94,6 +94,22 @@ public:
         return {};
     }
 
+    auto decode_subscriber_not_subscribed(
+      const message_context& msg_ctx,
+      const stored_message& message) noexcept
+      -> std::optional<subscriber_not_subscribed> final {
+        if(msg_ctx.is_special_message("notSubTo")) {
+            message_id sub_msg_id{};
+            if(default_deserialize_message_type(
+                 sub_msg_id, message.content())) {
+                return {subscriber_not_subscribed{
+                  .source = get_subscriber_info(message),
+                  .message_type = sub_msg_id}};
+            }
+        }
+        return {};
+    }
+
 private:
     auto _handle_alive(
       const message_context&,
