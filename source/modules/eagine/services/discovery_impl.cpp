@@ -44,15 +44,61 @@ public:
             &subscriber_discovery_impl::_handle_not_subscribed>{});
     }
 
+    auto get_subscriber_info(const stored_message& message) noexcept {
+        subscriber_info result{};
+        result.endpoint_id = message.source_id;
+        result.instance_id = message.sequence_no;
+        result.hop_count = message.hop_count;
+        return result;
+    }
+
+    auto decode_subscriber_alive(
+      const message_context& msg_ctx,
+      const stored_message& message) noexcept
+      -> std::optional<subscriber_alive> final {
+        if(msg_ctx.is_special_message("stillAlive")) {
+            return {subscriber_alive{.source = get_subscriber_info(message)}};
+        }
+        return {};
+    }
+
+    auto decode_subscriber_subscribed(
+      const message_context& msg_ctx,
+      const stored_message& message) noexcept
+      -> std::optional<subscriber_subscribed> final {
+        if(msg_ctx.is_special_message("subscribTo")) {
+            message_id sub_msg_id{};
+            if(default_deserialize_message_type(
+                 sub_msg_id, message.content())) {
+                return {subscriber_subscribed{
+                  .source = get_subscriber_info(message),
+                  .message_type = sub_msg_id}};
+            }
+        }
+        return {};
+    }
+
+    auto decode_subscriber_unsubscribed(
+      const message_context& msg_ctx,
+      const stored_message& message) noexcept
+      -> std::optional<subscriber_unsubscribed> final {
+        if(msg_ctx.is_special_message("unsubFrom")) {
+            message_id sub_msg_id{};
+            if(default_deserialize_message_type(
+                 sub_msg_id, message.content())) {
+                return {subscriber_unsubscribed{
+                  .source = get_subscriber_info(message),
+                  .message_type = sub_msg_id}};
+            }
+        }
+        return {};
+    }
+
 private:
     auto _handle_alive(
       const message_context&,
       const stored_message& message) noexcept -> bool {
-        subscriber_info info{};
-        info.endpoint_id = message.source_id;
-        info.instance_id = message.sequence_no;
-        info.hop_count = message.hop_count;
-        signals.reported_alive(info);
+        signals.reported_alive(get_subscriber_info(message));
         return true;
     }
 
@@ -61,11 +107,7 @@ private:
       const stored_message& message) noexcept -> bool {
         message_id sub_msg_id{};
         if(default_deserialize_message_type(sub_msg_id, message.content())) {
-            subscriber_info info{};
-            info.endpoint_id = message.source_id;
-            info.instance_id = message.sequence_no;
-            info.hop_count = message.hop_count;
-            signals.subscribed(info, sub_msg_id);
+            signals.subscribed(get_subscriber_info(message), sub_msg_id);
         }
         return true;
     }
@@ -75,11 +117,7 @@ private:
       const stored_message& message) noexcept -> bool {
         message_id sub_msg_id{};
         if(default_deserialize_message_type(sub_msg_id, message.content())) {
-            subscriber_info info{};
-            info.endpoint_id = message.source_id;
-            info.instance_id = message.sequence_no;
-            info.hop_count = message.hop_count;
-            signals.unsubscribed(info, sub_msg_id);
+            signals.unsubscribed(get_subscriber_info(message), sub_msg_id);
         }
         return true;
     }
@@ -89,11 +127,7 @@ private:
       const stored_message& message) noexcept -> bool {
         message_id sub_msg_id{};
         if(default_deserialize_message_type(sub_msg_id, message.content())) {
-            subscriber_info info{};
-            info.endpoint_id = message.source_id;
-            info.instance_id = message.sequence_no;
-            info.hop_count = message.hop_count;
-            signals.not_subscribed(info, sub_msg_id);
+            signals.not_subscribed(get_subscriber_info(message), sub_msg_id);
         }
         return true;
     }
