@@ -334,7 +334,7 @@ protected:
         return result;
     }
 
-    auto _get_queued(const span<const handler_entry> msg_handlers) noexcept
+    auto _queues(const span<const handler_entry> msg_handlers) noexcept
       -> pointee_generator<const subscriber_message_queue*> {
         for(const auto& entry : msg_handlers) {
             assert(entry.queue);
@@ -425,9 +425,9 @@ public:
 
     /// @brief Gets a view of queue objects with received messages.
     /// @see subscriber_message_queue
-    auto get_queued() noexcept
+    auto queues() noexcept
       -> pointee_generator<const subscriber_message_queue*> {
-        return this->_get_queued(view(_msg_handlers));
+        return this->_queues(view(_msg_handlers));
     }
 
     /// @brief Sends messages to the bus saying which messages this can handle.
@@ -569,9 +569,9 @@ public:
 
     /// @brief Gets a view of queue objects with received messages.
     /// @see subscriber_message_queue
-    auto get_queued() noexcept
+    auto queues() noexcept
       -> pointee_generator<const subscriber_message_queue*> {
-        return this->_get_queued(view(_msg_handlers));
+        return this->_queues(view(_msg_handlers));
     }
 
     /// @brief Sends messages to the bus saying which messages this can handle.
