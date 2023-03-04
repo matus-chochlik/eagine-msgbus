@@ -5,7 +5,7 @@
 ///  http://www.boost.org/LICENSE_1_0.txt
 ///
 
-import <algorithm>;
+import std;
 #include "NodeListViewModel.hpp"
 #include "MonitorBackend.hpp"
 #include "TrackerModel.hpp"

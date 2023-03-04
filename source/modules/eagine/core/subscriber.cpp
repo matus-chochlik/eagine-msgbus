@@ -20,11 +20,7 @@ import :types;
 import :message;
 import :handler_map;
 import :endpoint;
-import <array>;
-import <coroutine>;
-import <type_traits>;
-import <variant>;
-import <vector>;
+import std;
 
 namespace eagine::msgbus {
 //------------------------------------------------------------------------------

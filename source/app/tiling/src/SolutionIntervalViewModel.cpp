@@ -5,7 +5,7 @@
 ///
 
 import eagine.core;
-import <cmath>;
+import std;
 #include "SolutionIntervalViewModel.hpp"
 #include "TilingBackend.hpp"
 #include "TilingModel.hpp"

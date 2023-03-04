@@ -11,8 +11,7 @@ import eagine.core.types;
 import eagine.core.container;
 import eagine.core.utility;
 import :types;
-import <functional>;
-import <memory>;
+import std;
 
 namespace eagine::msgbus {
 //------------------------------------------------------------------------------

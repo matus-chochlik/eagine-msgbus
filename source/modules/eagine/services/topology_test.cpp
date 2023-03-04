@@ -10,7 +10,7 @@
 import eagine.core;
 import eagine.msgbus.core;
 import eagine.msgbus.services;
-import <chrono>;
+import std;
 //------------------------------------------------------------------------------
 template <typename Base = eagine::msgbus::subscriber>
 class test_pong : public Base {

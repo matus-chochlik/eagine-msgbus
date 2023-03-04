@@ -20,11 +20,7 @@ import eagine.core.main_ctx;
 import :types;
 import :message;
 import :interface;
-import <atomic>;
-import <array>;
-import <map>;
-import <memory>;
-import <mutex>;
+import std;
 
 namespace eagine::msgbus {
 //------------------------------------------------------------------------------

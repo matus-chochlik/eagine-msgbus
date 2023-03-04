@@ -8,8 +8,7 @@
 #define EAGINE_MSGBUS_SOLUTION_INTERVAL_VIEW_MODEL
 
 import eagine.core;
-import <chrono>;
-import <tuple>;
+import std;
 #include <QObject>
 #include <QVariant>
 

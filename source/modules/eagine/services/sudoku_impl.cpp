@@ -23,14 +23,7 @@ import eagine.core.logging;
 import eagine.core.math;
 import eagine.core.main_ctx;
 import eagine.msgbus.core;
-import <algorithm>;
-import <array>;
-import <chrono>;
-import <cmath>;
-import <ostream>;
-import <random>;
-import <tuple>;
-import <vector>;
+import std;
 
 namespace eagine::msgbus {
 //------------------------------------------------------------------------------

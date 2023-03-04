@@ -8,7 +8,7 @@
 #define EAGINE_MSGBUS_TILING_BACKEND
 
 import eagine.core;
-import <memory>;
+import std;
 #include "HelperContributionViewModel.hpp"
 #include "SolutionIntervalViewModel.hpp"
 #include "TilingTheme.hpp"

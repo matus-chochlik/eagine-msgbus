@@ -6,7 +6,7 @@
 
 import eagine.core;
 import eagine.msgbus;
-import <algorithm>;
+import std;
 #include "TilingModel.hpp"
 #include "TilingBackend.hpp"
 #include <QVariant>

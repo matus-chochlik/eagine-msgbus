@@ -14,7 +14,7 @@ import eagine.core.valid_if;
 import eagine.core.utility;
 import :types;
 import :message;
-import <memory>;
+import std;
 
 namespace eagine::msgbus {
 //------------------------------------------------------------------------------
@@ -165,6 +165,10 @@ struct connection_factory : connection_info {
 /// @brief Interface for message bus services
 /// @ingroup msgbus
 struct service_interface : interface<service_interface> {
+
+    /// @brief Returns a view of message queues registered with this service.
+    virtual auto message_queues() noexcept
+      -> pointee_generator<const subscriber_message_queue*> = 0;
 
     /// @brief Does an iteration update and processes all received messages.
     virtual auto update_and_process_all() noexcept -> work_done = 0;

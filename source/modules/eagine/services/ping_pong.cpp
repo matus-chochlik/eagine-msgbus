@@ -12,7 +12,7 @@ import eagine.core.debug;
 import eagine.core.memory;
 import eagine.core.utility;
 import eagine.msgbus.core;
-import <chrono>;
+import std;
 
 namespace eagine::msgbus {
 //------------------------------------------------------------------------------

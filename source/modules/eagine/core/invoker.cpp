@@ -21,8 +21,7 @@ import :future;
 import :handler_map;
 import :message;
 import :endpoint;
-import <array>;
-import <tuple>;
+import std;
 
 namespace eagine::msgbus {
 //------------------------------------------------------------------------------

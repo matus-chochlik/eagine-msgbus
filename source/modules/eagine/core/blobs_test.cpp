@@ -7,9 +7,7 @@
 ///
 
 #include <eagine/testing/unit_begin_ctx.hpp>
-import <array>;
-import <memory>;
-import <type_traits>;
+import std;
 import eagine.core;
 import eagine.msgbus.core;
 //------------------------------------------------------------------------------

@@ -9,13 +9,7 @@
 #include <eagine/testing/unit_begin_ctx.hpp>
 import eagine.core;
 import eagine.msgbus.core;
-import <atomic>;
-import <functional>;
-import <vector>;
-import <chrono>;
-import <memory>;
-import <mutex>;
-import <thread>;
+import std;
 //------------------------------------------------------------------------------
 void direct_type_id(auto& s) {
     eagitest::case_ test{s, 1, "type id"};

@@ -9,11 +9,7 @@
 #include <eagine/testing/unit_begin.hpp>
 import eagine.core;
 import eagine.msgbus.core;
-import <atomic>;
-import <functional>;
-import <vector>;
-import <mutex>;
-import <thread>;
+import std;
 //------------------------------------------------------------------------------
 void loopback_type_id(auto& s) {
     eagitest::case_ test{s, 1, "type id"};

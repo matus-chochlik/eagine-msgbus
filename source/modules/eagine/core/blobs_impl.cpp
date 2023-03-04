@@ -18,8 +18,7 @@ import eagine.core.utility;
 import eagine.core.identifier;
 import eagine.core.serialization;
 import eagine.core.valid_if;
-import <array>;
-import <chrono>;
+import std;
 
 namespace eagine::msgbus {
 //------------------------------------------------------------------------------

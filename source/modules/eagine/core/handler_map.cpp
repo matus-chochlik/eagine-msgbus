@@ -10,6 +10,7 @@ export module eagine.msgbus.core:handler_map;
 import eagine.core.types;
 import eagine.core.memory;
 import eagine.core.identifier;
+import std;
 
 namespace eagine::msgbus {
 //------------------------------------------------------------------------------

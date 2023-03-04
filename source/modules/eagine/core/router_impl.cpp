@@ -19,9 +19,7 @@ import eagine.core.utility;
 import eagine.core.valid_if;
 import eagine.core.runtime;
 import eagine.core.main_ctx;
-import <array>;
-import <latch>;
-import <thread>;
+import std;
 
 namespace eagine::msgbus {
 //------------------------------------------------------------------------------

@@ -20,6 +20,7 @@ import :ping_pong;
 import :statistics;
 import :system_info;
 import :topology;
+import std;
 
 namespace eagine::msgbus {
 //------------------------------------------------------------------------------

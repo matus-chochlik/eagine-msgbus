@@ -20,10 +20,7 @@ import :message;
 import :interface;
 import :blobs;
 import :context;
-import <chrono>;
-import <latch>;
-import <map>;
-import <vector>;
+import std;
 
 namespace eagine::msgbus {
 //------------------------------------------------------------------------------

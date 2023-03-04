@@ -9,7 +9,7 @@
 
 import eagine.core;
 import eagine.msgbus;
-import <map>;
+import std;
 #include "HostParameterModel.hpp"
 #include "NodeParameterModel.hpp"
 #include <QObject>

@@ -20,11 +20,7 @@ import eagine.core.utility;
 import eagine.core.valid_if;
 import eagine.core.runtime;
 import eagine.core.main_ctx;
-import <condition_variable>;
-import <fstream>;
-import <iostream>;
-import <mutex>;
-import <thread>;
+import std;
 
 namespace eagine::msgbus {
 //------------------------------------------------------------------------------

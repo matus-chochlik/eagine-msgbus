@@ -13,8 +13,7 @@ import eagine.core.identifier;
 import eagine.core.container;
 import eagine.core.logging;
 import eagine.core.main_ctx;
-import <string>;
-import <vector>;
+import std;
 
 namespace eagine::msgbus {
 //------------------------------------------------------------------------------

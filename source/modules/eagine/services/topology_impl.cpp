@@ -10,7 +10,7 @@ module eagine.msgbus.services;
 import eagine.core.types;
 import eagine.core.memory;
 import eagine.msgbus.core;
-import <memory>;
+import std;
 
 namespace eagine::msgbus {
 //------------------------------------------------------------------------------

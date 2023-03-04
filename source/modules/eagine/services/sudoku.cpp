@@ -20,13 +20,7 @@ import eagine.core.utility;
 import eagine.core.runtime;
 import eagine.core.math;
 import eagine.msgbus.core;
-import <array>;
-import <chrono>;
-import <cmath>;
-import <ostream>;
-import <tuple>;
-import <variant>;
-import <vector>;
+import std;
 
 namespace eagine::msgbus {
 //------------------------------------------------------------------------------

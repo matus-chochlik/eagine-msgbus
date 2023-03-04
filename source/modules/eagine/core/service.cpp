@@ -20,8 +20,7 @@ import :skeleton;
 import :endpoint;
 import :subscriber;
 import :handler_map;
-import <optional>;
-import <type_traits>;
+import std;
 
 namespace eagine::msgbus {
 //------------------------------------------------------------------------------
@@ -68,6 +67,11 @@ public:
     auto add_connection(std::unique_ptr<connection> conn) noexcept
       -> bool final {
         return this->bus_node().add_connection(std::move(conn));
+    }
+
+    auto message_queues() noexcept
+      -> pointee_generator<const subscriber_message_queue*> final {
+        return Base::queues();
     }
 
     /// @brief Updates the associated endpoint and processes all incoming messages.

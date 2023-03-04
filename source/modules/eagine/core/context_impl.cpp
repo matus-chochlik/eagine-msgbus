@@ -15,9 +15,7 @@ import eagine.core.reflection;
 import eagine.core.main_ctx;
 import eagine.core.c_api;
 import eagine.sslplus;
-import <memory>;
-import <string>;
-import <map>;
+import std;
 
 namespace eagine::msgbus {
 //------------------------------------------------------------------------------

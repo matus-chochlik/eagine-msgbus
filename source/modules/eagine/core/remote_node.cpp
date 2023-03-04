@@ -23,8 +23,7 @@ import eagine.core.valid_if;
 import eagine.core.logging;
 import eagine.core.main_ctx;
 import :types;
-import <chrono>;
-import <memory>;
+import std;
 
 namespace eagine {
 namespace msgbus {

@@ -22,9 +22,7 @@ import :endpoint;
 import :router;
 import :setup;
 import :service;
-import <concepts>;
-import <chrono>;
-import <vector>;
+import std;
 
 namespace eagine::msgbus {
 //------------------------------------------------------------------------------
@@ -82,6 +80,14 @@ public:
             update_all();
         }
         return true;
+    }
+
+    /// @brief Returns a view of the registered services.
+    auto services() noexcept -> pointee_generator<service_interface*> {
+        for(auto pos{_entries.begin()}; pos != _entries.end(); ++pos) {
+            assert(pos->_service);
+            co_yield pos->_service.get();
+        }
     }
 
     /// @brief Removes a previously emplaced service.

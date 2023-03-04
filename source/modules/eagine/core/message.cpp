@@ -21,11 +21,7 @@ import eagine.core.utility;
 import eagine.core.runtime;
 import eagine.core.main_ctx;
 import :types;
-import <chrono>;
-import <coroutine>;
-import <cstdint>;
-import <limits>;
-import <vector>;
+import std;
 
 namespace eagine {
 

@@ -14,9 +14,7 @@ import eagine.core.logging;
 import eagine.core.main_ctx;
 import :types;
 import :interface;
-import <memory>;
-import <mutex>;
-import <vector>;
+import std;
 
 namespace eagine::msgbus {
 //------------------------------------------------------------------------------

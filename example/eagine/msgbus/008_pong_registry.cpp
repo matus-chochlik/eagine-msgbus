@@ -8,11 +8,7 @@
 import eagine.core;
 import eagine.sslplus;
 import eagine.msgbus;
-import <algorithm>;
-import <atomic>;
-import <chrono>;
-import <cstdint>;
-import <thread>;
+import std;
 
 namespace eagine {
 namespace msgbus {

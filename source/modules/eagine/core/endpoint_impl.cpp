@@ -22,8 +22,7 @@ import :types;
 import :blobs;
 import :message;
 import :context;
-import <array>;
-import <chrono>;
+import std;
 
 namespace eagine::msgbus {
 //------------------------------------------------------------------------------

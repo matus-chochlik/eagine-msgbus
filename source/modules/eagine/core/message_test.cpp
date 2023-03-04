@@ -9,8 +9,7 @@
 #include <eagine/testing/unit_begin_ctx.hpp>
 import eagine.core;
 import eagine.msgbus.core;
-import <array>;
-import <chrono>;
+import std;
 //------------------------------------------------------------------------------
 // valid endpoint id
 //------------------------------------------------------------------------------

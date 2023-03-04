@@ -5,7 +5,7 @@
 ///
 import eagine.core;
 import eagine.msgbus;
-import <clocale>;
+import std;
 #include "MonitorBackend.hpp"
 #include "MonitorViewModel.hpp"
 #include "SelectedItemViewModel.hpp"

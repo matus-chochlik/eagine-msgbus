@@ -21,8 +21,7 @@ import eagine.core.valid_if;
 import eagine.msgbus.core;
 import :discovery;
 import :ping_pong;
-import <map>;
-import <string>;
+import std;
 
 namespace eagine::msgbus {
 //------------------------------------------------------------------------------

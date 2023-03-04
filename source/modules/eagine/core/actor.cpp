@@ -18,6 +18,7 @@ import :interface;
 import :handler_map;
 import :endpoint;
 import :subscriber;
+import std;
 
 namespace eagine::msgbus {
 //------------------------------------------------------------------------------

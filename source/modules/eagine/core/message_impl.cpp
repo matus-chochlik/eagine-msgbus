@@ -16,7 +16,7 @@ import eagine.core.utility;
 import eagine.core.runtime;
 import eagine.core.main_ctx;
 import eagine.core.c_api;
-import <chrono>;
+import std;
 
 namespace eagine::msgbus {
 //------------------------------------------------------------------------------

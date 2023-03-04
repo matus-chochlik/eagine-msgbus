@@ -8,8 +8,7 @@
 import eagine.core;
 import eagine.sslplus;
 import eagine.msgbus;
-import <queue>;
-import <set>;
+import std;
 
 namespace eagine {
 namespace msgbus {

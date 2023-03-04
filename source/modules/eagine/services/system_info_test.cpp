@@ -10,7 +10,7 @@
 import eagine.core;
 import eagine.msgbus.core;
 import eagine.msgbus.services;
-import <chrono>;
+import std;
 //------------------------------------------------------------------------------
 // test 1
 //------------------------------------------------------------------------------

@@ -8,9 +8,7 @@
 import eagine.core;
 import eagine.sslplus;
 import eagine.msgbus;
-import <array>;
-import <chrono>;
-import <thread>;
+import std;
 
 namespace eagine {
 

@@ -7,6 +7,7 @@
 ///
 import eagine.core;
 import eagine.msgbus;
+import std;
 
 namespace eagine {
 namespace msgbus {

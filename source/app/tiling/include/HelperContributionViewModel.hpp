@@ -8,7 +8,7 @@
 #define EAGINE_MSGBUS_HELPER_CONTRIBUTION_VIEW_MODEL
 
 import eagine.core;
-import <tuple>;
+import std;
 #include <QObject>
 #include <QVariant>
 

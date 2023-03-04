@@ -12,10 +12,7 @@ import eagine.core.memory;
 import eagine.core.string;
 import eagine.core.reflection;
 import eagine.core.identifier;
-import <cstdint>;
-import <string>;
-import <tuple>;
-import <type_traits>;
+import std;
 
 namespace eagine {
 namespace msgbus {

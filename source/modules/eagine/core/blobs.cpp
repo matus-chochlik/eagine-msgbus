@@ -19,10 +19,7 @@ import eagine.core.utility;
 import eagine.core.main_ctx;
 import :types;
 import :message;
-import <cstdint>;
-import <chrono>;
-import <vector>;
-import <type_traits>;
+import std;
 
 namespace eagine::msgbus {
 //------------------------------------------------------------------------------

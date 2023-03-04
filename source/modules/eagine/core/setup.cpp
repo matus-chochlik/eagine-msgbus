@@ -17,6 +17,7 @@ import :types;
 import :interface;
 import :router_address;
 import :connection_setup;
+import std;
 
 namespace eagine {
 namespace msgbus {

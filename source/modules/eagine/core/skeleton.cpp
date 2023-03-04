@@ -22,9 +22,7 @@ import :types;
 import :message;
 import :handler_map;
 import :endpoint;
-import <array>;
-export import <map>;
-import <tuple>;
+import std;
 
 namespace eagine::msgbus {
 //------------------------------------------------------------------------------

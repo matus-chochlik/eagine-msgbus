@@ -10,9 +10,7 @@
 #include <chrono>
 import eagine.core;
 import eagine.msgbus.core;
-import <thread>;
-import <chrono>;
-import <vector>;
+import std;
 //------------------------------------------------------------------------------
 template <typename Base = eagine::msgbus::subscriber>
 class test_pong : public Base {
@@ -159,10 +157,49 @@ void registry_get_id(auto& s) {
     the_reg.finish();
 }
 //------------------------------------------------------------------------------
+// queues
+//------------------------------------------------------------------------------
+void registry_queues(auto& s) {
+    eagitest::case_ test{s, 2, "queues"};
+    eagitest::track trck{test, 0, 1};
+    auto& ctx{s.context()};
+    eagine::msgbus::registry the_reg{ctx};
+
+    auto& ponger = the_reg.emplace<eagine::msgbus::service_composition<
+      eagine::msgbus::require_services<eagine::msgbus::subscriber, test_pong>>>(
+      "TestPong");
+    auto& pinger = the_reg.emplace<eagine::msgbus::service_composition<
+      eagine::msgbus::require_services<eagine::msgbus::subscriber, test_ping>>>(
+      "TestPing");
+
+    eagine::timeout get_id_time{std::chrono::minutes{1}};
+    while(not(ponger.has_id() and pinger.has_id())) {
+        if(get_id_time.is_expired()) {
+            test.fail("get-id timeout");
+            break;
+        }
+        if(not the_reg.update_all()) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(1));
+        }
+
+        for(auto& service : the_reg.services()) {
+            for(auto& queue : service.message_queues()) {
+                for(auto& message : queue.queue().give_messages()) {
+                    (void)message;
+                }
+            }
+        }
+
+        trck.checkpoint(1);
+    }
+
+    the_reg.finish();
+}
+//------------------------------------------------------------------------------
 // ping/pong 1
 //------------------------------------------------------------------------------
 void registry_ping_pong(auto& s) {
-    eagitest::case_ test{s, 2, "ping-pong"};
+    eagitest::case_ test{s, 3, "ping-pong"};
     eagitest::track trck{test, 0, 4};
     auto& ctx{s.context()};
     eagine::msgbus::registry the_reg{ctx};
@@ -210,7 +247,7 @@ void registry_ping_pong(auto& s) {
 // ping/pong 2
 //------------------------------------------------------------------------------
 void registry_wait_ping_pong(auto& s) {
-    eagitest::case_ test{s, 3, "wait / ping-pong"};
+    eagitest::case_ test{s, 4, "wait / ping-pong"};
     eagitest::track trck{test, 0, 3};
     auto& ctx{s.context()};
     eagine::msgbus::registry the_reg{ctx};
@@ -249,8 +286,9 @@ auto test_main(eagine::test_ctx& ctx) -> int {
     enable_message_bus(ctx);
     ctx.preinitialize();
 
-    eagitest::ctx_suite test{ctx, "registry", 3};
+    eagitest::ctx_suite test{ctx, "registry", 4};
     test.once(registry_get_id);
+    test.once(registry_queues);
     test.once(registry_ping_pong);
     test.once(registry_wait_ping_pong);
     return test.exit_code();

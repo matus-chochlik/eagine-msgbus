@@ -12,7 +12,7 @@ import eagine.core.memory;
 import eagine.core.identifier;
 import eagine.core.utility;
 import eagine.msgbus.core;
-import <memory>;
+import std;
 
 namespace eagine::msgbus {
 //------------------------------------------------------------------------------

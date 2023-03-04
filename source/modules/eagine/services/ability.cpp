@@ -18,7 +18,7 @@ import eagine.core.serialization;
 import eagine.core.utility;
 import eagine.core.valid_if;
 import eagine.msgbus.core;
-import <array>;
+import std;
 
 namespace eagine::msgbus {
 //------------------------------------------------------------------------------

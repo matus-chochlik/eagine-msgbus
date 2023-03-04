@@ -8,7 +8,7 @@
 #define EAGINE_MSGBUS_MONITOR_BACKEND
 
 import eagine.core;
-import <memory>;
+import std;
 #include "MonitorTheme.hpp"
 #include "MonitorViewModel.hpp"
 #include <QObject>
