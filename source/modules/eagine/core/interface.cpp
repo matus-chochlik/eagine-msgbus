@@ -167,7 +167,7 @@ struct connection_factory : connection_info {
 struct service_interface : interface<service_interface> {
 
     /// @brief Returns a view of message queues registered with this service.
-    virtual auto message_queues() noexcept
+    virtual auto process_queues() noexcept
       -> pointee_generator<const subscriber_message_queue*> = 0;
 
     /// @brief Does an iteration update and processes all received messages.

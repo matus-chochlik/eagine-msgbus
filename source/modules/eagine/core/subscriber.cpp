@@ -290,11 +290,16 @@ protected:
         return result;
     }
 
-    auto _queues(const span<const handler_entry> msg_handlers) noexcept
+    auto _process_and_get_queues(
+      const span<const handler_entry> msg_handlers) noexcept
       -> pointee_generator<const subscriber_message_queue*> {
         for(const auto& entry : msg_handlers) {
             assert(entry.queue);
             if(not entry.queue->empty()) {
+                for(const auto& entry : msg_handlers) {
+                    const message_context msg_ctx{
+                      this->bus_node(), entry.msg_id};
+                }
                 const subscriber_message_queue temp{
                   this->bus_node(), entry.msg_id, *entry.queue, entry.handler};
                 co_yield &temp;
@@ -381,9 +386,9 @@ public:
 
     /// @brief Gets a view of queue objects with received messages.
     /// @see subscriber_message_queue
-    auto queues() noexcept
+    auto process_queues() noexcept
       -> pointee_generator<const subscriber_message_queue*> {
-        return this->_queues(view(_msg_handlers));
+        return this->_process_and_get_queues(view(_msg_handlers));
     }
 
     /// @brief Sends messages to the bus saying which messages this can handle.
@@ -525,9 +530,9 @@ public:
 
     /// @brief Gets a view of queue objects with received messages.
     /// @see subscriber_message_queue
-    auto queues() noexcept
+    auto process_queues() noexcept
       -> pointee_generator<const subscriber_message_queue*> {
-        return this->_queues(view(_msg_handlers));
+        return this->_process_and_get_queues(view(_msg_handlers));
     }
 
     /// @brief Sends messages to the bus saying which messages this can handle.

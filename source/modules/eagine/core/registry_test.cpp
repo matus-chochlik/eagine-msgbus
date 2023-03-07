@@ -178,12 +178,12 @@ void registry_queues(auto& s) {
             test.fail("get-id timeout");
             break;
         }
-        if(not the_reg.update_all()) {
+        if(not the_reg.update()) {
             std::this_thread::sleep_for(std::chrono::milliseconds(1));
         }
 
         for(auto& service : the_reg.services()) {
-            for(auto& queue : service.message_queues()) {
+            for(auto& queue : service.process_queues()) {
                 for(auto& message : queue.queue().give_messages()) {
                     (void)message;
                 }

@@ -69,9 +69,9 @@ public:
         return this->bus_node().add_connection(std::move(conn));
     }
 
-    auto message_queues() noexcept
+    auto process_queues() noexcept
       -> pointee_generator<const subscriber_message_queue*> final {
-        return Base::queues();
+        return Base::process_queues();
     }
 
     /// @brief Updates the associated endpoint and processes all incoming messages.
