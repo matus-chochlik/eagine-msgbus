@@ -84,7 +84,7 @@ public:
 
     /// @brief Indicates if the underlying endpoint as an assigned id.
     /// @see get_id
-    auto has_id() const noexcept -> bool {
+    auto has_id() const noexcept -> bool final {
         return this->bus_node().has_id();
     }
 

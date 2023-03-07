@@ -165,19 +165,17 @@ void registry_queues(auto& s) {
     auto& ctx{s.context()};
     eagine::msgbus::registry the_reg{ctx};
 
-    auto& ponger = the_reg.emplace<eagine::msgbus::service_composition<
+    the_reg.emplace<eagine::msgbus::service_composition<
       eagine::msgbus::require_services<eagine::msgbus::subscriber, test_pong>>>(
       "TestPong");
-    auto& pinger = the_reg.emplace<eagine::msgbus::service_composition<
+    the_reg.emplace<eagine::msgbus::service_composition<
       eagine::msgbus::require_services<eagine::msgbus::subscriber, test_ping>>>(
       "TestPing");
 
-    eagine::timeout get_id_time{std::chrono::minutes{1}};
-    while(not(ponger.has_id() and pinger.has_id())) {
-        if(get_id_time.is_expired()) {
-            test.fail("get-id timeout");
-            break;
-        }
+    if(not the_reg.wait_for_ids(std::chrono::minutes{1})) {
+        test.fail("get-id timeout");
+    } else {
+        // TODO
         if(not the_reg.update()) {
             std::this_thread::sleep_for(std::chrono::milliseconds(1));
         }

@@ -166,6 +166,9 @@ struct connection_factory : connection_info {
 /// @ingroup msgbus
 struct service_interface : interface<service_interface> {
 
+    /// @brief Indicates if the service endpoint has an assigned id.
+    virtual auto has_id() const noexcept -> bool = 0;
+
     /// @brief Returns a view of message queues registered with this service.
     virtual auto process_queues() noexcept
       -> pointee_generator<const subscriber_message_queue*> = 0;

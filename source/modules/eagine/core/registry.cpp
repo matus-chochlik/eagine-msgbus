@@ -66,6 +66,9 @@ public:
           return *static_cast<Service*>(entry._service.get());
       }
 
+    /// @brief Updates this registry until all registerd services have id or timeout.
+    auto wait_for_ids(const std::chrono::milliseconds) noexcept -> bool;
+
     /// @brief Updates this registry until all specified services have id or timeout.
     /// @return Indicates if the service has_id
     template <typename R, typename P, composed_service... Service>

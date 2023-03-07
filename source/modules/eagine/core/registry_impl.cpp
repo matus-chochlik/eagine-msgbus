@@ -5,6 +5,10 @@
 /// See accompanying file LICENSE_1_0.txt or copy at
 ///  http://www.boost.org/LICENSE_1_0.txt
 ///
+module;
+
+#include <cassert>
+
 module eagine.msgbus.core;
 
 import eagine.core.types;
@@ -71,6 +75,27 @@ auto registry::update_all() noexcept -> work_done {
     something_done(_router.do_maintenance());
 
     return something_done;
+}
+//------------------------------------------------------------------------------
+auto registry::wait_for_ids(const std::chrono::milliseconds t) noexcept
+  -> bool {
+    timeout get_id_time{t};
+    const auto missing_ids{[this]() {
+        for(const auto& entry : _entries) {
+            assert(entry._service);
+            if(not entry._service->has_id()) {
+                return true;
+            }
+        }
+        return false;
+    }};
+    while(missing_ids()) {
+        if(get_id_time.is_expired()) [[unlikely]] {
+            return false;
+        }
+        update_all();
+    }
+    return true;
 }
 //------------------------------------------------------------------------------
 } // namespace eagine::msgbus
