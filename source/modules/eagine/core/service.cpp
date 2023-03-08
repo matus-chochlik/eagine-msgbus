@@ -74,6 +74,11 @@ public:
         return Base::process_queues();
     }
 
+    /// @brief Updates the associated endpoint.
+    auto update_only() noexcept -> work_done override {
+        return this->update();
+    }
+
     /// @brief Updates the associated endpoint and processes all incoming messages.
     auto update_and_process_all() noexcept -> work_done override {
         some_true something_done{};

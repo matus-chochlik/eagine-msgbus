@@ -31,6 +31,7 @@ struct registered_entry {
     std::unique_ptr<service_interface> _service{};
 
     auto update_service() noexcept -> work_done;
+    auto update_and_process_service() noexcept -> work_done;
 };
 //------------------------------------------------------------------------------
 /// @brief Class combining a local bus router and a set of endpoints.
@@ -80,7 +81,7 @@ public:
             if(get_id_time.is_expired()) [[unlikely]] {
                 return false;
             }
-            update_all();
+            update_and_process();
         }
         return true;
     }
@@ -98,12 +99,19 @@ public:
     void remove(service_interface&) noexcept;
 
     /// @brief Updates the internal router.
-    /// @see update_all
-    auto update() noexcept -> work_done;
+    /// @see update_only
+    /// @see update_and_process
+    auto update_self() noexcept -> work_done;
+
+    /// @brief Updates the internal router and the services without processing message.
+    /// @see update_self
+    /// @see update_and_process
+    auto update_only() noexcept -> work_done;
 
     /// @brief Updates the internal router and all emplaced services.
-    /// @see update
-    auto update_all() noexcept -> work_done;
+    /// @see update_self
+    /// @see update_only
+    auto update_and_process() noexcept -> work_done;
 
     auto is_done() noexcept -> bool {
         return _router.is_done();

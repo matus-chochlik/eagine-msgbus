@@ -295,15 +295,10 @@ protected:
       -> pointee_generator<const subscriber_message_queue*> {
         for(const auto& entry : msg_handlers) {
             assert(entry.queue);
-            if(not entry.queue->empty()) {
-                for(const auto& entry : msg_handlers) {
-                    const message_context msg_ctx{
-                      this->bus_node(), entry.msg_id};
-                }
-                const subscriber_message_queue temp{
-                  this->bus_node(), entry.msg_id, *entry.queue, entry.handler};
-                co_yield &temp;
-            }
+            const subscriber_message_queue smq{
+              this->bus_node(), entry.msg_id, *entry.queue, entry.handler};
+            smq.queue().just_process_all(smq.context(), smq.handler());
+            co_yield &smq;
         }
     }
 

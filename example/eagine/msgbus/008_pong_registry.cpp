@@ -103,7 +103,7 @@ auto main(main_ctx& ctx) -> int {
     }
 
     while(still_working) {
-        the_reg.update();
+        the_reg.update_self();
     }
 
     for(auto& worker : workers) {

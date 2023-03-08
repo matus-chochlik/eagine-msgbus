@@ -176,6 +176,10 @@ export struct message_info {
         return *this = that;
     }
 
+    void mark_too_old() noexcept {
+        hop_count = hop_count_t(64);
+    }
+
     /// @brief Indicates that the message made too many hops.
     /// @see hop_count
     /// @see add_hop
@@ -1078,21 +1082,25 @@ public:
         return false;
     }
 
+    void just_process_all(
+      const message_context& msg_ctx,
+      const handler_type handler) noexcept {
+        for(auto& message : _messages) {
+            handler(msg_ctx, message);
+        }
+    }
+
     auto process_all(
       const message_context& msg_ctx,
       const handler_type handler) noexcept -> span_size_t {
-        span_size_t count{0};
-        std::size_t pos = 0;
-        while(pos < _messages.size()) {
-            if(handler(msg_ctx, _messages[pos])) {
-                ++count;
-                _buffers.eat(_messages[pos].release_buffer());
-                _messages.erase(_messages.begin() + signedness_cast(pos));
-            } else {
-                ++pos;
+        for(auto& message : _messages) {
+            if(handler(msg_ctx, message)) {
+                _buffers.eat(message.release_buffer());
+                message.mark_too_old();
             }
         }
-        return count;
+        return std::erase_if(
+          _messages, [](auto& message) { return message.too_many_hops(); });
     }
 
     [[nodiscard]] auto give_messages() noexcept

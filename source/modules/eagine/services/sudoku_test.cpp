@@ -71,7 +71,7 @@ void sudoku_rank_S_1(auto& s, auto& test) {
                     test.fail("receive timeout");
                     break;
                 }
-                the_reg.update_all();
+                the_reg.update_and_process();
                 trck.checkpoint(2);
             }
             trck.checkpoint(3);
@@ -130,7 +130,7 @@ void sudoku_rank_S_2(auto& s, auto& test, int todo) {
                     if(solution_timeout.is_expired()) {
                         break;
                     }
-                    the_reg.update_all();
+                    the_reg.update_and_process();
                     trck.checkpoint(2);
                 }
                 if(solver.is_done()) {
@@ -203,7 +203,7 @@ void sudoku_rank_S_3(auto& s, auto& test, int todo) {
                     if(solution_timeout.is_expired()) {
                         break;
                     }
-                    the_reg.update_all();
+                    the_reg.update_and_process();
                     trck.checkpoint(2);
                 }
                 if(solver.is_done()) {

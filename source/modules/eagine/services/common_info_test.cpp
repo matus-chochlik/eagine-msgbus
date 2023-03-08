@@ -134,7 +134,7 @@ void common_info_1(auto& s) {
                 test.fail("receive timeout");
                 break;
             }
-            the_reg.update_all();
+            the_reg.update_and_process();
         }
     }
 

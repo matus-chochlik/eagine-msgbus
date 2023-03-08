@@ -23,6 +23,14 @@ namespace eagine::msgbus {
 auto registered_entry::update_service() noexcept -> work_done {
     some_true something_done;
     if(_service) [[likely]] {
+        something_done(_service->update_only());
+    }
+    return something_done;
+}
+//------------------------------------------------------------------------------
+auto registered_entry::update_and_process_service() noexcept -> work_done {
+    some_true something_done;
+    if(_service) [[likely]] {
         something_done(_service->update_and_process_all());
     }
     return something_done;
@@ -58,17 +66,32 @@ void registry::remove(service_interface& service) noexcept {
     });
 }
 //------------------------------------------------------------------------------
-auto registry::update() noexcept -> work_done {
+auto registry::update_self() noexcept -> work_done {
     return _router.update(8);
 }
 //------------------------------------------------------------------------------
-auto registry::update_all() noexcept -> work_done {
+auto registry::update_only() noexcept -> work_done {
     some_true something_done{};
 
     something_done(_router.do_work());
 
     for(auto& entry : _entries) {
         something_done(entry.update_service());
+    }
+
+    something_done(_router.do_work());
+    something_done(_router.do_maintenance());
+
+    return something_done;
+}
+//------------------------------------------------------------------------------
+auto registry::update_and_process() noexcept -> work_done {
+    some_true something_done{};
+
+    something_done(_router.do_work());
+
+    for(auto& entry : _entries) {
+        something_done(entry.update_and_process_service());
     }
 
     something_done(_router.do_work());
@@ -93,7 +116,7 @@ auto registry::wait_for_ids(const std::chrono::milliseconds t) noexcept
         if(get_id_time.is_expired()) [[unlikely]] {
             return false;
         }
-        update_all();
+        update_and_process();
     }
     return true;
 }

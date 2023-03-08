@@ -136,7 +136,7 @@ auto main(main_ctx& ctx) -> int {
     }
 
     std::unique_lock init_lock{helper_mutex};
-    the_reg.update();
+    the_reg.update_self();
     remaining--;
     helper_cond.notify_all();
     init_lock.unlock();
@@ -146,7 +146,7 @@ auto main(main_ctx& ctx) -> int {
 
     int idle_streak = 0;
     while(not(interrupted or the_reg.is_done())) {
-        if(the_reg.update()) {
+        if(the_reg.update_self()) {
             idle_streak = 0;
             std::this_thread::sleep_for(std::chrono::milliseconds(1));
         } else {
@@ -165,7 +165,7 @@ auto main(main_ctx& ctx) -> int {
 
     for(auto& helper : helpers) {
         helper.join();
-        the_reg.update();
+        the_reg.update_self();
     }
 
     the_reg.finish();

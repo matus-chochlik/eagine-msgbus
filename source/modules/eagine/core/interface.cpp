@@ -173,6 +173,9 @@ struct service_interface : interface<service_interface> {
     virtual auto process_queues() noexcept
       -> pointee_generator<const subscriber_message_queue*> = 0;
 
+    /// @brief Does an iteration update of the service.
+    virtual auto update_only() noexcept -> work_done = 0;
+
     /// @brief Does an iteration update and processes all received messages.
     virtual auto update_and_process_all() noexcept -> work_done = 0;
 };

@@ -103,7 +103,7 @@ void resource_transfer_1(auto& s) {
                 test.fail("data transfer timeout");
                 break;
             }
-            the_reg.update_all();
+            the_reg.update_and_process();
         }
 
         test.check(todo_zeroes <= 0, "zeroes transferred");

@@ -157,7 +157,7 @@ void discovery_1(auto& s) {
                     test.fail("discovery timeout");
                     break;
                 }
-                the_reg.update_all();
+                the_reg.update_and_process();
             }
         } else {
             test.fail("get id ping/pong");
