@@ -105,10 +105,10 @@ private:
     eagitest::track* _ptrck{nullptr};
 };
 //------------------------------------------------------------------------------
-// get-id
+// get-id 1
 //------------------------------------------------------------------------------
-void registry_get_id(auto& s) {
-    eagitest::case_ test{s, 1, "get-id"};
+void registry_get_id_1(auto& s) {
+    eagitest::case_ test{s, 1, "get-id 1"};
     eagitest::track trck{test, 0, 1};
     auto& ctx{s.context()};
     eagine::msgbus::registry the_reg{ctx};
@@ -157,10 +157,34 @@ void registry_get_id(auto& s) {
     the_reg.finish();
 }
 //------------------------------------------------------------------------------
-// queues
+// get-id 2
 //------------------------------------------------------------------------------
-void registry_queues(auto& s) {
-    eagitest::case_ test{s, 2, "queues"};
+void registry_get_id_2(auto& s) {
+    eagitest::case_ test{s, 2, "get-id 2"};
+    eagitest::track trck{test, 0, 1};
+    auto& ctx{s.context()};
+    eagine::msgbus::registry the_reg{ctx};
+
+    auto& ponger = the_reg.emplace<eagine::msgbus::service_composition<
+      eagine::msgbus::require_services<eagine::msgbus::subscriber, test_pong>>>(
+      "TestPong");
+    auto& pinger = the_reg.emplace<eagine::msgbus::service_composition<
+      eagine::msgbus::require_services<eagine::msgbus::subscriber, test_ping>>>(
+      "TestPing");
+
+    if(the_reg.wait_for_id_of(std::chrono::minutes{1}, pinger, ponger)) {
+        trck.checkpoint(1);
+    } else {
+        test.fail("get-id timeout");
+    }
+
+    the_reg.finish();
+}
+//------------------------------------------------------------------------------
+// get-id 3
+//------------------------------------------------------------------------------
+void registry_get_id_3(auto& s) {
+    eagitest::case_ test{s, 3, "get-id 3"};
     eagitest::track trck{test, 0, 1};
     auto& ctx{s.context()};
     eagine::msgbus::registry the_reg{ctx};
@@ -172,23 +196,10 @@ void registry_queues(auto& s) {
       eagine::msgbus::require_services<eagine::msgbus::subscriber, test_ping>>>(
       "TestPing");
 
-    if(not the_reg.wait_for_ids(std::chrono::minutes{1})) {
-        test.fail("get-id timeout");
-    } else {
-        // TODO
-        if(not the_reg.update()) {
-            std::this_thread::sleep_for(std::chrono::milliseconds(1));
-        }
-
-        for(auto& service : the_reg.services()) {
-            for(auto& queue : service.process_queues()) {
-                for(auto& message : queue.queue().give_messages()) {
-                    (void)message;
-                }
-            }
-        }
-
+    if(the_reg.wait_for_ids(std::chrono::minutes{1})) {
         trck.checkpoint(1);
+    } else {
+        test.fail("get-id timeout");
     }
 
     the_reg.finish();
@@ -197,7 +208,7 @@ void registry_queues(auto& s) {
 // ping/pong 1
 //------------------------------------------------------------------------------
 void registry_ping_pong(auto& s) {
-    eagitest::case_ test{s, 3, "ping-pong"};
+    eagitest::case_ test{s, 4, "ping-pong"};
     eagitest::track trck{test, 0, 4};
     auto& ctx{s.context()};
     eagine::msgbus::registry the_reg{ctx};
@@ -245,7 +256,7 @@ void registry_ping_pong(auto& s) {
 // ping/pong 2
 //------------------------------------------------------------------------------
 void registry_wait_ping_pong(auto& s) {
-    eagitest::case_ test{s, 4, "wait / ping-pong"};
+    eagitest::case_ test{s, 5, "wait / ping-pong"};
     eagitest::track trck{test, 0, 3};
     auto& ctx{s.context()};
     eagine::msgbus::registry the_reg{ctx};
@@ -278,17 +289,60 @@ void registry_wait_ping_pong(auto& s) {
     the_reg.finish();
 }
 //------------------------------------------------------------------------------
+// queues
+//------------------------------------------------------------------------------
+void registry_queues(auto& s) {
+    eagitest::case_ test{s, 6, "queues"};
+    eagitest::track trck{test, 0, 2};
+    auto& ctx{s.context()};
+    eagine::msgbus::registry the_reg{ctx};
+
+    the_reg.emplace<eagine::msgbus::service_composition<
+      eagine::msgbus::require_services<eagine::msgbus::subscriber, test_pong>>>(
+      "TestPong");
+    auto& pinger = the_reg.emplace<eagine::msgbus::service_composition<
+      eagine::msgbus::require_services<eagine::msgbus::subscriber, test_ping>>>(
+      "TestPing");
+
+    if(not the_reg.wait_for_ids(std::chrono::minutes{1})) {
+        test.fail("get-id timeout");
+    } else {
+        while(not pinger.success()) {
+            if(not the_reg.update()) {
+                std::this_thread::sleep_for(std::chrono::milliseconds(1));
+            }
+
+            for(auto& service : the_reg.services()) {
+                for(auto& queue : service.process_queues()) {
+                    for(auto& message : queue.give_messages()) {
+                        test.check(
+                          eagine::msgbus::is_valid_endpoint_id(
+                            message.source_id),
+                          "valid source id");
+                        trck.checkpoint(1);
+                    }
+                }
+            }
+            trck.checkpoint(2);
+        }
+    }
+
+    the_reg.finish();
+}
+//------------------------------------------------------------------------------
 // main
 //------------------------------------------------------------------------------
 auto test_main(eagine::test_ctx& ctx) -> int {
     enable_message_bus(ctx);
     ctx.preinitialize();
 
-    eagitest::ctx_suite test{ctx, "registry", 4};
-    test.once(registry_get_id);
-    test.once(registry_queues);
+    eagitest::ctx_suite test{ctx, "registry", 6};
+    test.once(registry_get_id_1);
+    test.once(registry_get_id_2);
+    test.once(registry_get_id_3);
     test.once(registry_ping_pong);
     test.once(registry_wait_ping_pong);
+    test.once(registry_queues);
     return test.exit_code();
 }
 //------------------------------------------------------------------------------
