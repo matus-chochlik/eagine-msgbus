@@ -1198,12 +1198,18 @@ public:
     }
 
     /// @brief Returns a reference to the message queue.
-    auto queue() const noexcept -> message_priority_queue& {
+    [[nodiscard]] auto queue() const noexcept -> message_priority_queue& {
         return _queue;
     }
 
+    /// @brief Returns a view of messages in the message queue and later removes them.
+    [[nodiscard]] auto give_messages() const noexcept
+      -> pointee_generator<std::vector<stored_message>::iterator> {
+        return _queue.give_messages();
+    }
+
     /// @brief Returns the handler registerd with the message id.
-    auto handler() const noexcept -> const method_handler& {
+    [[nodiscard]] auto handler() const noexcept -> const method_handler& {
         return _handler;
     }
 
