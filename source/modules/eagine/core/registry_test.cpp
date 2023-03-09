@@ -293,7 +293,7 @@ void registry_wait_ping_pong(auto& s) {
 //------------------------------------------------------------------------------
 void registry_queues(auto& s) {
     eagitest::case_ test{s, 6, "queues"};
-    eagitest::track trck{test, 0, 6};
+    eagitest::track trck{test, 0, 8};
     auto& ctx{s.context()};
     eagine::msgbus::registry the_reg{ctx};
 
@@ -329,13 +329,27 @@ void registry_queues(auto& s) {
                           eagine::msgbus::is_valid_endpoint_id(
                             message.source_id),
                           "valid source id");
-                        trck.checkpoint(3);
+                        if(queue.context().msg_id().is("eagiTest", "ping")) {
+                            test.check_equal(
+                              message.source_id,
+                              pinger.bus_node().get_id(),
+                              "pinger id");
+                            trck.checkpoint(3);
+                        }
+                        if(queue.context().msg_id().is("eagiTest", "pong")) {
+                            test.check_equal(
+                              message.source_id,
+                              ponger.bus_node().get_id(),
+                              "ponger id");
+                            trck.checkpoint(4);
+                        }
+                        trck.checkpoint(5);
                     }
-                    trck.checkpoint(4);
+                    trck.checkpoint(6);
                 }
-                trck.checkpoint(5);
+                trck.checkpoint(7);
             }
-            trck.checkpoint(6);
+            trck.checkpoint(8);
         }
     }
 
