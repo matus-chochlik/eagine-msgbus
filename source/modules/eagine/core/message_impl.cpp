@@ -20,6 +20,8 @@ import std;
 
 namespace eagine::msgbus {
 //------------------------------------------------------------------------------
+// stored message
+//------------------------------------------------------------------------------
 auto stored_message::store_and_sign(
   const memory::const_block data,
   const span_size_t max_size,
