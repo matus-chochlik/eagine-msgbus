@@ -103,38 +103,6 @@ public:
         return {};
     }
 
-    template <typename Base, typename Unused>
-    auto decode_chain(
-      const message_context& msg_ctx,
-      const stored_message& message,
-      Base& base,
-      const Unused&) noexcept {
-        return base.decode(msg_ctx, message);
-    }
-
-    template <
-      typename Base,
-      typename Derived,
-      typename Decoded0,
-      typename... Decoded>
-    auto decode_chain(
-      const message_context& msg_ctx,
-      const stored_message& message,
-      Base& base,
-      Derived& obj,
-      std::optional<Decoded0> (Derived::*decoder)(
-        const message_context&,
-        const stored_message&) noexcept,
-      std::optional<Decoded> (Derived::*... decoders)(
-        const message_context&,
-        const stored_message&) noexcept) noexcept
-      -> decode_result_t<Base, Decoded...> {
-        if(const auto decoded{obj.*decoder(msg_ctx)}) {
-            return {extract(decoded)};
-        }
-        return decode_chain(msg_ctx, message, base, obj, decoders...);
-    }
-
     /// @brief Not copy assignable.
     subscriber_base(const subscriber_base&) = delete;
 
@@ -204,6 +172,42 @@ protected:
 
     subscriber_base(subscriber_base&& temp) noexcept
       : _endpoint{temp._endpoint} {}
+
+    template <typename Base, typename Unused>
+    auto decode_chain(
+      const message_context& msg_ctx,
+      const stored_message& message,
+      Base& base,
+      const Unused&) noexcept {
+        return base.decode(msg_ctx, message);
+    }
+
+    template <
+      typename Base,
+      typename Derived,
+      typename Decoded0,
+      typename... Decoded>
+    auto decode_chain(
+      const message_context& msg_ctx,
+      const stored_message& message,
+      Base& base,
+      Derived& obj,
+      std::optional<Decoded0> (Derived::*decoder)(
+        const message_context&,
+        const stored_message&) noexcept,
+      std::optional<Decoded> (Derived::*... decoders)(
+        const message_context&,
+        const stored_message&) noexcept) noexcept
+      -> decode_result_t<Base, Decoded0, Decoded...> {
+        decode_result_t<Base, Decoded0, Decoded...> result{};
+        if(auto decoded{(obj.*decoder)(msg_ctx, message)}) {
+            result = std::move(extract(decoded));
+        }
+        std::visit(
+          [&](auto&& decoded) -> void { result = std::move(decoded); },
+          decode_chain(msg_ctx, message, base, obj, decoders...));
+        return result;
+    }
 
     void _subscribe_to(
       const span<const handler_entry> msg_handlers) const noexcept {
