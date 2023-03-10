@@ -137,9 +137,7 @@ auto main(main_ctx& ctx) -> int {
             topo_prn.discover_topology();
         }
         topo_prn.update();
-        if(not topo_prn.process_all()) {
-            std::this_thread::sleep_for(std::chrono::milliseconds(250));
-        }
+        topo_prn.process_all().or_sleep_for(std::chrono::milliseconds(250));
     }
 
     topo_prn.print_topology();

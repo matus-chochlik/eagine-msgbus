@@ -167,9 +167,7 @@ auto main(main_ctx& ctx) -> int {
           "CnsmrEndpt");
 
     while(not interrupted and not(provider.is_done() and consumer.is_done())) {
-        if(not the_reg.update_and_process()) {
-            std::this_thread::sleep_for(std::chrono::milliseconds{1});
-        }
+        the_reg.update_and_process().or_sleep_for(std::chrono::milliseconds{1});
     }
 
     return 0;

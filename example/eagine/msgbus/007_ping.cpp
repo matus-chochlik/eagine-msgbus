@@ -246,7 +246,7 @@ public:
                 something_done(do_update());
             }
         }
-        something_done(base::process_all() > 0);
+        something_done(base::process_all());
         return something_done;
     }
 

@@ -167,18 +167,17 @@ auto main(main_ctx& ctx) -> int {
     workers.reserve(thread_count);
 
     for(span_size_t i = 0; i < thread_count; ++i) {
-        workers.emplace_back([srv_obj{main_ctx_object{"FibServer", ctx}},
-                              connection{
-                                acceptor->make_connection()}]() mutable {
-            msgbus::fibonacci_server server(std::move(srv_obj));
-            server.add_connection(std::move(connection));
+        workers.emplace_back(
+          [srv_obj{main_ctx_object{"FibServer", ctx}},
+           connection{acceptor->make_connection()}]() mutable {
+              msgbus::fibonacci_server server(std::move(srv_obj));
+              server.add_connection(std::move(connection));
 
-            while(not server.is_done()) {
-                if(not server.process_one()) {
-                    std::this_thread::sleep_for(std::chrono::milliseconds(10));
-                }
-            }
-        });
+              while(not server.is_done()) {
+                  server.process_one().or_sleep_for(
+                    std::chrono::milliseconds(10));
+              }
+          });
     }
 
     msgbus::router router(ctx);
@@ -193,9 +192,7 @@ auto main(main_ctx& ctx) -> int {
     while(not client.is_done()) {
         router.update();
         client.update();
-        if(not client.process_one()) {
-            std::this_thread::sleep_for(std::chrono::milliseconds(10));
-        }
+        client.process_one().or_sleep_for(std::chrono::milliseconds(10));
     }
 
     client.shutdown();

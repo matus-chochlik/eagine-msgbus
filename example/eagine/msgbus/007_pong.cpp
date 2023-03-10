@@ -94,9 +94,7 @@ auto main(main_ctx& ctx) -> int {
 
     while(not the_ponger.is_done()) {
         the_ponger.process_all();
-        if(not the_ponger.update()) {
-            std::this_thread::sleep_for(std::chrono::milliseconds(1));
-        }
+        the_ponger.update().or_sleep_for(std::chrono::milliseconds(1));
     }
 
     return 0;

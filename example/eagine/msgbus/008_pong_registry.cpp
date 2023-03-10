@@ -94,9 +94,7 @@ auto main(main_ctx& ctx) -> int {
             msgbus::pong_example ponger(bus);
             while(not ponger.is_done()) {
                 ponger.process_all();
-                if(not ponger.update()) {
-                    std::this_thread::sleep_for(std::chrono::milliseconds(1));
-                }
+                ponger.update().or_sleep_for(std::chrono::milliseconds(1));
             }
             --still_working;
         });

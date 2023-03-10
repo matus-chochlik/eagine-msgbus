@@ -272,7 +272,7 @@ protected:
     }
 
     auto _process_one(const span<const handler_entry> msg_handlers) noexcept
-      -> bool {
+      -> work_done {
         for(const auto& entry : msg_handlers) {
             assert(entry.queue);
             const message_context msg_ctx{this->bus_node(), entry.msg_id};
@@ -284,14 +284,14 @@ protected:
     }
 
     auto _process_all(const span<const handler_entry> msg_handlers) noexcept
-      -> span_size_t {
-        span_size_t result{0};
+      -> work_done {
+        span_size_t done{0};
         for(const auto& entry : msg_handlers) {
             assert(entry.queue);
             const message_context msg_ctx{this->bus_node(), entry.msg_id};
-            result += extract(entry.queue).process_all(msg_ctx, entry.handler);
+            done += extract(entry.queue).process_all(msg_ctx, entry.handler);
         }
-        return result;
+        return done > 0;
     }
 
     auto _process_and_get_queues(
@@ -374,12 +374,12 @@ public:
     }
 
     /// @brief Processes one pending enqueued message.
-    auto process_one() noexcept -> bool {
+    auto process_one() noexcept -> work_done {
         return this->_process_one(view(_msg_handlers));
     }
 
     /// @brief Processes all pending enqueued messages.
-    auto process_all() noexcept -> span_size_t {
+    auto process_all() noexcept -> work_done {
         return this->_process_all(view(_msg_handlers));
     }
 
@@ -517,13 +517,13 @@ public:
 
     /// @brief Handles (and removes) one of pending received messages.
     /// @see process_all
-    auto process_one() noexcept -> bool {
+    auto process_one() noexcept -> work_done {
         return this->_process_one(view(_msg_handlers));
     }
 
     /// @brief Handles (and removes) all pending received messages.
     /// @see process_one
-    auto process_all() noexcept -> span_size_t {
+    auto process_all() noexcept -> work_done {
         return this->_process_all(view(_msg_handlers));
     }
 

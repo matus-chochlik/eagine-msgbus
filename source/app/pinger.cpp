@@ -263,7 +263,7 @@ public:
         if(_can_ping) [[likely]] {
             something_done(do_ping());
         }
-        something_done(base::process_all() > 0);
+        something_done(base::process_all());
         return something_done;
     }
 

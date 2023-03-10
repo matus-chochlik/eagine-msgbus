@@ -76,30 +76,28 @@ auto main(main_ctx& ctx) -> int {
     workers.reserve(worker_count);
 
     for(span_size_t i = 0; i < worker_count; ++i) {
-        workers.emplace_back(
-          [&worker_mutex,
-           &start,
-           &done,
-           helper_obj{main_ctx_object{"Helper", ctx}},
-           connection{acceptor->make_connection()}]() mutable {
-              worker_mutex.lock();
-              msgbus::endpoint helper_endpoint{std::move(helper_obj)};
-              helper_endpoint.add_connection(std::move(connection));
-              msgbus::example_helper helper(helper_endpoint);
-              helper.update();
-              worker_mutex.unlock();
+        workers.emplace_back([&worker_mutex,
+                              &start,
+                              &done,
+                              helper_obj{main_ctx_object{"Helper", ctx}},
+                              connection{
+                                acceptor->make_connection()}]() mutable {
+            worker_mutex.lock();
+            msgbus::endpoint helper_endpoint{std::move(helper_obj)};
+            helper_endpoint.add_connection(std::move(connection));
+            msgbus::example_helper helper(helper_endpoint);
+            helper.update();
+            worker_mutex.unlock();
 
-              while(not start) {
-                  std::this_thread::sleep_for(std::chrono::milliseconds(100));
-              }
+            while(not start) {
+                std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            }
 
-              while(not done) {
-                  helper.update();
-                  if(not helper.process_all()) {
-                      std::this_thread::sleep_for(std::chrono::milliseconds(1));
-                  }
-              }
-          });
+            while(not done) {
+                helper.update();
+                helper.process_all().or_sleep_for(std::chrono::milliseconds(1));
+            }
+        });
     }
 
     worker_mutex.lock();

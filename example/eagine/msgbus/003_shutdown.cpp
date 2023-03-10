@@ -91,9 +91,7 @@ auto main(main_ctx& ctx) -> int {
 
     while(not wait_done) {
         trgr.update();
-        if(not trgr.process_all()) {
-            std::this_thread::sleep_for(std::chrono::milliseconds(10));
-        }
+        trgr.process_all().or_sleep_for(std::chrono::milliseconds(10));
     }
 
     trgr.shutdown_all();
@@ -101,9 +99,7 @@ auto main(main_ctx& ctx) -> int {
 
     while(not wait_done) {
         trgr.update();
-        if(not trgr.process_all()) {
-            std::this_thread::sleep_for(std::chrono::milliseconds(10));
-        }
+        trgr.process_all().or_sleep_for(std::chrono::milliseconds(10));
     }
 
     return 0;

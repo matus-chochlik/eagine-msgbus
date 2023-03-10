@@ -92,9 +92,8 @@ auto main(main_ctx& ctx) -> int {
     }
 
     while(not the_pingable.is_done()) {
-        if(not the_pingable.update_and_process_all()) {
-            std::this_thread::sleep_for(std::chrono::milliseconds(1));
-        }
+        the_pingable.update_and_process_all().or_sleep_for(
+          std::chrono::milliseconds(1));
     }
 
     return 0;

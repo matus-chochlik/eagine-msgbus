@@ -93,9 +93,7 @@ auto main(main_ctx& ctx) -> int {
 
     while(not(interrupted or sub_log.is_done() or waited_too_long)) {
         sub_log.update();
-        if(not sub_log.process_all()) {
-            std::this_thread::sleep_for(std::chrono::milliseconds(250));
-        }
+        sub_log.process_all().or_sleep_for(std::chrono::milliseconds(250));
     }
 
     return 0;

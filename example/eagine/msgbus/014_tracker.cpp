@@ -82,9 +82,7 @@ auto main(main_ctx& ctx) -> int {
 
     while(not keep_going) {
         the_tracker.process_all();
-        if(not the_tracker.update()) {
-            std::this_thread::sleep_for(std::chrono::milliseconds(1));
-        }
+        the_tracker.update().or_sleep_for(std::chrono::milliseconds(1));
     }
     the_tracker.shutdown();
 

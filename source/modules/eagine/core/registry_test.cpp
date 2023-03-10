@@ -148,9 +148,7 @@ void registry_get_id_1(auto& s) {
             test.fail("get-id timeout");
             break;
         }
-        if(not the_reg.update_and_process()) {
-            std::this_thread::sleep_for(std::chrono::milliseconds(1));
-        }
+        the_reg.update_and_process().or_sleep_for(std::chrono::milliseconds(1));
         trck.checkpoint(1);
     }
 
@@ -229,9 +227,7 @@ void registry_ping_pong(auto& s) {
             test.fail("get-id timeout");
             break;
         }
-        if(not the_reg.update_and_process()) {
-            std::this_thread::sleep_for(std::chrono::milliseconds(1));
-        }
+        the_reg.update_and_process().or_sleep_for(std::chrono::milliseconds(1));
         trck.checkpoint(3);
     }
 
@@ -244,9 +240,8 @@ void registry_ping_pong(auto& s) {
                 test.fail("ping timeout");
                 break;
             }
-            if(not the_reg.update_and_process()) {
-                std::this_thread::sleep_for(std::chrono::milliseconds(1));
-            }
+            the_reg.update_and_process().or_sleep_for(
+              std::chrono::milliseconds(1));
             trck.checkpoint(4);
         }
     }
@@ -280,9 +275,8 @@ void registry_wait_ping_pong(auto& s) {
                 test.fail("ping timeout");
                 break;
             }
-            if(not the_reg.update_and_process()) {
-                std::this_thread::sleep_for(std::chrono::milliseconds(1));
-            }
+            the_reg.update_and_process().or_sleep_for(
+              std::chrono::milliseconds(1));
             trck.checkpoint(3);
         }
     }
@@ -318,9 +312,7 @@ void registry_queues(auto& s) {
                 test.fail("ping timeout");
                 break;
             }
-            if(not the_reg.update_only()) {
-                std::this_thread::sleep_for(std::chrono::milliseconds(1));
-            }
+            the_reg.update_only().or_sleep_for(std::chrono::milliseconds(1));
 
             for(auto& service : the_reg.services()) {
                 for(auto& queue : service.process_queues()) {
