@@ -56,6 +56,26 @@ struct statistics_consumer_intf : interface<statistics_consumer_intf> {
     virtual void add_methods() noexcept = 0;
 
     virtual void query_statistics(identifier_t node_id) noexcept = 0;
+
+    virtual auto decode_router_statistics(
+      const message_context& msg_ctx,
+      const stored_message& message) noexcept
+      -> std::optional<router_statistics> = 0;
+
+    virtual auto decode_bridge_statistics(
+      const message_context& msg_ctx,
+      const stored_message& message) noexcept
+      -> std::optional<bridge_statistics> = 0;
+
+    virtual auto decode_endpoint_statistics(
+      const message_context& msg_ctx,
+      const stored_message& message) noexcept
+      -> std::optional<endpoint_statistics> = 0;
+
+    virtual auto decode_connection_statistics(
+      const message_context& msg_ctx,
+      const stored_message& message) noexcept
+      -> std::optional<connection_statistics> = 0;
 };
 //------------------------------------------------------------------------------
 auto make_statistics_consumer_impl(subscriber&, statistics_consumer_signals&)
@@ -80,6 +100,46 @@ public:
     /// @see query_statistics
     void discover_statistics() noexcept {
         query_statistics(broadcast_endpoint_id());
+    }
+
+    auto decode_router_statistics(
+      const message_context& msg_ctx,
+      const stored_message& message) noexcept
+      -> std::optional<router_statistics> {
+        return _impl->decode_router_statistics(msg_ctx, message);
+    }
+
+    auto decode_bridge_statistics(
+      const message_context& msg_ctx,
+      const stored_message& message) noexcept
+      -> std::optional<bridge_statistics> {
+        return _impl->decode_bridge_statistics(msg_ctx, message);
+    }
+
+    auto decode_endpoint_statistics(
+      const message_context& msg_ctx,
+      const stored_message& message) noexcept
+      -> std::optional<endpoint_statistics> {
+        return _impl->decode_endpoint_statistics(msg_ctx, message);
+    }
+
+    auto decode_connection_statistics(
+      const message_context& msg_ctx,
+      const stored_message& message) noexcept
+      -> std::optional<connection_statistics> {
+        return _impl->decode_connection_statistics(msg_ctx, message);
+    }
+
+    auto decode(const message_context& msg_ctx, const stored_message& message) {
+        return this->decode_chain(
+          msg_ctx,
+          message,
+          *static_cast<Base*>(this),
+          *this,
+          &statistics_consumer::decode_router_statistics,
+          &statistics_consumer::decode_bridge_statistics,
+          &statistics_consumer::decode_endpoint_statistics,
+          &statistics_consumer::decode_connection_statistics);
     }
 
 protected:

@@ -34,6 +34,11 @@ public:
         base.add_method(
           this,
           msgbus_map<"statsEndpt", &statistics_consumer_impl::_handle_endpoint>{});
+        base.add_method(
+          this,
+          msgbus_map<
+            "statsConn",
+            &statistics_consumer_impl::_handle_connection>{});
     }
 
     void query_statistics(identifier_t node_id) noexcept final {
@@ -41,6 +46,47 @@ public:
         message.set_target_id(node_id);
         const auto msg_id{msgbus_id{"statsQuery"}};
         base.bus_node().post(msg_id, message);
+    }
+
+    auto decode_router_statistics(
+      const message_context& msg_ctx,
+      const stored_message& message) noexcept
+      -> std::optional<router_statistics> final {
+        if(msg_ctx.is_special_message("statsRutr")) {
+            return default_deserialized<router_statistics>(message.content());
+        }
+        return {};
+    }
+
+    auto decode_bridge_statistics(
+      const message_context& msg_ctx,
+      const stored_message& message) noexcept
+      -> std::optional<bridge_statistics> final {
+        if(msg_ctx.is_special_message("statsBrdg")) {
+            return default_deserialized<bridge_statistics>(message.content());
+        }
+        return {};
+    }
+
+    auto decode_endpoint_statistics(
+      const message_context& msg_ctx,
+      const stored_message& message) noexcept
+      -> std::optional<endpoint_statistics> final {
+        if(msg_ctx.is_special_message("statsEndpt")) {
+            return default_deserialized<endpoint_statistics>(message.content());
+        }
+        return {};
+    }
+
+    auto decode_connection_statistics(
+      const message_context& msg_ctx,
+      const stored_message& message) noexcept
+      -> std::optional<connection_statistics> final {
+        if(msg_ctx.is_special_message("statsConn")) {
+            return default_deserialized<connection_statistics>(
+              message.content());
+        }
+        return {};
     }
 
 private:
