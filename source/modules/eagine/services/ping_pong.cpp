@@ -110,7 +110,8 @@ export struct pinger_signals {
     /// @see ping
     /// @see ping_timeouted
     /// @see has_pending_pings
-    signal<void(const ping_response&) noexcept> ping_responded;
+    signal<void(const result_context&, const ping_response&) noexcept>
+      ping_responded;
 
     /// @brief Triggered on timeout of ping response.
     /// @see ping

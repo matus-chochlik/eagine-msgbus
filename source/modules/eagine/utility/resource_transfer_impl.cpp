@@ -387,6 +387,7 @@ void resource_data_consumer_node::_handle_stream_data(
 }
 //------------------------------------------------------------------------------
 void resource_data_consumer_node::_handle_ping_response(
+  const result_context&,
   const ping_response& pong) noexcept {
     const auto pos{_current_servers.find(pong.pingable_id)};
     if(pos != _current_servers.end()) {

@@ -152,7 +152,9 @@ public:
         }
     }
 
-    void on_ping_response(const ping_response& pong) noexcept {
+    void on_ping_response(
+      const result_context&,
+      const ping_response& pong) noexcept {
         auto& stats = _targets[pong.pingable_id];
         stats.responded++;
         stats.min_time = std::min(stats.min_time, pong.age);

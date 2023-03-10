@@ -93,19 +93,22 @@ public:
 
 private:
     auto _handle_pong(
-      const message_context&,
+      const message_context& msg_ctx,
       const stored_message& message) noexcept -> bool {
-        std::erase_if(_pending, [this, &message](auto& entry) {
+        std::erase_if(_pending, [&, this](auto& entry) {
             auto& [pingable_id, sequence_no, ping_time] = entry;
             const bool is_response = (message.source_id == pingable_id) and
                                      (message.sequence_no == sequence_no);
             if(is_response) {
-                signals.ping_responded(ping_response{
-                  .pingable_id = message.source_id,
-                  .age = std::chrono::duration_cast<std::chrono::microseconds>(
-                    ping_time.elapsed_time()),
-                  .sequence_no = message.sequence_no,
-                  .verified = base.verify_bits(message)});
+                signals.ping_responded(
+                  result_context{msg_ctx, message},
+                  ping_response{
+                    .pingable_id = message.source_id,
+                    .age =
+                      std::chrono::duration_cast<std::chrono::microseconds>(
+                        ping_time.elapsed_time()),
+                    .sequence_no = message.sequence_no,
+                    .verified = base.verify_bits(message)});
                 return true;
             }
             return false;

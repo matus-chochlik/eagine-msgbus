@@ -168,7 +168,9 @@ public:
         }
     }
 
-    void on_ping_response(const ping_response& pong) noexcept {
+    void on_ping_response(
+      const result_context&,
+      const ping_response& pong) noexcept {
         auto& state = _targets[pong.pingable_id];
         state.responded++;
         state.min_time = std::min(state.min_time, pong.age);

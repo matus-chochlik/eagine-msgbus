@@ -486,7 +486,9 @@ private:
         }
     }
 
-    void _handle_ping_response(const ping_response& pong) noexcept {
+    void _handle_ping_response(
+      const result_context&,
+      const ping_response& pong) noexcept {
         _get_node(pong.pingable_id).ping_response(pong.sequence_no, pong.age);
     }
 
