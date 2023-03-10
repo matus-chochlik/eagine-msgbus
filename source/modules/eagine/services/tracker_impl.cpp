@@ -193,7 +193,9 @@ private:
           .remove_subscription(sub.message_type);
     }
 
-    void _handle_router_appeared(const router_topology_info& info) noexcept {
+    void _handle_router_appeared(
+      const result_context&,
+      const router_topology_info& info) noexcept {
         _tracker.notice_instance(info.router_id, info.instance_id)
           .assign(node_kind::router);
         if(info.remote_id) {
@@ -202,7 +204,9 @@ private:
         }
     }
 
-    void _handle_bridge_appeared(const bridge_topology_info& info) noexcept {
+    void _handle_bridge_appeared(
+      const result_context&,
+      const bridge_topology_info& info) noexcept {
         _tracker.notice_instance(info.bridge_id, info.instance_id)
           .assign(node_kind::bridge);
         if(info.opposite_id) {
@@ -211,20 +215,28 @@ private:
         }
     }
 
-    void _handle_endpoint_appeared(const endpoint_topology_info& info) noexcept {
+    void _handle_endpoint_appeared(
+      const result_context&,
+      const endpoint_topology_info& info) noexcept {
         _tracker.notice_instance(info.endpoint_id, info.instance_id)
           .assign(node_kind::endpoint);
     }
 
-    void _handle_router_disappeared(const router_shutdown& info) noexcept {
+    void _handle_router_disappeared(
+      const result_context&,
+      const router_shutdown& info) noexcept {
         _tracker.remove_node(info.router_id);
     }
 
-    void _handle_bridge_disappeared(const bridge_shutdown& info) noexcept {
+    void _handle_bridge_disappeared(
+      const result_context&,
+      const bridge_shutdown& info) noexcept {
         _tracker.remove_node(info.bridge_id);
     }
 
-    void _handle_endpoint_disappeared(const endpoint_shutdown& info) noexcept {
+    void _handle_endpoint_disappeared(
+      const result_context&,
+      const endpoint_shutdown& info) noexcept {
         _tracker.remove_node(info.endpoint_id);
     }
 

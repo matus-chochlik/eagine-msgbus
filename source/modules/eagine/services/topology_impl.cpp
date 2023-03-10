@@ -111,55 +111,58 @@ public:
 
 private:
     auto _handle_router(
-      const message_context&,
+      const message_context& msg_ctx,
       const stored_message& message) noexcept -> bool {
         router_topology_info info{};
         if(default_deserialize(info, message.content())) [[likely]] {
-            signals.router_appeared(info);
+            signals.router_appeared(result_context{msg_ctx, message}, info);
         }
         return true;
     }
 
     auto _handle_bridge(
-      const message_context&,
+      const message_context& msg_ctx,
       const stored_message& message) noexcept -> bool {
         bridge_topology_info info{};
         if(default_deserialize(info, message.content())) [[likely]] {
-            signals.bridge_appeared(info);
+            signals.bridge_appeared(result_context{msg_ctx, message}, info);
         }
         return true;
     }
 
     auto _handle_endpoint(
-      const message_context&,
+      const message_context& msg_ctx,
       const stored_message& message) noexcept -> bool {
         endpoint_topology_info info{};
         if(default_deserialize(info, message.content())) [[likely]] {
-            signals.endpoint_appeared(info);
+            signals.endpoint_appeared(result_context{msg_ctx, message}, info);
         }
         return true;
     }
 
     auto _handle_router_bye(
-      const message_context&,
+      const message_context& msg_ctx,
       const stored_message& message) noexcept -> bool {
         signals.router_disappeared(
+          result_context{msg_ctx, message},
           router_shutdown{.router_id = message.source_id});
         return true;
     }
 
     auto _handle_bridge_bye(
-      const message_context&,
+      const message_context& msg_ctx,
       const stored_message& message) noexcept -> bool {
         signals.bridge_disappeared(
+          result_context{msg_ctx, message},
           bridge_shutdown{.bridge_id = message.source_id});
         return true;
     }
 
     auto _handle_endpoint_bye(
-      const message_context&,
+      const message_context& msg_ctx,
       const stored_message& message) noexcept -> bool {
         signals.endpoint_disappeared(
+          result_context{msg_ctx, message},
           endpoint_shutdown{.endpoint_id = message.source_id});
         return true;
     }

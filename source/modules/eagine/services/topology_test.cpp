@@ -104,7 +104,9 @@ void topology_1(auto& s) {
     }};
 
     const auto handle_router_appeared{
-      [&](const eagine::msgbus::router_topology_info& info) {
+      [&](
+        const eagine::msgbus::result_context&,
+        const eagine::msgbus::router_topology_info& info) {
           if(info.router_id == the_reg.router_id()) {
               found_router = true;
           }
@@ -121,7 +123,9 @@ void topology_1(auto& s) {
         "TestPong");
 
     const auto handle_endpoint_appeared{
-      [&](const eagine::msgbus::endpoint_topology_info& info) {
+      [&](
+        const eagine::msgbus::result_context&,
+        const eagine::msgbus::endpoint_topology_info& info) {
           if(pinger.get_id() == info.endpoint_id) {
               found_pinger = true;
           }

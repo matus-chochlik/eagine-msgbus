@@ -160,16 +160,19 @@ void TrackerModel::handleNodeChanged(
 }
 //------------------------------------------------------------------------------
 void TrackerModel::handleRouterDisappeared(
+  const eagine::msgbus::result_context&,
   const eagine::msgbus::router_shutdown& info) noexcept {
     emit nodeDisappeared(info.router_id);
 }
 //------------------------------------------------------------------------------
 void TrackerModel::handleBridgeDisappeared(
+  const eagine::msgbus::result_context&,
   const eagine::msgbus::bridge_shutdown& info) noexcept {
     emit nodeDisappeared(info.bridge_id);
 }
 //------------------------------------------------------------------------------
 void TrackerModel::handleEndpointDisappeared(
+  const eagine::msgbus::result_context&,
   const eagine::msgbus::endpoint_shutdown& info) noexcept {
     emit nodeDisappeared(info.endpoint_id);
 }
