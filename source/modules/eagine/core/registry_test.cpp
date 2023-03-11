@@ -7,7 +7,6 @@
 ///
 
 #include <eagine/testing/unit_begin_ctx.hpp>
-#include <chrono>
 import eagine.core;
 import eagine.msgbus.core;
 import std;

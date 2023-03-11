@@ -162,6 +162,11 @@ void discovery_1(auto& s) {
         } else {
             test.fail("get id ping/pong");
         }
+
+        test.check(found_pinger, "found pinger");
+        test.check(found_ponger, "found ponger");
+        test.check(pinger_alive, "pinger alive");
+        test.check(ponger_alive, "ponger alive");
     } else {
         test.fail("get id observer");
     }
@@ -198,22 +203,13 @@ void discovery_2(auto& s) {
                    ponger_alive;
         }};
 
-        const auto handle_alive{
-          [&](const eagine::msgbus::subscriber_info& sub) {
-              if(pinger.get_id() == sub.endpoint_id) {
-                  pinger_alive = true;
-              }
-              if(ponger.get_id() == sub.endpoint_id) {
-                  ponger_alive = true;
-              }
-              trck.checkpoint(1);
-          }};
-        observer.reported_alive.connect({eagine::construct_from, handle_alive});
-
         pinger.assign_target(ponger.bus_node().get_id());
         eagine::timeout discovery_time{std::chrono::minutes{1}};
 
         const auto handler{eagine::overloaded(
+          [](const std::monostate&) {},
+          [](const eagine::msgbus::subscriber_unsubscribed&) {},
+          [](const eagine::msgbus::subscriber_not_subscribed&) {},
           [&](const eagine::msgbus::subscriber_alive& alive) {
               if(pinger.get_id() == alive.source.endpoint_id) {
                   pinger_alive = true;
@@ -221,10 +217,10 @@ void discovery_2(auto& s) {
               if(ponger.get_id() == alive.source.endpoint_id) {
                   ponger_alive = true;
               }
-              trck.checkpoint(2);
+              trck.checkpoint(1);
           },
           [&](const eagine::msgbus::subscriber_subscribed& sub) {
-              if(sub.message_type.is("eagiTest", "ping")) {
+              if(sub.message_type.is("eagiTest", "pong")) {
                   test.check_equal(
                     sub.source.endpoint_id,
                     pinger.get_id().value_or(
@@ -232,7 +228,7 @@ void discovery_2(auto& s) {
                     "pinger id");
                   found_pinger = true;
               }
-              if(sub.message_type.is("eagiTest", "pong")) {
+              if(sub.message_type.is("eagiTest", "ping")) {
                   test.check_equal(
                     sub.source.endpoint_id,
                     ponger.get_id().value_or(
@@ -240,9 +236,8 @@ void discovery_2(auto& s) {
                     "ponger id");
                   found_ponger = true;
               }
-              trck.checkpoint(3);
-          },
-          [&](auto&) {})};
+              trck.checkpoint(2);
+          })};
 
         while(not discovered_all()) {
             if(discovery_time.is_expired()) {
@@ -256,10 +251,108 @@ void discovery_2(auto& s) {
                     for(auto& message : queue.give_messages()) {
                         std::visit(
                           handler, observer.decode(queue.context(), message));
+                        trck.checkpoint(3);
                     }
                 }
             }
         }
+
+        test.check(found_pinger, "found pinger");
+        test.check(found_ponger, "found ponger");
+        test.check(pinger_alive, "pinger alive");
+        test.check(ponger_alive, "ponger alive");
+    } else {
+        test.fail("get id observer");
+    }
+
+    the_reg.finish();
+}
+//------------------------------------------------------------------------------
+// test 3
+//------------------------------------------------------------------------------
+void discovery_3(auto& s) {
+    eagitest::case_ test{s, 3, "3"};
+    eagitest::track trck{test, 0, 2};
+    auto& ctx{s.context()};
+    eagine::msgbus::registry the_reg{ctx};
+
+    auto& observer = the_reg.emplace<eagine::msgbus::service_composition<
+      eagine::msgbus::subscriber_discovery<>>>("Observer");
+
+    if(the_reg.wait_for_id_of(std::chrono::seconds{30}, observer)) {
+        auto& pinger =
+          the_reg.emplace<eagine::msgbus::service_composition<test_ping<>>>(
+            "TestPing");
+        auto& ponger =
+          the_reg.emplace<eagine::msgbus::service_composition<test_pong<>>>(
+            "TestPong");
+
+        bool found_pinger{false};
+        bool found_ponger{false};
+        bool pinger_alive{false};
+        bool ponger_alive{false};
+
+        const auto discovered_all{[&] {
+            return found_pinger and found_ponger and pinger_alive and
+                   ponger_alive;
+        }};
+
+        pinger.assign_target(ponger.bus_node().get_id());
+        eagine::timeout discovery_time{std::chrono::minutes{1}};
+
+        const auto handler{eagine::overloaded(
+          [](const std::monostate&) {},
+          [](const eagine::msgbus::subscriber_unsubscribed&) {},
+          [](const eagine::msgbus::subscriber_not_subscribed&) {},
+          [&](const eagine::msgbus::subscriber_alive& alive) {
+              if(pinger.get_id() == alive.source.endpoint_id) {
+                  pinger_alive = true;
+              }
+              if(ponger.get_id() == alive.source.endpoint_id) {
+                  ponger_alive = true;
+              }
+              trck.checkpoint(1);
+          },
+          [&](const eagine::msgbus::subscriber_subscribed& sub) {
+              if(sub.message_type.is("eagiTest", "pong")) {
+                  test.check_equal(
+                    sub.source.endpoint_id,
+                    pinger.get_id().value_or(
+                      eagine::msgbus::invalid_endpoint_id()),
+                    "pinger id");
+                  found_pinger = true;
+              }
+              if(sub.message_type.is("eagiTest", "ping")) {
+                  test.check_equal(
+                    sub.source.endpoint_id,
+                    ponger.get_id().value_or(
+                      eagine::msgbus::invalid_endpoint_id()),
+                    "ponger id");
+                  found_ponger = true;
+              }
+              trck.checkpoint(2);
+          })};
+
+        while(not discovered_all()) {
+            if(discovery_time.is_expired()) {
+                test.fail("discovery timeout");
+                break;
+            }
+            the_reg.update_only();
+
+            for(auto&& [msg_ctx, msg_inf, decoded] : observer.give_decoded()) {
+                (void)msg_ctx;
+                (void)msg_inf;
+                std::visit(handler, decoded);
+            }
+            pinger.process_all();
+            ponger.process_all();
+        }
+
+        test.check(found_pinger, "found pinger");
+        test.check(found_ponger, "found ponger");
+        test.check(pinger_alive, "pinger alive");
+        test.check(ponger_alive, "ponger alive");
     } else {
         test.fail("get id observer");
     }
@@ -273,8 +366,10 @@ auto test_main(eagine::test_ctx& ctx) -> int {
     enable_message_bus(ctx);
     ctx.preinitialize();
 
-    eagitest::ctx_suite test{ctx, "discovery", 1};
+    eagitest::ctx_suite test{ctx, "discovery", 3};
     test.once(discovery_1);
+    test.once(discovery_2);
+    test.once(discovery_3);
     return test.exit_code();
 }
 //------------------------------------------------------------------------------
