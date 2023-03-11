@@ -202,10 +202,11 @@ protected:
         decode_result_t<Base, Decoded0, Decoded...> result{};
         if(auto decoded{(obj.*decoder)(msg_ctx, message)}) {
             result = std::move(extract(decoded));
+        } else {
+            std::visit(
+              [&](auto&& decoded) -> void { result = std::move(decoded); },
+              decode_chain(msg_ctx, message, base, obj, decoders...));
         }
-        std::visit(
-          [&](auto&& decoded) -> void { result = std::move(decoded); },
-          decode_chain(msg_ctx, message, base, obj, decoders...));
         return result;
     }
 
