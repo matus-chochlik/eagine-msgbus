@@ -115,7 +115,8 @@ private:
     auto _handle_alive(
       const message_context&,
       const stored_message& message) noexcept -> bool {
-        signals.reported_alive(get_subscriber_info(message));
+        signals.reported_alive(
+          subscriber_alive{.source = get_subscriber_info(message)});
         return true;
     }
 
@@ -124,7 +125,9 @@ private:
       const stored_message& message) noexcept -> bool {
         message_id sub_msg_id{};
         if(default_deserialize_message_type(sub_msg_id, message.content())) {
-            signals.subscribed(get_subscriber_info(message), sub_msg_id);
+            signals.subscribed(subscriber_subscribed{
+              .source = get_subscriber_info(message),
+              .message_type = sub_msg_id});
         }
         return true;
     }
@@ -134,7 +137,9 @@ private:
       const stored_message& message) noexcept -> bool {
         message_id sub_msg_id{};
         if(default_deserialize_message_type(sub_msg_id, message.content())) {
-            signals.unsubscribed(get_subscriber_info(message), sub_msg_id);
+            signals.unsubscribed(subscriber_unsubscribed{
+              .source = get_subscriber_info(message),
+              .message_type = sub_msg_id});
         }
         return true;
     }
@@ -144,7 +149,9 @@ private:
       const stored_message& message) noexcept -> bool {
         message_id sub_msg_id{};
         if(default_deserialize_message_type(sub_msg_id, message.content())) {
-            signals.not_subscribed(get_subscriber_info(message), sub_msg_id);
+            signals.not_subscribed(subscriber_not_subscribed{
+              .source = get_subscriber_info(message),
+              .message_type = sub_msg_id});
         }
         return true;
     }

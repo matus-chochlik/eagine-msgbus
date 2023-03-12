@@ -447,7 +447,7 @@ public:
           this, discovery.subscribed);
         connect<&resource_manipulator_impl::_handle_unsubscribed>(
           this, discovery.unsubscribed);
-        connect<&resource_manipulator_impl::_handle_unsubscribed>(
+        connect<&resource_manipulator_impl::_handle_not_subscribed>(
           this, discovery.not_subscribed);
         connect<&resource_manipulator_impl::_handle_host_id_received>(
           this, host_info.host_id_received);
@@ -586,22 +586,20 @@ public:
     }
 
 private:
-    void _handle_alive(const subscriber_info& sub_info) noexcept {
-        const auto pos = _server_endpoints.find(sub_info.endpoint_id);
+    void _handle_alive(const subscriber_alive& alive) noexcept {
+        const auto pos{_server_endpoints.find(alive.source.endpoint_id)};
         if(pos != _server_endpoints.end()) {
             auto& svr_info = std::get<1>(*pos);
             svr_info.last_report_time = std::chrono::steady_clock::now();
         }
     }
 
-    void _handle_subscribed(
-      const subscriber_info& sub_info,
-      const message_id msg_id) noexcept {
-        if(msg_id.is("eagiRsrces", "getContent")) {
-            auto spos = _server_endpoints.find(sub_info.endpoint_id);
+    void _handle_subscribed(const subscriber_subscribed& sub) noexcept {
+        if(sub.message_type.is("eagiRsrces", "getContent")) {
+            auto spos{_server_endpoints.find(sub.source.endpoint_id)};
             if(spos == _server_endpoints.end()) {
-                spos = _server_endpoints.emplace(sub_info.endpoint_id).first;
-                signals.resource_server_appeared(sub_info.endpoint_id);
+                spos = _server_endpoints.emplace(sub.source.endpoint_id).first;
+                signals.resource_server_appeared(sub.source.endpoint_id);
             }
             auto& svr_info = std::get<1>(*spos);
             svr_info.last_report_time = std::chrono::steady_clock::now();
@@ -627,11 +625,15 @@ private:
           [](const auto& entry) { return std::get<1>(entry).empty(); });
     }
 
-    void _handle_unsubscribed(
-      const subscriber_info& sub_info,
-      const message_id msg_id) noexcept {
-        if(msg_id.is("eagiRsrces", "getContent")) {
-            _remove_server(sub_info.endpoint_id);
+    void _handle_unsubscribed(const subscriber_unsubscribed& sub) noexcept {
+        if(sub.message_type.is("eagiRsrces", "getContent")) {
+            _remove_server(sub.source.endpoint_id);
+        }
+    }
+
+    void _handle_not_subscribed(const subscriber_not_subscribed& sub) noexcept {
+        if(sub.message_type.is("eagiRsrces", "getContent")) {
+            _remove_server(sub.source.endpoint_id);
         }
     }
 

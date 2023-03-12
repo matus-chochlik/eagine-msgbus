@@ -118,7 +118,7 @@ protected:
           this, this->subscribed);
         connect<&stream_endpoint::_handle_stream_relay_unsubscribed>(
           this, this->unsubscribed);
-        connect<&stream_endpoint::_handle_stream_relay_unsubscribed>(
+        connect<&stream_endpoint::_handle_stream_relay_not_subscribed>(
           this, this->not_subscribed);
     }
 
@@ -140,29 +140,36 @@ protected:
     }
 
 private:
-    void _handle_stream_relay_alive(const subscriber_info& sub_info) noexcept {
-        if(sub_info.endpoint_id == _stream_relay_id) {
+    void _handle_stream_relay_alive(const subscriber_alive& alive) noexcept {
+        if(alive.source.endpoint_id == _stream_relay_id) {
             _stream_relay_timeout.reset();
         }
     }
 
     void _handle_stream_relay_subscribed(
-      const subscriber_info& sub_info,
-      const message_id msg_id) noexcept {
-        if(msg_id.is("eagiStream", "startFrwrd")) {
+      const subscriber_subscribed& sub) noexcept {
+        if(sub.message_type.is("eagiStream", "startFrwrd")) {
             if(
               not has_stream_relay() or
-              (_stream_relay_hops > sub_info.hop_count)) {
-                set_stream_relay(sub_info.endpoint_id, sub_info.hop_count);
+              (_stream_relay_hops > sub.source.hop_count)) {
+                set_stream_relay(sub.source.endpoint_id, sub.source.hop_count);
             }
         }
     }
 
     void _handle_stream_relay_unsubscribed(
-      const subscriber_info& sub_info,
-      const message_id msg_id) noexcept {
-        if(msg_id.is("eagiStream", "startFrwrd")) {
-            if(_stream_relay_id == sub_info.endpoint_id) {
+      const subscriber_unsubscribed& sub) noexcept {
+        if(sub.message_type.is("eagiStream", "startFrwrd")) {
+            if(_stream_relay_id == sub.source.endpoint_id) {
+                reset_stream_relay();
+            }
+        }
+    }
+
+    void _handle_stream_relay_not_subscribed(
+      const subscriber_not_subscribed& sub) noexcept {
+        if(sub.message_type.is("eagiStream", "startFrwrd")) {
+            if(_stream_relay_id == sub.source.endpoint_id) {
                 reset_stream_relay();
             }
         }

@@ -103,31 +103,28 @@ public:
         _do_ping = false;
     }
 
-    void on_subscribed(
-      const subscriber_info& info,
-      const message_id sub_msg) noexcept {
-        if(sub_msg == this->ping_msg_id()) {
-            if(_targets.try_emplace(info.endpoint_id, ping_stats{}).second) {
+    void on_subscribed(const subscriber_subscribed& sub) noexcept {
+        if(sub.message_type == this->ping_msg_id()) {
+            if(_targets.try_emplace(sub.source.endpoint_id, ping_stats{})
+                 .second) {
                 log_info("new pingable ${id} appeared")
                   .tag("newPngable")
-                  .arg("id", info.endpoint_id);
+                  .arg("id", sub.source.endpoint_id);
             }
         }
     }
 
-    void on_unsubscribed(
-      const subscriber_info& info,
-      const message_id sub_msg) noexcept {
-        if(sub_msg == this->ping_msg_id()) {
-            log_info("pingable ${id} disappeared").arg("id", info.endpoint_id);
+    void on_unsubscribed(const subscriber_unsubscribed& sub) noexcept {
+        if(sub.message_type == this->ping_msg_id()) {
+            log_info("pingable ${id} disappeared")
+              .arg("id", sub.source.endpoint_id);
         }
     }
 
-    void on_not_subscribed(
-      const subscriber_info& info,
-      const message_id sub_msg) noexcept {
-        if(sub_msg == this->ping_msg_id()) {
-            log_info("target ${id} is not pingable").arg("id", info.endpoint_id);
+    void on_not_subscribed(const subscriber_not_subscribed& sub) noexcept {
+        if(sub.message_type == this->ping_msg_id()) {
+            log_info("target ${id} is not pingable")
+              .arg("id", sub.source.endpoint_id);
         }
     }
 

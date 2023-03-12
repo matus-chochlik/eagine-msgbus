@@ -113,11 +113,11 @@ void discovery_1(auto& s) {
         }};
 
         const auto handle_alive{
-          [&](const eagine::msgbus::subscriber_info& sub) {
-              if(pinger.get_id() == sub.endpoint_id) {
+          [&](const eagine::msgbus::subscriber_alive& alive) {
+              if(pinger.get_id() == alive.source.endpoint_id) {
                   pinger_alive = true;
               }
-              if(ponger.get_id() == sub.endpoint_id) {
+              if(ponger.get_id() == alive.source.endpoint_id) {
                   ponger_alive = true;
               }
               trck.checkpoint(1);
@@ -125,20 +125,17 @@ void discovery_1(auto& s) {
         observer.reported_alive.connect({eagine::construct_from, handle_alive});
 
         const auto handle_subscribed{
-          [&](
-            const eagine::msgbus::subscriber_info& sub,
-            const eagine::message_id msg_id) {
-              if(msg_id == eagine::message_id{"eagiTest", "pong"}) {
+          [&](const eagine::msgbus::subscriber_subscribed& sub) {
+              if(sub.message_type.is("eagiTest", "pong")) {
                   test.check_equal(
-                    sub.endpoint_id,
+                    sub.source.endpoint_id,
                     pinger.get_id().value_or(
                       eagine::msgbus::invalid_endpoint_id()),
                     "pinger id");
                   found_pinger = true;
-              }
-              if(msg_id == eagine::message_id{"eagiTest", "ping"}) {
+              } else if(sub.message_type.is("eagiTest", "ping")) {
                   test.check_equal(
-                    sub.endpoint_id,
+                    sub.source.endpoint_id,
                     ponger.get_id().value_or(
                       eagine::msgbus::invalid_endpoint_id()),
                     "ponger id");

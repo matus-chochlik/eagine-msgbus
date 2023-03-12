@@ -111,39 +111,34 @@ public:
         _can_ping = false;
     }
 
-    void on_subscribed(
-      const subscriber_info& info,
-      const message_id sub_msg) noexcept {
-        if(sub_msg == this->ping_msg_id()) {
-            auto& stats = _targets[info.endpoint_id];
+    void on_subscribed(const subscriber_subscribed& sub) noexcept {
+        if(sub.message_type == this->ping_msg_id()) {
+            auto& stats = _targets[sub.source.endpoint_id];
             if(not stats.is_active) {
                 stats.is_active = true;
                 log_info("new pingable ${id} appeared")
-                  .arg("id", info.endpoint_id);
+                  .arg("id", sub.source.endpoint_id);
             }
         }
     }
 
-    void on_unsubscribed(
-      const subscriber_info& info,
-      const message_id sub_msg) noexcept {
-        if(sub_msg == this->ping_msg_id()) {
-            auto& state = _targets[info.endpoint_id];
+    void on_unsubscribed(const subscriber_unsubscribed& sub) noexcept {
+        if(sub.message_type == this->ping_msg_id()) {
+            auto& state = _targets[sub.source.endpoint_id];
             if(state.is_active) {
                 state.is_active = false;
                 log_info("pingable ${id} disappeared")
-                  .arg("id", info.endpoint_id);
+                  .arg("id", sub.source.endpoint_id);
             }
         }
     }
 
-    void on_not_subscribed(
-      const subscriber_info& info,
-      const message_id sub_msg) noexcept {
-        if(sub_msg == this->ping_msg_id()) {
-            auto& state = _targets[info.endpoint_id];
+    void on_not_subscribed(const subscriber_not_subscribed& sub) noexcept {
+        if(sub.message_type == this->ping_msg_id()) {
+            auto& state = _targets[sub.source.endpoint_id];
             state.is_active = false;
-            log_info("target ${id} is not pingable").arg("id", info.endpoint_id);
+            log_info("target ${id} is not pingable")
+              .arg("id", sub.source.endpoint_id);
         }
     }
 

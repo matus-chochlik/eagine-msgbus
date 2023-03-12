@@ -36,32 +36,27 @@ public:
           member_function_constant_t<&shutdown_trigger::on_not_subscribed>{}));
     }
 
-    void on_subscribed(
-      const subscriber_info& info,
-      const message_id sub_msg) noexcept {
-        if(sub_msg.is("Shutdown", "shutdown")) {
-            log_info("target ${id} appeared").arg("id", info.endpoint_id);
-            _targets.insert(info.endpoint_id);
-            this->bus_node().post_certificate(info.endpoint_id, 0);
+    void on_subscribed(const subscriber_subscribed& sub) noexcept {
+        if(sub.message_type.is("Shutdown", "shutdown")) {
+            log_info("target ${id} appeared").arg("id", sub.source.endpoint_id);
+            _targets.insert(sub.source.endpoint_id);
+            this->bus_node().post_certificate(sub.source.endpoint_id, 0);
         }
     }
 
-    void on_unsubscribed(
-      const subscriber_info& info,
-      const message_id sub_msg) noexcept {
-        if(sub_msg.is("Shutdown", "shutdown")) {
-            log_info("target ${id} disappeared").arg("id", info.endpoint_id);
-            _targets.erase(info.endpoint_id);
+    void on_unsubscribed(const subscriber_unsubscribed& sub) noexcept {
+        if(sub.message_type.is("Shutdown", "shutdown")) {
+            log_info("target ${id} disappeared")
+              .arg("id", sub.source.endpoint_id);
+            _targets.erase(sub.source.endpoint_id);
         }
     }
 
-    void on_not_subscribed(
-      const subscriber_info& info,
-      const message_id sub_msg) noexcept {
-        if(sub_msg.is("Shutdown", "shutdown")) {
+    void on_not_subscribed(const subscriber_not_subscribed& sub) noexcept {
+        if(sub.message_type.is("Shutdown", "shutdown")) {
             log_info("target ${id} does not support shutdown")
-              .arg("id", info.endpoint_id);
-            _targets.erase(info.endpoint_id);
+              .arg("id", sub.source.endpoint_id);
+            _targets.erase(sub.source.endpoint_id);
         }
     }
 

@@ -164,30 +164,25 @@ private:
         }
     }
 
-    void _handle_alive(const subscriber_info& info) noexcept {
-        _tracker.notice_instance(info.endpoint_id, info.instance_id)
+    void _handle_alive(const subscriber_alive& alive) noexcept {
+        _tracker
+          .notice_instance(alive.source.endpoint_id, alive.source.instance_id)
           .assign(node_kind::endpoint);
     }
 
-    void _handle_subscribed(
-      const subscriber_info& info,
-      const message_id msg_id) noexcept {
-        _tracker.notice_instance(info.endpoint_id, info.instance_id)
-          .add_subscription(msg_id);
+    void _handle_subscribed(const subscriber_subscribed& sub) noexcept {
+        _tracker.notice_instance(sub.source.endpoint_id, sub.source.instance_id)
+          .add_subscription(sub.message_type);
     }
 
-    void _handle_unsubscribed(
-      const subscriber_info& info,
-      const message_id msg_id) noexcept {
-        _tracker.notice_instance(info.endpoint_id, info.instance_id)
-          .remove_subscription(msg_id);
+    void _handle_unsubscribed(const subscriber_unsubscribed& sub) noexcept {
+        _tracker.notice_instance(sub.source.endpoint_id, sub.source.instance_id)
+          .remove_subscription(sub.message_type);
     }
 
-    void _handle_not_subscribed(
-      const subscriber_info& info,
-      const message_id msg_id) noexcept {
-        _tracker.notice_instance(info.endpoint_id, info.instance_id)
-          .remove_subscription(msg_id);
+    void _handle_not_subscribed(const subscriber_not_subscribed& sub) noexcept {
+        _tracker.notice_instance(sub.source.endpoint_id, sub.source.instance_id)
+          .remove_subscription(sub.message_type);
     }
 
     void _handle_router_appeared(const router_topology_info& info) noexcept {

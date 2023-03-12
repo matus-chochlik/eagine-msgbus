@@ -31,26 +31,22 @@ public:
         connect<&subscription_logger::on_shutdown>(this, shutdown_requested);
     }
 
-    void is_alive(const subscriber_info& info) noexcept {
+    void is_alive(const subscriber_alive& alive) noexcept {
         log_info("endpoint ${subscrbr} is alive")
-          .arg("subscrbr", info.endpoint_id);
+          .arg("subscrbr", alive.source.endpoint_id);
     }
 
-    void on_subscribed(
-      const subscriber_info& info,
-      const message_id sub_msg) noexcept {
+    void on_subscribed(const subscriber_subscribed& sub) noexcept {
         log_info("endpoint ${subscrbr} subscribed to ${message}")
-          .arg("subscrbr", info.endpoint_id)
-          .arg("message", sub_msg);
-        this->bus_node().query_certificate_of(info.endpoint_id);
+          .arg("subscrbr", sub.source.endpoint_id)
+          .arg("message", sub.message_type);
+        this->bus_node().query_certificate_of(sub.source.endpoint_id);
     }
 
-    void on_unsubscribed(
-      const subscriber_info& info,
-      const message_id sub_msg) noexcept {
+    void on_unsubscribed(const subscriber_unsubscribed& sub) noexcept {
         log_info("endpoint ${subscrbr} unsubscribed from ${message}")
-          .arg("subscrbr", info.endpoint_id)
-          .arg("message", sub_msg);
+          .arg("subscrbr", sub.source.endpoint_id)
+          .arg("message", sub.message_type);
     }
 
     void on_shutdown(
