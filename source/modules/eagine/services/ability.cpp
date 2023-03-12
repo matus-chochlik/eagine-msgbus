@@ -103,8 +103,9 @@ private:
 //------------------------------------------------------------------------------
 export class ability_info {
 public:
-    ability_info(message_id msg_id) noexcept
-      : _msg_id{msg_id} {}
+    ability_info(message_id msg_id, identifier_t endpoint_id) noexcept
+      : _msg_id{msg_id}
+      , _endpoint_id{endpoint_id} {}
 
     auto supported_message_type() const noexcept -> message_id {
         return _msg_id;
@@ -112,6 +113,7 @@ public:
 
 private:
     message_id _msg_id;
+    identifier_t _endpoint_id;
 };
 //------------------------------------------------------------------------------
 /// @brief Service consuming information about message types handled by endpoint.
@@ -139,7 +141,7 @@ public:
       const message_context& msg_ctx,
       const stored_message& message) -> std::optional<ability_info> {
         return default_deserialized_message_type(message.content())
-          .construct<ability_info>();
+          .construct<ability_info>(message.source_id);
     }
 
     auto decode_ability_info(
@@ -162,8 +164,7 @@ public:
 
     /// @brief Triggered on receipt of response about message handling by endpoint.
     /// @see find_handler
-    signal<void(const identifier_t target_id, const message_id) noexcept>
-      handler_found;
+    signal<void(const ability_info&) noexcept> handler_found;
 
 protected:
     using Base::Base;
@@ -180,7 +181,7 @@ private:
       const stored_message& message) noexcept -> bool {
         message_id msg_id{};
         if(default_deserialize_message_type(msg_id, message.content())) {
-            handler_found(message.source_id, msg_id);
+            handler_found(ability_info{msg_id, message.source_id});
         }
         return true;
     }
