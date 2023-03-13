@@ -69,6 +69,32 @@ struct pinger_intf : interface<pinger_intf> {
     virtual auto has_pending_pings() noexcept -> bool = 0;
 };
 //------------------------------------------------------------------------------
+/// @brief Successful response to a ping message.
+/// @ingroup msgbus
+/// @see pinger_signals
+export struct ping_response {
+    /// @brief Id of the endpoint that responded to the ping.
+    identifier_t pingable_id;
+    /// @brief Age of the response message.
+    const std::chrono::microseconds age;
+    /// @brief Sequence number of the ping response message.
+    const message_sequence_t sequence_no;
+    /// @brief Bitfield indicating what part of the message could be verified.
+    const verification_bits verify_bits;
+};
+//------------------------------------------------------------------------------
+/// @brief Timeout of a ping message.
+/// @ingroup msgbus
+/// @see pinger_signals
+export struct ping_timeout {
+    /// @brief Id of the endpoint that responded to the ping.
+    identifier_t pingable_id;
+    /// @brief Age of the response message.
+    const std::chrono::microseconds age;
+    /// @brief Sequence number of the ping response message.
+    const message_sequence_t sequence_no;
+};
+//------------------------------------------------------------------------------
 /// @brief Collection of signals emitted by the pinger service.
 /// @ingroup msgbus
 /// @see service_composition
@@ -79,22 +105,13 @@ export struct pinger_signals {
     /// @see ping
     /// @see ping_timeouted
     /// @see has_pending_pings
-    signal<void(
-      const identifier_t pingable_id,
-      const message_sequence_t sequence_no,
-      const std::chrono::microseconds age,
-      const verification_bits) noexcept>
-      ping_responded;
+    signal<void(const ping_response&) noexcept> ping_responded;
 
     /// @brief Triggered on timeout of ping response.
     /// @see ping
     /// @see ping_responded
     /// @see has_pending_pings
-    signal<void(
-      const identifier_t pingable_id,
-      const message_sequence_t sequence_no,
-      const std::chrono::microseconds age) noexcept>
-      ping_timeouted;
+    signal<void(const ping_timeout&) noexcept> ping_timeouted;
 };
 //------------------------------------------------------------------------------
 auto make_pinger_impl(subscriber&, pinger_signals&)

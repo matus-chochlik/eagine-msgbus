@@ -465,19 +465,12 @@ private:
         }
     }
 
-    void _handle_ping_response(
-      const identifier_t node_id,
-      const message_sequence_t sequence_no,
-      const std::chrono::microseconds age,
-      const verification_bits) noexcept {
-        _get_node(node_id).ping_response(sequence_no, age);
+    void _handle_ping_response(const ping_response& pong) noexcept {
+        _get_node(pong.pingable_id).ping_response(pong.sequence_no, pong.age);
     }
 
-    void _handle_ping_timeout(
-      const identifier_t node_id,
-      const message_sequence_t sequence_no,
-      const std::chrono::microseconds age) noexcept {
-        _get_node(node_id).ping_timeout(sequence_no, age);
+    void _handle_ping_timeout(const ping_timeout& fail) noexcept {
+        _get_node(fail.pingable_id).ping_timeout(fail.sequence_no, fail.age);
     }
 
     auto _get_host(const host_id_t id) noexcept -> remote_host_state& {

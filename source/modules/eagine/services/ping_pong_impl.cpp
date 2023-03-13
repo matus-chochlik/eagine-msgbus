@@ -49,11 +49,12 @@ public:
           std::erase_if(_pending, [this](auto& entry) {
               auto& [pingable_id, sequence_no, ping_time] = entry;
               if(ping_time.is_expired()) {
-                  signals.ping_timeouted(
-                    pingable_id,
-                    sequence_no,
-                    std::chrono::duration_cast<std::chrono::microseconds>(
-                      ping_time.elapsed_time()));
+                  signals.ping_timeouted(ping_timeout{
+                    .pingable_id = pingable_id,
+                    .age =
+                      std::chrono::duration_cast<std::chrono::microseconds>(
+                        ping_time.elapsed_time()),
+                    .sequence_no = sequence_no});
                   return true;
               }
               return false;
@@ -74,12 +75,12 @@ private:
             const bool is_response = (message.source_id == pingable_id) and
                                      (message.sequence_no == sequence_no);
             if(is_response) {
-                signals.ping_responded(
-                  message.source_id,
-                  message.sequence_no,
-                  std::chrono::duration_cast<std::chrono::microseconds>(
+                signals.ping_responded(ping_response{
+                  .pingable_id = message.source_id,
+                  .age = std::chrono::duration_cast<std::chrono::microseconds>(
                     ping_time.elapsed_time()),
-                  base.verify_bits(message));
+                  .sequence_no = message.sequence_no,
+                  .verify_bits = base.verify_bits(message)});
                 return true;
             }
             return false;

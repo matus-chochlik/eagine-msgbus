@@ -309,15 +309,8 @@ private:
       const span_size_t,
       const memory::span<const memory::const_block>,
       const blob_info&) noexcept;
-    void _handle_ping_response(
-      const identifier_t pinger_id,
-      const message_sequence_t,
-      const std::chrono::microseconds age,
-      const verification_bits) noexcept;
-    void _handle_ping_timeout(
-      const identifier_t pinger_id,
-      const message_sequence_t,
-      const std::chrono::microseconds) noexcept;
+    void _handle_ping_response(const ping_response&) noexcept;
+    void _handle_ping_timeout(const ping_timeout&) noexcept;
 
     resource_data_consumer_node_config _config;
 

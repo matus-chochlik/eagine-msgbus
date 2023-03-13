@@ -146,16 +146,12 @@ public:
         }
     }
 
-    void on_ping_response(
-      const identifier_t pinger_id,
-      const message_sequence_t,
-      const std::chrono::microseconds age,
-      const verification_bits) noexcept {
-        auto& stats = _targets[pinger_id];
+    void on_ping_response(const ping_response& pong) noexcept {
+        auto& stats = _targets[pong.pingable_id];
         stats.responded++;
-        stats.min_time = std::min(stats.min_time, age);
-        stats.max_time = std::max(stats.max_time, age);
-        stats.sum_time += age;
+        stats.min_time = std::min(stats.min_time, pong.age);
+        stats.max_time = std::max(stats.max_time, pong.age);
+        stats.sum_time += pong.age;
         stats.finish = std::chrono::steady_clock::now();
         if((++_rcvd % _mod) == 0) [[unlikely]] {
             const auto now{std::chrono::steady_clock::now()};
@@ -181,11 +177,8 @@ public:
         }
     }
 
-    void on_ping_timeout(
-      const identifier_t pinger_id,
-      const message_sequence_t,
-      const std::chrono::microseconds) noexcept {
-        auto& stats = _targets[pinger_id];
+    void on_ping_timeout(const ping_timeout& fail) noexcept {
+        auto& stats = _targets[fail.pingable_id];
         stats.timeouted++;
         if((++_tout % _mod) == 0) [[unlikely]] {
             log_info("${tout} pongs timeouted").arg("tout", _tout);

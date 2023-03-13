@@ -48,30 +48,23 @@ void ping_pong_1(auto& s) {
     int todo{100};
 
     const auto handle_responded =
-      [&](
-        const eagine::identifier_t pingable_id,
-        const eagine::msgbus::message_sequence_t seq_no,
-        const std::chrono::microseconds age,
-        const eagine::msgbus::verification_bits) {
-          test.check_equal(pingable_id, pingable_ept_id, "pingable id ok");
-          if(pingable_id == pingable_ept_id) {
+      [&](const eagine::msgbus::ping_response& pong) {
+          test.check_equal(pong.pingable_id, pingable_ept_id, "pingable id ok");
+          if(pong.pingable_id == pingable_ept_id) {
               --todo;
               trck.checkpoint(1);
           }
           if(prev_seq_no > 0) {
-              test.check(prev_seq_no < seq_no, "sequence ok");
+              test.check(prev_seq_no < pong.sequence_no, "sequence ok");
               trck.checkpoint(2);
           }
-          prev_seq_no = seq_no;
-          test.check(age < ping_time.period(), "age ok");
+          prev_seq_no = pong.sequence_no;
+          test.check(pong.age < ping_time.period(), "age ok");
       };
     pinger.ping_responded.connect({eagine::construct_from, handle_responded});
 
-    const auto handle_timeouted = [&](
-                                    const eagine::identifier_t pingable_id,
-                                    const eagine::msgbus::message_sequence_t,
-                                    const std::chrono::microseconds) {
-        if(pingable_id == pingable_ept_id) {
+    const auto handle_timeouted = [&](const eagine::msgbus::ping_timeout& to) {
+        if(to.pingable_id == pingable_ept_id) {
             test.fail("ping timeouted");
         }
     };
@@ -122,32 +115,26 @@ void ping_pong_2(auto& s) {
     int todo{100};
 
     const auto handle_responded =
-      [&](
-        const eagine::identifier_t pingable_id,
-        const eagine::msgbus::message_sequence_t seq_no,
-        const std::chrono::microseconds,
-        const eagine::msgbus::verification_bits) {
-          test.check_equal(pingable_id, pingable_ept_id, "pingable id ok");
-          if(pingable_id == pingable_ept_id) {
+      [&](const eagine::msgbus::ping_response& pong) {
+          test.check_equal(pong.pingable_id, pingable_ept_id, "pingable id ok");
+          if(pong.pingable_id == pingable_ept_id) {
               --todo;
               trck.checkpoint(1);
           }
           if(prev_seq_no > 0) {
-              test.check(prev_seq_no < seq_no, "sequence ok");
+              test.check(prev_seq_no < pong.sequence_no, "sequence ok");
               trck.checkpoint(2);
           }
-          prev_seq_no = seq_no;
+          prev_seq_no = pong.sequence_no;
       };
     pinger.ping_responded.connect({eagine::construct_from, handle_responded});
 
-    const auto handle_timeouted = [&](
-                                    const eagine::identifier_t pingable_id,
-                                    const eagine::msgbus::message_sequence_t,
-                                    const std::chrono::microseconds) {
-        if(pingable_id == pingable_ept_id) {
-            test.fail("ping timeouted");
-        }
-    };
+    const auto handle_timeouted =
+      [&](const eagine::msgbus::ping_timeout& fail) {
+          if(fail.pingable_id == pingable_ept_id) {
+              test.fail("ping timeouted");
+          }
+      };
     pinger.ping_timeouted.connect({eagine::construct_from, handle_timeouted});
 
     while(todo > 0) {

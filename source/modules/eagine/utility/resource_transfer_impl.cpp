@@ -389,32 +389,27 @@ void resource_data_consumer_node::_handle_stream_data(
 }
 //------------------------------------------------------------------------------
 void resource_data_consumer_node::_handle_ping_response(
-  const identifier_t server_id,
-  const message_sequence_t,
-  const std::chrono::microseconds age,
-  const verification_bits) noexcept {
-    const auto pos{_current_servers.find(server_id)};
+  const ping_response& pong) noexcept {
+    const auto pos{_current_servers.find(pong.pingable_id)};
     if(pos != _current_servers.end()) {
         log_debug("resource server ${id} responded to ping")
-          .arg("id", server_id)
-          .arg("age", age);
+          .arg("id", pong.pingable_id)
+          .arg("age", pong.age);
         auto& info = std::get<1>(*pos);
         info.not_responding.reset();
     }
 }
 //------------------------------------------------------------------------------
 void resource_data_consumer_node::_handle_ping_timeout(
-  const identifier_t server_id,
-  const message_sequence_t,
-  const std::chrono::microseconds age) noexcept {
-    const auto pos{_current_servers.find(server_id)};
+  const ping_timeout& fail) noexcept {
+    const auto pos{_current_servers.find(fail.pingable_id)};
     if(pos != _current_servers.end()) {
         auto& info = std::get<1>(*pos);
         if(info.not_responding) {
             log_info("ping to resource server ${id} timeouted")
-              .arg("id", server_id)
-              .arg("age", age);
-            _handle_server_lost(server_id);
+              .arg("id", fail.pingable_id)
+              .arg("age", fail.age);
+            _handle_server_lost(fail.pingable_id);
         }
     }
 }
