@@ -66,7 +66,7 @@ export struct ping_response {
     /// @brief Sequence number of the ping response message.
     message_sequence_t sequence_no;
     /// @brief Bitfield indicating what part of the message could be verified.
-    verification_bits verify_bits;
+    verification_bits verified;
 };
 //------------------------------------------------------------------------------
 /// @brief Timeout of a ping message.

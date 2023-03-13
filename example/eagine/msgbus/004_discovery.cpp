@@ -49,17 +49,14 @@ public:
           .arg("message", sub.message_type);
     }
 
-    void on_shutdown(
-      const std::chrono::milliseconds age,
-      const identifier_t subscriber_id,
-      const verification_bits verified) noexcept {
+    void on_shutdown(const shutdown_request& req) noexcept {
         log_info("received ${age} old shutdown request from ${subscrbr}")
-          .arg("age", age)
-          .arg("subscrbr", subscriber_id)
-          .arg("verified", verified);
+          .arg("age", req.age)
+          .arg("subscrbr", req.source_id)
+          .arg("verified", req.verified);
 
         // TODO: verification
-        if(age < std::chrono::seconds(2)) {
+        if(req.age < std::chrono::seconds(2)) {
             _done = true;
         }
     }

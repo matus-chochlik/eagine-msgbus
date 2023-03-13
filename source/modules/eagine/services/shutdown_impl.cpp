@@ -41,10 +41,10 @@ private:
             const shutdown_service_duration ticks{count};
             const typename shutdown_service_clock::time_point ts{ticks};
             const auto age{this->now() - ts};
-            signals.shutdown_requested(
-              std::chrono::duration_cast<std::chrono::milliseconds>(age),
-              message.source_id,
-              base.verify_bits(message));
+            signals.shutdown_requested(shutdown_request{
+              .source_id = message.source_id,
+              .age = std::chrono::duration_cast<std::chrono::milliseconds>(age),
+              .verified = base.verify_bits(message)});
         }
         return true;
     }

@@ -60,10 +60,7 @@ public:
     }
 
 private:
-    void _handle_shutdown(
-      const std::chrono::milliseconds age,
-      const identifier_t source_id,
-      const verification_bits verified) noexcept;
+    void _handle_shutdown(const shutdown_request&) noexcept;
 
     bool _done{false};
 };

@@ -42,14 +42,12 @@ void resource_data_server_node::_init() {
 }
 //------------------------------------------------------------------------------
 void resource_data_server_node::_handle_shutdown(
-  const std::chrono::milliseconds age,
-  const identifier_t source_id,
-  const verification_bits verified) noexcept {
+  const shutdown_request& req) noexcept {
     log_info("received shutdown request from ${source}")
       .tag("shutdwnReq")
-      .arg("age", age)
-      .arg("source", source_id)
-      .arg("verified", verified);
+      .arg("age", req.age)
+      .arg("source", req.source_id)
+      .arg("verified", req.verified);
 
     _done = true;
 }

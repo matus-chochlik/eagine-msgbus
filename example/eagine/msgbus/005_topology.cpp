@@ -98,14 +98,11 @@ public:
         _endpoints.emplace(info.endpoint_id);
     }
 
-    void on_shutdown(
-      const std::chrono::milliseconds age,
-      const identifier_t subscriber_id,
-      const verification_bits verified) noexcept {
+    void on_shutdown(const shutdown_request& req) noexcept {
         _log.info("received ${age} old shutdown request from ${subscrbr}")
-          .arg("age", age)
-          .arg("subscrbr", subscriber_id)
-          .arg("verified", verified);
+          .arg("age", req.age)
+          .arg("subscrbr", req.source_id)
+          .arg("verified", req.verified);
     }
 
 private:

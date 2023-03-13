@@ -25,17 +25,23 @@ export using shutdown_service_clock = std::chrono::system_clock;
 export using shutdown_service_duration =
   std::chrono::duration<std::int64_t, std::milli>;
 //------------------------------------------------------------------------------
+/// @brief
+/// @ingroup msgbus
+export struct shutdown_request {
+    /// @brief Id of the endpoint that sent the request.
+    const identifier_t source_id;
+    /// @brief The age of the request.
+    const std::chrono::milliseconds age;
+    const verification_bits verified;
+};
+//------------------------------------------------------------------------------
 /// @brief Collection of signals emitted by the shutdown target service.
 /// @ingroup msgbus
 /// @see shutdown_target
 /// @see shutdown_invoker
 export struct shutdown_target_signals {
     /// @brief Triggered when a shutdown request is received.
-    signal<void(
-      const std::chrono::milliseconds age,
-      const identifier_t source_id,
-      const verification_bits verified) noexcept>
-      shutdown_requested;
+    signal<void(const shutdown_request&) noexcept> shutdown_requested;
 };
 //------------------------------------------------------------------------------
 struct shutdown_target_intf : interface<shutdown_target_intf> {

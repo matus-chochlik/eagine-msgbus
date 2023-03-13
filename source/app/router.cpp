@@ -75,18 +75,15 @@ private:
           verification_bit::message_id);
     }
 
-    void on_shutdown(
-      const std::chrono::milliseconds age,
-      const identifier_t source_id,
-      const verification_bits verified) noexcept {
+    void on_shutdown(const shutdown_request& req) noexcept {
         log_info("received ${age} old shutdown request from ${source}")
-          .arg("age", age)
-          .arg("source", source_id)
-          .arg("verified", verified);
+          .arg("age", req.age)
+          .arg("source", req.source_id)
+          .arg("verified", req.verified);
 
         if(not _shutdown_ignore) {
-            if(age <= _shutdown_max_age) {
-                if(not _shutdown_verify or _shutdown_verified(verified)) {
+            if(req.age <= _shutdown_max_age) {
+                if(not _shutdown_verify or _shutdown_verified(req.verified)) {
                     log_info("request is valid, shutting down");
                     _do_shutdown = true;
                     _shutdown_timeout.reset();

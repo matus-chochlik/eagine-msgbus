@@ -61,7 +61,7 @@ public:
                   .age = std::chrono::duration_cast<std::chrono::microseconds>(
                     std::get<2>(*pos).elapsed_time()),
                   .sequence_no = message.sequence_no,
-                  .verify_bits = base.verify_bits(message)}};
+                  .verified = base.verify_bits(message)}};
             }
         }
         return {};
@@ -105,7 +105,7 @@ private:
                   .age = std::chrono::duration_cast<std::chrono::microseconds>(
                     ping_time.elapsed_time()),
                   .sequence_no = message.sequence_no,
-                  .verify_bits = base.verify_bits(message)});
+                  .verified = base.verify_bits(message)});
                 return true;
             }
             return false;
