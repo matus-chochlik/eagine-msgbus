@@ -337,9 +337,8 @@ void discovery_3(auto& s) {
             }
             the_reg.update_only();
 
-            for(auto&& [msg_ctx, msg_inf, decoded] : observer.give_decoded()) {
-                (void)msg_ctx;
-                (void)msg_inf;
+            for(auto&& [response, decoded] : observer.give_decoded()) {
+                (void)response;
                 std::visit(handler, decoded);
             }
             pinger.process_all();

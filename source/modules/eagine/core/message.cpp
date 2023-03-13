@@ -1041,6 +1041,37 @@ private:
     message_id _msg_id{};
 };
 //------------------------------------------------------------------------------
+export class result_context {
+public:
+    result_context(
+      const message_context& msg_ctx,
+      const message_info& msg) noexcept
+      : _msg_ctx{msg_ctx}
+      , _source_id{msg.source_id}
+      , _invocation_id{msg.sequence_no} {}
+
+    auto msg_context() const noexcept -> const message_context& {
+        return _msg_ctx;
+    }
+
+    auto source_id() const noexcept {
+        return _source_id;
+    }
+
+    auto invocation_id() const noexcept {
+        return _invocation_id;
+    }
+
+    auto same_invocation(message_sequence_t id) const noexcept -> bool {
+        return invocation_id() == id;
+    }
+
+private:
+    const message_context& _msg_ctx;
+    const identifier_t _source_id{0U};
+    const message_sequence_t _invocation_id{0};
+};
+//------------------------------------------------------------------------------
 export class message_priority_queue {
 public:
     using handler_type =

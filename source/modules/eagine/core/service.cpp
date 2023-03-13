@@ -74,15 +74,12 @@ public:
         return Base::process_queues();
     }
 
-    auto give_decoded() noexcept -> tuple_generator<
-      const message_context&,
-      const message_info&,
-      decode_result_t<Base>> {
+    auto give_decoded() noexcept
+      -> tuple_generator<const result_context&, decode_result_t<Base>> {
         for(auto& queue : process_queues()) {
             for(auto& message : queue.give_messages()) {
                 co_yield {
-                  queue.context(),
-                  message,
+                  result_context{queue.context(), message},
                   this->decode(queue.context(), message)};
             }
         }

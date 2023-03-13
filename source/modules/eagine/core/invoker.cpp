@@ -25,34 +25,6 @@ import std;
 
 namespace eagine::msgbus {
 //------------------------------------------------------------------------------
-export class result_context {
-public:
-    result_context(
-      const message_context& msg_ctx,
-      const identifier_t src_id,
-      const message_sequence_t invc_id) noexcept
-      : _msg_ctx{msg_ctx}
-      , _source_id{src_id}
-      , _invocation_id{invc_id} {}
-
-    auto msg_context() const noexcept -> const message_context& {
-        return _msg_ctx;
-    }
-
-    auto source_id() const noexcept {
-        return _source_id;
-    }
-
-    auto invocation_id() const noexcept {
-        return _invocation_id;
-    }
-
-private:
-    const message_context& _msg_ctx;
-    const identifier_t _source_id{0U};
-    const message_sequence_t _invocation_id{0};
-};
-//------------------------------------------------------------------------------
 export template <
   typename Result,
   typename Deserializer,
@@ -71,8 +43,7 @@ public:
 
         if(response.has_serializer_id(read_backend.type_id())) [[likely]] {
             if(deserialize(result, read_backend)) [[likely]] {
-                const result_context res_ctx{
-                  msg_ctx, response.source_id, response.sequence_no};
+                const result_context res_ctx{msg_ctx, response};
                 _callback(res_ctx, std::move(result));
             }
         }
@@ -95,8 +66,7 @@ public:
     auto fulfill_by(
       const message_context& msg_ctx,
       const stored_message& response) noexcept -> bool {
-        const result_context res_ctx{
-          msg_ctx, response.source_id, response.sequence_no};
+        const result_context res_ctx{msg_ctx, response};
         _callback();
         return true;
     }
