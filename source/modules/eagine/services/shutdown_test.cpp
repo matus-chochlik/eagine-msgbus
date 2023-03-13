@@ -51,18 +51,15 @@ void shutdown_1(auto& s) {
     bool handled_1{false};
     bool handled_2{false};
 
-    const auto handle_request = [&](
-                                  const std::chrono::milliseconds,
-                                  const eagine::identifier_t source_id,
-                                  const eagine::msgbus::verification_bits) {
-        if(source_id == source_1_ept.get_id()) {
+    const auto handle_request{[&](const eagine::msgbus::shutdown_request& req) {
+        if(req.source_id == source_1_ept.get_id()) {
             handled_1 = true;
             trck.checkpoint(1);
-        } else if(source_id == source_2_ept.get_id()) {
+        } else if(req.source_id == source_2_ept.get_id()) {
             handled_2 = true;
             trck.checkpoint(2);
         }
-    };
+    }};
     target.shutdown_requested.connect({eagine::construct_from, handle_request});
 
     source_1.shutdown_one(target_ept.get_id());

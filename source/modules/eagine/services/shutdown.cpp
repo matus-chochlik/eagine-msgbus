@@ -27,12 +27,14 @@ export using shutdown_service_duration =
 //------------------------------------------------------------------------------
 /// @brief
 /// @ingroup msgbus
+/// @see shutdown_target_signals
 export struct shutdown_request {
     /// @brief Id of the endpoint that sent the request.
-    const identifier_t source_id;
+    identifier_t source_id;
     /// @brief The age of the request.
-    const std::chrono::milliseconds age;
-    const verification_bits verified;
+    std::chrono::milliseconds age;
+    /// @brief Bitfield indicating what part of the message could be verified.
+    verification_bits verified;
 };
 //------------------------------------------------------------------------------
 /// @brief Collection of signals emitted by the shutdown target service.
@@ -46,6 +48,11 @@ export struct shutdown_target_signals {
 //------------------------------------------------------------------------------
 struct shutdown_target_intf : interface<shutdown_target_intf> {
     virtual void add_methods() noexcept = 0;
+
+    virtual auto decode_shutdown_request(
+      const message_context& msg_ctx,
+      const stored_message& message) noexcept
+      -> std::optional<shutdown_request> = 0;
 };
 //------------------------------------------------------------------------------
 auto make_shutdown_target_impl(subscriber&, shutdown_target_signals&)
@@ -59,6 +66,22 @@ export template <typename Base = subscriber>
 class shutdown_target
   : public Base
   , public shutdown_target_signals {
+public:
+    auto decode_shutdown_request(
+      const message_context& msg_ctx,
+      const stored_message& message) noexcept
+      -> std::optional<shutdown_request> {
+        return _impl->decode_shutdown_request(msg_ctx, message);
+    }
+
+    auto decode(const message_context& msg_ctx, const stored_message& message) {
+        return this->decode_chain(
+          msg_ctx,
+          message,
+          *static_cast<Base*>(this),
+          *this,
+          &shutdown_target::decode_shutdown_request);
+    }
 
 protected:
     using Base::Base;
