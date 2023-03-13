@@ -55,20 +55,6 @@ private:
     }
 };
 //------------------------------------------------------------------------------
-struct pinger_intf : interface<pinger_intf> {
-    virtual void add_methods() noexcept = 0;
-
-    virtual void query_pingables() noexcept = 0;
-
-    virtual void ping(
-      const identifier_t pingable_id,
-      const std::chrono::milliseconds max_time) noexcept = 0;
-
-    virtual auto update() noexcept -> work_done = 0;
-
-    virtual auto has_pending_pings() noexcept -> bool = 0;
-};
-//------------------------------------------------------------------------------
 /// @brief Successful response to a ping message.
 /// @ingroup msgbus
 /// @see pinger_signals
@@ -76,11 +62,11 @@ export struct ping_response {
     /// @brief Id of the endpoint that responded to the ping.
     identifier_t pingable_id;
     /// @brief Age of the response message.
-    const std::chrono::microseconds age;
+    std::chrono::microseconds age;
     /// @brief Sequence number of the ping response message.
-    const message_sequence_t sequence_no;
+    message_sequence_t sequence_no;
     /// @brief Bitfield indicating what part of the message could be verified.
-    const verification_bits verify_bits;
+    verification_bits verify_bits;
 };
 //------------------------------------------------------------------------------
 /// @brief Timeout of a ping message.
@@ -90,9 +76,28 @@ export struct ping_timeout {
     /// @brief Id of the endpoint that responded to the ping.
     identifier_t pingable_id;
     /// @brief Age of the response message.
-    const std::chrono::microseconds age;
+    std::chrono::microseconds age;
     /// @brief Sequence number of the ping response message.
-    const message_sequence_t sequence_no;
+    message_sequence_t sequence_no;
+};
+//------------------------------------------------------------------------------
+struct pinger_intf : interface<pinger_intf> {
+    virtual void add_methods() noexcept = 0;
+
+    virtual void query_pingables() noexcept = 0;
+
+    virtual void ping(
+      const identifier_t pingable_id,
+      const std::chrono::milliseconds max_time) noexcept = 0;
+
+    virtual auto decode_ping_response(
+      const message_context& msg_ctx,
+      const stored_message& message) noexcept
+      -> std::optional<ping_response> = 0;
+
+    virtual auto update() noexcept -> work_done = 0;
+
+    virtual auto has_pending_pings() noexcept -> bool = 0;
 };
 //------------------------------------------------------------------------------
 /// @brief Collection of signals emitted by the pinger service.
@@ -174,6 +179,21 @@ public:
           pingable_id,
           std::chrono::milliseconds{5000},
           memory_access_rate::low);
+    }
+
+    auto decode_ping_response(
+      const message_context& msg_ctx,
+      const stored_message& message) noexcept -> std::optional<ping_response> {
+        return _impl->decode_ping_response(msg_ctx, message);
+    }
+
+    auto decode(const message_context& msg_ctx, const stored_message& message) {
+        return this->decode_chain(
+          msg_ctx,
+          message,
+          *static_cast<Base*>(this),
+          *this,
+          &pinger::decode_ping_response);
     }
 
     auto update() noexcept -> work_done {

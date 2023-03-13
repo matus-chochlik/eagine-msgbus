@@ -42,12 +42,37 @@ public:
         _pending.emplace_back(message.target_id, message.sequence_no, max_time);
     }
 
+    auto decode_ping_response(
+      const message_context& msg_ctx,
+      const stored_message& message) noexcept
+      -> std::optional<ping_response> final {
+        if(msg_ctx.is_special_message("pong")) {
+            const auto pos{std::find_if(
+              _pending.begin(), _pending.end(), [&](const auto& entry) {
+                  const auto& [pingable_id, sequence_no, ping_time] = entry;
+                  const bool is_response =
+                    (message.source_id == pingable_id) and
+                    (message.sequence_no == sequence_no);
+                  return is_response;
+              })};
+            if(pos != _pending.end()) {
+                return {ping_response{
+                  .pingable_id = message.source_id,
+                  .age = std::chrono::duration_cast<std::chrono::microseconds>(
+                    std::get<2>(*pos).elapsed_time()),
+                  .sequence_no = message.sequence_no,
+                  .verify_bits = base.verify_bits(message)}};
+            }
+        }
+        return {};
+    }
+
     auto update() noexcept -> work_done final {
         some_true something_done{};
 
         something_done(
-          std::erase_if(_pending, [this](auto& entry) {
-              auto& [pingable_id, sequence_no, ping_time] = entry;
+          std::erase_if(_pending, [this](const auto& entry) {
+              const auto& [pingable_id, sequence_no, ping_time] = entry;
               if(ping_time.is_expired()) {
                   signals.ping_timeouted(ping_timeout{
                     .pingable_id = pingable_id,
