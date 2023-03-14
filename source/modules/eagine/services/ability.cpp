@@ -164,7 +164,8 @@ public:
 
     /// @brief Triggered on receipt of response about message handling by endpoint.
     /// @see find_handler
-    signal<void(const ability_info&) noexcept> handler_found;
+    signal<void(const result_context&, const ability_info&) noexcept>
+      handler_found;
 
 protected:
     using Base::Base;
@@ -177,11 +178,13 @@ protected:
 
 private:
     auto _handle_response(
-      const message_context&,
+      const message_context& msg_ctx,
       const stored_message& message) noexcept -> bool {
         message_id msg_id{};
         if(default_deserialize_message_type(msg_id, message.content())) {
-            handler_found(ability_info{msg_id, message.source_id});
+            handler_found(
+              result_context{msg_ctx, message},
+              ability_info{msg_id, message.source_id});
         }
         return true;
     }
