@@ -46,6 +46,69 @@ public:
         bus.post(msg_id, message);
     }
 
+    auto decode_router_topology_info(
+      const message_context& msg_ctx,
+      const stored_message& message) noexcept
+      -> std::optional<router_topology_info> final {
+        if(msg_ctx.is_special_message("topoRutrCn")) {
+            return default_deserialized<router_topology_info>(
+              message.content());
+        }
+        return {};
+    }
+
+    auto decode_bridge_topology_info(
+      const message_context& msg_ctx,
+      const stored_message& message) noexcept
+      -> std::optional<bridge_topology_info> final {
+        if(msg_ctx.is_special_message("topoBrdgCn")) {
+            return default_deserialized<bridge_topology_info>(
+              message.content());
+        }
+        return {};
+    }
+
+    auto decode_endpoint_topology_info(
+      const message_context& msg_ctx,
+      const stored_message& message) noexcept
+      -> std::optional<endpoint_topology_info> final {
+        if(msg_ctx.is_special_message("topoEndpt")) {
+            return default_deserialized<endpoint_topology_info>(
+              message.content());
+        }
+        return {};
+    }
+
+    auto decode_router_shutdown(
+      const message_context& msg_ctx,
+      const stored_message& message) noexcept
+      -> std::optional<router_shutdown> final {
+        if(msg_ctx.is_special_message("byeByeRutr")) {
+            return {router_shutdown{.router_id = message.source_id}};
+        }
+        return {};
+    }
+
+    auto decode_bridge_shutdown(
+      const message_context& msg_ctx,
+      const stored_message& message) noexcept
+      -> std::optional<bridge_shutdown> final {
+        if(msg_ctx.is_special_message("byeByeBrdg")) {
+            return {bridge_shutdown{.bridge_id = message.source_id}};
+        }
+        return {};
+    }
+
+    auto decode_endpoint_shutdown(
+      const message_context& msg_ctx,
+      const stored_message& message) noexcept
+      -> std::optional<endpoint_shutdown> final {
+        if(msg_ctx.is_special_message("byeByeEndp")) {
+            return {endpoint_shutdown{.endpoint_id = message.source_id}};
+        }
+        return {};
+    }
+
 private:
     auto _handle_router(
       const message_context&,
@@ -80,21 +143,24 @@ private:
     auto _handle_router_bye(
       const message_context&,
       const stored_message& message) noexcept -> bool {
-        signals.router_disappeared(message.source_id);
+        signals.router_disappeared(
+          router_shutdown{.router_id = message.source_id});
         return true;
     }
 
     auto _handle_bridge_bye(
       const message_context&,
       const stored_message& message) noexcept -> bool {
-        signals.bridge_disappeared(message.source_id);
+        signals.bridge_disappeared(
+          bridge_shutdown{.bridge_id = message.source_id});
         return true;
     }
 
     auto _handle_endpoint_bye(
       const message_context&,
       const stored_message& message) noexcept -> bool {
-        signals.endpoint_disappeared(message.source_id);
+        signals.endpoint_disappeared(
+          endpoint_shutdown{.endpoint_id = message.source_id});
         return true;
     }
 };

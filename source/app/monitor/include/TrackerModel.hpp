@@ -60,7 +60,12 @@ private:
       eagine::msgbus::remote_node&,
       eagine::msgbus::remote_node_changes) noexcept;
 
-    void handleNodeDisappeared(eagine::identifier_t) noexcept;
+    void handleRouterDisappeared(
+      const eagine::msgbus::router_shutdown&) noexcept;
+    void handleBridgeDisappeared(
+      const eagine::msgbus::bridge_shutdown&) noexcept;
+    void handleEndpointDisappeared(
+      const eagine::msgbus::endpoint_shutdown&) noexcept;
 
     MonitorBackend& _backend;
     eagine::msgbus::endpoint _bus;

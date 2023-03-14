@@ -25,11 +25,11 @@ TrackerModel::TrackerModel(MonitorBackend& backend)
     eagine::connect<&TrackerModel::handleNodeChanged>(
       this, _tracker.node_changed);
 
-    eagine::connect<&TrackerModel::handleNodeDisappeared>(
+    eagine::connect<&TrackerModel::handleRouterDisappeared>(
       this, _tracker.router_disappeared);
-    eagine::connect<&TrackerModel::handleNodeDisappeared>(
+    eagine::connect<&TrackerModel::handleBridgeDisappeared>(
       this, _tracker.bridge_disappeared);
-    eagine::connect<&TrackerModel::handleNodeDisappeared>(
+    eagine::connect<&TrackerModel::handleEndpointDisappeared>(
       this, _tracker.endpoint_disappeared);
 }
 //------------------------------------------------------------------------------
@@ -159,8 +159,19 @@ void TrackerModel::handleNodeChanged(
     }
 }
 //------------------------------------------------------------------------------
-void TrackerModel::handleNodeDisappeared(eagine::identifier_t nodeId) noexcept {
-    emit nodeDisappeared(nodeId);
+void TrackerModel::handleRouterDisappeared(
+  const eagine::msgbus::router_shutdown& info) noexcept {
+    emit nodeDisappeared(info.router_id);
+}
+//------------------------------------------------------------------------------
+void TrackerModel::handleBridgeDisappeared(
+  const eagine::msgbus::bridge_shutdown& info) noexcept {
+    emit nodeDisappeared(info.bridge_id);
+}
+//------------------------------------------------------------------------------
+void TrackerModel::handleEndpointDisappeared(
+  const eagine::msgbus::endpoint_shutdown& info) noexcept {
+    emit nodeDisappeared(info.endpoint_id);
 }
 //------------------------------------------------------------------------------
 void TrackerModel::update() {

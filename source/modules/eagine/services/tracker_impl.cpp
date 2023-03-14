@@ -208,16 +208,16 @@ private:
           .assign(node_kind::endpoint);
     }
 
-    void _handle_router_disappeared(const identifier_t router_id) noexcept {
-        _tracker.remove_node(router_id);
+    void _handle_router_disappeared(const router_shutdown& info) noexcept {
+        _tracker.remove_node(info.router_id);
     }
 
-    void _handle_bridge_disappeared(const identifier_t bridge_id) noexcept {
-        _tracker.remove_node(bridge_id);
+    void _handle_bridge_disappeared(const bridge_shutdown& info) noexcept {
+        _tracker.remove_node(info.bridge_id);
     }
 
-    void _handle_endpoint_disappeared(const identifier_t endpoint_id) noexcept {
-        _tracker.remove_node(endpoint_id);
+    void _handle_endpoint_disappeared(const endpoint_shutdown& info) noexcept {
+        _tracker.remove_node(info.endpoint_id);
     }
 
     void _handle_router_stats_received(
