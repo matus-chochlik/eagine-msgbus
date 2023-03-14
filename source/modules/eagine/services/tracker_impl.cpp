@@ -229,24 +229,25 @@ private:
     }
 
     void _handle_router_stats_received(
-      const identifier_t router_id,
+      const result_context& ctx,
       const router_statistics& stats) noexcept {
-        _get_node(router_id).assign(stats).notice_alive();
+        _get_node(ctx.source_id()).assign(stats).notice_alive();
     }
 
     void _handle_bridge_stats_received(
-      const identifier_t bridge_id,
+      const result_context& ctx,
       const bridge_statistics& stats) noexcept {
-        _get_node(bridge_id).assign(stats).notice_alive();
+        _get_node(ctx.source_id()).assign(stats).notice_alive();
     }
 
     void _handle_endpoint_stats_received(
-      const identifier_t endpoint_id,
+      const result_context& ctx,
       const endpoint_statistics& stats) noexcept {
-        _get_node(endpoint_id).assign(stats).notice_alive();
+        _get_node(ctx.source_id()).assign(stats).notice_alive();
     }
 
     void _handle_connection_stats_received(
+      const result_context&,
       const connection_statistics& stats) noexcept {
         _get_connection(stats.local_id, stats.remote_id);
     }

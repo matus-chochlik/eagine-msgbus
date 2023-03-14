@@ -25,7 +25,7 @@ export struct statistics_consumer_signals {
     /// @see bridge_stats_received
     /// @see endpoint_stats_received
     /// @see connection_stats_received
-    signal<void(const identifier_t, const router_statistics&) noexcept>
+    signal<void(const result_context&, const router_statistics&) noexcept>
       router_stats_received;
 
     /// @brief Triggered on receipt of bridge node statistics information.
@@ -33,7 +33,7 @@ export struct statistics_consumer_signals {
     /// @see router_stats_received
     /// @see endpoint_stats_received
     /// @see connection_stats_received
-    signal<void(const identifier_t, const bridge_statistics&) noexcept>
+    signal<void(const result_context&, const bridge_statistics&) noexcept>
       bridge_stats_received;
 
     /// @brief Triggered on receipt of endpoint node statistics information.
@@ -41,14 +41,14 @@ export struct statistics_consumer_signals {
     /// @see router_stats_received
     /// @see bridge_stats_received
     /// @see connection_stats_received
-    signal<void(const identifier_t, const endpoint_statistics&) noexcept>
+    signal<void(const result_context&, const endpoint_statistics&) noexcept>
       endpoint_stats_received;
 
     /// @brief Triggered on receipt of connection statistics information.
     /// @see router_stats_received
     /// @see bridge_stats_received
     /// @see endpoint_stats_received
-    signal<void(const connection_statistics&) noexcept>
+    signal<void(const result_context&, const connection_statistics&) noexcept>
       connection_stats_received;
 };
 //------------------------------------------------------------------------------
