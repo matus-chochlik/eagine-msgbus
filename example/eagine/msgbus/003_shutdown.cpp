@@ -36,7 +36,9 @@ public:
           member_function_constant_t<&shutdown_trigger::on_not_subscribed>{}));
     }
 
-    void on_subscribed(const subscriber_subscribed& sub) noexcept {
+    void on_subscribed(
+      const result_context&,
+      const subscriber_subscribed& sub) noexcept {
         if(sub.message_type.is("Shutdown", "shutdown")) {
             log_info("target ${id} appeared").arg("id", sub.source.endpoint_id);
             _targets.insert(sub.source.endpoint_id);
@@ -44,7 +46,9 @@ public:
         }
     }
 
-    void on_unsubscribed(const subscriber_unsubscribed& sub) noexcept {
+    void on_unsubscribed(
+      const result_context&,
+      const subscriber_unsubscribed& sub) noexcept {
         if(sub.message_type.is("Shutdown", "shutdown")) {
             log_info("target ${id} disappeared")
               .arg("id", sub.source.endpoint_id);
@@ -52,7 +56,9 @@ public:
         }
     }
 
-    void on_not_subscribed(const subscriber_not_subscribed& sub) noexcept {
+    void on_not_subscribed(
+      const result_context&,
+      const subscriber_not_subscribed& sub) noexcept {
         if(sub.message_type.is("Shutdown", "shutdown")) {
             log_info("target ${id} does not support shutdown")
               .arg("id", sub.source.endpoint_id);

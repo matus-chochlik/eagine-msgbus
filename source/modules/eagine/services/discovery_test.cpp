@@ -113,7 +113,9 @@ void discovery_1(auto& s) {
         }};
 
         const auto handle_alive{
-          [&](const eagine::msgbus::subscriber_alive& alive) {
+          [&](
+            const eagine::msgbus::result_context&,
+            const eagine::msgbus::subscriber_alive& alive) {
               if(pinger.get_id() == alive.source.endpoint_id) {
                   pinger_alive = true;
               }
@@ -125,7 +127,9 @@ void discovery_1(auto& s) {
         observer.reported_alive.connect({eagine::construct_from, handle_alive});
 
         const auto handle_subscribed{
-          [&](const eagine::msgbus::subscriber_subscribed& sub) {
+          [&](
+            const eagine::msgbus::result_context&,
+            const eagine::msgbus::subscriber_subscribed& sub) {
               if(sub.message_type.is("eagiTest", "pong")) {
                   test.check_equal(
                     sub.source.endpoint_id,

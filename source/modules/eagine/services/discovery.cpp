@@ -61,16 +61,20 @@ export struct subscriber_not_subscribed {
 /// @see subscriber_info
 export struct subscriber_discovery_signals {
     /// @brief Triggered on receipt of notification that an endpoint is alive.
-    signal<void(const subscriber_alive&) noexcept> reported_alive;
+    signal<void(const result_context&, const subscriber_alive&) noexcept>
+      reported_alive;
 
     /// @brief Triggered on receipt of info that endpoint subscribes to message.
-    signal<void(const subscriber_subscribed&) noexcept> subscribed;
+    signal<void(const result_context&, const subscriber_subscribed&) noexcept>
+      subscribed;
 
     /// @brief Triggered on receipt of info that endpoint unsubscribes from message.
-    signal<void(const subscriber_unsubscribed&) noexcept> unsubscribed;
+    signal<void(const result_context&, const subscriber_unsubscribed&) noexcept>
+      unsubscribed;
 
     /// @brief Triggered on receipt of info that endpoint doesn't handle message type.
-    signal<void(const subscriber_not_subscribed&) noexcept> not_subscribed;
+    signal<void(const result_context&, const subscriber_not_subscribed&) noexcept>
+      not_subscribed;
 };
 //------------------------------------------------------------------------------
 struct subscriber_discovery_intf : interface<subscriber_discovery_intf> {

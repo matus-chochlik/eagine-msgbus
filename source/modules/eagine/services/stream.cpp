@@ -140,13 +140,16 @@ protected:
     }
 
 private:
-    void _handle_stream_relay_alive(const subscriber_alive& alive) noexcept {
+    void _handle_stream_relay_alive(
+      const result_context&,
+      const subscriber_alive& alive) noexcept {
         if(alive.source.endpoint_id == _stream_relay_id) {
             _stream_relay_timeout.reset();
         }
     }
 
     void _handle_stream_relay_subscribed(
+      const result_context&,
       const subscriber_subscribed& sub) noexcept {
         if(sub.message_type.is("eagiStream", "startFrwrd")) {
             if(
@@ -158,6 +161,7 @@ private:
     }
 
     void _handle_stream_relay_unsubscribed(
+      const result_context&,
       const subscriber_unsubscribed& sub) noexcept {
         if(sub.message_type.is("eagiStream", "startFrwrd")) {
             if(_stream_relay_id == sub.source.endpoint_id) {
@@ -167,6 +171,7 @@ private:
     }
 
     void _handle_stream_relay_not_subscribed(
+      const result_context&,
       const subscriber_not_subscribed& sub) noexcept {
         if(sub.message_type.is("eagiStream", "startFrwrd")) {
             if(_stream_relay_id == sub.source.endpoint_id) {

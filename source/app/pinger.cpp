@@ -111,7 +111,9 @@ public:
         _can_ping = false;
     }
 
-    void on_subscribed(const subscriber_subscribed& sub) noexcept {
+    void on_subscribed(
+      const result_context&,
+      const subscriber_subscribed& sub) noexcept {
         if(sub.message_type == this->ping_msg_id()) {
             auto& stats = _targets[sub.source.endpoint_id];
             if(not stats.is_active) {
@@ -122,7 +124,9 @@ public:
         }
     }
 
-    void on_unsubscribed(const subscriber_unsubscribed& sub) noexcept {
+    void on_unsubscribed(
+      const result_context&,
+      const subscriber_unsubscribed& sub) noexcept {
         if(sub.message_type == this->ping_msg_id()) {
             auto& state = _targets[sub.source.endpoint_id];
             if(state.is_active) {
@@ -133,7 +137,9 @@ public:
         }
     }
 
-    void on_not_subscribed(const subscriber_not_subscribed& sub) noexcept {
+    void on_not_subscribed(
+      const result_context&,
+      const subscriber_not_subscribed& sub) noexcept {
         if(sub.message_type == this->ping_msg_id()) {
             auto& state = _targets[sub.source.endpoint_id];
             state.is_active = false;

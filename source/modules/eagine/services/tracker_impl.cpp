@@ -164,23 +164,31 @@ private:
         }
     }
 
-    void _handle_alive(const subscriber_alive& alive) noexcept {
+    void _handle_alive(
+      const result_context&,
+      const subscriber_alive& alive) noexcept {
         _tracker
           .notice_instance(alive.source.endpoint_id, alive.source.instance_id)
           .assign(node_kind::endpoint);
     }
 
-    void _handle_subscribed(const subscriber_subscribed& sub) noexcept {
+    void _handle_subscribed(
+      const result_context&,
+      const subscriber_subscribed& sub) noexcept {
         _tracker.notice_instance(sub.source.endpoint_id, sub.source.instance_id)
           .add_subscription(sub.message_type);
     }
 
-    void _handle_unsubscribed(const subscriber_unsubscribed& sub) noexcept {
+    void _handle_unsubscribed(
+      const result_context&,
+      const subscriber_unsubscribed& sub) noexcept {
         _tracker.notice_instance(sub.source.endpoint_id, sub.source.instance_id)
           .remove_subscription(sub.message_type);
     }
 
-    void _handle_not_subscribed(const subscriber_not_subscribed& sub) noexcept {
+    void _handle_not_subscribed(
+      const result_context&,
+      const subscriber_not_subscribed& sub) noexcept {
         _tracker.notice_instance(sub.source.endpoint_id, sub.source.instance_id)
           .remove_subscription(sub.message_type);
     }

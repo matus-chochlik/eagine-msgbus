@@ -113,45 +113,52 @@ public:
 
 private:
     auto _handle_alive(
-      const message_context&,
+      const message_context& msg_ctx,
       const stored_message& message) noexcept -> bool {
         signals.reported_alive(
+          result_context{msg_ctx, message},
           subscriber_alive{.source = get_subscriber_info(message)});
         return true;
     }
 
     auto _handle_subscribed(
-      const message_context&,
+      const message_context& msg_ctx,
       const stored_message& message) noexcept -> bool {
         message_id sub_msg_id{};
         if(default_deserialize_message_type(sub_msg_id, message.content())) {
-            signals.subscribed(subscriber_subscribed{
-              .source = get_subscriber_info(message),
-              .message_type = sub_msg_id});
+            signals.subscribed(
+              result_context{msg_ctx, message},
+              subscriber_subscribed{
+                .source = get_subscriber_info(message),
+                .message_type = sub_msg_id});
         }
         return true;
     }
 
     auto _handle_unsubscribed(
-      const message_context&,
+      const message_context& msg_ctx,
       const stored_message& message) noexcept -> bool {
         message_id sub_msg_id{};
         if(default_deserialize_message_type(sub_msg_id, message.content())) {
-            signals.unsubscribed(subscriber_unsubscribed{
-              .source = get_subscriber_info(message),
-              .message_type = sub_msg_id});
+            signals.unsubscribed(
+              result_context{msg_ctx, message},
+              subscriber_unsubscribed{
+                .source = get_subscriber_info(message),
+                .message_type = sub_msg_id});
         }
         return true;
     }
 
     auto _handle_not_subscribed(
-      const message_context&,
+      const message_context& msg_ctx,
       const stored_message& message) noexcept -> bool {
         message_id sub_msg_id{};
         if(default_deserialize_message_type(sub_msg_id, message.content())) {
-            signals.not_subscribed(subscriber_not_subscribed{
-              .source = get_subscriber_info(message),
-              .message_type = sub_msg_id});
+            signals.not_subscribed(
+              result_context{msg_ctx, message},
+              subscriber_not_subscribed{
+                .source = get_subscriber_info(message),
+                .message_type = sub_msg_id});
         }
         return true;
     }

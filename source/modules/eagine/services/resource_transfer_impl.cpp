@@ -586,7 +586,9 @@ public:
     }
 
 private:
-    void _handle_alive(const subscriber_alive& alive) noexcept {
+    void _handle_alive(
+      const result_context&,
+      const subscriber_alive& alive) noexcept {
         const auto pos{_server_endpoints.find(alive.source.endpoint_id)};
         if(pos != _server_endpoints.end()) {
             auto& svr_info = std::get<1>(*pos);
@@ -594,7 +596,9 @@ private:
         }
     }
 
-    void _handle_subscribed(const subscriber_subscribed& sub) noexcept {
+    void _handle_subscribed(
+      const result_context&,
+      const subscriber_subscribed& sub) noexcept {
         if(sub.message_type.is("eagiRsrces", "getContent")) {
             auto spos{_server_endpoints.find(sub.source.endpoint_id)};
             if(spos == _server_endpoints.end()) {
@@ -625,13 +629,17 @@ private:
           [](const auto& entry) { return std::get<1>(entry).empty(); });
     }
 
-    void _handle_unsubscribed(const subscriber_unsubscribed& sub) noexcept {
+    void _handle_unsubscribed(
+      const result_context&,
+      const subscriber_unsubscribed& sub) noexcept {
         if(sub.message_type.is("eagiRsrces", "getContent")) {
             _remove_server(sub.source.endpoint_id);
         }
     }
 
-    void _handle_not_subscribed(const subscriber_not_subscribed& sub) noexcept {
+    void _handle_not_subscribed(
+      const result_context&,
+      const subscriber_not_subscribed& sub) noexcept {
         if(sub.message_type.is("eagiRsrces", "getContent")) {
             _remove_server(sub.source.endpoint_id);
         }
