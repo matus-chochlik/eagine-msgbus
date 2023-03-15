@@ -1123,25 +1123,7 @@ public:
 
     auto process_all(
       const message_context& msg_ctx,
-      const handler_type handler) noexcept -> span_size_t {
-        std::size_t result{_messages.size()};
-        bool clear_all{true};
-        for(auto& message : _messages) {
-            if(handler(msg_ctx, message)) [[likely]] {
-                _buffers.eat(message.release_buffer());
-                message.mark_too_old();
-            } else {
-                clear_all = false;
-            }
-        }
-        if(clear_all) {
-            _messages.clear();
-        } else {
-            result = std::erase_if(
-              _messages, [](auto& message) { return message.too_many_hops(); });
-        }
-        return span_size(result);
-    }
+      const handler_type handler) noexcept -> span_size_t;
 
     [[nodiscard]] auto give_messages() noexcept
       -> pointee_generator<std::vector<stored_message>::iterator> {
@@ -1204,6 +1186,7 @@ public:
     }
 
     void push(const memory::const_block data) noexcept {
+        assert(not data.empty());
         _packed.push(data);
     }
 

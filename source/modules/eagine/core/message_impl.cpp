@@ -82,24 +82,25 @@ auto stored_message::verify_bits(context& ctx, main_ctx_object&) const noexcept
 // message_storage
 //------------------------------------------------------------------------------
 auto message_storage::fetch_all(const fetch_handler handler) noexcept -> bool {
-    bool fetched_some = false;
-    bool keep_some = false;
+    bool fetched_some{false};
+    bool clear_all{true};
     for(auto& [msg_id, message, insert_time] : _messages) {
         const auto msg_age{std::chrono::duration_cast<message_age>(
           _clock_t::now() - insert_time)};
         if(handler(msg_id, msg_age, message)) {
             _buffers.eat(message.release_buffer());
-            msg_id = {};
+            message.mark_too_old();
             fetched_some = true;
         } else {
-            keep_some = true;
+            clear_all = false;
         }
     }
-    if(keep_some) {
-        std::erase_if(
-          _messages, [](auto& t) { return not std::get<0>(t).is_valid(); });
-    } else {
+    if(clear_all) {
         _messages.clear();
+    } else {
+        std::erase_if(_messages, [](auto& t) {
+            return not std::get<1>(t).too_many_hops();
+        });
     }
     return fetched_some;
 }
@@ -129,21 +130,21 @@ void message_storage::log_stats(main_ctx_object& user) {
 //------------------------------------------------------------------------------
 auto serialized_message_storage::fetch_all(const fetch_handler handler) noexcept
   -> bool {
-    bool fetched_some = false;
-    bool keep_some = false;
+    bool fetched_some{false};
+    bool clear_all{true};
     for(auto& [message, timestamp] : _messages) {
-        if(handler(timestamp, view(message))) {
+        if(handler(timestamp, view(message))) [[likely]] {
             _buffers.eat(std::move(message));
             fetched_some = true;
         } else {
-            keep_some = true;
+            clear_all = false;
         }
     }
-    if(keep_some) {
+    if(clear_all) {
+        _messages.clear();
+    } else {
         std::erase_if(
           _messages, [](auto& entry) { return std::get<0>(entry).empty(); });
-    } else {
-        _messages.clear();
     }
     return fetched_some;
 }
@@ -238,6 +239,30 @@ void serialized_message_storage::log_stats(main_ctx_object& user) {
     }
 }
 //------------------------------------------------------------------------------
+// message_priority_queue
+//------------------------------------------------------------------------------
+auto message_priority_queue::process_all(
+  const message_context& msg_ctx,
+  const handler_type handler) noexcept -> span_size_t {
+    std::size_t result{_messages.size()};
+    bool clear_all{true};
+    for(auto& message : _messages) {
+        if(handler(msg_ctx, message)) {
+            _buffers.eat(message.release_buffer());
+            message.mark_too_old();
+        } else {
+            clear_all = false;
+        }
+    }
+    if(clear_all) {
+        _messages.clear();
+    } else {
+        result = std::erase_if(
+          _messages, [](auto& message) { return message.too_many_hops(); });
+    }
+    return span_size(result);
+}
+//------------------------------------------------------------------------------
 // connection_outgoing_messages
 //------------------------------------------------------------------------------
 auto connection_outgoing_messages::enqueue(
@@ -268,36 +293,40 @@ auto connection_outgoing_messages::enqueue(
 auto connection_incoming_messages::fetch_messages(
   main_ctx_object& user,
   const fetch_handler handler) noexcept -> bool {
-    _unpacked.fetch_all(handler);
-    auto unpacker = [this, &user, &handler](
-                      message_timestamp data_ts, memory::const_block data) {
-        for_each_data_with_size(
-          data, [this, &user, data_ts](memory::const_block blk) {
-              _unpacked.push_if([&user, data_ts, blk](
-                                  message_id& msg_id,
-                                  message_timestamp& msg_ts,
-                                  stored_message& message) {
-                  block_data_source source(blk);
-                  default_deserializer_backend backend(source);
-                  if(const auto deserialized{deserialize_message(
-                       msg_id, message, backend)}) [[likely]] {
-                      user.log_trace("fetched message ${message}")
-                        .arg("message", msg_id);
-                      msg_ts = data_ts;
-                      return true;
-                  } else {
-                      user.log_error("failed to deserialize message")
-                        .arg("errors", get_errors(deserialized))
-                        .arg("block", blk);
-                      return false;
-                  }
-              });
-          });
-        _unpacked.fetch_all(handler);
-        return true;
-    };
+    const auto unpacker{
+      [this, &user](
+        const message_timestamp data_ts, const memory::const_block data) {
+          for_each_data_with_size(
+            data, [this, &user, data_ts](const memory::const_block blk) {
+                if(not blk.empty()) [[likely]] {
+                    _unpacked.push_if([&user, data_ts, blk](
+                                        message_id& msg_id,
+                                        message_timestamp& msg_ts,
+                                        stored_message& message) {
+                        block_data_source source(blk);
+                        default_deserializer_backend backend(source);
+                        if(const auto deserialized{deserialize_message(
+                             msg_id, message, backend)}) [[likely]] {
+                            user.log_trace("fetched message ${message}")
+                              .arg("message", msg_id);
+                            msg_ts = data_ts;
+                            return true;
+                        } else {
+                            user.log_error("failed to deserialize message")
+                              .arg("errors", get_errors(deserialized))
+                              .arg("block", blk);
+                            return false;
+                        }
+                    });
+                }
+            });
+          return true;
+      }};
 
-    return _packed.fetch_all({construct_from, unpacker});
+    if(_packed.fetch_all({construct_from, unpacker})) {
+        _unpacked.fetch_all(handler);
+    }
+    return false;
 }
 //------------------------------------------------------------------------------
 } // namespace eagine::msgbus
