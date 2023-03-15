@@ -13,6 +13,7 @@ TilingBackend::TilingBackend(eagine::main_ctx_parent parent)
   , _tilingModel{std::make_shared<TilingModel>(*this)}
   , _tilingTheme{*this}
   , _tilingViewModel{*this}
+  , _solutionProgressViewModel{*this}
   , _helperContributionViewModel{*this}
   , _solutionIntervalViewModel{*this} {
     _tilingModel->initialize();
@@ -31,6 +32,7 @@ void TilingBackend::timerEvent(QTimerEvent*) {
 }
 //------------------------------------------------------------------------------
 void TilingBackend::onTilingReset() {
+    _solutionProgressViewModel.tilingReset();
     _solutionIntervalViewModel.tilingReset();
 }
 //------------------------------------------------------------------------------
@@ -43,6 +45,14 @@ void TilingBackend::onHelperContributed(eagine::identifier_t helperId) {
     _helperContributionViewModel.helperContributed(helperId);
 }
 //------------------------------------------------------------------------------
+void TilingBackend::onCellSolved(int x, int y) {
+    _solutionProgressViewModel.cellSolved(x, y);
+}
+//------------------------------------------------------------------------------
+auto TilingBackend::lightTheme() const noexcept -> bool {
+    return _tilingTheme.getLight();
+}
+//------------------------------------------------------------------------------
 auto TilingBackend::getTilingModel() noexcept -> TilingModel* {
     return _tilingModel.get();
 }
@@ -53,6 +63,11 @@ auto TilingBackend::getTilingTheme() noexcept -> TilingTheme* {
 //------------------------------------------------------------------------------
 auto TilingBackend::getTilingViewModel() noexcept -> TilingViewModel* {
     return &_tilingViewModel;
+}
+//------------------------------------------------------------------------------
+auto TilingBackend::getSolutionProgressViewModel() noexcept
+  -> SolutionProgressViewModel* {
+    return &_solutionProgressViewModel;
 }
 //------------------------------------------------------------------------------
 auto TilingBackend::getHelperContributionViewModel() noexcept

@@ -9,16 +9,20 @@ set(TILING_RESOURCES
 )
 set(TILING_SOURCES
 	tiling.cpp
+	src/PaintedImage.cpp
 	src/HelperContributionViewModel.cpp
 	src/SolutionIntervalViewModel.cpp
+	src/SolutionProgressViewModel.cpp
 	src/TilingTheme.cpp
 	src/TilingBackend.cpp
 	src/TilingModel.cpp
 	src/TilingViewModel.cpp
 )
 set(TILING_HEADERS
+	include/PaintedImage.hpp
 	include/HelperContributionViewModel.hpp
 	include/SolutionIntervalViewModel.hpp
+	include/SolutionProgressViewModel.hpp
 	include/TilingTheme.hpp
 	include/TilingBackend.hpp
 	include/TilingModel.hpp

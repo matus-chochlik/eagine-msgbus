@@ -6,6 +6,7 @@
 
 import eagine.core;
 import eagine.msgbus;
+#include "PaintedImage.hpp"
 #include "TilingBackend.hpp"
 #include "TilingViewModel.hpp"
 #include <QApplication>
@@ -28,12 +29,14 @@ auto main(main_ctx& ctx) -> int {
     app.setOrganizationDomain("oglplus.org");
     app.setApplicationName("Tiling");
 
-    const auto registerId = "com.github.matus-chochlik.eagine.msgbus.tiling";
+    const auto registerId = "com.github.matus_chochlik.eagine.msgbus.tiling";
 
     qmlRegisterUncreatableType<TilingTheme>(
       registerId, 1, 0, "TilingTheme", {});
     qmlRegisterUncreatableType<TilingViewModel>(
       registerId, 1, 0, "TilingViewModel", {});
+    qmlRegisterType<PaintedImage>(registerId, 1, 0, "PaintedImage");
+    qRegisterMetaType<const QImage*>("const QImage*");
 
     TilingBackend backend(ctx);
     QQmlApplicationEngine engine;

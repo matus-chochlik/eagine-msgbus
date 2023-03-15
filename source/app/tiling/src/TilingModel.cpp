@@ -131,10 +131,12 @@ void TilingModel::onFragmentAdded(
   eagine::identifier_t helperId,
   const eagine::msgbus::sudoku_tiles<4>& tiles,
   const eagine::msgbus::sudoku_solver_key& fragCoord) noexcept {
+    const auto x_y{std::get<std::tuple<int, int>>(fragCoord)};
+
+    _backend.onCellSolved(std::get<0>(x_y), std::get<1>(x_y));
     _backend.onHelperContributed(helperId);
 
-    const auto fragment =
-      tiles.get_fragment(std::get<std::tuple<int, int>>(fragCoord));
+    const auto fragment = tiles.get_fragment(x_y);
     int rmin = _width, rmax = 0;
     int cmin = _height, cmax = 0;
     fragment.for_each_cell(

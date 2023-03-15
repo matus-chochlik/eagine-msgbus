@@ -127,6 +127,9 @@ ApplicationWindow {
                 text: qsTr("Tiling")
             }
             TabButton {
+                text: qsTr("Solution progress")
+            }
+            TabButton {
                 text: qsTr("Helper contributions")
             }
             TabButton {
@@ -145,6 +148,13 @@ ApplicationWindow {
                 Layout.fillHeight: true
 
                 model: backend.tiling
+            }
+
+            SolutionProgressView {
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+
+                model: backend.solutionProgress
             }
 
             HelperContributionView {
