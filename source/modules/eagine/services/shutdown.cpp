@@ -43,7 +43,8 @@ export struct shutdown_request {
 /// @see shutdown_invoker
 export struct shutdown_target_signals {
     /// @brief Triggered when a shutdown request is received.
-    signal<void(const shutdown_request&) noexcept> shutdown_requested;
+    signal<void(const result_context&, const shutdown_request&) noexcept>
+      shutdown_requested;
 };
 //------------------------------------------------------------------------------
 struct shutdown_target_intf : interface<shutdown_target_intf> {

@@ -42,6 +42,7 @@ void resource_data_server_node::_init() {
 }
 //------------------------------------------------------------------------------
 void resource_data_server_node::_handle_shutdown(
+  const result_context&,
   const shutdown_request& req) noexcept {
     log_info("received shutdown request from ${source}")
       .tag("shutdwnReq")

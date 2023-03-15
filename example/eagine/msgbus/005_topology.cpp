@@ -104,7 +104,9 @@ public:
         _endpoints.emplace(info.endpoint_id);
     }
 
-    void on_shutdown(const shutdown_request& req) noexcept {
+    void on_shutdown(
+      const result_context&,
+      const shutdown_request& req) noexcept {
         _log.info("received ${age} old shutdown request from ${subscrbr}")
           .arg("age", req.age)
           .arg("subscrbr", req.source_id)

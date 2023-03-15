@@ -55,7 +55,9 @@ public:
           .arg("message", sub.message_type);
     }
 
-    void on_shutdown(const shutdown_request& req) noexcept {
+    void on_shutdown(
+      const result_context&,
+      const shutdown_request& req) noexcept {
         log_info("received ${age} old shutdown request from ${subscrbr}")
           .arg("age", req.age)
           .arg("subscrbr", req.source_id)

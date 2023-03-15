@@ -51,7 +51,9 @@ void shutdown_1(auto& s) {
     bool handled_1{false};
     bool handled_2{false};
 
-    const auto handle_request{[&](const eagine::msgbus::shutdown_request& req) {
+    const auto handle_request{[&](
+                                const eagine::msgbus::result_context&,
+                                const eagine::msgbus::shutdown_request& req) {
         if(req.source_id == source_1_ept.get_id()) {
             handled_1 = true;
             trck.checkpoint(1);

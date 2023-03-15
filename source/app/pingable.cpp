@@ -40,7 +40,9 @@ public:
         return true;
     }
 
-    void on_shutdown(const shutdown_request& req) noexcept {
+    void on_shutdown(
+      const result_context&,
+      const shutdown_request& req) noexcept {
         log_info("received shutdown request from ${source}")
           .arg("age", req.age)
           .arg("source", req.source_id)

@@ -65,7 +65,8 @@ private:
       const stored_message& message) noexcept -> bool {
         // TODO: and_then when 23 is available
         if(const auto decoded{do_decode_shutdown_request(msg_ctx, message)}) {
-            signals.shutdown_requested(extract(decoded));
+            signals.shutdown_requested(
+              result_context{msg_ctx, message}, extract(decoded));
         }
         return true;
     }

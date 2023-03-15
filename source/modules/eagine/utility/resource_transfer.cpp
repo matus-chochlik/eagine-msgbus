@@ -60,7 +60,9 @@ public:
     }
 
 private:
-    void _handle_shutdown(const shutdown_request&) noexcept;
+    void _handle_shutdown(
+      const result_context&,
+      const shutdown_request&) noexcept;
 
     bool _done{false};
 };
