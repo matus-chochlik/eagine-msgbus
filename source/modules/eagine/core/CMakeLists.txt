@@ -131,6 +131,7 @@ eagine_add_module(
 	IMPORTS
 		types blobs message
 		interface context
+		eagine.core.build_config
 		eagine.core.types
 		eagine.core.memory
 		eagine.core.identifier

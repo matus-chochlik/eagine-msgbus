@@ -11,6 +11,7 @@ module;
 
 module eagine.msgbus.core;
 
+import eagine.core.build_config;
 import eagine.core.types;
 import eagine.core.memory;
 import eagine.core.identifier;
@@ -120,7 +121,8 @@ auto endpoint::_handle_flow_info(const message_view& message) noexcept
     message_flow_info flow_info{};
     if(default_deserialize(flow_info, message.content())) [[likely]] {
         if(_flow_info != flow_info) {
-            const std::chrono::milliseconds age_warning{500};
+            const std::chrono::milliseconds age_warning{
+              debug_build ? 2500 : 500};
             if(
               (_flow_info.average_message_age() < age_warning) and
               (flow_info.average_message_age() >= age_warning)) {
