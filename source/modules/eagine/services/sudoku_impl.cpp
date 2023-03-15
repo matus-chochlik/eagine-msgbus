@@ -573,19 +573,9 @@ struct sudoku_solver_rank_info {
             if(entry.too_late) {
                 const unsigned_constant<S> rank{};
                 if(not solver.driver().already_done(entry.key, rank)) {
-                    entry.board.for_each_alternative(
-                      entry.board.find_unsolved(), [&](auto& candidate) {
-                          if(candidate.is_solved()) {
-                              solver.signals.solved_signal(rank)(
-                                entry.used_helper, entry.key, candidate);
-                          } else {
-                              add_board(
-                                solver,
-                                std::move(entry.key),
-                                std::move(candidate));
-                              ++count;
-                          }
-                      });
+                    add_board(
+                      solver, std::move(entry.key), std::move(entry.board));
+                    ++count;
                 }
                 known_helpers.erase(entry.used_helper);
                 used_helpers.erase(entry.used_helper);
@@ -607,11 +597,12 @@ struct sudoku_solver_rank_info {
 
     auto process_pending_entry(
       auto& solver,
-      const message_id msg_id,
+      const message_context& msg_ctx,
+      const message_info& message,
       pending_info& done,
       basic_sudoku_board<S>& board) noexcept -> bool {
         const unsigned_constant<S> rank{};
-        const bool is_solved = msg_id == sudoku_solved_msg(rank);
+        const bool is_solved = msg_ctx.msg_id() == sudoku_solved_msg(rank);
 
         if(is_solved) {
             assert(board.is_solved());
@@ -626,7 +617,9 @@ struct sudoku_solver_rank_info {
             }
             spos->second++;
             solver.signals.solved_signal(rank)(
-              done.used_helper, done.key, board);
+              result_context{msg_ctx, message},
+              solved_sudoku_board<S>{
+                .helper_id = done.used_helper, .key = done.key, .board = board});
             solution_timeout.reset();
         } else {
             add_board(solver, done.key, std::move(board));
@@ -642,7 +635,7 @@ struct sudoku_solver_rank_info {
 
     void handle_response(
       auto& solver,
-      const message_id msg_id,
+      const message_context& msg_ctx,
       const stored_message& message) noexcept {
         basic_sudoku_board<S> board{traits};
 
@@ -652,18 +645,19 @@ struct sudoku_solver_rank_info {
                    : default_deserialize(board, message.content())};
 
         if(deserialized) [[likely]] {
-            const auto predicate = [&](const auto& entry) {
+            const auto predicate{[&](const auto& entry) {
                 return entry.sequence_no == message.sequence_no;
-            };
+            }};
             auto pos = std::find_if(pending.begin(), pending.end(), predicate);
 
             if(pos != pending.end()) {
-                process_pending_entry(solver, msg_id, *pos, board);
+                process_pending_entry(solver, msg_ctx, message, *pos, board);
             } else {
                 pos =
                   std::find_if(remaining.begin(), remaining.end(), predicate);
                 if(pos != remaining.end()) {
-                    if(process_pending_entry(solver, msg_id, *pos, board)) {
+                    if(process_pending_entry(
+                         solver, msg_ctx, message, *pos, board)) {
                         remaining.erase(pos);
                     }
                 }
@@ -951,7 +945,7 @@ private:
       const stored_message& message) noexcept -> bool {
 
         _infos.get(unsigned_constant<S>{})
-          .handle_response(*this, msg_ctx.msg_id(), message);
+          .handle_response(*this, msg_ctx, message);
         return true;
     }
 
@@ -1282,19 +1276,17 @@ struct sudoku_tiling_rank_info : sudoku_tiles<S> {
 
     void handle_solved(
       auto& tiling,
-      const identifier_t helper_id,
-      const sudoku_solver_key key,
-      basic_sudoku_board<S> board) noexcept {
+      const solved_sudoku_board<S>& sol) noexcept {
 
-        const auto coord{std::get<Coord>(key)};
-        if(this->set_board(coord, std::move(board))) {
+        const auto coord{std::get<Coord>(sol.key)};
+        if(this->set_board(coord, sol.board)) {
             cells_done += this->cells_per_tile();
             tiling.solver.base.bus_node()
               .log_info("solved board (${x}, ${y})")
               .arg("rank", S)
               .arg("x", std::get<0>(coord))
               .arg("y", std::get<1>(coord))
-              .arg("helper", helper_id)
+              .arg("helper", sol.helper_id)
               .arg(
                 "progress",
                 "Progress",
@@ -1302,15 +1294,15 @@ struct sudoku_tiling_rank_info : sudoku_tiles<S> {
                 float(cells_done),
                 float(this->cell_count()));
 
-            auto helper_pos = helper_contrib.find(helper_id);
+            auto helper_pos = helper_contrib.find(sol.helper_id);
             if(helper_pos == helper_contrib.end()) {
-                helper_pos = helper_contrib.emplace(helper_id, 0).first;
+                helper_pos = helper_contrib.emplace(sol.helper_id, 0).first;
             }
             ++helper_pos->second;
 
             const unsigned_constant<S> rank{};
             tiling.signals.tiles_generated_signal(rank)(
-              helper_id, *this, coord);
+              sol.helper_id, *this, coord);
         }
 
         enqueue_incomplete(tiling);
@@ -1395,12 +1387,10 @@ public:
 
     template <unsigned S>
     void handle_solved(
-      const identifier_t helper_id,
-      const sudoku_solver_key& coord,
-      basic_sudoku_board<S>& board) noexcept {
+      const result_context&,
+      const solved_sudoku_board<S>& sol) noexcept {
         auto& info = _infos.get(unsigned_constant<S>{});
-        info.handle_solved(
-          *this, helper_id, std::get<Coord>(coord), std::move(board));
+        info.handle_solved(*this, sol);
     }
 
     auto driver() noexcept -> sudoku_solver_driver& final {

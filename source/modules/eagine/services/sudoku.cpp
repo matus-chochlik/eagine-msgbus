@@ -108,6 +108,19 @@ export struct sudoku_solver_driver : interface<sudoku_solver_driver> {
     }
 };
 //------------------------------------------------------------------------------
+/// @brief Type storing information about (partially) solved Sudoku board.
+/// @ingroup msgbus
+/// @see sudoku_solver_signals
+export template <unsigned S>
+struct solved_sudoku_board {
+    /// @brief Id of the helper that provided the solution.
+    identifier_t helper_id{invalid_endpoint_id()};
+    /// @brief Key, identifiying the board.
+    sudoku_solver_key key{0};
+    /// @brief The Sudoku board.
+    basic_sudoku_board<S> board;
+};
+//------------------------------------------------------------------------------
 struct sudoku_solver_intf : interface<sudoku_solver_intf> {
 
     virtual void assign_driver(sudoku_solver_driver&) noexcept = 0;
@@ -156,28 +169,16 @@ export struct sudoku_solver_signals {
     signal<void(const identifier_t) noexcept> helper_appeared;
 
     /// @brief Triggered when the board with the specified key is solved.
-    signal<void(
-      const identifier_t,
-      const sudoku_solver_key&,
-      basic_sudoku_board<3>&) noexcept>
+    signal<void(const result_context&, const solved_sudoku_board<3>&) noexcept>
       solved_3;
     /// @brief Triggered when the board with the specified key is solved.
-    signal<void(
-      const identifier_t,
-      const sudoku_solver_key&,
-      basic_sudoku_board<4>&) noexcept>
+    signal<void(const result_context&, const solved_sudoku_board<4>&) noexcept>
       solved_4;
     /// @brief Triggered when the board with the specified key is solved.
-    signal<void(
-      const identifier_t,
-      const sudoku_solver_key&,
-      basic_sudoku_board<5>&) noexcept>
+    signal<void(const result_context&, const solved_sudoku_board<5>&) noexcept>
       solved_5;
     /// @brief Triggered when the board with the specified key is solved.
-    signal<void(
-      const identifier_t,
-      const sudoku_solver_key&,
-      basic_sudoku_board<6>&) noexcept>
+    signal<void(const result_context&, const solved_sudoku_board<6>&) noexcept>
       solved_6;
 
     /// @brief Returns a reference to the solved_3 signal.

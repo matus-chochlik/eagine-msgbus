@@ -28,11 +28,10 @@ public:
 
     template <unsigned S>
     void print(
-      const identifier_t,
-      const sudoku_solver_key& id,
-      basic_sudoku_board<S>& board) noexcept {
-        std::cout << "board: " << std::get<int>(id) << '\n'
-                  << board << std::endl;
+      const result_context&,
+      const solved_sudoku_board<S>& sol) noexcept {
+        std::cout << "board: " << std::get<int>(sol.key) << '\n'
+                  << sol.board << std::endl;
     }
 };
 
