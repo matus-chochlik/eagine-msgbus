@@ -28,8 +28,8 @@ public:
 
     template <unsigned S>
     void check(
-      const result_context&,
-      const solved_sudoku_board<S>& sol) noexcept {
+      const eagine::msgbus::result_context&,
+      const eagine::msgbus::solved_sudoku_board<S>& sol) noexcept {
         if(sol.board.is_solved()) {
             if(_ptrck) {
                 _ptrck->checkpoint(1);

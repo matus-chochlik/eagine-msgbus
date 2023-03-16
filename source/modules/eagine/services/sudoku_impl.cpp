@@ -530,13 +530,13 @@ struct sudoku_solver_rank_info {
     }
 
     void queue_length_changed(auto& solver) const noexcept {
-        std::size_t key_count{0};
-        std::size_t board_count{0};
+        sudoku_board_queue_change change;
+        change.rank = S;
         for(const auto& entry : key_boards) {
-            key_count++;
-            board_count += std::get<1>(entry).size();
+            change.key_count++;
+            change.board_count += std::get<1>(entry).size();
         }
-        solver.signals.queue_length_changed(S, key_count, board_count);
+        solver.signals.queue_length_changed(change);
     }
 
     void add_board(
@@ -774,11 +774,16 @@ struct sudoku_solver_rank_info {
         }
     }
 
-    void helper_alive(auto& solver, const identifier_t id) noexcept {
-        if(std::get<1>(known_helpers.insert(id))) {
-            solver.signals.helper_appeared(id);
+    void helper_alive(
+      auto& solver,
+      const message_context& msg_ctx,
+      const stored_message& message) noexcept {
+        if(std::get<1>(known_helpers.insert(message.source_id))) {
+            solver.signals.helper_appeared(
+              result_context{msg_ctx, message},
+              sudoku_helper_appeared{.helper_id = message.source_id});
         }
-        ready_helpers.insert(id);
+        ready_helpers.insert(message.source_id);
     }
 
     auto has_enqueued(const sudoku_solver_key& key) noexcept -> bool {
@@ -924,10 +929,9 @@ private:
 
     template <unsigned S>
     auto _handle_alive(
-      const message_context&,
+      const message_context& msg_ctx,
       const stored_message& message) noexcept -> bool {
-        _infos.get(unsigned_constant<S>{})
-          .helper_alive(*this, message.source_id);
+        _infos.get(unsigned_constant<S>{}).helper_alive(*this, msg_ctx, message);
         return true;
     }
 

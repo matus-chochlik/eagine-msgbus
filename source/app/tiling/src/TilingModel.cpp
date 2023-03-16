@@ -128,8 +128,10 @@ auto TilingModel::getCell(int row, int column) const noexcept -> QVariant {
     return {};
 }
 //------------------------------------------------------------------------------
-void TilingModel::onHelperAppeared(eagine::identifier_t helperId) noexcept {
-    _backend.onHelperAppeared(helperId);
+void TilingModel::onHelperAppeared(
+  const eagine::msgbus::result_context&,
+  const eagine::msgbus::sudoku_helper_appeared& appeared) noexcept {
+    _backend.onHelperAppeared(appeared.helper_id);
 }
 //------------------------------------------------------------------------------
 void TilingModel::onFragmentAdded(
@@ -163,13 +165,11 @@ void TilingModel::onFragmentAdded(
 }
 //------------------------------------------------------------------------------
 void TilingModel::onQueueLengthChanged(
-  unsigned rank,
-  std::size_t keyCount,
-  std::size_t boardCount) noexcept {
-    if(rank == 4) [[likely]] {
-        if((_keyCount != keyCount) or (_boardCount != boardCount)) {
-            _keyCount = keyCount;
-            _boardCount = boardCount;
+  const eagine::msgbus::sudoku_board_queue_change& change) noexcept {
+    if(change.rank == 4) [[likely]] {
+        if((_keyCount != change.key_count) or (_boardCount != change.board_count)) {
+            _keyCount = change.key_count;
+            _boardCount = change.board_count;
             emit queueLengthChanged();
         }
     }

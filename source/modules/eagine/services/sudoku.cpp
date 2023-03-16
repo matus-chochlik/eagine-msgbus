@@ -160,13 +160,35 @@ struct sudoku_solver_intf : interface<sudoku_solver_intf> {
       -> std::intmax_t = 0;
 };
 //------------------------------------------------------------------------------
+/// @brief Type containing information about a Sudoku solver helper service.
+/// @ingroup msgbus
+/// @see sudoku_solver_signals
+export struct sudoku_helper_appeared {
+    /// @brief Id of the helper endpoint.
+    identifier_t helper_id{invalid_endpoint_id()};
+};
+
+/// @brief Type containing information about Sudoku solver queue changes.
+/// @see sudoku_solver_signals
+/// @ingroup msgbus
+/// @see sudoku_solver_signals
+export struct sudoku_board_queue_change {
+    /// @brief The rank of the boards in queue.
+    unsigned rank{0};
+    /// @brief Number of distinct keys in the queue.
+    std::size_t key_count{0};
+    /// @brief Number of boards in the queue.
+    std::size_t board_count{0};
+};
+//------------------------------------------------------------------------------
 /// @brief Collection of signals emitted by the sudoku_solver service
 /// @ingroup msgbus
 /// @see sudoku_solver
 export struct sudoku_solver_signals {
 
     /// @brief Triggered when a helper service appears.
-    signal<void(const identifier_t) noexcept> helper_appeared;
+    signal<void(const result_context&, const sudoku_helper_appeared&) noexcept>
+      helper_appeared;
 
     /// @brief Triggered when the board with the specified key is solved.
     signal<void(const result_context&, const solved_sudoku_board<3>&) noexcept>
@@ -206,8 +228,7 @@ export struct sudoku_solver_signals {
     }
 
     /// @brief Triggered when the length of the queue of boards change.
-    signal<void(const unsigned, const std::size_t, const std::size_t) noexcept>
-      queue_length_changed;
+    signal<void(const sudoku_board_queue_change&) noexcept> queue_length_changed;
 };
 //------------------------------------------------------------------------------
 export auto make_sudoku_solver_impl(subscriber& base, sudoku_solver_signals&)
