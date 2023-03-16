@@ -21,7 +21,7 @@ void PaintedImage::setImage(const QImage* image) {
 //------------------------------------------------------------------------------
 void PaintedImage::paint(QPainter* painter) {
     if(_image) {
-        painter->scale(2.F, 2.F);
+        painter->scale(4.F, 4.F);
         painter->drawImage(0, 0, *_image);
     }
 }
