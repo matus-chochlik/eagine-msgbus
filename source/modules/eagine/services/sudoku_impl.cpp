@@ -1332,6 +1332,10 @@ struct sudoku_tiling_rank_info : sudoku_tiles<S> {
         return float(cells_done) / float(this->cell_count());
     }
 
+    auto tiling_size() const noexcept -> std::tuple<int, int> {
+        return {this->x_tiles_count(), this->y_tiles_count()};
+    }
+
     flat_map<identifier_t, span_size_t> helper_contrib;
     int cells_done{0};
 };
@@ -1460,10 +1464,18 @@ public:
         return result;
     }
 
-    auto solution_progress(unsigned rank) const noexcept -> float {
+    auto solution_progress(unsigned rank) const noexcept -> float final {
         float result{0.F};
         apply_to_sudoku_rank_unit(
           rank, [&](auto& info) { result = info.solution_progress(); }, _infos);
+        return result;
+    }
+
+    auto tiling_size(unsigned rank) const noexcept
+      -> std::tuple<int, int> final {
+        std::tuple<int, int> result{0, 0};
+        apply_to_sudoku_rank_unit(
+          rank, [&](auto& info) { result = info.tiling_size(); }, _infos);
         return result;
     }
 

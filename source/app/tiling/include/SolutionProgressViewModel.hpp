@@ -29,8 +29,8 @@ public:
     void tilingReset();
 
     auto getImage() const -> const QImage*;
-    auto getSize() const -> const QSize&;
-    void cellSolved(int x, int y);
+    auto getSize() const -> QSize;
+    void tileSolved(int x, int y);
 signals:
     void sizeChanged();
     void imageChanged();

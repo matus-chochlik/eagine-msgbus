@@ -45,12 +45,19 @@ void TilingBackend::onHelperContributed(eagine::identifier_t helperId) {
     _helperContributionViewModel.helperContributed(helperId);
 }
 //------------------------------------------------------------------------------
-void TilingBackend::onCellSolved(int x, int y) {
-    _solutionProgressViewModel.cellSolved(x, y);
+void TilingBackend::onTileSolved(int x, int y) {
+    _solutionProgressViewModel.tileSolved(x, y);
 }
 //------------------------------------------------------------------------------
 auto TilingBackend::lightTheme() const noexcept -> bool {
     return _tilingTheme.getLight();
+}
+//------------------------------------------------------------------------------
+auto TilingBackend::getTilingSize() const noexcept -> QSize {
+    if(_tilingModel) {
+        return _tilingModel->getTilingSize();
+    }
+    return QSize{1, 1};
 }
 //------------------------------------------------------------------------------
 auto TilingBackend::getTilingModel() noexcept -> TilingModel* {

@@ -437,6 +437,18 @@ public:
         return cells_per_tile_side() * cells_per_tile_side();
     }
 
+    /// @brief Number of tiles on the x-axis.
+    /// @see y_tiles_count
+    auto x_tiles_count() const noexcept -> int {
+        return width() / cells_per_tile_side();
+    }
+
+    /// @brief Number of tiles on the x-axis.
+    /// @see x_tiles_count
+    auto y_tiles_count() const noexcept -> int {
+        return height() / cells_per_tile_side();
+    }
+
     /// @brief Get the board at the specified coordinate if it is solved.
     auto get_board(const Coord coord) const noexcept
       -> const basic_sudoku_board<S>* {
@@ -670,6 +682,8 @@ public:
     virtual void reset(unsigned rank) noexcept = 0;
     virtual auto are_complete() const noexcept -> bool = 0;
     virtual auto are_complete(unsigned rank) const noexcept -> bool = 0;
+    virtual auto tiling_size(unsigned rank) const noexcept
+      -> std::tuple<int, int> = 0;
     virtual auto solution_progress(unsigned rank) const noexcept -> float = 0;
     virtual void log_contribution_histogram(unsigned rank) noexcept = 0;
 };
@@ -791,6 +805,13 @@ public:
     /// @brief Indicates that pending tilings with all ranks are complete.
     auto tiling_complete() const noexcept -> bool {
         return _impl->are_complete();
+    }
+
+    /// @brief Returns the number of tiles on the x and y axes.
+    template <unsigned S>
+    auto tiling_size(const unsigned_constant<S>) const noexcept
+      -> std::tuple<int, int> {
+        return _impl->tiling_size(S);
     }
 
     /// @brief Returns the fraction <0, 1> indicating how many tiles are solved.

@@ -67,6 +67,11 @@ void TilingModel::update() {
     }
 }
 //------------------------------------------------------------------------------
+auto TilingModel::getTilingSize() const noexcept -> QSize {
+    const auto [x, y] = _tiling.tiling_size(eagine::unsigned_constant<4>{});
+    return QSize{x, y};
+}
+//------------------------------------------------------------------------------
 auto TilingModel::getWidth() const noexcept -> int {
     return _width;
 }
@@ -133,7 +138,7 @@ void TilingModel::onFragmentAdded(
   const eagine::msgbus::sudoku_solver_key& fragCoord) noexcept {
     const auto x_y{std::get<std::tuple<int, int>>(fragCoord)};
 
-    _backend.onCellSolved(std::get<0>(x_y), std::get<1>(x_y));
+    _backend.onTileSolved(std::get<0>(x_y), std::get<1>(x_y));
     _backend.onHelperContributed(helperId);
 
     const auto fragment = tiles.get_fragment(x_y);

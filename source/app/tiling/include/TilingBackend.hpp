@@ -37,6 +37,7 @@ public:
 
     auto lightTheme() const noexcept -> bool;
 
+    auto getTilingSize() const noexcept -> QSize;
     auto getTilingModel() noexcept -> TilingModel*;
     auto getTilingTheme() noexcept -> TilingTheme*;
     auto getTilingViewModel() noexcept -> TilingViewModel*;
@@ -50,7 +51,7 @@ public slots:
     void onTilingReset();
     void onHelperAppeared(eagine::identifier_t helperId);
     void onHelperContributed(eagine::identifier_t helperId);
-    void onCellSolved(int x, int y);
+    void onTileSolved(int x, int y);
 
 private:
     void timerEvent(QTimerEvent*) final;

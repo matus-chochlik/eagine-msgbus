@@ -27,6 +27,7 @@ public:
 
     auto getWidth() const noexcept -> int;
     auto getHeight() const noexcept -> int;
+    auto getTilingSize() const noexcept -> QSize;
     auto getCellChar(int row, int column) const noexcept -> char;
     auto getCell(int row, int column) const noexcept -> QVariant;
 

@@ -19,11 +19,9 @@ SolutionProgressViewModel::SolutionProgressViewModel(TilingBackend& backend)
 //------------------------------------------------------------------------------
 void SolutionProgressViewModel::tilingReset() {
     if(auto tilingModel{_backend.getTilingModel()}) {
-        _size = QSize(
-          extract(tilingModel).getWidth(), extract(tilingModel).getHeight());
         emit sizeChanged();
 
-        _image = QImage{_size, QImage::Format_Mono};
+        _image = QImage{_backend.getTilingSize(), QImage::Format_Mono};
         if(_backend.lightTheme()) {
             _image.fill(Qt::color1);
         } else {
@@ -37,11 +35,11 @@ auto SolutionProgressViewModel::getImage() const -> const QImage* {
     return &_image;
 }
 //------------------------------------------------------------------------------
-auto SolutionProgressViewModel::getSize() const -> const QSize& {
-    return _size;
+auto SolutionProgressViewModel::getSize() const -> QSize {
+    return _backend.getTilingSize();
 }
 //------------------------------------------------------------------------------
-void SolutionProgressViewModel::cellSolved(int x, int y) {
+void SolutionProgressViewModel::tileSolved(int x, int y) {
     if(_backend.lightTheme()) {
         _image.setPixel(x, y, Qt::color0);
     } else {
