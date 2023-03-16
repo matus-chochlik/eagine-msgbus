@@ -98,9 +98,8 @@ auto message_storage::fetch_all(const fetch_handler handler) noexcept -> bool {
     if(clear_all) {
         _messages.clear();
     } else {
-        std::erase_if(_messages, [](auto& t) {
-            return not std::get<1>(t).too_many_hops();
-        });
+        std::erase_if(
+          _messages, [](auto& t) { return std::get<1>(t).too_many_hops(); });
     }
     return fetched_some;
 }
