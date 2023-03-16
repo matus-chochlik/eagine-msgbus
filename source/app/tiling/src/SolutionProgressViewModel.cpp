@@ -15,7 +15,13 @@ import std;
 SolutionProgressViewModel::SolutionProgressViewModel(TilingBackend& backend)
   : QObject{nullptr}
   , eagine::main_ctx_object{"PrgrsModel", backend}
-  , _backend{backend} {}
+  , _backend{backend} {
+    connect(
+      _backend.getTilingTheme(),
+      &TilingTheme::lightChanged,
+      this,
+      &SolutionProgressViewModel::onThemeChanged);
+}
 //------------------------------------------------------------------------------
 void SolutionProgressViewModel::tilingReset() {
     if(auto tilingModel{_backend.getTilingModel()}) {
@@ -29,6 +35,11 @@ void SolutionProgressViewModel::tilingReset() {
         }
         emit imageChanged();
     }
+}
+//------------------------------------------------------------------------------
+void SolutionProgressViewModel::onThemeChanged() {
+    _image.invertPixels();
+    emit imageChanged();
 }
 //------------------------------------------------------------------------------
 auto SolutionProgressViewModel::getImage() const -> const QImage* {

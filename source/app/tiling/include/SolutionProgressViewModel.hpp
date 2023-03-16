@@ -34,6 +34,8 @@ public:
 signals:
     void sizeChanged();
     void imageChanged();
+private slots:
+    void onThemeChanged();
 
 private:
     TilingBackend& _backend;
