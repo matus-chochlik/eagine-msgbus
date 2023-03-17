@@ -24,7 +24,6 @@ namespace eagine::msgbus {
 /// @see compiler_info_consumer
 export template <typename Base = subscriber>
 class compiler_info_provider : public Base {
-    using This = compiler_info_provider;
 
 protected:
     using Base::Base;
@@ -64,8 +63,6 @@ export template <typename Base = subscriber>
 class compiler_info_consumer
   : public Base
   , public compiler_info_consumer_signals {
-
-    using This = compiler_info_consumer;
 
 public:
     /// @brief Queries information about compiler used to build given endpoint.

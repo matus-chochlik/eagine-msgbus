@@ -20,11 +20,7 @@ import eagine.core.utility;
 import eagine.core.valid_if;
 import eagine.core.runtime;
 import eagine.core.main_ctx;
-import <condition_variable>;
-import <fstream>;
-import <iostream>;
-import <mutex>;
-import <thread>;
+import std;
 
 namespace eagine::msgbus {
 //------------------------------------------------------------------------------
@@ -78,7 +74,7 @@ public:
     }
 
     auto is_usable() noexcept {
-        return input_usable() && output_usable();
+        return input_usable() and output_usable();
     }
 
     void push(const message_id msg_id, const message_view& message) noexcept {
@@ -107,25 +103,28 @@ public:
                                const message_id msg_id,
                                const message_age msg_age,
                                message_view message) {
-            if(!message.add_age(msg_age).too_old()) [[likely]] {
+            if(not message.add_age(msg_age).too_old()) [[likely]] {
                 default_serializer_backend backend(_sink);
-                serialize_message_header(msg_id, message, backend);
+                if(serialize_message_header(msg_id, message, backend))
+                  [[likely]] {
+                    span_size_t i = 0;
+                    do_dissolve_bits(
+                      make_span_getter(i, message.data()),
+                      [this](byte b) {
+                          const auto encode{make_base64_encode_transform()};
+                          if(auto opt_c{encode(b)}) {
+                              this->_output << extract(opt_c);
+                              return true;
+                          }
+                          return false;
+                      },
+                      6);
 
-                span_size_t i = 0;
-                do_dissolve_bits(
-                  make_span_getter(i, message.data()),
-                  [this](byte b) {
-                      const auto encode{make_base64_encode_transform()};
-                      if(auto opt_c{encode(b)}) {
-                          this->_output << extract(opt_c);
-                          return true;
-                      }
-                      return false;
-                  },
-                  6);
-
-                _output << '\n' << std::flush;
-                ++_forwarded_messages;
+                    _output << '\n' << std::flush;
+                    ++_forwarded_messages;
+                } else {
+                    ++_dropped_messages;
+                }
             } else {
                 ++_dropped_messages;
             }
@@ -158,10 +157,9 @@ public:
             identifier class_id{};
             identifier method_id{};
             _recv_dest.clear_data();
-            const auto errors = deserialize_message_header(
-              class_id, method_id, _recv_dest, backend);
 
-            if(!errors) [[likely]] {
+            if(deserialize_message_header(
+                 class_id, method_id, _recv_dest, backend)) [[likely]] {
                 _buffer.ensure(source.remaining().size());
                 span_size_t i = 0;
                 span_size_t o = 0;
@@ -238,7 +236,7 @@ void bridge::_setup_from_config() {
 //------------------------------------------------------------------------------
 auto bridge::_handle_id_assigned(const message_view& message) noexcept
   -> message_handling_result {
-    if(!has_id()) {
+    if(not has_id()) {
         _id = message.target_id;
         log_debug("assigned bridge id ${id} by router").arg("id", _id);
     }
@@ -535,14 +533,14 @@ auto bridge::_forward_messages() noexcept -> work_done {
 }
 //------------------------------------------------------------------------------
 auto bridge::_recoverable_state() const noexcept -> bool {
-    return std::cin.good() && std::cout.good();
+    return std::cin.good() and std::cout.good();
 }
 //------------------------------------------------------------------------------
 auto bridge::_check_state() noexcept -> work_done {
     some_true something_done{};
 
-    if(!(_state && _state->is_usable())) [[unlikely]] {
-        if(_recoverable_state() && _connection) {
+    if(not(_state and _state->is_usable())) [[unlikely]] {
+        if(_recoverable_state() and _connection) {
             if(const auto max_data_size{_connection->max_data_size()}) {
                 ++_state_count;
                 _state = std::make_shared<bridge_state>(extract(max_data_size));
@@ -559,7 +557,7 @@ auto bridge::_update_connections() noexcept -> work_done {
     some_true something_done{};
 
     if(_connection) [[likely]] {
-        if(!has_id() && _no_id_timeout) [[unlikely]] {
+        if(not has_id() and _no_id_timeout) [[unlikely]] {
             log_debug("requesting bridge id");
             _connection->send(msgbus_id{"requestId"}, {});
             _no_id_timeout.reset();
@@ -583,7 +581,7 @@ auto bridge::update() noexcept -> work_done {
     something_done(_forward_messages());
 
     // if processing the messages assigned the id
-    if(has_id() && !had_id) [[unlikely]] {
+    if(has_id() and not had_id) [[unlikely]] {
         log_debug("announcing id ${id}").arg("id", _id);
         message_view msg;
         _send(msgbus_id{"announceId"}, msg);
@@ -594,7 +592,7 @@ auto bridge::update() noexcept -> work_done {
 }
 //------------------------------------------------------------------------------
 auto bridge::is_done() const noexcept -> bool {
-    return no_connection_timeout() || !_recoverable_state();
+    return no_connection_timeout() or not _recoverable_state();
 }
 //------------------------------------------------------------------------------
 void bridge::say_bye() noexcept {
@@ -650,7 +648,7 @@ void bridge::cleanup() noexcept {
 void bridge::finish() noexcept {
     say_bye();
     timeout too_long{adjusted_duration(std::chrono::seconds{1})};
-    while(!too_long) {
+    while(not too_long) {
         update();
     }
     cleanup();

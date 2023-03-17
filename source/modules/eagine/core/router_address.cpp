@@ -13,8 +13,7 @@ import eagine.core.identifier;
 import eagine.core.container;
 import eagine.core.logging;
 import eagine.core.main_ctx;
-import <string>;
-import <vector>;
+import std;
 
 namespace eagine::msgbus {
 //------------------------------------------------------------------------------
@@ -44,7 +43,7 @@ public:
 
     /// @brief Indicates if this instance contains at least one address.
     explicit operator bool() const noexcept {
-        return !_addrs.empty();
+        return not _addrs.empty();
     }
 
     /// @brief Implicit conversion to string_view, returning the first address.

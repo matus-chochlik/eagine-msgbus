@@ -5,7 +5,11 @@
 #
 cmake_minimum_required(VERSION 3.16)
 
-project(EAGineMsgBus)
+project(
+	EAGineMsgBus
+	LANGUAGES CXX
+	HOMEPAGE_URL https://github.com/matus-chochlik/eagine-msgbus
+)
 if(NOT EAGINE_CORE_ROOT)
 	set(EAGINE_CORE_ROOT ${PROJECT_SOURCE_DIR}/submodules/eagine-core)
 endif()
@@ -18,6 +22,7 @@ add_subdirectory(submodules)
 include(EAGineCoreCommon)
 include(EAGineMsgBusResources)
 
+enable_testing()
 add_subdirectory(source)
 add_subdirectory(example)
 add_subdirectory(doc)

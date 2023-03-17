@@ -20,11 +20,34 @@ import :types;
 import :message;
 import :handler_map;
 import :endpoint;
-import <array>;
-import <type_traits>;
-import <vector>;
+import std;
 
 namespace eagine::msgbus {
+//------------------------------------------------------------------------------
+template <typename DecodedList>
+struct make_decoded_result;
+
+template <typename... Decoded>
+struct make_decoded_result<mp_list<Decoded...>>
+  : std::type_identity<std::variant<Decoded...>> {};
+
+template <typename Variant, typename... Decoded>
+struct merge_decode_results;
+
+template <typename... L, typename... R>
+struct merge_decode_results<std::variant<L...>, R...>
+  : make_decoded_result<mp_union_t<mp_list<L...>, mp_list<R...>>> {};
+
+export template <typename Base, typename... Decoded>
+struct get_decode_result
+  : merge_decode_results<
+      decltype(std::declval<Base>().decode(
+        std::declval<const message_context>(),
+        std::declval<const stored_message>())),
+      Decoded...> {};
+
+export template <typename Base, typename... Decoded>
+using decode_result_t = typename get_decode_result<Base, Decoded...>::type;
 //------------------------------------------------------------------------------
 /// @brief Base class for message bus subscribers.
 /// @ingroup msgbus
@@ -73,6 +96,11 @@ public:
     /// @see query_subscriptions_of
     void query_subscribers_of(const message_id sub_msg) noexcept {
         _endpoint.query_subscribers_of(sub_msg);
+    }
+
+    auto decode(const message_context&, const stored_message& message)
+      const noexcept -> std::variant<std::monostate> {
+        return {};
     }
 
     /// @brief Not copy assignable.
@@ -145,6 +173,43 @@ protected:
     subscriber_base(subscriber_base&& temp) noexcept
       : _endpoint{temp._endpoint} {}
 
+    template <typename Base, typename Unused>
+    auto decode_chain(
+      const message_context& msg_ctx,
+      const stored_message& message,
+      Base& base,
+      const Unused&) noexcept {
+        return base.decode(msg_ctx, message);
+    }
+
+    template <
+      typename Base,
+      typename Derived,
+      typename Decoded0,
+      typename... Decoded>
+    auto decode_chain(
+      const message_context& msg_ctx,
+      const stored_message& message,
+      Base& base,
+      Derived& obj,
+      std::optional<Decoded0> (Derived::*decoder)(
+        const message_context&,
+        const stored_message&) noexcept,
+      std::optional<Decoded> (Derived::*... decoders)(
+        const message_context&,
+        const stored_message&) noexcept) noexcept
+      -> decode_result_t<Base, Decoded0, Decoded...> {
+        decode_result_t<Base, Decoded0, Decoded...> result{};
+        if(auto decoded{(obj.*decoder)(msg_ctx, message)}) {
+            result = std::move(extract(decoded));
+        } else {
+            std::visit(
+              [&](auto&& decoded) -> void { result = std::move(decoded); },
+              decode_chain(msg_ctx, message, base, obj, decoders...));
+        }
+        return result;
+    }
+
     void _subscribe_to(
       const span<const handler_entry> msg_handlers) const noexcept {
         for(const auto& entry : msg_handlers) {
@@ -208,7 +273,7 @@ protected:
     }
 
     auto _process_one(const span<const handler_entry> msg_handlers) noexcept
-      -> bool {
+      -> work_done {
         for(const auto& entry : msg_handlers) {
             assert(entry.queue);
             const message_context msg_ctx{this->bus_node(), entry.msg_id};
@@ -220,14 +285,26 @@ protected:
     }
 
     auto _process_all(const span<const handler_entry> msg_handlers) noexcept
-      -> span_size_t {
-        span_size_t result{0};
+      -> work_done {
+        span_size_t done{0};
         for(const auto& entry : msg_handlers) {
             assert(entry.queue);
             const message_context msg_ctx{this->bus_node(), entry.msg_id};
-            result += extract(entry.queue).process_all(msg_ctx, entry.handler);
+            done += extract(entry.queue).process_all(msg_ctx, entry.handler);
         }
-        return result;
+        return done > 0;
+    }
+
+    auto _process_and_get_queues(
+      const span<const handler_entry> msg_handlers) noexcept
+      -> pointee_generator<const subscriber_message_queue*> {
+        for(const auto& entry : msg_handlers) {
+            assert(entry.queue);
+            const subscriber_message_queue smq{
+              this->bus_node(), entry.msg_id, *entry.queue, entry.handler};
+            smq.queue().just_process_all(smq.context(), smq.handler());
+            co_yield &smq;
+        }
     }
 
     void _setup_queues(span<handler_entry> msg_handlers) noexcept {
@@ -298,13 +375,20 @@ public:
     }
 
     /// @brief Processes one pending enqueued message.
-    auto process_one() noexcept -> bool {
+    auto process_one() noexcept -> work_done {
         return this->_process_one(view(_msg_handlers));
     }
 
     /// @brief Processes all pending enqueued messages.
-    auto process_all() noexcept -> span_size_t {
+    auto process_all() noexcept -> work_done {
         return this->_process_all(view(_msg_handlers));
+    }
+
+    /// @brief Gets a view of queue objects with received messages.
+    /// @see subscriber_message_queue
+    auto process_queues() noexcept
+      -> pointee_generator<const subscriber_message_queue*> {
+        return this->_process_and_get_queues(view(_msg_handlers));
     }
 
     /// @brief Sends messages to the bus saying which messages this can handle.
@@ -434,14 +518,21 @@ public:
 
     /// @brief Handles (and removes) one of pending received messages.
     /// @see process_all
-    auto process_one() noexcept -> bool {
+    auto process_one() noexcept -> work_done {
         return this->_process_one(view(_msg_handlers));
     }
 
     /// @brief Handles (and removes) all pending received messages.
     /// @see process_one
-    auto process_all() noexcept -> span_size_t {
+    auto process_all() noexcept -> work_done {
         return this->_process_all(view(_msg_handlers));
+    }
+
+    /// @brief Gets a view of queue objects with received messages.
+    /// @see subscriber_message_queue
+    auto process_queues() noexcept
+      -> pointee_generator<const subscriber_message_queue*> {
+        return this->_process_and_get_queues(view(_msg_handlers));
     }
 
     /// @brief Sends messages to the bus saying which messages this can handle.

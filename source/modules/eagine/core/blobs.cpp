@@ -19,10 +19,7 @@ import eagine.core.utility;
 import eagine.core.main_ctx;
 import :types;
 import :message;
-import <cstdint>;
-import <chrono>;
-import <vector>;
-import <type_traits>;
+import std;
 
 namespace eagine::msgbus {
 //------------------------------------------------------------------------------
@@ -100,6 +97,8 @@ export struct blob_stream_signals {
     signal<void(identifier_t blob_id) noexcept> blob_stream_cancelled;
 };
 //------------------------------------------------------------------------------
+export using blob_id_t = std::uint32_t;
+//------------------------------------------------------------------------------
 /// @brief Creates a data stream target I/O object.
 /// @ingroup msgbus
 /// @see blob_stream_signals
@@ -108,7 +107,7 @@ export struct blob_stream_signals {
 /// so that they appear in the order from the start to the end of the BLOB
 /// and emits the blob_stream_data_appended signal on a blob_stream_signals.
 export auto make_target_blob_stream_io(
-  identifier_t blob_id,
+  blob_id_t blob_id,
   blob_stream_signals& sigs,
   memory::buffer_pool& buffers) -> std::unique_ptr<target_blob_io>;
 //------------------------------------------------------------------------------
@@ -120,12 +119,10 @@ export auto make_target_blob_stream_io(
 /// specified size and then emits the blob_stream_data_appended signal on a
 /// blob_stream_signals once.
 export auto make_target_blob_chunk_io(
-  identifier_t blob_id,
+  blob_id_t blob_id,
   span_size_t chunk_size,
   blob_stream_signals& sigs,
   memory::buffer_pool& buffers) -> std::unique_ptr<target_blob_io>;
-//------------------------------------------------------------------------------
-export using blob_id_t = std::uint32_t;
 //------------------------------------------------------------------------------
 struct pending_blob {
     message_id msg_id{};
@@ -136,6 +133,7 @@ struct pending_blob {
     double_buffer<std::vector<std::tuple<span_size_t, span_size_t>>>
       fragment_parts{};
     std::chrono::steady_clock::time_point latest_update{};
+    timeout linger_time{std::chrono::seconds{5}};
     timeout max_time{};
     blob_id_t source_blob_id{0U};
     blob_id_t target_blob_id{0U};
@@ -216,7 +214,9 @@ public:
     using send_handler =
       callable_ref<bool(const message_id, const message_view&) noexcept>;
 
-    auto update(const send_handler do_send) noexcept -> work_done;
+    auto update(
+      const send_handler do_send,
+      const span_size_t max_message_size) noexcept -> work_done;
 
     auto push_outgoing(
       const message_id msg_id,
@@ -309,7 +309,7 @@ public:
     auto fetch_all(const fetch_handler) noexcept -> span_size_t;
 
     auto has_outgoing() const noexcept -> bool {
-        return !_outgoing.empty();
+        return not _outgoing.empty();
     }
     auto process_outgoing(
       const send_handler,

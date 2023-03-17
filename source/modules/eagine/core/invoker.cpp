@@ -21,38 +21,9 @@ import :future;
 import :handler_map;
 import :message;
 import :endpoint;
-import <array>;
-import <tuple>;
+import std;
 
 namespace eagine::msgbus {
-//------------------------------------------------------------------------------
-export class result_context {
-public:
-    result_context(
-      const message_context& msg_ctx,
-      const identifier_t src_id,
-      const message_sequence_t invc_id) noexcept
-      : _msg_ctx{msg_ctx}
-      , _source_id{src_id}
-      , _invocation_id{invc_id} {}
-
-    auto msg_context() const noexcept -> const message_context& {
-        return _msg_ctx;
-    }
-
-    auto source_id() const noexcept {
-        return _source_id;
-    }
-
-    auto invocation_id() const noexcept {
-        return _invocation_id;
-    }
-
-private:
-    const message_context& _msg_ctx;
-    const identifier_t _source_id{0U};
-    const message_sequence_t _invocation_id{0};
-};
 //------------------------------------------------------------------------------
 export template <
   typename Result,
@@ -70,11 +41,9 @@ public:
         _source.reset(response.content());
         Deserializer read_backend(_source);
 
-        if(response.has_serializer_id(read_backend.type_id())) {
-            const auto errors{deserialize(result, read_backend)};
-            if(!errors) {
-                const result_context res_ctx{
-                  msg_ctx, response.source_id, response.sequence_no};
+        if(response.has_serializer_id(read_backend.type_id())) [[likely]] {
+            if(deserialize(result, read_backend)) [[likely]] {
+                const result_context res_ctx{msg_ctx, response};
                 _callback(res_ctx, std::move(result));
             }
         }
@@ -97,8 +66,7 @@ public:
     auto fulfill_by(
       const message_context& msg_ctx,
       const stored_message& response) noexcept -> bool {
-        const result_context res_ctx{
-          msg_ctx, response.source_id, response.sequence_no};
+        const result_context res_ctx{msg_ctx, response};
         _callback();
         return true;
     }
@@ -169,8 +137,7 @@ public:
         _sink.reset(buffer);
         Serializer write_backend(_sink);
 
-        const auto errors = serialize(tupl, write_backend);
-        if(!errors) {
+        if(serialize(tupl, write_backend)) [[likely]] {
             message_view message{_sink.done()};
             message.set_serializer_id(write_backend.type_id());
             message.set_target_id(target_id);
@@ -219,9 +186,8 @@ public:
         _source.reset(message.content());
         Deserializer read_backend(_source);
 
-        if(message.has_serializer_id(read_backend.type_id())) {
-            const auto errors{deserialize(result, read_backend)};
-            if(!errors) {
+        if(message.has_serializer_id(read_backend.type_id())) [[likely]] {
+            if(deserialize(result, read_backend)) [[likely]] {
                 _results.fulfill(invocation_id, result);
             }
         }
@@ -289,8 +255,7 @@ public:
         block_data_sink sink(buffer);
         Serializer write_backend(sink);
 
-        const auto errors = serialize(tupl, write_backend);
-        if(!errors) {
+        if(serialize(tupl, write_backend)) {
             message_view message{sink.done()};
             message.set_serializer_id(write_backend.type_id());
             message.set_target_id(target_id);

@@ -7,13 +7,7 @@
 import eagine.core;
 import eagine.sslplus;
 import eagine.msgbus;
-import <algorithm>;
-import <chrono>;
-import <cmath>;
-import <cstdint>;
-import <map>;
-import <thread>;
-import <vector>;
+import std;
 
 namespace eagine {
 namespace msgbus {
@@ -118,38 +112,39 @@ public:
     }
 
     void on_subscribed(
-      const subscriber_info& info,
-      const message_id sub_msg) noexcept {
-        if(sub_msg == this->ping_msg_id()) {
-            auto& stats = _targets[info.endpoint_id];
-            if(!stats.is_active) {
+      const result_context&,
+      const subscriber_subscribed& sub) noexcept {
+        if(sub.message_type == this->ping_msg_id()) {
+            auto& stats = _targets[sub.source.endpoint_id];
+            if(not stats.is_active) {
                 stats.is_active = true;
                 log_info("new pingable ${id} appeared")
-                  .arg("id", info.endpoint_id);
+                  .arg("id", sub.source.endpoint_id);
             }
         }
     }
 
     void on_unsubscribed(
-      const subscriber_info& info,
-      const message_id sub_msg) noexcept {
-        if(sub_msg == this->ping_msg_id()) {
-            auto& state = _targets[info.endpoint_id];
+      const result_context&,
+      const subscriber_unsubscribed& sub) noexcept {
+        if(sub.message_type == this->ping_msg_id()) {
+            auto& state = _targets[sub.source.endpoint_id];
             if(state.is_active) {
                 state.is_active = false;
                 log_info("pingable ${id} disappeared")
-                  .arg("id", info.endpoint_id);
+                  .arg("id", sub.source.endpoint_id);
             }
         }
     }
 
     void on_not_subscribed(
-      const subscriber_info& info,
-      const message_id sub_msg) noexcept {
-        if(sub_msg == this->ping_msg_id()) {
-            auto& state = _targets[info.endpoint_id];
+      const result_context&,
+      const subscriber_not_subscribed& sub) noexcept {
+        if(sub.message_type == this->ping_msg_id()) {
+            auto& state = _targets[sub.source.endpoint_id];
             state.is_active = false;
-            log_info("target ${id} is not pingable").arg("id", info.endpoint_id);
+            log_info("target ${id} is not pingable")
+              .arg("id", sub.source.endpoint_id);
         }
     }
 
@@ -174,15 +169,13 @@ public:
     }
 
     void on_ping_response(
-      const identifier_t pinger_id,
-      const message_sequence_t,
-      const std::chrono::microseconds age,
-      const verification_bits) noexcept {
-        auto& state = _targets[pinger_id];
+      const result_context&,
+      const ping_response& pong) noexcept {
+        auto& state = _targets[pong.pingable_id];
         state.responded++;
-        state.min_time = std::min(state.min_time, age);
-        state.max_time = std::max(state.max_time, age);
-        state.sum_time += age;
+        state.min_time = std::min(state.min_time, pong.age);
+        state.max_time = std::max(state.max_time, pong.age);
+        state.sum_time += pong.age;
         state.finish = std::chrono::steady_clock::now();
         if((++_rcvd % _mod) == 0) [[unlikely]] {
             const auto now{std::chrono::steady_clock::now()};
@@ -207,11 +200,8 @@ public:
         }
     }
 
-    void on_ping_timeout(
-      const identifier_t pinger_id,
-      const message_sequence_t,
-      const std::chrono::microseconds) noexcept {
-        auto& state = _targets[pinger_id];
+    void on_ping_timeout(const ping_timeout& fail) noexcept {
+        auto& state = _targets[fail.pingable_id];
         state.timeouted++;
         if((++_tout % _mod) == 0) [[unlikely]] {
             log_info("${tout} pongs expired").arg("tout", _tout);
@@ -219,7 +209,8 @@ public:
     }
 
     auto is_done() const noexcept -> bool {
-        return !(((_rcvd + _tout + _mod) < _max) || this->has_pending_pings());
+        return not(
+          ((_rcvd + _tout + _mod) < _max) or this->has_pending_pings());
     }
 
     auto do_ping() -> work_done {
@@ -228,7 +219,7 @@ public:
             log_info("searching for pingable nodes");
             query_pingables();
         }
-        if(!_targets.empty()) {
+        if(not _targets.empty()) {
             for(auto& [pingable_id, entry] : _targets) {
                 if(_rcvd < _max) {
                     if(entry.is_active) {
@@ -245,7 +236,7 @@ public:
                             }
 
                             if(entry.should_check_info) [[unlikely]] {
-                                if(!entry.host_id) {
+                                if(not entry.host_id) {
                                     this->query_host_id(pingable_id);
                                 }
                                 if(entry.hostname.empty()) {
@@ -268,7 +259,7 @@ public:
         if(_can_ping) [[likely]] {
             something_done(do_ping());
         }
-        something_done(base::process_all() > 0);
+        something_done(base::process_all());
         return something_done;
     }
 
@@ -332,9 +323,9 @@ auto main(main_ctx& ctx) -> int {
 
     resetting_timeout do_chart_stats{std::chrono::seconds{15}, nothing};
 
-    while(!the_pinger.is_done() || interrupted) {
+    while(not the_pinger.is_done() or interrupted) {
         the_pinger.process_all();
-        if(!the_pinger.update()) {
+        if(not the_pinger.update()) {
             std::this_thread::sleep_for(std::chrono::milliseconds{1});
             if(do_chart_stats) {
                 the_pinger.log_chart_sample(

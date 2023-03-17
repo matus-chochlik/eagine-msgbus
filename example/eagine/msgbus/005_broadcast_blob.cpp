@@ -8,8 +8,7 @@
 import eagine.core;
 import eagine.sslplus;
 import eagine.msgbus;
-import <chrono>;
-import <thread>;
+import std;
 
 namespace eagine {
 
@@ -37,7 +36,7 @@ auto main(main_ctx& ctx) -> int {
     }
 
     timeout done{std::chrono::seconds{3}};
-    while(!done) {
+    while(not done) {
         if(bus.update()) {
             done.reset();
         } else {

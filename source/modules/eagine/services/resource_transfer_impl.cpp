@@ -23,10 +23,7 @@ import eagine.core.logging;
 import eagine.core.math;
 import eagine.core.main_ctx;
 import eagine.msgbus.core;
-import <fstream>;
-import <random>;
-import <vector>;
-import <tuple>;
+import std;
 
 namespace eagine::msgbus {
 //------------------------------------------------------------------------------
@@ -170,13 +167,11 @@ public:
 
     auto update() noexcept -> work_done final {
         auto& bus = base.bus_node();
-        some_true something_done{_blobs.update(bus.post_callable())};
+        some_true something_done{
+          _blobs.update(bus.post_callable(), min_connection_data_size)};
         if(_should_send_outgoing) {
-            const auto opt_max_size = bus.max_data_size();
-            if(opt_max_size) [[likely]] {
-                something_done(_blobs.process_outgoing(
-                  bus.post_callable(), extract(opt_max_size), 2));
-            }
+            something_done(_blobs.process_outgoing(
+              bus.post_callable(), min_connection_data_size, 2));
             _should_send_outgoing.reset();
         }
 
@@ -256,7 +251,7 @@ void resource_server_impl::notify_resource_available(
 
     if(const auto serialized{default_serialize(locator, cover(buffer))})
       [[likely]] {
-        const auto msg_id{message_id{"eagiRsrce", "available"}};
+        const auto msg_id{message_id{"eagiRsrces", "available"}};
         message_view message{extract(serialized)};
         message.set_target_id(broadcast_endpoint_id());
         base.bus_node().post(msg_id, message);
@@ -298,14 +293,14 @@ auto resource_server_impl::has_resource(
         return true;
     } else if(has_res.is(indeterminate)) {
         if(locator.has_scheme("eagires")) {
-            return locator.has_path("/zeroes") || locator.has_path("/ones") ||
+            return locator.has_path("/zeroes") or locator.has_path("/ones") or
                    locator.has_path("/random");
         } else if(locator.has_scheme("file")) {
             const auto file_path = get_file_path(locator);
             if(is_contained(file_path)) {
                 try {
                     const auto stat = std::filesystem::status(file_path);
-                    return exists(stat) && !is_directory(stat);
+                    return exists(stat) and not is_directory(stat);
                 } catch(...) {
                 }
             }
@@ -321,7 +316,7 @@ auto resource_server_impl::get_resource(
   const message_priority priority) -> std::
   tuple<std::unique_ptr<source_blob_io>, std::chrono::seconds, message_priority> {
     auto read_io = driver.get_resource_io(endpoint_id, locator);
-    if(!read_io) {
+    if(not read_io) {
         if(locator.has_scheme("eagires")) {
             if(const auto count{locator.argument("count")}) {
                 if(const auto bytes{from_string<span_size_t>(extract(count))}) {
@@ -452,7 +447,7 @@ public:
           this, discovery.subscribed);
         connect<&resource_manipulator_impl::_handle_unsubscribed>(
           this, discovery.unsubscribed);
-        connect<&resource_manipulator_impl::_handle_unsubscribed>(
+        connect<&resource_manipulator_impl::_handle_not_subscribed>(
           this, discovery.not_subscribed);
         connect<&resource_manipulator_impl::_handle_host_id_received>(
           this, host_info.host_id_received);
@@ -495,7 +490,7 @@ public:
         base.add_method(
           this,
           message_map<
-            "eagiRsrce",
+            "eagiRsrces",
             "available",
             &resource_manipulator_impl::_handle_resource_available>{});
     }
@@ -503,7 +498,8 @@ public:
     auto update() noexcept -> work_done final {
         some_true something_done{};
         something_done(_blobs.handle_complete() > 0);
-        something_done(_blobs.update(base.bus_node().post_callable()));
+        something_done(_blobs.update(
+          base.bus_node().post_callable(), min_connection_data_size));
 
         if(_search_servers) {
             base.bus_node().query_subscribers_of(
@@ -590,8 +586,10 @@ public:
     }
 
 private:
-    void _handle_alive(const subscriber_info& sub_info) noexcept {
-        const auto pos = _server_endpoints.find(sub_info.endpoint_id);
+    void _handle_alive(
+      const result_context&,
+      const subscriber_alive& alive) noexcept {
+        const auto pos{_server_endpoints.find(alive.source.endpoint_id)};
         if(pos != _server_endpoints.end()) {
             auto& svr_info = std::get<1>(*pos);
             svr_info.last_report_time = std::chrono::steady_clock::now();
@@ -599,13 +597,13 @@ private:
     }
 
     void _handle_subscribed(
-      const subscriber_info& sub_info,
-      const message_id msg_id) noexcept {
-        if(msg_id == message_id{"eagiRsrces", "getContent"}) {
-            auto spos = _server_endpoints.find(sub_info.endpoint_id);
+      const result_context&,
+      const subscriber_subscribed& sub) noexcept {
+        if(sub.message_type.is("eagiRsrces", "getContent")) {
+            auto spos{_server_endpoints.find(sub.source.endpoint_id)};
             if(spos == _server_endpoints.end()) {
-                spos = _server_endpoints.emplace(sub_info.endpoint_id).first;
-                signals.resource_server_appeared(sub_info.endpoint_id);
+                spos = _server_endpoints.emplace(sub.source.endpoint_id).first;
+                signals.resource_server_appeared(sub.source.endpoint_id);
             }
             auto& svr_info = std::get<1>(*spos);
             svr_info.last_report_time = std::chrono::steady_clock::now();
@@ -632,10 +630,18 @@ private:
     }
 
     void _handle_unsubscribed(
-      const subscriber_info& sub_info,
-      const message_id msg_id) noexcept {
-        if(msg_id == message_id{"eagiRsrces", "getContent"}) {
-            _remove_server(sub_info.endpoint_id);
+      const result_context&,
+      const subscriber_unsubscribed& sub) noexcept {
+        if(sub.message_type.is("eagiRsrces", "getContent")) {
+            _remove_server(sub.source.endpoint_id);
+        }
+    }
+
+    void _handle_not_subscribed(
+      const result_context&,
+      const subscriber_not_subscribed& sub) noexcept {
+        if(sub.message_type.is("eagiRsrces", "getContent")) {
+            _remove_server(sub.source.endpoint_id);
         }
     }
 

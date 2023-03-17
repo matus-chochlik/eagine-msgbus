@@ -21,8 +21,7 @@ import eagine.core.utility;
 import eagine.core.valid_if;
 import eagine.core.runtime;
 import eagine.core.main_ctx;
-import <set>;
-import <string>;
+import std;
 
 namespace eagine::msgbus {
 //------------------------------------------------------------------------------
@@ -126,7 +125,7 @@ inline auto remote_instance::_impl() const noexcept
 //------------------------------------------------------------------------------
 inline auto remote_instance::_impl() noexcept -> remote_instance_impl* {
     try {
-        if(!_pimpl) [[unlikely]] {
+        if(not _pimpl) [[unlikely]] {
             _pimpl = std::make_shared<remote_instance_impl>();
         }
         return _pimpl.get();
@@ -137,7 +136,7 @@ inline auto remote_instance::_impl() noexcept -> remote_instance_impl* {
 //------------------------------------------------------------------------------
 auto remote_instance::is_alive() const noexcept -> bool {
     if(auto impl{_impl()}) {
-        return !extract(impl).is_alive.is_expired();
+        return not extract(impl).is_alive.is_expired();
     }
     return false;
 }
@@ -162,7 +161,7 @@ auto remote_instance::application_name() const noexcept
 }
 //------------------------------------------------------------------------------
 auto remote_instance::compiler() const noexcept
-  -> optional_reference_wrapper<const compiler_info> {
+  -> optional_reference<const compiler_info> {
     if(auto impl{_impl()}) {
         auto& i = extract(impl);
         if(i.cmplr_info) {
@@ -173,7 +172,7 @@ auto remote_instance::compiler() const noexcept
 }
 //------------------------------------------------------------------------------
 auto remote_instance::build_version() const noexcept
-  -> optional_reference_wrapper<const version_info> {
+  -> optional_reference<const version_info> {
     if(auto impl{_impl()}) {
         auto& i = extract(impl);
         if(i.ver_info) {
@@ -219,7 +218,7 @@ auto remote_instance_state::add_change(
 auto remote_instance_state::notice_alive() noexcept -> remote_instance_state& {
     if(auto impl{_impl()}) {
         auto& i = extract(impl);
-        if(!i.is_alive) {
+        if(not i.is_alive) {
             i.changes |= remote_instance_change::started_responding;
         }
         i.is_alive.reset();
@@ -244,7 +243,7 @@ auto remote_instance_state::set_app_name(
     if(auto impl{_impl()}) {
         auto& i = extract(impl);
         auto app_name = _tracker.cached(new_app_name);
-        if(!are_equal(app_name, i.app_name)) {
+        if(not are_equal(app_name, i.app_name)) {
             i.app_name = app_name;
             i.changes |= remote_instance_change::application_info;
         }
@@ -256,7 +255,7 @@ auto remote_instance_state::assign(compiler_info info) noexcept
   -> remote_instance_state& {
     if(auto impl{_impl()}) {
         auto& i = extract(impl);
-        if(!i.cmplr_info) {
+        if(not i.cmplr_info) {
             i.cmplr_info = {std::move(info), true};
             i.changes |= remote_instance_change::build_info;
         }
@@ -268,7 +267,7 @@ auto remote_instance_state::assign(version_info info) noexcept
   -> remote_instance_state& {
     if(auto impl{_impl()}) {
         auto& i = extract(impl);
-        if(!i.ver_info) {
+        if(not i.ver_info) {
             i.ver_info = {std::move(info), true};
             i.changes |= remote_instance_change::build_info;
         }
@@ -284,7 +283,7 @@ inline auto remote_host::_impl() const noexcept -> const remote_host_impl* {
 //------------------------------------------------------------------------------
 inline auto remote_host::_impl() noexcept -> remote_host_impl* {
     try {
-        if(!_pimpl) [[unlikely]] {
+        if(not _pimpl) [[unlikely]] {
             _pimpl = std::make_shared<remote_host_impl>();
         }
         return _pimpl.get();
@@ -326,7 +325,7 @@ auto remote_host_state::add_change(const remote_host_change change) noexcept
 //------------------------------------------------------------------------------
 auto remote_host::is_alive() const noexcept -> bool {
     if(auto impl{_impl()}) {
-        return !extract(impl).is_alive.is_expired();
+        return not extract(impl).is_alive.is_expired();
     }
     return false;
 }
@@ -485,7 +484,7 @@ inline auto remote_node::_impl() const noexcept -> const remote_node_impl* {
 //------------------------------------------------------------------------------
 inline auto remote_node::_impl() noexcept -> remote_node_impl* {
     try {
-        if(!_pimpl) [[unlikely]] {
+        if(not _pimpl) [[unlikely]] {
             _pimpl = std::make_shared<remote_node_impl>();
         }
         return _pimpl.get();
@@ -512,8 +511,9 @@ auto remote_node::kind() const noexcept -> node_kind {
 auto remote_node::has_endpoint_info() const noexcept -> bool {
     if(auto impl{_impl()}) {
         auto& i = extract(impl);
-        return !i.is_router_node.is(indeterminate) &&
-               !i.is_bridge_node.is(indeterminate) && !i.display_name.empty();
+        return not i.is_router_node.is(indeterminate) and
+               not i.is_bridge_node.is(indeterminate) and
+               not i.display_name.empty();
     }
     return false;
 }
@@ -538,7 +538,7 @@ auto remote_node::is_router_node() const noexcept -> tribool {
     if(auto impl{_impl()}) {
         auto& i = extract(impl);
         const auto k = i.kind;
-        if((k == node_kind::router) || (k == node_kind::bridge)) {
+        if((k == node_kind::router) or (k == node_kind::bridge)) {
             return false;
         }
         return i.is_router_node;
@@ -550,7 +550,7 @@ auto remote_node::is_bridge_node() const noexcept -> tribool {
     if(auto impl{_impl()}) {
         auto& i = extract(impl);
         const auto k = i.kind;
-        if((k == node_kind::router) || (k == node_kind::bridge)) {
+        if((k == node_kind::router) or (k == node_kind::bridge)) {
             return false;
         }
         return i.is_bridge_node;
@@ -658,14 +658,14 @@ auto remote_node::subscribes_to(const message_id msg_id) const noexcept
 }
 //------------------------------------------------------------------------------
 auto remote_node::can_query_system_info() const noexcept -> tribool {
-    return subscribes_to(message_id{"eagiSysInf", "qryStats"}) ||
+    return subscribes_to(message_id{"eagiSysInf", "qryStats"}) or
            subscribes_to(message_id{"eagiSysInf", "qrySensors"});
 }
 //------------------------------------------------------------------------------
 auto remote_node::is_pingable() const noexcept -> tribool {
     if(auto impl{_impl()}) {
         auto& i = extract(impl);
-        if(i.kind == node_kind::router || i.kind == node_kind::bridge) {
+        if(i.kind == node_kind::router or i.kind == node_kind::bridge) {
             return true;
         }
         return extract(impl).get_sub(msgbus_id{"ping"});
@@ -809,12 +809,12 @@ auto remote_node_state::assign(const endpoint_info& info) noexcept
             i.changes |= remote_node_change::kind;
         }
         auto display_name = _tracker.cached(info.display_name);
-        if(!are_equal(display_name, i.display_name)) {
+        if(not are_equal(display_name, i.display_name)) {
             i.display_name = display_name;
             i.changes |= remote_node_change::endpoint_info;
         }
         auto description = _tracker.cached(info.description);
-        if(!are_equal(description, i.description)) {
+        if(not are_equal(description, i.description)) {
             i.description = description;
             i.changes |= remote_node_change::endpoint_info;
         }
@@ -889,7 +889,7 @@ auto remote_node_state::add_subscription(const message_id msg_id) noexcept
     if(auto impl{_impl()}) {
         auto& i = extract(impl);
         auto& s = i.get_sub(msg_id);
-        if(!s.is(true)) {
+        if(not s.is(true)) {
             s = true;
             i.changes |= remote_node_change::methods_added;
         }
@@ -902,7 +902,7 @@ auto remote_node_state::remove_subscription(const message_id msg_id) noexcept
     if(auto impl{_impl()}) {
         auto& i = extract(impl);
         auto& s = i.get_sub(msg_id);
-        if(!s.is(false)) {
+        if(not s.is(false)) {
             s = false;
             i.changes |= remote_node_change::methods_removed;
         }
@@ -1118,7 +1118,7 @@ inline auto node_connection::_impl() const noexcept
 //------------------------------------------------------------------------------
 inline auto node_connection::_impl() noexcept -> node_connection_impl* {
     try {
-        if(!_pimpl) [[unlikely]] {
+        if(not _pimpl) [[unlikely]] {
             _pimpl = std::make_shared<node_connection_impl>();
         }
         return _pimpl.get();

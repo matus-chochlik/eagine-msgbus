@@ -14,7 +14,7 @@ import eagine.core.valid_if;
 import eagine.core.utility;
 import :types;
 import :message;
-import <memory>;
+import std;
 
 namespace eagine::msgbus {
 //------------------------------------------------------------------------------
@@ -37,7 +37,7 @@ struct connection_info : interface<connection_info> {
 /// @ingroup msgbus
 /// @see connection_user
 /// @see acceptor
-struct connection : connection_info {
+export struct connection : connection_info {
 
     /// @brief Alias for fetch handler callable reference type.
     using fetch_handler = callable_ref<
@@ -95,7 +95,7 @@ struct connection_user : interface<connection_user> {
 /// @ingroup msgbus
 /// @see acceptor_user
 /// @see connection
-struct acceptor : connection_info {
+export struct acceptor : connection_info {
 
     /// @brief Alias for accepted connection handler callable reference type.
     using accept_handler =
@@ -165,6 +165,16 @@ struct connection_factory : connection_info {
 /// @brief Interface for message bus services
 /// @ingroup msgbus
 struct service_interface : interface<service_interface> {
+
+    /// @brief Indicates if the service endpoint has an assigned id.
+    virtual auto has_id() const noexcept -> bool = 0;
+
+    /// @brief Returns a view of message queues registered with this service.
+    virtual auto process_queues() noexcept
+      -> pointee_generator<const subscriber_message_queue*> = 0;
+
+    /// @brief Does an iteration update of the service.
+    virtual auto update_only() noexcept -> work_done = 0;
 
     /// @brief Does an iteration update and processes all received messages.
     virtual auto update_and_process_all() noexcept -> work_done = 0;

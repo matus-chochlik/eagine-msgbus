@@ -7,8 +7,7 @@
 import eagine.core;
 import eagine.sslplus;
 import eagine.msgbus;
-import <thread>;
-import <cstdint>;
+import std;
 
 namespace eagine {
 //------------------------------------------------------------------------------
@@ -54,7 +53,7 @@ public:
     }
 
     auto is_shut_down() const noexcept {
-        return _do_shutdown && _shutdown_timeout;
+        return _do_shutdown and _shutdown_timeout;
     }
 
 private:
@@ -77,17 +76,16 @@ private:
     }
 
     void on_shutdown(
-      const std::chrono::milliseconds age,
-      const identifier_t source_id,
-      const verification_bits verified) noexcept {
+      const result_context&,
+      const shutdown_request& req) noexcept {
         log_info("received ${age} old shutdown request from ${source}")
-          .arg("age", age)
-          .arg("source", source_id)
-          .arg("verified", verified);
+          .arg("age", req.age)
+          .arg("source", req.source_id)
+          .arg("verified", req.verified);
 
-        if(!_shutdown_ignore) {
-            if(age <= _shutdown_max_age) {
-                if(!_shutdown_verify || _shutdown_verified(verified)) {
+        if(not _shutdown_ignore) {
+            if(req.age <= _shutdown_max_age) {
+                if(not _shutdown_verify or _shutdown_verified(req.verified)) {
                     log_info("request is valid, shutting down");
                     _do_shutdown = true;
                     _shutdown_timeout.reset();
@@ -136,7 +134,7 @@ auto main(main_ctx& ctx) -> int {
         auto& wd = ctx.watchdog();
         wd.declare_initialized();
 
-        while(!(interrupted || node.is_shut_down())) [[likely]] {
+        while(not(interrupted or node.is_shut_down())) [[likely]] {
             some_true something_done{};
             something_done(router.update(8));
             something_done(node.update());

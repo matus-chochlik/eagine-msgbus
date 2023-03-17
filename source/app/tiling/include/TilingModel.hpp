@@ -27,6 +27,7 @@ public:
 
     auto getWidth() const noexcept -> int;
     auto getHeight() const noexcept -> int;
+    auto getTilingSize() const noexcept -> QSize;
     auto getCellChar(int row, int column) const noexcept -> char;
     auto getCell(int row, int column) const noexcept -> QVariant;
 
@@ -48,7 +49,9 @@ signals:
 private:
     TilingBackend& _backend;
 
-    void onHelperAppeared(eagine::identifier_t) noexcept;
+    void onHelperAppeared(
+      const eagine::msgbus::result_context&,
+      const eagine::msgbus::sudoku_helper_appeared&) noexcept;
 
     void onFragmentAdded(
       eagine::identifier_t,
@@ -56,9 +59,7 @@ private:
       const eagine::msgbus::sudoku_solver_key&) noexcept;
 
     void onQueueLengthChanged(
-      unsigned rank,
-      std::size_t keyCount,
-      std::size_t boardCount) noexcept;
+      const eagine::msgbus::sudoku_board_queue_change&) noexcept;
 
     eagine::msgbus::endpoint _bus;
 

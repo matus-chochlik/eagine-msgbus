@@ -6,7 +6,7 @@
 
 import eagine.core;
 import eagine.msgbus;
-import <algorithm>;
+import std;
 #include "TilingModel.hpp"
 #include "TilingBackend.hpp"
 #include <QVariant>
@@ -40,7 +40,7 @@ void TilingModel::initialize() {
 }
 //------------------------------------------------------------------------------
 void TilingModel::reinitialize(int w, int h) {
-    if((_width != w) || (_height != h)) {
+    if((_width != w) or (_height != h)) {
         _width = w;
         _height = h;
         _cellCache.resize(eagine::std_size(w * h));
@@ -58,13 +58,18 @@ void TilingModel::reinitialize(int w, int h) {
 }
 //------------------------------------------------------------------------------
 void TilingModel::update() {
-    if(!_tiling.tiling_complete()) {
+    if(not _tiling.tiling_complete()) {
         _tiling.process_all();
         _tiling.update();
         if(_tiling.solution_timeouted(eagine::unsigned_constant<4>{})) {
             reinitialize(_width, _height);
         }
     }
+}
+//------------------------------------------------------------------------------
+auto TilingModel::getTilingSize() const noexcept -> QSize {
+    const auto [x, y] = _tiling.tiling_size(eagine::unsigned_constant<4>{});
+    return QSize{x, y};
 }
 //------------------------------------------------------------------------------
 auto TilingModel::getWidth() const noexcept -> int {
@@ -123,18 +128,22 @@ auto TilingModel::getCell(int row, int column) const noexcept -> QVariant {
     return {};
 }
 //------------------------------------------------------------------------------
-void TilingModel::onHelperAppeared(eagine::identifier_t helperId) noexcept {
-    _backend.onHelperAppeared(helperId);
+void TilingModel::onHelperAppeared(
+  const eagine::msgbus::result_context&,
+  const eagine::msgbus::sudoku_helper_appeared& appeared) noexcept {
+    _backend.onHelperAppeared(appeared.helper_id);
 }
 //------------------------------------------------------------------------------
 void TilingModel::onFragmentAdded(
   eagine::identifier_t helperId,
   const eagine::msgbus::sudoku_tiles<4>& tiles,
   const eagine::msgbus::sudoku_solver_key& fragCoord) noexcept {
+    const auto x_y{std::get<std::tuple<int, int>>(fragCoord)};
+
+    _backend.onTileSolved(std::get<0>(x_y), std::get<1>(x_y));
     _backend.onHelperContributed(helperId);
 
-    const auto fragment =
-      tiles.get_fragment(std::get<std::tuple<int, int>>(fragCoord));
+    const auto fragment = tiles.get_fragment(x_y);
     int rmin = _width, rmax = 0;
     int cmin = _height, cmax = 0;
     fragment.for_each_cell(
@@ -156,13 +165,11 @@ void TilingModel::onFragmentAdded(
 }
 //------------------------------------------------------------------------------
 void TilingModel::onQueueLengthChanged(
-  unsigned rank,
-  std::size_t keyCount,
-  std::size_t boardCount) noexcept {
-    if(rank == 4) [[likely]] {
-        if((_keyCount != keyCount) || (_boardCount != boardCount)) {
-            _keyCount = keyCount;
-            _boardCount = boardCount;
+  const eagine::msgbus::sudoku_board_queue_change& change) noexcept {
+    if(change.rank == 4) [[likely]] {
+        if((_keyCount != change.key_count) or (_boardCount != change.board_count)) {
+            _keyCount = change.key_count;
+            _boardCount = change.board_count;
             emit queueLengthChanged();
         }
     }

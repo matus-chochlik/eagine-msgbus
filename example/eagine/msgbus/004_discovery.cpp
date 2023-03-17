@@ -8,7 +8,7 @@
 import eagine.core;
 import eagine.sslplus;
 import eagine.msgbus;
-import <thread>;
+import std;
 
 namespace eagine {
 namespace msgbus {
@@ -31,39 +31,40 @@ public:
         connect<&subscription_logger::on_shutdown>(this, shutdown_requested);
     }
 
-    void is_alive(const subscriber_info& info) noexcept {
+    void is_alive(
+      const result_context&,
+      const subscriber_alive& alive) noexcept {
         log_info("endpoint ${subscrbr} is alive")
-          .arg("subscrbr", info.endpoint_id);
+          .arg("subscrbr", alive.source.endpoint_id);
     }
 
     void on_subscribed(
-      const subscriber_info& info,
-      const message_id sub_msg) noexcept {
+      const result_context&,
+      const subscriber_subscribed& sub) noexcept {
         log_info("endpoint ${subscrbr} subscribed to ${message}")
-          .arg("subscrbr", info.endpoint_id)
-          .arg("message", sub_msg);
-        this->bus_node().query_certificate_of(info.endpoint_id);
+          .arg("subscrbr", sub.source.endpoint_id)
+          .arg("message", sub.message_type);
+        this->bus_node().query_certificate_of(sub.source.endpoint_id);
     }
 
     void on_unsubscribed(
-      const subscriber_info& info,
-      const message_id sub_msg) noexcept {
+      const result_context&,
+      const subscriber_unsubscribed& sub) noexcept {
         log_info("endpoint ${subscrbr} unsubscribed from ${message}")
-          .arg("subscrbr", info.endpoint_id)
-          .arg("message", sub_msg);
+          .arg("subscrbr", sub.source.endpoint_id)
+          .arg("message", sub.message_type);
     }
 
     void on_shutdown(
-      const std::chrono::milliseconds age,
-      const identifier_t subscriber_id,
-      const verification_bits verified) noexcept {
+      const result_context&,
+      const shutdown_request& req) noexcept {
         log_info("received ${age} old shutdown request from ${subscrbr}")
-          .arg("age", age)
-          .arg("subscrbr", subscriber_id)
-          .arg("verified", verified);
+          .arg("age", req.age)
+          .arg("subscrbr", req.source_id)
+          .arg("verified", req.verified);
 
         // TODO: verification
-        if(age < std::chrono::seconds(2)) {
+        if(req.age < std::chrono::seconds(2)) {
             _done = true;
         }
     }
@@ -91,11 +92,9 @@ auto main(main_ctx& ctx) -> int {
     msgbus::setup_connectors(ctx, sub_log);
     timeout waited_too_long{std::chrono::minutes(1)};
 
-    while(!(interrupted || sub_log.is_done() || waited_too_long)) {
+    while(not(interrupted or sub_log.is_done() or waited_too_long)) {
         sub_log.update();
-        if(!sub_log.process_all()) {
-            std::this_thread::sleep_for(std::chrono::milliseconds(250));
-        }
+        sub_log.process_all().or_sleep_for(std::chrono::milliseconds(250));
     }
 
     return 0;

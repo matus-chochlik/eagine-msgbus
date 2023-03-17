@@ -17,8 +17,7 @@ import eagine.core.main_ctx;
 import eagine.core.resource;
 import eagine.msgbus.core;
 import eagine.msgbus.services;
-import <chrono>;
-import <map>;
+import std;
 
 namespace eagine::msgbus {
 //------------------------------------------------------------------------------
@@ -62,9 +61,8 @@ public:
 
 private:
     void _handle_shutdown(
-      const std::chrono::milliseconds age,
-      const identifier_t source_id,
-      const verification_bits verified) noexcept;
+      const result_context&,
+      const shutdown_request&) noexcept;
 
     bool _done{false};
 };
@@ -107,7 +105,7 @@ public:
     }
 
     /// @brief Does some work and updates internal state (should be called periodically).
-    auto update() noexcept -> work_done;
+    auto update_and_process_all() noexcept -> work_done final;
 
     /// @brief Indicates if embedded resource with the specified id is available.
     auto has_embedded_resource(identifier res_id) noexcept -> bool {
@@ -311,14 +309,9 @@ private:
       const memory::span<const memory::const_block>,
       const blob_info&) noexcept;
     void _handle_ping_response(
-      const identifier_t pinger_id,
-      const message_sequence_t,
-      const std::chrono::microseconds age,
-      const verification_bits) noexcept;
-    void _handle_ping_timeout(
-      const identifier_t pinger_id,
-      const message_sequence_t,
-      const std::chrono::microseconds) noexcept;
+      const result_context&,
+      const ping_response&) noexcept;
+    void _handle_ping_timeout(const ping_timeout&) noexcept;
 
     resource_data_consumer_node_config _config;
 

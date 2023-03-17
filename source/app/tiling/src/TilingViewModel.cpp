@@ -170,7 +170,7 @@ void TilingViewModel::onTilingChanged() {
 void TilingViewModel::onTilesAdded(int rmin, int cmin, int rmax, int cmax) {
     emit dataChanged(createIndex(rmin, cmin), createIndex(rmax + 1, cmax + 1));
     emit progressChanged();
-    if(!_filePath.isEmpty()) {
+    if(not _filePath.isEmpty()) {
         if(auto optTilingModel{_backend.getTilingModel()}) {
             if(extract(optTilingModel).isComplete()) {
                 doSaveAs(_filePath);

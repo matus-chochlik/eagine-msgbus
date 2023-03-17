@@ -20,10 +20,7 @@ import :message;
 import :interface;
 import :blobs;
 import :context;
-import <chrono>;
-import <latch>;
-import <map>;
-import <vector>;
+import std;
 
 namespace eagine::msgbus {
 //------------------------------------------------------------------------------
@@ -133,6 +130,11 @@ public:
 
     operator connection_user&() noexcept {
         return _user;
+    }
+
+    /// @brief Returns the unique id of this router.
+    auto get_id() const noexcept {
+        return _id_base;
     }
 
     void add_certificate_pem(const memory::const_block blk) noexcept;

@@ -27,10 +27,8 @@ import eagine.core.serialization;
 import eagine.core.valid_if;
 import eagine.core.utility;
 import eagine.core.main_ctx;
+import std;
 import <cerrno>;
-import <cstring>;
-import <mutex>;
-import <random>;
 
 namespace eagine::msgbus {
 //------------------------------------------------------------------------------
@@ -141,20 +139,20 @@ public:
     /// @brief Indicates if a previous operation on the queue needs to be retried.
     /// @see had_error
     auto needs_retry() const noexcept -> bool {
-        return (_last_errno == EAGAIN) || (_last_errno == ETIMEDOUT);
+        return (_last_errno == EAGAIN) or (_last_errno == ETIMEDOUT);
     }
 
     /// @brief Indicates if this message queue is open.
     /// @see is_usable
     constexpr auto is_open() const noexcept -> bool {
-        return (_ihandle >= 0) && (_ohandle >= 0);
+        return (_ihandle >= 0) and (_ohandle >= 0);
     }
 
     /// @brief Indicates if this message queue can be used.
     /// @see is_open
     /// @see had_error
     constexpr auto is_usable() const noexcept -> bool {
-        return is_open() && !(had_error() && !needs_retry());
+        return is_open() and not(had_error() and not needs_retry());
     }
 
     /// @brief Unlinks the OS queue objects.
@@ -298,7 +296,7 @@ public:
             errno = 0;
             ::mq_send(_ohandle, blk.data(), integer(blk.size()), priority);
             _last_errno = errno;
-            if((_last_errno != 0) && (_last_errno != EAGAIN)) [[unlikely]] {
+            if((_last_errno != 0) and (_last_errno != EAGAIN)) [[unlikely]] {
                 log_error("failed to send message")
                   .arg("name", get_name())
                   .arg("errno", _last_errno)
@@ -326,7 +324,7 @@ public:
                 handler(priority, head(blk, received));
                 return true;
             } else if(
-              (_last_errno != 0) && (_last_errno != EAGAIN) &&
+              (_last_errno != 0) and (_last_errno != EAGAIN) and
               (_last_errno != ETIMEDOUT)) [[unlikely]] {
                 log_error("failed to receive message")
                   .arg("name", get_name())
@@ -400,7 +398,7 @@ public:
 
     /// @brief Opens the connection.
     auto open(std::string name) noexcept -> bool {
-        return !_data_queue.set_name(std::move(name)).open().had_error();
+        return not _data_queue.set_name(std::move(name)).open().had_error();
     }
 
     auto is_usable() noexcept -> bool final {
@@ -424,8 +422,7 @@ public:
         if(is_usable()) [[likely]] {
             block_data_sink sink(cover(_buffer));
             default_serializer_backend backend(sink);
-            auto errors = serialize_message(msg_id, message, backend);
-            if(!errors) [[likely]] {
+            if(serialize_message(msg_id, message, backend)) [[likely]] {
                 const std::unique_lock lock{_mutex};
                 _outgoing.push(sink.done());
                 return true;
@@ -449,7 +446,7 @@ public:
 protected:
     auto _checkup(posix_mqueue& connect_queue) noexcept -> work_done {
         some_true something_done{};
-        if(!_data_queue.is_usable()) [[unlikely]] {
+        if(not _data_queue.is_usable()) [[unlikely]] {
             if(connect_queue.is_usable()) [[likely]] {
                 if(_reconnect_timeout) {
                     _data_queue.close();
@@ -459,19 +456,18 @@ protected:
                     log_debug("connecting to ${name}")
                       .arg("name", connect_queue.get_name());
 
-                    if(!_data_queue.set_name(_shared_state->make_id())
-                          .create()
-                          .had_error()) {
+                    if(not _data_queue.set_name(_shared_state->make_id())
+                             .create()
+                             .had_error()) {
 
                         _buffer.resize(connect_queue.data_size());
 
                         block_data_sink sink(cover(_buffer));
                         default_serializer_backend backend(sink);
-                        const auto errors = serialize_message(
-                          msgbus_id{"pmqConnect"},
-                          message_view(_data_queue.get_name()),
-                          backend);
-                        if(!errors) [[likely]] {
+                        if(serialize_message(
+                             msgbus_id{"pmqConnect"},
+                             message_view(_data_queue.get_name()),
+                             backend)) [[likely]] {
                             connect_queue.send(1, as_chars(sink.done()));
                             _buffer.resize(_data_queue.data_size());
                             something_done();
@@ -517,7 +513,7 @@ protected:
     auto _handle_send(
       const message_timestamp,
       const memory::const_block data) noexcept -> bool {
-        return !_data_queue.send(1, as_chars(data)).had_error();
+        return not _data_queue.send(1, as_chars(data)).had_error();
     }
 
     void _handle_receive(
@@ -528,8 +524,7 @@ protected:
             message_id& msg_id, message_timestamp&, stored_message& message) {
               block_data_source source(as_bytes(data));
               default_deserializer_backend backend(source);
-              const auto errors = deserialize_message(msg_id, message, backend);
-              return !errors;
+              return bool(deserialize_message(msg_id, message, backend));
           });
     }
 
@@ -590,10 +585,10 @@ public:
 private:
     auto _checkup() noexcept -> work_done {
         some_true something_done{};
-        if(!_connect_queue.is_usable()) [[unlikely]] {
+        if(not _connect_queue.is_usable()) [[unlikely]] {
             if(_reconnect_timeout) {
                 _connect_queue.close();
-                if(!_connect_queue.open().had_error()) {
+                if(not _connect_queue.open().had_error()) {
                     something_done();
                 }
                 _reconnect_timeout.reset();
@@ -680,11 +675,11 @@ public:
 private:
     auto _checkup() noexcept -> work_done {
         some_true something_done{};
-        if(!_accept_queue.is_usable()) [[unlikely]] {
+        if(not _accept_queue.is_usable()) [[unlikely]] {
             if(_reconnect_timeout) {
                 _accept_queue.close();
                 _accept_queue.unlink();
-                if(!_accept_queue.create().had_error()) {
+                if(not _accept_queue.create().had_error()) {
                     _buffer.resize(_accept_queue.data_size());
                     something_done();
                 }
@@ -715,10 +710,11 @@ private:
             message_id& msg_id, message_timestamp&, stored_message& message) {
               block_data_source source(as_bytes(data));
               default_deserializer_backend backend(source);
-              const auto errors = deserialize_message(msg_id, message, backend);
+              const auto deserialized{
+                deserialize_message(msg_id, message, backend)};
               if(is_special_message(msg_id)) [[likely]] {
                   if(msg_id.has_method("pmqConnect")) [[likely]] {
-                      return !errors;
+                      return bool(deserialized);
                   }
               }
               return false;

@@ -7,6 +7,7 @@
 ///
 import eagine.core;
 import eagine.msgbus;
+import std;
 
 namespace eagine {
 namespace msgbus {
@@ -116,7 +117,7 @@ auto main(main_ctx& ctx) -> int {
     client.call_uppercase("baz");
     client.call_uppercase("qux");
 
-    while(!client.is_done()) {
+    while(not client.is_done()) {
         router.update();
         server_endpoint.update();
         client_endpoint.update();

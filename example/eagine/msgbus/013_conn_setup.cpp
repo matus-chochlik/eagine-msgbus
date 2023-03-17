@@ -8,9 +8,7 @@
 import eagine.core;
 import eagine.sslplus;
 import eagine.msgbus;
-import <queue>;
-import <set>;
-import <thread>;
+import std;
 
 namespace eagine {
 namespace msgbus {
@@ -67,18 +65,20 @@ public:
         // deserialize
         block_data_source source(msg_in.content());
         fast_deserializer_backend read_backend(source);
-        deserialize(arg, read_backend);
-        // call
-        result = fib(arg);
-        // serialize
-        std::array<byte, 64> buffer{};
-        block_data_sink sink(cover(buffer));
-        fast_serializer_backend write_backend(sink);
-        serialize(std::tie(arg, result), write_backend);
-        // send
-        message_view msg_out{sink.done()};
-        msg_out.set_serializer_id(write_backend.type_id());
-        bus_node().respond_to(msg_in, {"Fibonacci", "Result"}, msg_out);
+        if(deserialize(arg, read_backend)) {
+            // call
+            result = fib(arg);
+            // serialize
+            std::array<byte, 64> buffer{};
+            block_data_sink sink(cover(buffer));
+            fast_serializer_backend write_backend(sink);
+            if(serialize(std::tie(arg, result), write_backend)) {
+                // send
+                message_view msg_out{sink.done()};
+                msg_out.set_serializer_id(write_backend.type_id());
+                bus_node().respond_to(msg_in, {"Fibonacci", "Result"}, msg_out);
+            }
+        }
         return true;
     }
 
@@ -114,14 +114,14 @@ public:
     }
 
     void update() {
-        if(!_remaining.empty()) {
+        if(not _remaining.empty()) {
             bus_node().broadcast({"Fibonacci", "FindServer"});
         }
     }
 
     auto dispatch(const message_context&, const stored_message& msg_in) noexcept
       -> bool {
-        if(!_remaining.empty()) {
+        if(not _remaining.empty()) {
             auto arg = _remaining.front();
             _pending.insert(arg);
             _remaining.pop();
@@ -129,10 +129,12 @@ public:
             std::array<byte, 32> buffer{};
             block_data_sink sink(cover(buffer));
             fast_serializer_backend write_backend(sink);
-            serialize(arg, write_backend);
-            message_view msg_out{sink.done()};
-            msg_out.set_serializer_id(write_backend.type_id());
-            bus_node().respond_to(msg_in, {"Fibonacci", "Calculate"}, msg_out);
+            if(serialize(arg, write_backend)) {
+                message_view msg_out{sink.done()};
+                msg_out.set_serializer_id(write_backend.type_id());
+                bus_node().respond_to(
+                  msg_in, {"Fibonacci", "Calculate"}, msg_out);
+            }
         }
         return true;
     }
@@ -145,19 +147,20 @@ public:
         block_data_source source(msg_in.content());
         fast_deserializer_backend read_backend(source);
         auto tup = std::tie(arg, result);
-        deserialize(tup, read_backend);
-        // print
-        bus_node()
-          .cio_print("fib(${arg}) = ${fib}")
-          .arg("arg", arg)
-          .arg("fib", result);
-        // remove
-        _pending.erase(arg);
+        if(deserialize(tup, read_backend)) {
+            // print
+            bus_node()
+              .cio_print("fib(${arg}) = ${fib}")
+              .arg("arg", arg)
+              .arg("fib", result);
+            // remove
+            _pending.erase(arg);
+        }
         return true;
     }
 
     auto is_done() const {
-        return _remaining.empty() && _pending.empty();
+        return _remaining.empty() and _pending.empty();
     }
 
 private:
@@ -182,7 +185,7 @@ auto main(main_ctx& ctx) -> int {
     for(span_size_t i = 0; i < thread_count; ++i) {
         workers.emplace_back(
           [server{msgbus::fibonacci_server(ctx, conn_setup)}]() mutable {
-              while(!server.is_done()) {
+              while(not server.is_done()) {
                   server.process_one();
               }
           });
@@ -197,7 +200,7 @@ auto main(main_ctx& ctx) -> int {
         client.enqueue(i);
     }
 
-    while(!client.is_done()) {
+    while(not client.is_done()) {
         router.update();
         client.update();
         client.process_one();

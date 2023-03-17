@@ -8,13 +8,7 @@
 import eagine.core;
 import eagine.sslplus;
 import eagine.msgbus;
-import <algorithm>;
-import <chrono>;
-import <cmath>;
-import <cstdint>;
-import <map>;
-import <thread>;
-import <vector>;
+import std;
 
 namespace eagine {
 namespace msgbus {
@@ -110,30 +104,33 @@ public:
     }
 
     void on_subscribed(
-      const subscriber_info& info,
-      const message_id sub_msg) noexcept {
-        if(sub_msg == this->ping_msg_id()) {
-            if(_targets.try_emplace(info.endpoint_id, ping_stats{}).second) {
+      const result_context&,
+      const subscriber_subscribed& sub) noexcept {
+        if(sub.message_type == this->ping_msg_id()) {
+            if(_targets.try_emplace(sub.source.endpoint_id, ping_stats{})
+                 .second) {
                 log_info("new pingable ${id} appeared")
                   .tag("newPngable")
-                  .arg("id", info.endpoint_id);
+                  .arg("id", sub.source.endpoint_id);
             }
         }
     }
 
     void on_unsubscribed(
-      const subscriber_info& info,
-      const message_id sub_msg) noexcept {
-        if(sub_msg == this->ping_msg_id()) {
-            log_info("pingable ${id} disappeared").arg("id", info.endpoint_id);
+      const result_context&,
+      const subscriber_unsubscribed& sub) noexcept {
+        if(sub.message_type == this->ping_msg_id()) {
+            log_info("pingable ${id} disappeared")
+              .arg("id", sub.source.endpoint_id);
         }
     }
 
     void on_not_subscribed(
-      const subscriber_info& info,
-      const message_id sub_msg) noexcept {
-        if(sub_msg == this->ping_msg_id()) {
-            log_info("target ${id} is not pingable").arg("id", info.endpoint_id);
+      const result_context&,
+      const subscriber_not_subscribed& sub) noexcept {
+        if(sub.message_type == this->ping_msg_id()) {
+            log_info("target ${id} is not pingable")
+              .arg("id", sub.source.endpoint_id);
         }
     }
 
@@ -156,15 +153,13 @@ public:
     }
 
     void on_ping_response(
-      const identifier_t pinger_id,
-      const message_sequence_t,
-      const std::chrono::microseconds age,
-      const verification_bits) noexcept {
-        auto& stats = _targets[pinger_id];
+      const result_context&,
+      const ping_response& pong) noexcept {
+        auto& stats = _targets[pong.pingable_id];
         stats.responded++;
-        stats.min_time = std::min(stats.min_time, age);
-        stats.max_time = std::max(stats.max_time, age);
-        stats.sum_time += age;
+        stats.min_time = std::min(stats.min_time, pong.age);
+        stats.max_time = std::max(stats.max_time, pong.age);
+        stats.sum_time += pong.age;
         stats.finish = std::chrono::steady_clock::now();
         if((++_rcvd % _mod) == 0) [[unlikely]] {
             const auto now{std::chrono::steady_clock::now()};
@@ -190,11 +185,8 @@ public:
         }
     }
 
-    void on_ping_timeout(
-      const identifier_t pinger_id,
-      const message_sequence_t,
-      const std::chrono::microseconds) noexcept {
-        auto& stats = _targets[pinger_id];
+    void on_ping_timeout(const ping_timeout& fail) noexcept {
+        auto& stats = _targets[fail.pingable_id];
         stats.timeouted++;
         if((++_tout % _mod) == 0) [[unlikely]] {
             log_info("${tout} pongs timeouted").arg("tout", _tout);
@@ -202,19 +194,20 @@ public:
     }
 
     auto is_done() const noexcept -> bool {
-        return !(((_rcvd + _tout + _mod) < _max) || this->has_pending_pings());
+        return not(
+          ((_rcvd + _tout + _mod) < _max) or this->has_pending_pings());
     }
 
     auto do_update() -> work_done {
         some_true something_done{};
-        if(!_targets.empty()) {
+        if(not _targets.empty()) {
             const auto lim{
               _rcvd +
               static_cast<std::intmax_t>(
                 static_cast<float>(_mod) *
                 (1.F + std::log(static_cast<float>(1 + _targets.size()))))};
             for(auto& [pingable_id, entry] : _targets) {
-                if((_rcvd < _max) && (_sent < lim)) {
+                if((_rcvd < _max) and (_sent < lim)) {
                     this->ping(pingable_id, std::chrono::seconds(3 + _rep));
                     if((++_sent % _mod) == 0) [[unlikely]] {
                         log_info("sent ${sent} pings")
@@ -223,7 +216,7 @@ public:
                     }
 
                     if(entry.should_check_info) [[unlikely]] {
-                        if(!entry.host_id) {
+                        if(not entry.host_id) {
                             this->query_host_id(pingable_id);
                         }
                         if(entry.hostname.empty()) {
@@ -251,7 +244,7 @@ public:
                 something_done(do_update());
             }
         }
-        something_done(base::process_all() > 0);
+        something_done(base::process_all());
         return something_done;
     }
 
@@ -329,9 +322,9 @@ auto main(main_ctx& ctx) -> int {
 
     resetting_timeout do_chart_stats{std::chrono::seconds(15), nothing};
 
-    while(!the_pinger.is_done()) {
+    while(not the_pinger.is_done()) {
         the_pinger.process_all();
-        if(!the_pinger.update()) {
+        if(not the_pinger.update()) {
             std::this_thread::sleep_for(std::chrono::milliseconds(1));
             if(do_chart_stats) {
                 the_pinger.log_chart_sample(

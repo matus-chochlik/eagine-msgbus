@@ -20,13 +20,7 @@ import eagine.core.utility;
 import eagine.core.runtime;
 import eagine.core.math;
 import eagine.msgbus.core;
-import <array>;
-import <chrono>;
-import <cmath>;
-import <ostream>;
-import <tuple>;
-import <variant>;
-import <vector>;
+import std;
 
 namespace eagine::msgbus {
 //------------------------------------------------------------------------------
@@ -114,6 +108,19 @@ export struct sudoku_solver_driver : interface<sudoku_solver_driver> {
     }
 };
 //------------------------------------------------------------------------------
+/// @brief Type storing information about (partially) solved Sudoku board.
+/// @ingroup msgbus
+/// @see sudoku_solver_signals
+export template <unsigned S>
+struct solved_sudoku_board {
+    /// @brief Id of the helper that provided the solution.
+    identifier_t helper_id{invalid_endpoint_id()};
+    /// @brief Key, identifiying the board.
+    sudoku_solver_key key{0};
+    /// @brief The Sudoku board.
+    basic_sudoku_board<S> board;
+};
+//------------------------------------------------------------------------------
 struct sudoku_solver_intf : interface<sudoku_solver_intf> {
 
     virtual void assign_driver(sudoku_solver_driver&) noexcept = 0;
@@ -153,37 +160,47 @@ struct sudoku_solver_intf : interface<sudoku_solver_intf> {
       -> std::intmax_t = 0;
 };
 //------------------------------------------------------------------------------
+/// @brief Type containing information about a Sudoku solver helper service.
+/// @ingroup msgbus
+/// @see sudoku_solver_signals
+export struct sudoku_helper_appeared {
+    /// @brief Id of the helper endpoint.
+    identifier_t helper_id{invalid_endpoint_id()};
+};
+
+/// @brief Type containing information about Sudoku solver queue changes.
+/// @see sudoku_solver_signals
+/// @ingroup msgbus
+/// @see sudoku_solver_signals
+export struct sudoku_board_queue_change {
+    /// @brief The rank of the boards in queue.
+    unsigned rank{0};
+    /// @brief Number of distinct keys in the queue.
+    std::size_t key_count{0};
+    /// @brief Number of boards in the queue.
+    std::size_t board_count{0};
+};
+//------------------------------------------------------------------------------
 /// @brief Collection of signals emitted by the sudoku_solver service
 /// @ingroup msgbus
 /// @see sudoku_solver
 export struct sudoku_solver_signals {
 
     /// @brief Triggered when a helper service appears.
-    signal<void(const identifier_t) noexcept> helper_appeared;
+    signal<void(const result_context&, const sudoku_helper_appeared&) noexcept>
+      helper_appeared;
 
     /// @brief Triggered when the board with the specified key is solved.
-    signal<void(
-      const identifier_t,
-      const sudoku_solver_key&,
-      basic_sudoku_board<3>&) noexcept>
+    signal<void(const result_context&, const solved_sudoku_board<3>&) noexcept>
       solved_3;
     /// @brief Triggered when the board with the specified key is solved.
-    signal<void(
-      const identifier_t,
-      const sudoku_solver_key&,
-      basic_sudoku_board<4>&) noexcept>
+    signal<void(const result_context&, const solved_sudoku_board<4>&) noexcept>
       solved_4;
     /// @brief Triggered when the board with the specified key is solved.
-    signal<void(
-      const identifier_t,
-      const sudoku_solver_key&,
-      basic_sudoku_board<5>&) noexcept>
+    signal<void(const result_context&, const solved_sudoku_board<5>&) noexcept>
       solved_5;
     /// @brief Triggered when the board with the specified key is solved.
-    signal<void(
-      const identifier_t,
-      const sudoku_solver_key&,
-      basic_sudoku_board<6>&) noexcept>
+    signal<void(const result_context&, const solved_sudoku_board<6>&) noexcept>
       solved_6;
 
     /// @brief Returns a reference to the solved_3 signal.
@@ -211,8 +228,7 @@ export struct sudoku_solver_signals {
     }
 
     /// @brief Triggered when the length of the queue of boards change.
-    signal<void(const unsigned, const std::size_t, const std::size_t) noexcept>
-      queue_length_changed;
+    signal<void(const sudoku_board_queue_change&) noexcept> queue_length_changed;
 };
 //------------------------------------------------------------------------------
 export auto make_sudoku_solver_impl(subscriber& base, sudoku_solver_signals&)
@@ -251,7 +267,7 @@ public:
     /// @see enqueue
     /// @see has_work.
     auto is_done() const noexcept -> bool {
-        return !has_work();
+        return not has_work();
     }
 
     void init() noexcept {
@@ -442,6 +458,18 @@ public:
         return cells_per_tile_side() * cells_per_tile_side();
     }
 
+    /// @brief Number of tiles on the x-axis.
+    /// @see y_tiles_count
+    auto x_tiles_count() const noexcept -> int {
+        return width() / cells_per_tile_side();
+    }
+
+    /// @brief Number of tiles on the x-axis.
+    /// @see x_tiles_count
+    auto y_tiles_count() const noexcept -> int {
+        return height() / cells_per_tile_side();
+    }
+
     /// @brief Get the board at the specified coordinate if it is solved.
     auto get_board(const Coord coord) const noexcept
       -> const basic_sudoku_board<S>* {
@@ -486,7 +514,7 @@ public:
     auto is_in_extent(const int x, const int y) const noexcept -> bool {
         const int u = x * S * (S - 2);
         const int v = y * S * (S - 2);
-        return (u >= _minu) && (u < _maxu) && (v >= _minv) && (v < _maxv);
+        return (u >= _minu) and (u < _maxu) and (v >= _minv) and (v < _maxv);
     }
 
     /// @brief Returns the extent between min and max in units of boards.
@@ -516,7 +544,7 @@ public:
         const auto [xmin, ymin, xmax, ymax] = boards_extent(min, max);
         for(const auto y : integer_range(ymin, ymax)) {
             for(const auto x : integer_range(xmin, xmax)) {
-                if(!get_board(x, y)) {
+                if(not get_board(x, y)) {
                     return false;
                 }
             }
@@ -675,6 +703,8 @@ public:
     virtual void reset(unsigned rank) noexcept = 0;
     virtual auto are_complete() const noexcept -> bool = 0;
     virtual auto are_complete(unsigned rank) const noexcept -> bool = 0;
+    virtual auto tiling_size(unsigned rank) const noexcept
+      -> std::tuple<int, int> = 0;
     virtual auto solution_progress(unsigned rank) const noexcept -> float = 0;
     virtual void log_contribution_histogram(unsigned rank) noexcept = 0;
 };
@@ -796,6 +826,13 @@ public:
     /// @brief Indicates that pending tilings with all ranks are complete.
     auto tiling_complete() const noexcept -> bool {
         return _impl->are_complete();
+    }
+
+    /// @brief Returns the number of tiles on the x and y axes.
+    template <unsigned S>
+    auto tiling_size(const unsigned_constant<S>) const noexcept
+      -> std::tuple<int, int> {
+        return _impl->tiling_size(S);
     }
 
     /// @brief Returns the fraction <0, 1> indicating how many tiles are solved.

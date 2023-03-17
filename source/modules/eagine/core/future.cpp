@@ -11,8 +11,7 @@ import eagine.core.types;
 import eagine.core.container;
 import eagine.core.utility;
 import :types;
-import <functional>;
-import <memory>;
+import std;
 
 namespace eagine::msgbus {
 //------------------------------------------------------------------------------
@@ -125,13 +124,14 @@ public:
     template <typename Handler>
     auto then(Handler handler) noexcept
       -> future<T>& requires(std::is_invocable_v<Handler, T>) {
-                        if(_state) {
-                            _state->success_handler = std::function<void(T)>(
-                              [state{_state}, handler{std::move(handler)}](
-                                T value) { handler(value); });
-                        }
-                        return *this;
-                    }
+          if(_state) {
+              _state->success_handler = std::function<void(T)>(
+                [state{_state}, handler{std::move(handler)}](T value) {
+                    handler(value);
+                });
+          }
+          return *this;
+      }
 
     /// @brief Wraps the given handler object and sets it as the on-timeout handler.
     /// @see on_timeout
@@ -193,7 +193,7 @@ public:
     /// @brief Indicates if there are any unfulfilled pending promises.
     /// @see has_none
     auto has_some() const noexcept -> bool {
-        return !_promises.empty();
+        return not _promises.empty();
     }
 
     /// @brief Indicates if there are no pending promises.

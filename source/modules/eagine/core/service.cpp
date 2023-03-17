@@ -20,7 +20,7 @@ import :skeleton;
 import :endpoint;
 import :subscriber;
 import :handler_map;
-import <type_traits>;
+import std;
 
 namespace eagine::msgbus {
 //------------------------------------------------------------------------------
@@ -69,12 +69,49 @@ public:
         return this->bus_node().add_connection(std::move(conn));
     }
 
+    auto process_queues() noexcept
+      -> pointee_generator<const subscriber_message_queue*> final {
+        return Base::process_queues();
+    }
+
+    auto give_decoded() noexcept
+      -> tuple_generator<const result_context&, decode_result_t<Base>> {
+        for(auto& queue : process_queues()) {
+            for(auto& message : queue.give_messages()) {
+                co_yield {
+                  result_context{queue.context(), message},
+                  this->decode(queue.context(), message)};
+            }
+        }
+    }
+
+    /// @brief Updates the associated endpoint.
+    auto update_only() noexcept -> work_done override {
+        return this->update();
+    }
+
     /// @brief Updates the associated endpoint and processes all incoming messages.
-    auto update_and_process_all() noexcept -> work_done final {
+    auto update_and_process_all() noexcept -> work_done override {
         some_true something_done{};
         something_done(this->update());
         something_done(this->process_all());
         return something_done;
+    }
+
+    /// @brief Indicates if the underlying endpoint as an assigned id.
+    /// @see get_id
+    auto has_id() const noexcept -> bool final {
+        return this->bus_node().has_id();
+    }
+
+    /// @brief Returns the underlying endpoint identifier if one is assigned.
+    /// @see has_id
+    auto get_id() const noexcept -> std::optional<identifier_t> {
+        const auto id{this->bus_node().get_id()};
+        if(is_valid_endpoint_id(id)) {
+            return {id};
+        }
+        return {};
     }
 
 protected:
@@ -109,6 +146,12 @@ private:
         this->init();
         this->announce_subscriptions();
     }
+};
+//------------------------------------------------------------------------------
+template <typename T>
+concept composed_service = requires(T x) {
+    []<typename Base>(service_composition<Base>&) {
+    }(x);
 };
 //------------------------------------------------------------------------------
 export template <typename Base = subscriber>

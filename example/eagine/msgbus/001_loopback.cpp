@@ -7,6 +7,7 @@
 ///
 import eagine.core;
 import eagine.msgbus;
+import std;
 
 namespace eagine {
 namespace msgbus {
@@ -90,7 +91,7 @@ auto main(main_ctx& ctx) -> int {
     client.call_reverse("baz");
     client.call_reverse("qux");
 
-    while(!client.is_done()) {
+    while(not client.is_done()) {
         bus.update();
         server.process_one();
         client.process_one();

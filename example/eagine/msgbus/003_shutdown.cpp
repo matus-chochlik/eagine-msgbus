@@ -8,8 +8,7 @@
 import eagine.core;
 import eagine.sslplus;
 import eagine.msgbus;
-import <set>;
-import <thread>;
+import std;
 
 namespace eagine {
 namespace msgbus {
@@ -38,31 +37,32 @@ public:
     }
 
     void on_subscribed(
-      const subscriber_info& info,
-      const message_id sub_msg) noexcept {
-        if(sub_msg == message_id{"Shutdown", "shutdown"}) {
-            log_info("target ${id} appeared").arg("id", info.endpoint_id);
-            _targets.insert(info.endpoint_id);
-            this->bus_node().post_certificate(info.endpoint_id, 0);
+      const result_context&,
+      const subscriber_subscribed& sub) noexcept {
+        if(sub.message_type.is("Shutdown", "shutdown")) {
+            log_info("target ${id} appeared").arg("id", sub.source.endpoint_id);
+            _targets.insert(sub.source.endpoint_id);
+            this->bus_node().post_certificate(sub.source.endpoint_id, 0);
         }
     }
 
     void on_unsubscribed(
-      const subscriber_info& info,
-      const message_id sub_msg) noexcept {
-        if(sub_msg == message_id{"Shutdown", "shutdown"}) {
-            log_info("target ${id} disappeared").arg("id", info.endpoint_id);
-            _targets.erase(info.endpoint_id);
+      const result_context&,
+      const subscriber_unsubscribed& sub) noexcept {
+        if(sub.message_type.is("Shutdown", "shutdown")) {
+            log_info("target ${id} disappeared")
+              .arg("id", sub.source.endpoint_id);
+            _targets.erase(sub.source.endpoint_id);
         }
     }
 
     void on_not_subscribed(
-      const subscriber_info& info,
-      const message_id sub_msg) noexcept {
-        if(sub_msg == message_id{"Shutdown", "shutdown"}) {
+      const result_context&,
+      const subscriber_not_subscribed& sub) noexcept {
+        if(sub.message_type.is("Shutdown", "shutdown")) {
             log_info("target ${id} does not support shutdown")
-              .arg("id", info.endpoint_id);
-            _targets.erase(info.endpoint_id);
+              .arg("id", sub.source.endpoint_id);
+            _targets.erase(sub.source.endpoint_id);
         }
     }
 
@@ -90,21 +90,17 @@ auto main(main_ctx& ctx) -> int {
 
     timeout wait_done{std::chrono::seconds(30)};
 
-    while(!wait_done) {
+    while(not wait_done) {
         trgr.update();
-        if(!trgr.process_all()) {
-            std::this_thread::sleep_for(std::chrono::milliseconds(10));
-        }
+        trgr.process_all().or_sleep_for(std::chrono::milliseconds(10));
     }
 
     trgr.shutdown_all();
     wait_done.reset();
 
-    while(!wait_done) {
+    while(not wait_done) {
         trgr.update();
-        if(!trgr.process_all()) {
-            std::this_thread::sleep_for(std::chrono::milliseconds(10));
-        }
+        trgr.process_all().or_sleep_for(std::chrono::milliseconds(10));
     }
 
     return 0;

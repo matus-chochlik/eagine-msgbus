@@ -12,12 +12,10 @@ import eagine.core.memory;
 import eagine.core.string;
 import eagine.core.reflection;
 import eagine.core.identifier;
-import <cstdint>;
-import <string>;
-import <tuple>;
-import <type_traits>;
+import std;
 
-namespace eagine::msgbus {
+namespace eagine {
+namespace msgbus {
 //------------------------------------------------------------------------------
 /// @brief Message bus node kind enumeration.
 /// @ingroup msgbus
@@ -32,20 +30,9 @@ export enum class node_kind : std::uint8_t {
     router
 };
 //------------------------------------------------------------------------------
-export template <typename Selector>
-constexpr auto enumerator_mapping(
-  const std::type_identity<node_kind>,
-  const Selector) noexcept {
-    return enumerator_map_type<node_kind, 4>{
-      {{"unknown", node_kind::unknown},
-       {"endpoint", node_kind::endpoint},
-       {"bridge", node_kind::bridge},
-       {"router", node_kind::router}}};
-}
 /// @brief Message bus connection kind bits enumeration.
 /// @ingroup msgbus
 /// @see connection_kinds
-//------------------------------------------------------------------------------
 export enum class connection_kind : std::uint8_t {
     /// @brief Unknown connection kind.
     unknown = 0U,
@@ -56,17 +43,6 @@ export enum class connection_kind : std::uint8_t {
     /// @brief Inter-process connection for remote communucation
     remote_interprocess = 1U << 2U
 };
-//------------------------------------------------------------------------------
-export template <typename Selector>
-constexpr auto enumerator_mapping(
-  const std::type_identity<connection_kind>,
-  const Selector) noexcept {
-    return enumerator_map_type<connection_kind, 4>{
-      {{"unknown", connection_kind::unknown},
-       {"in_process", connection_kind::in_process},
-       {"local_interprocess", connection_kind::local_interprocess},
-       {"remote_interprocess", connection_kind::remote_interprocess}}};
-}
 //------------------------------------------------------------------------------
 /// @brief Alias for connection kind bitfield.
 /// @ingroup msgbus
@@ -93,18 +69,6 @@ export enum class verification_bit : std::uint8_t {
     message_content = 1U << 4U
 };
 //------------------------------------------------------------------------------
-export template <typename Selector>
-constexpr auto enumerator_mapping(
-  const std::type_identity<verification_bit>,
-  const Selector) noexcept {
-    return enumerator_map_type<verification_bit, 5>{
-      {{"source_id", verification_bit::source_id},
-       {"source_certificate", verification_bit::source_certificate},
-       {"source_private_key", verification_bit::source_private_key},
-       {"message_id", verification_bit::message_id},
-       {"message_content", verification_bit::message_content}}};
-}
-//------------------------------------------------------------------------------
 /// @brief Alias for a bus message verification bitfield.
 /// @ingroup msgbus
 export using verification_bits = bitfield<verification_bit>;
@@ -127,16 +91,6 @@ export enum class connection_addr_kind : std::uint8_t {
     ipv4
 };
 
-export template <typename Selector>
-constexpr auto enumerator_mapping(
-  const std::type_identity<connection_addr_kind>,
-  const Selector) noexcept {
-    return enumerator_map_type<connection_addr_kind, 3>{
-      {{"none", connection_addr_kind::none},
-       {"filepath", connection_addr_kind::filepath},
-       {"ipv4", connection_addr_kind::ipv4}}};
-}
-
 /// @brief Tag template alias for specifying connection address kind.
 /// @ingroup msgbus
 export template <connection_addr_kind Kind>
@@ -154,16 +108,6 @@ export enum class connection_protocol : std::uint8_t {
     /// @brief Message protocol.
     message
 };
-
-export template <typename Selector>
-constexpr auto enumerator_mapping(
-  const std::type_identity<connection_protocol>,
-  const Selector) noexcept {
-    return enumerator_map_type<connection_protocol, 3>{
-      {{"stream", connection_protocol::stream},
-       {"datagram", connection_protocol::datagram},
-       {"message", connection_protocol::message}}};
-}
 
 /// @brief Tag template alias for specifying connection protocol kind.
 /// @ingroup msgbus
@@ -501,14 +445,6 @@ export enum class blob_option : std::uint8_t {
     with_metadata = 1U << 1U
 };
 
-export template <typename Selector>
-constexpr auto enumerator_mapping(
-  const std::type_identity<blob_option>,
-  const Selector) noexcept {
-    return enumerator_map_type<blob_option, 2>{
-      {{"compressed", blob_option::compressed},
-       {"with_metadata", blob_option::with_metadata}}};
-}
 //------------------------------------------------------------------------------
 /// @brief Alias for blob options bitfield.
 /// @ingroup msgbus
@@ -520,4 +456,139 @@ export auto operator|(const blob_option l, const blob_option r) noexcept
     return {l, r};
 }
 //------------------------------------------------------------------------------
-} // namespace eagine::msgbus
+/// @brief Message priority enumeration.
+/// @ingroup msgbus
+export enum class message_priority : std::uint8_t {
+    /// @brief Idle, sent only when no messages with higher priority are enqueued.
+    idle,
+    /// @brief Low message priority.
+    low,
+    /// @brief Normal, default message priority.
+    normal,
+    /// @brief High, sent before messages with lower priority.
+    high,
+    /// @brief Critical, sent as soon as possible.
+    critical
+};
+//------------------------------------------------------------------------------
+/// @brief Message priority ordering.
+/// @ingroup msgbus
+/// @relates message_priority
+export [[nodiscard]] auto operator<(
+  const message_priority l,
+  const message_priority r) noexcept -> bool {
+    using U = std::underlying_type_t<message_priority>;
+    return U(l) < U(r);
+}
+//------------------------------------------------------------------------------
+/// @brief Message cryptography-related flag bits enumeration.
+/// @ingroup msgbus
+/// @see message_crypto_flags
+export enum class message_crypto_flag : std::uint8_t {
+    /// @brief Assymetric cipher is used (symmetric otherwise).
+    asymmetric = 1U << 0U,
+    /// @brief The message header is signed.
+    signed_header = 1U << 1U,
+    /// @brief The message content is signed.
+    signed_content = 1U << 2U
+};
+/// @brief  Alias for message crypto flags bitfield.
+/// @ingroup msgbus
+export using message_crypto_flags = bitfield<message_crypto_flag>;
+//------------------------------------------------------------------------------
+} // namespace msgbus
+//------------------------------------------------------------------------------
+export template <typename Selector>
+constexpr auto enumerator_mapping(
+  const std::type_identity<msgbus::node_kind>,
+  const Selector) noexcept {
+    using msgbus::node_kind;
+    return enumerator_map_type<node_kind, 4>{
+      {{"unknown", node_kind::unknown},
+       {"endpoint", node_kind::endpoint},
+       {"bridge", node_kind::bridge},
+       {"router", node_kind::router}}};
+}
+//------------------------------------------------------------------------------
+export template <typename Selector>
+constexpr auto enumerator_mapping(
+  const std::type_identity<msgbus::connection_kind>,
+  const Selector) noexcept {
+    using msgbus::connection_kind;
+    return enumerator_map_type<connection_kind, 4>{
+      {{"unknown", connection_kind::unknown},
+       {"in_process", connection_kind::in_process},
+       {"local_interprocess", connection_kind::local_interprocess},
+       {"remote_interprocess", connection_kind::remote_interprocess}}};
+}
+//------------------------------------------------------------------------------
+export template <typename Selector>
+constexpr auto enumerator_mapping(
+  const std::type_identity<msgbus::verification_bit>,
+  const Selector) noexcept {
+    using msgbus::verification_bit;
+    return enumerator_map_type<verification_bit, 5>{
+      {{"source_id", verification_bit::source_id},
+       {"source_certificate", verification_bit::source_certificate},
+       {"source_private_key", verification_bit::source_private_key},
+       {"message_id", verification_bit::message_id},
+       {"message_content", verification_bit::message_content}}};
+}
+//------------------------------------------------------------------------------
+export template <typename Selector>
+constexpr auto enumerator_mapping(
+  const std::type_identity<msgbus::connection_addr_kind>,
+  const Selector) noexcept {
+    using msgbus::connection_addr_kind;
+    return enumerator_map_type<connection_addr_kind, 3>{
+      {{"none", connection_addr_kind::none},
+       {"filepath", connection_addr_kind::filepath},
+       {"ipv4", connection_addr_kind::ipv4}}};
+}
+//------------------------------------------------------------------------------
+export template <typename Selector>
+constexpr auto enumerator_mapping(
+  const std::type_identity<msgbus::connection_protocol>,
+  const Selector) noexcept {
+    using msgbus::connection_protocol;
+    return enumerator_map_type<connection_protocol, 3>{
+      {{"stream", connection_protocol::stream},
+       {"datagram", connection_protocol::datagram},
+       {"message", connection_protocol::message}}};
+}
+//------------------------------------------------------------------------------
+export template <typename Selector>
+constexpr auto enumerator_mapping(
+  const std::type_identity<msgbus::blob_option>,
+  const Selector) noexcept {
+    using msgbus::blob_option;
+    return enumerator_map_type<blob_option, 2>{
+      {{"compressed", blob_option::compressed},
+       {"with_metadata", blob_option::with_metadata}}};
+}
+//------------------------------------------------------------------------------
+export template <typename Selector>
+constexpr auto enumerator_mapping(
+  const std::type_identity<msgbus::message_priority>,
+  const Selector) noexcept {
+    using msgbus::message_priority;
+    return enumerator_map_type<message_priority, 5>{
+      {{"critical", message_priority::critical},
+       {"high", message_priority::high},
+       {"normal", message_priority::normal},
+       {"low", message_priority::low},
+       {"idle", message_priority::idle}}};
+}
+//------------------------------------------------------------------------------
+export template <typename Selector>
+constexpr auto enumerator_mapping(
+  const std::type_identity<msgbus::message_crypto_flag>,
+  const Selector) noexcept {
+    using msgbus::message_crypto_flag;
+    return enumerator_map_type<message_crypto_flag, 3>{
+      {{"asymmetric", message_crypto_flag::asymmetric},
+       {"signed_header", message_crypto_flag::signed_header},
+       {"signed_content", message_crypto_flag::signed_content}}};
+}
+//------------------------------------------------------------------------------
+} // namespace eagine

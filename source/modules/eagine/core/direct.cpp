@@ -20,11 +20,7 @@ import eagine.core.main_ctx;
 import :types;
 import :message;
 import :interface;
-import <atomic>;
-import <array>;
-import <map>;
-import <memory>;
-import <mutex>;
+import std;
 
 namespace eagine::msgbus {
 //------------------------------------------------------------------------------
@@ -40,6 +36,11 @@ public:
     direct_connection_state(main_ctx_parent parent) noexcept
       : main_ctx_object{"DrctConnSt", parent} {}
 
+    /// @brief Says that the server has disconnected.
+    auto server_disconnect() noexcept {
+        _server_connected = false;
+    }
+
     /// @brief Says that the client has connected.
     auto client_connect() noexcept {
         _client_connected = true;
@@ -48,6 +49,11 @@ public:
     /// @brief Says that the client has disconnected.
     auto client_disconnect() noexcept {
         _client_connected = false;
+    }
+
+    /// @brief Indicates if the connection state is usable.
+    auto is_usable() const noexcept -> bool {
+        return _server_connected;
     }
 
     /// @brief Sends a message to the server counterpart.
@@ -96,6 +102,7 @@ private:
     Lockable _lockable;
     double_buffer<message_storage> _server_to_client;
     double_buffer<message_storage> _client_to_server;
+    std::atomic<bool> _server_connected{true};
     std::atomic<bool> _client_connected{false};
 };
 //------------------------------------------------------------------------------
@@ -198,7 +205,7 @@ public:
 
     auto is_usable() noexcept -> bool final {
         _checkup();
-        return bool(_state);
+        return _state && _state->is_usable();
     }
 
     auto send(const message_id msg_id, const message_view& message) noexcept
@@ -233,7 +240,7 @@ private:
 
     auto _checkup() -> work_done {
         some_true something_done;
-        if(!_state) [[unlikely]] {
+        if(not _state) [[unlikely]] {
             if(const auto address{_weak_address.lock()}) {
                 _state = extract(address).connect();
                 something_done();
@@ -249,11 +256,23 @@ private:
 /// @see direct_acceptor
 /// @see direct_connection_factory
 export template <typename Lockable>
-class direct_server_connection : public direct_connection_info<connection> {
+class direct_server_connection final
+  : public direct_connection_info<connection> {
 public:
     direct_server_connection(
       std::shared_ptr<direct_connection_state<Lockable>>& state) noexcept
       : _state{state} {}
+
+    direct_server_connection(direct_server_connection&&) = delete;
+    direct_server_connection(const direct_server_connection&) = delete;
+    auto operator=(direct_server_connection&&) = delete;
+    auto operator=(const direct_server_connection&) = delete;
+
+    ~direct_server_connection() noexcept final {
+        if(_state) [[likely]] {
+            _state->server_disconnect();
+        }
+    }
 
     auto is_usable() noexcept -> bool final {
         if(_state) [[likely]] {

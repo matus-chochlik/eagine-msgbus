@@ -19,9 +19,7 @@ import eagine.core.utility;
 import eagine.core.valid_if;
 import eagine.core.runtime;
 import eagine.core.main_ctx;
-import <array>;
-import <latch>;
-import <thread>;
+import std;
 
 namespace eagine::msgbus {
 //------------------------------------------------------------------------------
@@ -47,7 +45,7 @@ static inline auto message_id_list_contains(
 static inline void message_id_list_add(
   std::vector<message_id>& list,
   const message_id& entry) noexcept {
-    if(!message_id_list_contains(list, entry)) {
+    if(not message_id_list_contains(list, entry)) {
         list.push_back(entry);
     }
 }
@@ -70,11 +68,11 @@ auto routed_node::is_allowed(const message_id msg_id) const noexcept -> bool {
     if(is_special_message(msg_id)) {
         return true;
     }
-    if(!message_allow_list.empty()) {
+    if(not message_allow_list.empty()) {
         return message_id_list_contains(message_allow_list, msg_id);
     }
-    if(!message_block_list.empty()) {
-        return !message_id_list_contains(message_block_list, msg_id);
+    if(not message_block_list.empty()) {
+        return not message_id_list_contains(message_block_list, msg_id);
     }
     return true;
 }
@@ -84,7 +82,7 @@ auto routed_node::send(
   const message_id msg_id,
   const message_view& message) const noexcept -> bool {
     if(the_connection) [[likely]] {
-        if(!the_connection->send(msg_id, message)) [[unlikely]] {
+        if(not the_connection->send(msg_id, message)) [[unlikely]] {
             user.log_debug("failed to send message to connected node");
             return false;
         }
@@ -155,7 +153,7 @@ inline auto parent_router::update(
     if(the_connection) [[likely]] {
         something_done(the_connection->update());
         if(the_connection->is_usable()) [[likely]] {
-            if(!confirmed_id) [[unlikely]] {
+            if(not confirmed_id) [[unlikely]] {
                 if(confirm_id_timeout) {
                     announce_id(user, id_base);
                     the_connection->update();
@@ -178,7 +176,7 @@ auto parent_router::send(
   const message_id msg_id,
   const message_view& message) const noexcept -> bool {
     if(the_connection) [[likely]] {
-        if(!the_connection->send(msg_id, message)) [[unlikely]] {
+        if(not the_connection->send(msg_id, message)) [[unlikely]] {
             user.log_debug("failed to send message to parent router");
             return false;
         }
@@ -264,7 +262,7 @@ void router::_setup_from_config() {
 auto router::_handle_accept() noexcept -> work_done {
     some_true something_done{};
 
-    if(!_acceptors.empty()) [[likely]] {
+    if(not _acceptors.empty()) [[likely]] {
         acceptor::accept_handler handler{
           this, member_function_constant_t<&router::_handle_connection>{}};
         for(auto& an_acceptor : _acceptors) {
@@ -354,7 +352,7 @@ auto router::_do_handle_pending() noexcept -> work_done {
 //------------------------------------------------------------------------------
 auto router::_handle_pending() noexcept -> work_done {
 
-    if(!_pending.empty()) [[unlikely]] {
+    if(not _pending.empty()) [[unlikely]] {
         return _do_handle_pending();
     }
     return false;
@@ -391,7 +389,8 @@ auto router::_remove_timeouted() noexcept -> work_done {
 auto router::_is_disconnected(const identifier_t endpoint_id) const noexcept
   -> bool {
     const auto pos = _recently_disconnected.find(endpoint_id);
-    return (pos != _recently_disconnected.end()) && !pos->second.is_expired();
+    return (pos != _recently_disconnected.end()) and
+           not pos->second.is_expired();
 }
 //------------------------------------------------------------------------------
 auto router::_mark_disconnected(const identifier_t endpoint_id) noexcept
@@ -417,7 +416,7 @@ auto router::_remove_disconnected() noexcept -> work_done {
                 conn->cleanup();
             }
             conn.reset();
-        } else if(!conn->is_usable()) [[unlikely]] {
+        } else if(not conn->is_usable()) [[unlikely]] {
             log_debug("removing disconnected connection").tag("rmDiscConn");
             if(conn) {
                 conn->cleanup();
@@ -426,7 +425,7 @@ auto router::_remove_disconnected() noexcept -> work_done {
         }
     }
     something_done(_nodes.erase_if([this](auto& p) {
-        if(!p.second.the_connection) [[unlikely]] {
+        if(not p.second.the_connection) [[unlikely]] {
             _mark_disconnected(p.first);
             return true;
         }
@@ -499,13 +498,14 @@ auto router::_process_blobs() noexcept -> work_done {
         return this->_route_message(msg_id, _id_base, request);
     };
     something_done(_blobs.handle_complete() > 0);
-    something_done(_blobs.update({construct_from, resend_request}));
+    something_done(_blobs.update(
+      {construct_from, resend_request}, min_connection_data_size));
 
     if(_blobs.has_outgoing()) {
         for(auto& nd : _nodes) {
             const auto node_id = std::get<0>(nd);
             const auto& conn = std::get<1>(nd).the_connection;
-            if(conn && conn->is_usable()) [[likely]] {
+            if(conn and conn->is_usable()) [[likely]] {
                 if(auto opt_max_size{conn->max_data_size()}) {
                     const auto handle_send = [node_id, &conn](
                                                message_id msg_id,
@@ -663,7 +663,7 @@ auto router::_handle_msg_block(
   const message_view& message) noexcept -> message_handling_result {
     message_id blk_msg_id{};
     if(default_deserialize_message_type(blk_msg_id, message.content())) {
-        if(!is_special_message(blk_msg_id)) {
+        if(not is_special_message(blk_msg_id)) {
             log_debug("node ${source} blocking message ${message}")
               .arg("message", blk_msg_id)
               .arg("source", message.source_id);
@@ -890,7 +890,7 @@ auto router::_handle_bye_bye(
       .arg("method", msg_id.method())
       .arg("source", message.source_id);
 
-    if(!node.maybe_router) {
+    if(not node.maybe_router) {
         node.do_disconnect = true;
     }
     _endpoint_idx.erase(message.source_id);
@@ -980,7 +980,7 @@ auto router::_do_handle_special(
       .arg("target", message.target_id)
       .arg("source", message.source_id);
 
-    if(!msg_id.has_method("stillAlive")) [[likely]] {
+    if(not msg_id.has_method("stillAlive")) [[likely]] {
         return _handle_special_common(msg_id, incoming_id, message);
     } else {
         _update_endpoint_info(incoming_id, message);
@@ -1083,7 +1083,7 @@ auto router::_route_targeted_message(
         }
     }
 
-    if(!has_routed) {
+    if(not has_routed) {
         for(const auto& [outgoing_id, node_out] : nodes) {
             if(outgoing_id == message.target_id) {
                 if(node_out.is_allowed(msg_id)) {
@@ -1093,8 +1093,8 @@ auto router::_route_targeted_message(
         }
     }
 
-    if(!_is_disconnected(message.target_id)) [[likely]] {
-        if(!has_routed) {
+    if(not _is_disconnected(message.target_id)) [[likely]] {
+        if(not has_routed) {
             for(const auto& [outgoing_id, node_out] : nodes) {
                 if(node_out.maybe_router) {
                     if(incoming_id != outgoing_id) {
@@ -1135,7 +1135,7 @@ auto router::_route_message(
   message_view& message) noexcept -> bool {
 
     bool result = true;
-    if(!message.too_many_hops()) [[likely]] {
+    if(not message.too_many_hops()) [[likely]] {
         message.add_hop();
 
         if(message.target_id != broadcast_endpoint_id()) {
@@ -1174,7 +1174,7 @@ auto router::_route_node_messages(
     };
 
     const auto& conn_in = node_in.the_connection;
-    if(conn_in && conn_in->is_usable()) [[likely]] {
+    if(conn_in and conn_in->is_usable()) [[likely]] {
         return conn_in->fetch_messages({construct_from, handler});
     }
     return false;
@@ -1263,7 +1263,7 @@ auto router::_update_connections_by_workers(std::latch& completed) noexcept
     }
     something_done(_parent_router.update(*this, _id_base));
 
-    if(!_nodes.empty() || !_pending.empty()) [[likely]] {
+    if(not _nodes.empty() or not _pending.empty()) [[likely]] {
         _no_connection_timeout.reset();
     }
 
@@ -1281,7 +1281,7 @@ auto router::_update_connections_by_router() noexcept -> work_done {
     }
     something_done(_parent_router.update(*this, _id_base));
 
-    if(!_nodes.empty() || !_pending.empty()) [[likely]] {
+    if(not _nodes.empty() or not _pending.empty()) [[likely]] {
         _no_connection_timeout.reset();
     } else {
         std::this_thread::yield();
@@ -1334,11 +1334,11 @@ auto router::update(const valid_if_positive<int>& count) noexcept -> work_done {
     if(_use_workers()) {
         do {
             something_done(do_work_by_workers());
-        } while((n-- > 0) && something_done);
+        } while((n-- > 0) and something_done);
     } else {
         do {
             something_done(do_work_by_router());
-        } while((n-- > 0) && something_done);
+        } while((n-- > 0) and something_done);
     }
 
     return something_done;
@@ -1377,7 +1377,7 @@ void router::cleanup() noexcept {
 void router::finish() noexcept {
     say_bye();
     timeout too_long{adjusted_duration(std::chrono::seconds{1})};
-    while(!too_long) {
+    while(not too_long) {
         update(8);
     }
     cleanup();

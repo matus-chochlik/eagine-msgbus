@@ -8,9 +8,7 @@
 import eagine.core;
 import eagine.sslplus;
 import eagine.msgbus;
-import <iostream>;
-import <set>;
-import <thread>;
+import std;
 
 namespace eagine {
 namespace msgbus {
@@ -70,7 +68,9 @@ public:
         std::cout << "}\n";
     }
 
-    void on_router_appeared(const router_topology_info& info) noexcept {
+    void on_router_appeared(
+      const result_context&,
+      const router_topology_info& info) noexcept {
         log_info("found router connection ${router} - ${remote}")
           .arg("remote", info.remote_id)
           .arg("router", info.router_id);
@@ -79,7 +79,9 @@ public:
         _connections.emplace(info.router_id, info.remote_id);
     }
 
-    void on_bridge_appeared(const bridge_topology_info& info) noexcept {
+    void on_bridge_appeared(
+      const result_context&,
+      const bridge_topology_info& info) noexcept {
         if(info.opposite_id) {
             log_info("found bridge connection ${bridge} - ${remote}")
               .arg("remote", info.opposite_id)
@@ -94,20 +96,21 @@ public:
         _bridges.emplace(info.bridge_id);
     }
 
-    void on_endpoint_appeared(const endpoint_topology_info& info) noexcept {
+    void on_endpoint_appeared(
+      const result_context&,
+      const endpoint_topology_info& info) noexcept {
         log_info("found endpoint ${endpoint}").arg("endpoint", info.endpoint_id);
 
         _endpoints.emplace(info.endpoint_id);
     }
 
     void on_shutdown(
-      const std::chrono::milliseconds age,
-      const identifier_t subscriber_id,
-      const verification_bits verified) noexcept {
+      const result_context&,
+      const shutdown_request& req) noexcept {
         _log.info("received ${age} old shutdown request from ${subscrbr}")
-          .arg("age", age)
-          .arg("subscrbr", subscriber_id)
-          .arg("verified", verified);
+          .arg("age", req.age)
+          .arg("subscrbr", req.source_id)
+          .arg("verified", req.verified);
     }
 
 private:
@@ -134,14 +137,12 @@ auto main(main_ctx& ctx) -> int {
     timeout waited_enough{std::chrono::seconds(30)};
     resetting_timeout resend_query{std::chrono::seconds(5), nothing};
 
-    while(!(interrupted || waited_enough)) {
+    while(not(interrupted or waited_enough)) {
         if(resend_query) {
             topo_prn.discover_topology();
         }
         topo_prn.update();
-        if(!topo_prn.process_all()) {
-            std::this_thread::sleep_for(std::chrono::milliseconds(250));
-        }
+        topo_prn.process_all().or_sleep_for(std::chrono::milliseconds(250));
     }
 
     topo_prn.print_topology();

@@ -14,8 +14,7 @@ import eagine.core.utility;
 import eagine.core.valid_if;
 import eagine.core.main_ctx;
 import eagine.msgbus.core;
-import <array>;
-import <chrono>;
+import std;
 
 namespace eagine::msgbus {
 //------------------------------------------------------------------------------
@@ -25,7 +24,6 @@ namespace eagine::msgbus {
 /// @see host_info_consumer
 export template <typename Base = subscriber>
 class host_info_provider : public Base {
-    using This = host_info_provider;
 
 protected:
     using Base::Base;
@@ -77,8 +75,6 @@ export template <typename Base = subscriber>
 class host_info_consumer
   : public Base
   , public host_info_consumer_signals {
-
-    using This = host_info_consumer;
 
 public:
     /// @brief Queries the endpoint's host identifier.

@@ -12,7 +12,7 @@ import eagine.core.memory;
 import eagine.core.identifier;
 import eagine.core.utility;
 import eagine.msgbus.core;
-import <limits>;
+import std;
 
 namespace eagine::msgbus {
 //------------------------------------------------------------------------------
@@ -36,27 +36,69 @@ export struct subscriber_info {
     }
 };
 //------------------------------------------------------------------------------
+export struct subscriber_alive {
+    subscriber_info source{};
+};
+
+export struct subscriber_subscribed {
+    subscriber_info source{};
+    message_id message_type{};
+};
+
+export struct subscriber_unsubscribed {
+    subscriber_info source{};
+    message_id message_type{};
+};
+
+export struct subscriber_not_subscribed {
+    subscriber_info source{};
+    message_id message_type{};
+};
+//------------------------------------------------------------------------------
 /// @brief Collection of signals emitted by the subscriber discovery service.
 /// @ingroup msgbus
 /// @see subscriber_discovery
 /// @see subscriber_info
 export struct subscriber_discovery_signals {
     /// @brief Triggered on receipt of notification that an endpoint is alive.
-    signal<void(const subscriber_info&) noexcept> reported_alive;
+    signal<void(const result_context&, const subscriber_alive&) noexcept>
+      reported_alive;
 
     /// @brief Triggered on receipt of info that endpoint subscribes to message.
-    signal<void(const subscriber_info&, const message_id) noexcept> subscribed;
+    signal<void(const result_context&, const subscriber_subscribed&) noexcept>
+      subscribed;
 
     /// @brief Triggered on receipt of info that endpoint unsubscribes from message.
-    signal<void(const subscriber_info&, const message_id) noexcept> unsubscribed;
+    signal<void(const result_context&, const subscriber_unsubscribed&) noexcept>
+      unsubscribed;
 
     /// @brief Triggered on receipt of info that endpoint doesn't handle message type.
-    signal<void(const subscriber_info&, const message_id) noexcept>
+    signal<void(const result_context&, const subscriber_not_subscribed&) noexcept>
       not_subscribed;
 };
 //------------------------------------------------------------------------------
 struct subscriber_discovery_intf : interface<subscriber_discovery_intf> {
     virtual void add_methods() noexcept = 0;
+
+    virtual auto decode_subscriber_alive(
+      const message_context& msg_ctx,
+      const stored_message& message) noexcept
+      -> std::optional<subscriber_alive> = 0;
+
+    virtual auto decode_subscriber_subscribed(
+      const message_context& msg_ctx,
+      const stored_message& message) noexcept
+      -> std::optional<subscriber_subscribed> = 0;
+
+    virtual auto decode_subscriber_unsubscribed(
+      const message_context& msg_ctx,
+      const stored_message& message) noexcept
+      -> std::optional<subscriber_unsubscribed> = 0;
+
+    virtual auto decode_subscriber_not_subscribed(
+      const message_context& msg_ctx,
+      const stored_message& message) noexcept
+      -> std::optional<subscriber_not_subscribed> = 0;
 };
 //------------------------------------------------------------------------------
 auto make_subscriber_discovery_impl(
@@ -71,6 +113,46 @@ export template <typename Base = subscriber>
 class subscriber_discovery
   : public Base
   , public subscriber_discovery_signals {
+public:
+    auto decode_subscriber_alive(
+      const message_context& msg_ctx,
+      const stored_message& message) noexcept
+      -> std::optional<subscriber_alive> {
+        return _impl->decode_subscriber_alive(msg_ctx, message);
+    }
+
+    auto decode_subscriber_subscribed(
+      const message_context& msg_ctx,
+      const stored_message& message) noexcept
+      -> std::optional<subscriber_subscribed> {
+        return _impl->decode_subscriber_subscribed(msg_ctx, message);
+    }
+
+    auto decode_subscriber_unsubscribed(
+      const message_context& msg_ctx,
+      const stored_message& message) noexcept
+      -> std::optional<subscriber_unsubscribed> {
+        return _impl->decode_subscriber_unsubscribed(msg_ctx, message);
+    }
+
+    auto decode_subscriber_not_subscribed(
+      const message_context& msg_ctx,
+      const stored_message& message) noexcept
+      -> std::optional<subscriber_not_subscribed> {
+        return _impl->decode_subscriber_not_subscribed(msg_ctx, message);
+    }
+
+    auto decode(const message_context& msg_ctx, const stored_message& message) {
+        return this->decode_chain(
+          msg_ctx,
+          message,
+          *static_cast<Base*>(this),
+          *this,
+          &subscriber_discovery::decode_subscriber_alive,
+          &subscriber_discovery::decode_subscriber_subscribed,
+          &subscriber_discovery::decode_subscriber_unsubscribed,
+          &subscriber_discovery::decode_subscriber_not_subscribed);
+    }
 
 protected:
     using Base::Base;

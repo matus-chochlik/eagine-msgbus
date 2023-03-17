@@ -131,6 +131,7 @@ eagine_add_module(
 	IMPORTS
 		types blobs message
 		interface context
+		eagine.core.build_config
 		eagine.core.types
 		eagine.core.memory
 		eagine.core.identifier
@@ -247,8 +248,8 @@ eagine_add_module(
 eagine_add_module(
 	eagine.msgbus.core PARTITION registry
 	IMPORTS
-		types interface setup
-		direct endpoint router
+		types interface setup direct
+		service endpoint router
 		eagine.core.types
 		eagine.core.memory
 		eagine.core.identifier
@@ -324,17 +325,17 @@ eagine_add_module(
 		resources
 		embedded
 	SOURCES
-		message_impl
-		context_impl
-		blobs_impl
-		connection_setup_impl
-		posix_mqueue_impl
-		asio_impl
-		endpoint_impl
-		router_impl
-		bridge_impl
-		registry_impl
-		remote_node_impl
+		message
+		context
+		blobs
+		connection_setup
+		posix_mqueue
+		asio
+		endpoint
+		router
+		bridge
+		registry
+		remote_node
 	IMPORTS
 		eagine.core.debug
 		eagine.core.container
@@ -346,3 +347,26 @@ eagine_add_module(
 		"${PROJECT_SOURCE_DIR}/submodules/asio/asio/include"
 )
 
+eagine_add_module_tests(
+	eagine.msgbus.core
+	UNITS
+		message
+		loopback
+		direct
+		asio
+		posix_mqueue
+		blobs
+		endpoint
+		actor
+		registry
+	IMPORTS
+		eagine.core
+)
+set_tests_properties(execute-test.eagine.msgbus.core.loopback PROPERTIES COST 20)
+set_tests_properties(execute-test.eagine.msgbus.core.direct PROPERTIES COST 20)
+set_tests_properties(execute-test.eagine.msgbus.core.posix_mqueue PROPERTIES COST 10)
+set_tests_properties(execute-test.eagine.msgbus.core.asio PROPERTIES COST 35)
+set_tests_properties(execute-test.eagine.msgbus.core.message PROPERTIES COST 55)
+set_tests_properties(execute-test.eagine.msgbus.core.blobs PROPERTIES COST 70)
+set_tests_properties(execute-test.eagine.msgbus.core.actor PROPERTIES COST 10)
+set_tests_properties(execute-test.eagine.msgbus.core.registry PROPERTIES COST 30)

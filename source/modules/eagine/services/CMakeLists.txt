@@ -232,14 +232,45 @@ eagine_add_module(
 		sudoku
 		tracker
 	SOURCES
-		shutdown_impl
-		discovery_impl
-		topology_impl
-		ping_pong_impl
-		statistics_impl
-		system_info_impl
-		resource_transfer_impl
-		tracker_impl
-		sudoku_impl
+		shutdown
+		discovery
+		topology
+		ping_pong
+		statistics
+		system_info
+		resource_transfer
+		tracker
+		sudoku
 	IMPORTS
 )
+
+eagine_add_module_tests(
+	eagine.msgbus.services
+	UNITS
+		shutdown
+		ping_pong
+		discovery
+		topology
+		application_info
+		compiler_info
+		endpoint_info
+		build_info
+		host_info
+		system_info
+		common_info
+		sudoku
+	IMPORTS
+		eagine.core
+		eagine.msgbus.core
+)
+set_tests_properties(execute-test.eagine.msgbus.services.ping_pong PROPERTIES COST 12)
+set_tests_properties(execute-test.eagine.msgbus.services.discovery PROPERTIES COST 5)
+set_tests_properties(execute-test.eagine.msgbus.services.topology PROPERTIES COST 5)
+set_tests_properties(execute-test.eagine.msgbus.services.application_info PROPERTIES COST 2)
+set_tests_properties(execute-test.eagine.msgbus.services.compiler_info PROPERTIES COST 2)
+set_tests_properties(execute-test.eagine.msgbus.services.endpoint_info PROPERTIES COST 2)
+set_tests_properties(execute-test.eagine.msgbus.services.build_info PROPERTIES COST 2)
+set_tests_properties(execute-test.eagine.msgbus.services.host_info PROPERTIES COST 2)
+set_tests_properties(execute-test.eagine.msgbus.services.system_info PROPERTIES COST 10)
+set_tests_properties(execute-test.eagine.msgbus.services.common_info PROPERTIES COST 10)
+set_tests_properties(execute-test.eagine.msgbus.services.sudoku PROPERTIES COST 160)

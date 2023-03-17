@@ -23,8 +23,7 @@ import eagine.core.valid_if;
 import eagine.core.logging;
 import eagine.core.main_ctx;
 import :types;
-import <chrono>;
-import <memory>;
+import std;
 
 namespace eagine {
 namespace msgbus {
@@ -653,12 +652,11 @@ public:
     auto application_name() const noexcept -> valid_if_not_empty<string_view>;
 
     /// @brief Returns the compiler information about the program running in the instance.
-    auto compiler() const noexcept
-      -> optional_reference_wrapper<const compiler_info>;
+    auto compiler() const noexcept -> optional_reference<const compiler_info>;
 
     /// @brief Returns the build information about the program running in the instance.
     auto build_version() const noexcept
-      -> optional_reference_wrapper<const version_info>;
+      -> optional_reference<const version_info>;
 
 private:
     process_instance_id_t _inst_id{0U};
@@ -902,15 +900,15 @@ public:
     /// @brief Indicates if the connection connects node with the specified id.
     /// @see opposite_id
     auto connects(const identifier_t id) const noexcept {
-        return (_id1 == id) || (_id2 == id);
+        return (_id1 == id) or (_id2 == id);
     }
 
     /// @brief Indicates if the connection connects nodes with the specified id.
     /// @see opposite_id
     auto connects(const identifier_t id1, const identifier_t id2)
       const noexcept {
-        return ((_id1 == id1) && (_id2 == id2)) ||
-               ((_id1 == id2) && (_id2 == id1));
+        return ((_id1 == id1) and (_id2 == id2)) or
+               ((_id1 == id2) and (_id2 == id1));
     }
 
     /// @brief Returns the id of the node opposite to the node with id in argument.
@@ -994,18 +992,18 @@ public:
     /// @brief Returns the i-th connection of the origin node.
     /// @see count
     /// @see remote
-    /// @pre index >= 0 && index < count()
+    /// @pre index >= 0 and  index < count()
     auto get(const span_size_t index) noexcept -> node_connection {
-        assert((index >= 0) && (index < count()));
+        assert((index >= 0) and (index < count()));
         return _tracker.get_connection(_origin_id, _remote_ids[integer(index)]);
     }
 
     /// @brief Returns the node connected through the i-th connection.
     /// @see count
     /// @see get
-    /// @pre index >= 0 && index < count()
+    /// @pre index >= 0 and  index < count()
     auto remote(const span_size_t index) noexcept -> remote_node {
-        assert((index >= 0) && (index < count()));
+        assert((index >= 0) and (index < count()));
         return _tracker.get_node(_remote_ids[integer(index)]);
     }
 

@@ -39,8 +39,8 @@ do
 	${install_prefix}/bin/eagine-msgbus-tiling \
 		"${log_args[@]}" \
 		"${conn_args[@]}" \
-		--msgbus-sudoku-solver-width ${2} \
-		--msgbus-sudoku-solver-height ${2} \
+		--msgbus-sudoku-solver-width ${2:-64} \
+		--msgbus-sudoku-solver-height ${2:-64} \
 		--msgbus-sudoku-solver-output-path /tmp/tiling${t}.txt \
 		& pids+=($!)
 	sleep 2

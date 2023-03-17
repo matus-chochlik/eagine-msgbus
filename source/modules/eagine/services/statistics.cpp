@@ -11,6 +11,7 @@ import eagine.core.types;
 import eagine.core.memory;
 import eagine.core.utility;
 import eagine.msgbus.core;
+import std;
 
 namespace eagine::msgbus {
 //------------------------------------------------------------------------------
@@ -24,7 +25,7 @@ export struct statistics_consumer_signals {
     /// @see bridge_stats_received
     /// @see endpoint_stats_received
     /// @see connection_stats_received
-    signal<void(const identifier_t, const router_statistics&) noexcept>
+    signal<void(const result_context&, const router_statistics&) noexcept>
       router_stats_received;
 
     /// @brief Triggered on receipt of bridge node statistics information.
@@ -32,7 +33,7 @@ export struct statistics_consumer_signals {
     /// @see router_stats_received
     /// @see endpoint_stats_received
     /// @see connection_stats_received
-    signal<void(const identifier_t, const bridge_statistics&) noexcept>
+    signal<void(const result_context&, const bridge_statistics&) noexcept>
       bridge_stats_received;
 
     /// @brief Triggered on receipt of endpoint node statistics information.
@@ -40,14 +41,14 @@ export struct statistics_consumer_signals {
     /// @see router_stats_received
     /// @see bridge_stats_received
     /// @see connection_stats_received
-    signal<void(const identifier_t, const endpoint_statistics&) noexcept>
+    signal<void(const result_context&, const endpoint_statistics&) noexcept>
       endpoint_stats_received;
 
     /// @brief Triggered on receipt of connection statistics information.
     /// @see router_stats_received
     /// @see bridge_stats_received
     /// @see endpoint_stats_received
-    signal<void(const connection_statistics&) noexcept>
+    signal<void(const result_context&, const connection_statistics&) noexcept>
       connection_stats_received;
 };
 //------------------------------------------------------------------------------
@@ -55,6 +56,26 @@ struct statistics_consumer_intf : interface<statistics_consumer_intf> {
     virtual void add_methods() noexcept = 0;
 
     virtual void query_statistics(identifier_t node_id) noexcept = 0;
+
+    virtual auto decode_router_statistics(
+      const message_context& msg_ctx,
+      const stored_message& message) noexcept
+      -> std::optional<router_statistics> = 0;
+
+    virtual auto decode_bridge_statistics(
+      const message_context& msg_ctx,
+      const stored_message& message) noexcept
+      -> std::optional<bridge_statistics> = 0;
+
+    virtual auto decode_endpoint_statistics(
+      const message_context& msg_ctx,
+      const stored_message& message) noexcept
+      -> std::optional<endpoint_statistics> = 0;
+
+    virtual auto decode_connection_statistics(
+      const message_context& msg_ctx,
+      const stored_message& message) noexcept
+      -> std::optional<connection_statistics> = 0;
 };
 //------------------------------------------------------------------------------
 auto make_statistics_consumer_impl(subscriber&, statistics_consumer_signals&)
@@ -79,6 +100,46 @@ public:
     /// @see query_statistics
     void discover_statistics() noexcept {
         query_statistics(broadcast_endpoint_id());
+    }
+
+    auto decode_router_statistics(
+      const message_context& msg_ctx,
+      const stored_message& message) noexcept
+      -> std::optional<router_statistics> {
+        return _impl->decode_router_statistics(msg_ctx, message);
+    }
+
+    auto decode_bridge_statistics(
+      const message_context& msg_ctx,
+      const stored_message& message) noexcept
+      -> std::optional<bridge_statistics> {
+        return _impl->decode_bridge_statistics(msg_ctx, message);
+    }
+
+    auto decode_endpoint_statistics(
+      const message_context& msg_ctx,
+      const stored_message& message) noexcept
+      -> std::optional<endpoint_statistics> {
+        return _impl->decode_endpoint_statistics(msg_ctx, message);
+    }
+
+    auto decode_connection_statistics(
+      const message_context& msg_ctx,
+      const stored_message& message) noexcept
+      -> std::optional<connection_statistics> {
+        return _impl->decode_connection_statistics(msg_ctx, message);
+    }
+
+    auto decode(const message_context& msg_ctx, const stored_message& message) {
+        return this->decode_chain(
+          msg_ctx,
+          message,
+          *static_cast<Base*>(this),
+          *this,
+          &statistics_consumer::decode_router_statistics,
+          &statistics_consumer::decode_bridge_statistics,
+          &statistics_consumer::decode_endpoint_statistics,
+          &statistics_consumer::decode_connection_statistics);
     }
 
 protected:

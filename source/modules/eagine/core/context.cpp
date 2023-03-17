@@ -15,9 +15,7 @@ import eagine.core.main_ctx;
 import eagine.sslplus;
 import :types;
 import :message;
-import <array>;
-import <map>;
-import <random>;
+import std;
 
 namespace eagine::msgbus {
 //------------------------------------------------------------------------------

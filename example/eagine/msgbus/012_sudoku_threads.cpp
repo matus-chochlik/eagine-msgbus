@@ -8,10 +8,7 @@
 import eagine.core;
 import eagine.sslplus;
 import eagine.msgbus;
-import <atomic>;
-import <iostream>;
-import <mutex>;
-import <thread>;
+import std;
 
 namespace eagine {
 namespace msgbus {
@@ -31,11 +28,10 @@ public:
 
     template <unsigned S>
     void print(
-      const identifier_t,
-      const sudoku_solver_key& id,
-      basic_sudoku_board<S>& board) noexcept {
-        std::cout << "board: " << std::get<int>(id) << '\n'
-                  << board << std::endl;
+      const result_context&,
+      const solved_sudoku_board<S>& sol) noexcept {
+        std::cout << "board: " << std::get<int>(sol.key) << '\n'
+                  << sol.board << std::endl;
     }
 };
 
@@ -79,30 +75,28 @@ auto main(main_ctx& ctx) -> int {
     workers.reserve(worker_count);
 
     for(span_size_t i = 0; i < worker_count; ++i) {
-        workers.emplace_back(
-          [&worker_mutex,
-           &start,
-           &done,
-           helper_obj{main_ctx_object{"Helper", ctx}},
-           connection{acceptor->make_connection()}]() mutable {
-              worker_mutex.lock();
-              msgbus::endpoint helper_endpoint{std::move(helper_obj)};
-              helper_endpoint.add_connection(std::move(connection));
-              msgbus::example_helper helper(helper_endpoint);
-              helper.update();
-              worker_mutex.unlock();
+        workers.emplace_back([&worker_mutex,
+                              &start,
+                              &done,
+                              helper_obj{main_ctx_object{"Helper", ctx}},
+                              connection{
+                                acceptor->make_connection()}]() mutable {
+            worker_mutex.lock();
+            msgbus::endpoint helper_endpoint{std::move(helper_obj)};
+            helper_endpoint.add_connection(std::move(connection));
+            msgbus::example_helper helper(helper_endpoint);
+            helper.update();
+            worker_mutex.unlock();
 
-              while(!start) {
-                  std::this_thread::sleep_for(std::chrono::milliseconds(100));
-              }
+            while(not start) {
+                std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            }
 
-              while(!done) {
-                  helper.update();
-                  if(!helper.process_all()) {
-                      std::this_thread::sleep_for(std::chrono::milliseconds(1));
-                  }
-              }
-          });
+            while(not done) {
+                helper.update();
+                helper.process_all().or_sleep_for(std::chrono::milliseconds(1));
+            }
+        });
     }
 
     worker_mutex.lock();
@@ -112,7 +106,7 @@ auto main(main_ctx& ctx) -> int {
     worker_mutex.unlock();
 
     start = true;
-    while(!solver.is_done()) {
+    while(not solver.is_done()) {
         router.update();
         solver.update();
         solver.process_all();

@@ -11,7 +11,7 @@ import eagine.core.types;
 import eagine.core.memory;
 import eagine.core.identifier;
 import eagine.msgbus.core;
-import <chrono>;
+import std;
 
 namespace eagine::msgbus {
 //------------------------------------------------------------------------------
@@ -32,19 +32,41 @@ public:
             &shutdown_target_impl::_handle_shutdown>{});
     }
 
-private:
-    auto _handle_shutdown(
-      const message_context&,
-      const stored_message& message) noexcept -> bool {
+    auto do_decode_shutdown_request(
+      const message_context& msg_ctx,
+      const stored_message& message) noexcept
+      -> std::optional<shutdown_request> {
         typename shutdown_service_duration::rep count{0};
         if(default_deserialize(count, message.content())) {
             const shutdown_service_duration ticks{count};
             const typename shutdown_service_clock::time_point ts{ticks};
             const auto age{this->now() - ts};
+            return {shutdown_request{
+              .source_id = message.source_id,
+              .age = std::chrono::duration_cast<std::chrono::milliseconds>(age),
+              .verified = base.verify_bits(message)}};
+        }
+        return {};
+    }
+
+    auto decode_shutdown_request(
+      const message_context& msg_ctx,
+      const stored_message& message) noexcept
+      -> std::optional<shutdown_request> final {
+        if(msg_ctx.msg_id().is("Shutdown", "shutdown")) {
+            return do_decode_shutdown_request(msg_ctx, message);
+        }
+        return {};
+    }
+
+private:
+    auto _handle_shutdown(
+      const message_context& msg_ctx,
+      const stored_message& message) noexcept -> bool {
+        // TODO: and_then when 23 is available
+        if(const auto decoded{do_decode_shutdown_request(msg_ctx, message)}) {
             signals.shutdown_requested(
-              std::chrono::duration_cast<std::chrono::milliseconds>(age),
-              message.source_id,
-              base.verify_bits(message));
+              result_context{msg_ctx, message}, extract(decoded));
         }
         return true;
     }

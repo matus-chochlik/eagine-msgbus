@@ -20,6 +20,7 @@ import :ping_pong;
 import :statistics;
 import :system_info;
 import :topology;
+import std;
 
 namespace eagine::msgbus {
 //------------------------------------------------------------------------------
@@ -112,38 +113,38 @@ public:
         const bool should_query_info{_impl->should_query_info()};
         const auto update_node = [&](const auto node_id, auto& node) {
             if(should_query_info) {
-                if(!node.has_known_kind()) {
+                if(not node.has_known_kind()) {
                     this->query_topology(node_id);
                 }
-                if(!node.host_id()) {
+                if(not node.host_id()) {
                     this->query_host_id(node_id);
                 }
-                if(!node.has_endpoint_info()) {
+                if(not node.has_endpoint_info()) {
                     this->query_endpoint_info(node_id);
                 }
-                if(!node.instance().compiler()) {
+                if(not node.instance().compiler()) {
                     this->query_compiler_info(node_id);
                 }
-                if(!node.instance().build_version()) {
+                if(not node.instance().build_version()) {
                     this->query_build_version_info(node_id);
                 }
                 if(node.is_responsive()) {
                     if(const auto inst{node.instance_state()}) {
-                        if(!inst.application_name()) {
+                        if(not inst.application_name()) {
                             this->query_application_name(node_id);
                         }
                     }
                     if(auto host{node.host_state()}) {
-                        if(!host.name()) {
+                        if(not host.name()) {
                             this->query_hostname(node_id);
                         }
-                        if(!host.cpu_concurrent_threads()) {
+                        if(not host.cpu_concurrent_threads()) {
                             this->query_cpu_concurrent_threads(node_id);
                         }
-                        if(!host.total_ram_size()) {
+                        if(not host.total_ram_size()) {
                             this->query_total_ram_size(node_id);
                         }
-                        if(!host.total_swap_size()) {
+                        if(not host.total_swap_size()) {
                             this->query_total_swap_size(node_id);
                         }
 

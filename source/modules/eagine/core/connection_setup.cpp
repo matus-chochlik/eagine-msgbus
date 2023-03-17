@@ -14,11 +14,21 @@ import eagine.core.logging;
 import eagine.core.main_ctx;
 import :types;
 import :interface;
-import <memory>;
-import <mutex>;
-import <vector>;
+import std;
 
 namespace eagine::msgbus {
+//------------------------------------------------------------------------------
+export auto make_posix_mqueue_connection_factory(main_ctx_parent parent)
+  -> std::unique_ptr<connection_factory>;
+
+export auto make_asio_tcp_ipv4_connection_factory(main_ctx_parent parent)
+  -> std::unique_ptr<connection_factory>;
+
+export auto make_asio_udp_ipv4_connection_factory(main_ctx_parent parent)
+  -> std::unique_ptr<connection_factory>;
+
+export auto make_asio_local_stream_connection_factory(main_ctx_parent parent)
+  -> std::unique_ptr<connection_factory>;
 //------------------------------------------------------------------------------
 export class connection_setup;
 export void connection_setup_configure(connection_setup&, application_config&);

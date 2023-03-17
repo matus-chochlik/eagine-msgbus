@@ -15,7 +15,7 @@ import eagine.core.main_ctx;
 import :types;
 import :message;
 import :interface;
-import <mutex>;
+import std;
 
 namespace eagine::msgbus {
 //------------------------------------------------------------------------------

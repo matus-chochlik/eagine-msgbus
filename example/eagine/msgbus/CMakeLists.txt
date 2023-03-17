@@ -39,7 +39,7 @@ function(eagine_example_common EXAMPLE_NAME)
 endfunction()
 
 eagine_example_common(001_log_certs)
-eagine_example_common(001_signal)
+#eagine_example_common(001_signal)
 eagine_example_common(001_loopback)
 eagine_example_common(002_direct)
 eagine_example_common(003_shutdown)

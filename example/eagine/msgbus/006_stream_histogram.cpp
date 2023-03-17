@@ -8,8 +8,7 @@
 import eagine.core;
 import eagine.sslplus;
 import eagine.msgbus;
-import <chrono>;
-import <thread>;
+import std;
 
 namespace eagine {
 
@@ -68,7 +67,7 @@ auto main(main_ctx& ctx) -> int {
     for(auto& arg : ctx.args()) {
         enqueue(url(arg.get_string()), false);
     }
-    if(!node.has_pending_resources()) {
+    if(not node.has_pending_resources()) {
         enqueue(url("eagires:///ones?count=134217728"), false);
         enqueue(url("eagires:///zeroes?count=134217728"), true);
         enqueue(url("eagires:///random?count=1073741824"), false);
@@ -77,14 +76,14 @@ auto main(main_ctx& ctx) -> int {
     }
 
     const auto is_done = [&] {
-        if(idle_too_long || !node.has_pending_resources()) {
+        if(idle_too_long or not node.has_pending_resources()) {
             return true;
         }
         return false;
     };
 
-    while(!is_done()) {
-        if(node.update()) {
+    while(not is_done()) {
+        if(node.update_and_process_all()) {
             idle_too_long.reset();
         } else {
             std::this_thread::sleep_for(std::chrono::milliseconds(1));

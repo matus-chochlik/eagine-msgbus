@@ -13,9 +13,7 @@ import eagine.core.identifier;
 import eagine.core.utility;
 import eagine.core.main_ctx;
 import eagine.msgbus.core;
-import <array>;
-import <chrono>;
-import <string>;
+import std;
 
 namespace eagine::msgbus {
 //------------------------------------------------------------------------------

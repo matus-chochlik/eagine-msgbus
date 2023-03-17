@@ -16,7 +16,7 @@ import eagine.core.valid_if;
 import eagine.core.build_info;
 import eagine.core.main_ctx;
 import eagine.msgbus.core;
-import <string>;
+import std;
 
 namespace eagine::msgbus {
 //------------------------------------------------------------------------------
@@ -112,7 +112,7 @@ public:
 
     void update_node_info(
       callable_ref<void(const identifier_t)> update_node) noexcept final {
-        if(!_update_node_ids.empty()) {
+        if(not _update_node_ids.empty()) {
             for(const auto node_id : _update_node_ids) {
                 update_node(node_id);
             }
@@ -164,33 +164,38 @@ private:
         }
     }
 
-    void _handle_alive(const subscriber_info& info) noexcept {
-        _tracker.notice_instance(info.endpoint_id, info.instance_id)
+    void _handle_alive(
+      const result_context&,
+      const subscriber_alive& alive) noexcept {
+        _tracker
+          .notice_instance(alive.source.endpoint_id, alive.source.instance_id)
           .assign(node_kind::endpoint);
     }
 
     void _handle_subscribed(
-      const subscriber_info& info,
-      const message_id msg_id) noexcept {
-        _tracker.notice_instance(info.endpoint_id, info.instance_id)
-          .add_subscription(msg_id);
+      const result_context&,
+      const subscriber_subscribed& sub) noexcept {
+        _tracker.notice_instance(sub.source.endpoint_id, sub.source.instance_id)
+          .add_subscription(sub.message_type);
     }
 
     void _handle_unsubscribed(
-      const subscriber_info& info,
-      const message_id msg_id) noexcept {
-        _tracker.notice_instance(info.endpoint_id, info.instance_id)
-          .remove_subscription(msg_id);
+      const result_context&,
+      const subscriber_unsubscribed& sub) noexcept {
+        _tracker.notice_instance(sub.source.endpoint_id, sub.source.instance_id)
+          .remove_subscription(sub.message_type);
     }
 
     void _handle_not_subscribed(
-      const subscriber_info& info,
-      const message_id msg_id) noexcept {
-        _tracker.notice_instance(info.endpoint_id, info.instance_id)
-          .remove_subscription(msg_id);
+      const result_context&,
+      const subscriber_not_subscribed& sub) noexcept {
+        _tracker.notice_instance(sub.source.endpoint_id, sub.source.instance_id)
+          .remove_subscription(sub.message_type);
     }
 
-    void _handle_router_appeared(const router_topology_info& info) noexcept {
+    void _handle_router_appeared(
+      const result_context&,
+      const router_topology_info& info) noexcept {
         _tracker.notice_instance(info.router_id, info.instance_id)
           .assign(node_kind::router);
         if(info.remote_id) {
@@ -199,7 +204,9 @@ private:
         }
     }
 
-    void _handle_bridge_appeared(const bridge_topology_info& info) noexcept {
+    void _handle_bridge_appeared(
+      const result_context&,
+      const bridge_topology_info& info) noexcept {
         _tracker.notice_instance(info.bridge_id, info.instance_id)
           .assign(node_kind::bridge);
         if(info.opposite_id) {
@@ -208,42 +215,51 @@ private:
         }
     }
 
-    void _handle_endpoint_appeared(const endpoint_topology_info& info) noexcept {
+    void _handle_endpoint_appeared(
+      const result_context&,
+      const endpoint_topology_info& info) noexcept {
         _tracker.notice_instance(info.endpoint_id, info.instance_id)
           .assign(node_kind::endpoint);
     }
 
-    void _handle_router_disappeared(const identifier_t router_id) noexcept {
-        _tracker.remove_node(router_id);
+    void _handle_router_disappeared(
+      const result_context&,
+      const router_shutdown& info) noexcept {
+        _tracker.remove_node(info.router_id);
     }
 
-    void _handle_bridge_disappeared(const identifier_t bridge_id) noexcept {
-        _tracker.remove_node(bridge_id);
+    void _handle_bridge_disappeared(
+      const result_context&,
+      const bridge_shutdown& info) noexcept {
+        _tracker.remove_node(info.bridge_id);
     }
 
-    void _handle_endpoint_disappeared(const identifier_t endpoint_id) noexcept {
-        _tracker.remove_node(endpoint_id);
+    void _handle_endpoint_disappeared(
+      const result_context&,
+      const endpoint_shutdown& info) noexcept {
+        _tracker.remove_node(info.endpoint_id);
     }
 
     void _handle_router_stats_received(
-      const identifier_t router_id,
+      const result_context& ctx,
       const router_statistics& stats) noexcept {
-        _get_node(router_id).assign(stats).notice_alive();
+        _get_node(ctx.source_id()).assign(stats).notice_alive();
     }
 
     void _handle_bridge_stats_received(
-      const identifier_t bridge_id,
+      const result_context& ctx,
       const bridge_statistics& stats) noexcept {
-        _get_node(bridge_id).assign(stats).notice_alive();
+        _get_node(ctx.source_id()).assign(stats).notice_alive();
     }
 
     void _handle_endpoint_stats_received(
-      const identifier_t endpoint_id,
+      const result_context& ctx,
       const endpoint_statistics& stats) noexcept {
-        _get_node(endpoint_id).assign(stats).notice_alive();
+        _get_node(ctx.source_id()).assign(stats).notice_alive();
     }
 
     void _handle_connection_stats_received(
+      const result_context&,
       const connection_statistics& stats) noexcept {
         _get_connection(stats.local_id, stats.remote_id);
     }
@@ -443,7 +459,7 @@ private:
         valid_if_positive<kelvins_t<float>>,
         valid_if_positive<kelvins_t<float>>>& value) noexcept {
         const auto& [min, max] = value;
-        if(min && max) {
+        if(min and max) {
             auto& node = _get_node(ctx.source_id()).notice_alive();
             if(const auto host_id{node.host_id()}) {
                 auto& host = _get_host(extract(host_id)).notice_alive();
@@ -471,18 +487,13 @@ private:
     }
 
     void _handle_ping_response(
-      const identifier_t node_id,
-      const message_sequence_t sequence_no,
-      const std::chrono::microseconds age,
-      const verification_bits) noexcept {
-        _get_node(node_id).ping_response(sequence_no, age);
+      const result_context&,
+      const ping_response& pong) noexcept {
+        _get_node(pong.pingable_id).ping_response(pong.sequence_no, pong.age);
     }
 
-    void _handle_ping_timeout(
-      const identifier_t node_id,
-      const message_sequence_t sequence_no,
-      const std::chrono::microseconds age) noexcept {
-        _get_node(node_id).ping_timeout(sequence_no, age);
+    void _handle_ping_timeout(const ping_timeout& fail) noexcept {
+        _get_node(fail.pingable_id).ping_timeout(fail.sequence_no, fail.age);
     }
 
     auto _get_host(const host_id_t id) noexcept -> remote_host_state& {

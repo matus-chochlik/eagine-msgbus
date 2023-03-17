@@ -26,7 +26,7 @@ import eagine.core.serialization;
 import eagine.core.valid_if;
 import eagine.core.utility;
 import eagine.core.main_ctx;
-import <thread>;
+import std;
 
 namespace eagine::msgbus {
 //------------------------------------------------------------------------------
@@ -119,7 +119,7 @@ private:
     static auto _does_have_flushing(
       Tup& flushing,
       const std::index_sequence<I...>) noexcept -> bool {
-        return (false || ... || !std::get<I>(flushing).empty());
+        return (false or ... or not std::get<I>(flushing).empty());
     }
 
     template <typename Tup>
@@ -302,7 +302,7 @@ struct asio_connection_state : asio_connection_state_base {
         endpoint_type target_endpoint{conn_endpoint};
         const auto packed =
           group.pack_into(target_endpoint, cover(write_buffer));
-        if(!packed.is_empty()) {
+        if(not packed.is_empty()) {
             is_sending = true;
 
             do_start_send(
@@ -312,7 +312,7 @@ struct asio_connection_state : asio_connection_state_base {
               [this, &group, target_endpoint, packed, self{self_ref()}](
                 const std::error_code error,
                 [[maybe_unused]] const std::size_t length) {
-                  if(!error) [[likely]] {
+                  if(not error) [[likely]] {
                       assert(span_size(length) == packed.total());
                       log_trace("sent data")
                         .arg("usedSize", "ByteSize", packed.used())
@@ -342,7 +342,7 @@ struct asio_connection_state : asio_connection_state_base {
 
     auto start_send(asio_connection_group<Kind, Proto>& group) noexcept
       -> bool {
-        if(!is_sending) {
+        if(not is_sending) {
             do_start_send(group);
         }
         return is_sending;
@@ -405,7 +405,7 @@ struct asio_connection_state : asio_connection_state_base {
           [this, &group, selfref{self_ref()}, blk](
             const std::error_code error, const std::size_t length) {
               memory::const_block rcvd{head(blk, span_size(length))};
-              if(!error) [[likely]] {
+              if(not error) [[likely]] {
                   log_trace("received data (size: ${size})")
                     .arg("size", "ByteSize", length);
 
@@ -418,7 +418,7 @@ struct asio_connection_state : asio_connection_state_base {
 
     auto start_receive(asio_connection_group<Kind, Proto>& group) noexcept
       -> bool {
-        if(!is_recving) {
+        if(not is_recving) {
             do_start_receive(group);
         }
         return group.has_received();
@@ -443,7 +443,7 @@ struct asio_connection_state : asio_connection_state_base {
 
     void cleanup(asio_connection_group<Kind, Proto>& group) noexcept {
         log_usage_stats();
-        while(is_usable() && start_send(group)) {
+        while(is_usable() and start_send(group)) {
             log_debug("flushing connection outbox");
             update();
         }
@@ -547,7 +547,7 @@ public:
     }
 
     auto has_received() noexcept -> bool final {
-        return !_incoming.empty();
+        return not _incoming.empty();
     }
 
     auto send(const message_id msg_id, const message_view& message) noexcept
@@ -570,9 +570,9 @@ public:
 
     void cleanup() noexcept final {
         const timeout too_long{std::chrono::seconds{5}};
-        while(!_outgoing.empty() && !too_long) {
+        while(not _outgoing.empty() and not too_long) {
             if(conn_state().socket.is_open()) {
-                if(!conn_state().start_send(*this)) {
+                if(not conn_state().start_send(*this)) {
                     break;
                 }
             }
@@ -684,7 +684,7 @@ public:
                 auto& outgoing = std::get<0>(out_in);
                 assert(outgoing);
                 const auto packed = outgoing->pack_into(dest);
-                if(!packed.is_empty()) {
+                if(not packed.is_empty()) {
                     target = ep;
                     return packed;
                 }
@@ -712,7 +712,7 @@ public:
             for(const auto& p : *m) {
                 const auto& incoming = std::get<1>(std::get<1>(p));
                 assert(incoming);
-                if(!incoming->empty()) {
+                if(not incoming->empty()) {
                     return true;
                 }
             }
@@ -866,7 +866,7 @@ public:
         if(conn_state().socket.is_open()) [[likely]] {
             something_done(conn_state().start_receive(*this));
             something_done(conn_state().start_send(*this));
-        } else if(!_connecting) {
+        } else if(not _connecting) {
             if(_should_reconnect) {
                 _should_reconnect.reset();
                 _start_resolve();
@@ -897,7 +897,7 @@ private:
 
         conn_state().socket.async_connect(
           ep, [this, resolved, port](const std::error_code error) mutable {
-              if(!error) {
+              if(not error) {
                   this->log_debug("connected on address ${host}:${port}")
                     .arg("host", "IpV4Host", std::get<0>(_addr))
                     .arg("port", "IpV4Port", std::get<1>(_addr));
@@ -927,7 +927,7 @@ private:
           asio::string_view(host.data(), integer(host.size())),
           {},
           [this, port{port}](const std::error_code error, auto resolved) {
-              if(!error) {
+              if(not error) {
                   this->_start_connect(resolved, port);
               } else {
                   this->log_error("failed to resolve address: ${error}")
@@ -961,7 +961,7 @@ public:
     auto update() noexcept -> work_done final {
         assert(this->_asio_state);
         some_true something_done{};
-        if(!_acceptor.is_open()) [[unlikely]] {
+        if(not _acceptor.is_open()) [[unlikely]] {
             asio::ip::tcp::endpoint endpoint(
               asio::ip::tcp::v4(), std::get<1>(_addr));
             _acceptor.open(endpoint.protocol());
@@ -1009,7 +1009,7 @@ private:
 
         _socket = asio::ip::tcp::socket(this->_asio_state->context);
         _acceptor.async_accept(_socket, [this](const std::error_code error) {
-            if(!error) {
+            if(not error) {
                 log_debug("accepted connection on address ${host}:${port}")
                   .arg("host", "IpV4Host", std::get<0>(_addr))
                   .arg("port", "IpV4Port", std::get<1>(_addr));
@@ -1079,7 +1079,7 @@ public:
         if(conn_state().socket.is_open()) [[likely]] {
             something_done(conn_state().start_receive(*this));
             something_done(conn_state().start_send(*this));
-        } else if(!_establishing) {
+        } else if(not _establishing) {
             if(_should_reconnect) {
                 _should_reconnect.reset();
                 _start_resolve();
@@ -1116,7 +1116,7 @@ private:
         const auto& [host, port] = _addr;
         _resolver.async_resolve(
           host, {}, [this, port{port}](std::error_code error, auto resolved) {
-              if(!error) {
+              if(not error) {
                   this->_on_resolve(resolved, port);
               } else {
                   this->log_error("failed to resolve address: ${error}")
@@ -1220,7 +1220,7 @@ public:
         if(conn_state().socket.is_open()) [[likely]] {
             something_done(conn_state().start_receive(*this));
             something_done(conn_state().start_send(*this));
-        } else if(!_connecting) {
+        } else if(not _connecting) {
             if(_should_reconnect) {
                 _should_reconnect.reset();
                 _start_connect();
@@ -1246,7 +1246,7 @@ private:
         conn_state().socket.async_connect(
           conn_state().conn_endpoint,
           [this](const std::error_code error) mutable {
-              if(!error) {
+              if(not error) {
                   this->log_debug("connected on address ${address}")
                     .arg("address", "FsPath", _addr_str);
                   _connecting = false;
@@ -1299,13 +1299,13 @@ public:
     auto update() noexcept -> work_done final {
         assert(this->_asio_state);
         some_true something_done{};
-        if(!_acceptor.is_open()) [[unlikely]] {
+        if(not _acceptor.is_open()) [[unlikely]] {
             _acceptor = {
               _asio_state->context,
               asio::local::stream_protocol::endpoint(_addr_str.c_str())};
             something_done();
         }
-        if(_acceptor.is_open() && !_accepting) {
+        if(_acceptor.is_open() and not _accepting) {
             _start_accept();
             something_done();
         }

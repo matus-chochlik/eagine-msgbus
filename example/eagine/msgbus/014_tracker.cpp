@@ -8,7 +8,7 @@
 import eagine.core;
 import eagine.sslplus;
 import eagine.msgbus;
-import <thread>;
+import std;
 
 namespace eagine {
 namespace msgbus {
@@ -80,11 +80,9 @@ auto main(main_ctx& ctx) -> int {
 
     timeout keep_going{std::chrono::minutes(5)};
 
-    while(!keep_going) {
+    while(not keep_going) {
         the_tracker.process_all();
-        if(!the_tracker.update()) {
-            std::this_thread::sleep_for(std::chrono::milliseconds(1));
-        }
+        the_tracker.update().or_sleep_for(std::chrono::milliseconds(1));
     }
     the_tracker.shutdown();
 

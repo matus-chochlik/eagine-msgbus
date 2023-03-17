@@ -25,11 +25,11 @@ TrackerModel::TrackerModel(MonitorBackend& backend)
     eagine::connect<&TrackerModel::handleNodeChanged>(
       this, _tracker.node_changed);
 
-    eagine::connect<&TrackerModel::handleNodeDisappeared>(
+    eagine::connect<&TrackerModel::handleRouterDisappeared>(
       this, _tracker.router_disappeared);
-    eagine::connect<&TrackerModel::handleNodeDisappeared>(
+    eagine::connect<&TrackerModel::handleBridgeDisappeared>(
       this, _tracker.bridge_disappeared);
-    eagine::connect<&TrackerModel::handleNodeDisappeared>(
+    eagine::connect<&TrackerModel::handleEndpointDisappeared>(
       this, _tracker.endpoint_disappeared);
 }
 //------------------------------------------------------------------------------
@@ -41,7 +41,7 @@ auto TrackerModel::hostParameters(eagine::identifier_t hostId) noexcept
         pos = _host_parameters.emplace(hostId, result).first;
     }
     result = pos->second.lock();
-    if(!result) {
+    if(not result) {
         result = std::make_shared<HostParameterModel>();
         pos->second = result;
     }
@@ -56,7 +56,7 @@ auto TrackerModel::nodeParameters(eagine::identifier_t nodeId) noexcept
         pos = _node_parameters.emplace(nodeId, result).first;
     }
     result = pos->second.lock();
-    if(!result) {
+    if(not result) {
         result = std::make_shared<NodeParameterModel>();
         pos->second = result;
     }
@@ -102,10 +102,10 @@ void TrackerModel::handleInstanceChanged(
     }
 
     if(
-      changes.has(remote_instance_change::statistics) ||
-      changes.has(remote_instance_change::started_responding) ||
-      changes.has(remote_instance_change::stopped_responding) ||
-      changes.has(remote_instance_change::application_info) ||
+      changes.has(remote_instance_change::statistics) or
+      changes.has(remote_instance_change::started_responding) or
+      changes.has(remote_instance_change::stopped_responding) or
+      changes.has(remote_instance_change::application_info) or
       changes.has(remote_instance_change::build_info)) {
         emit instanceInfoChanged(instance);
     }
@@ -136,15 +136,15 @@ void TrackerModel::handleNodeChanged(
     }
 
     if(
-      changes.has(remote_node_change::host_id) ||
+      changes.has(remote_node_change::host_id) or
       changes.has(remote_node_change::instance_id)) {
         emit nodeRelocated(node);
     }
 
     if(
-      changes.has(remote_node_change::endpoint_info) ||
-      changes.has(remote_node_change::response_rate) ||
-      changes.has(remote_node_change::started_responding) ||
+      changes.has(remote_node_change::endpoint_info) or
+      changes.has(remote_node_change::response_rate) or
+      changes.has(remote_node_change::started_responding) or
       changes.has(remote_node_change::stopped_responding)) {
         emit nodeInfoChanged(node);
     }
@@ -159,8 +159,22 @@ void TrackerModel::handleNodeChanged(
     }
 }
 //------------------------------------------------------------------------------
-void TrackerModel::handleNodeDisappeared(eagine::identifier_t nodeId) noexcept {
-    emit nodeDisappeared(nodeId);
+void TrackerModel::handleRouterDisappeared(
+  const eagine::msgbus::result_context&,
+  const eagine::msgbus::router_shutdown& info) noexcept {
+    emit nodeDisappeared(info.router_id);
+}
+//------------------------------------------------------------------------------
+void TrackerModel::handleBridgeDisappeared(
+  const eagine::msgbus::result_context&,
+  const eagine::msgbus::bridge_shutdown& info) noexcept {
+    emit nodeDisappeared(info.bridge_id);
+}
+//------------------------------------------------------------------------------
+void TrackerModel::handleEndpointDisappeared(
+  const eagine::msgbus::result_context&,
+  const eagine::msgbus::endpoint_shutdown& info) noexcept {
+    emit nodeDisappeared(info.endpoint_id);
 }
 //------------------------------------------------------------------------------
 void TrackerModel::update() {

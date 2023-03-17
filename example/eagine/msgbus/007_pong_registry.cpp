@@ -8,10 +8,7 @@
 import eagine.core;
 import eagine.sslplus;
 import eagine.msgbus;
-import <algorithm>;
-import <chrono>;
-import <cstdint>;
-import <thread>;
+import std;
 
 namespace eagine {
 namespace msgbus {
@@ -42,13 +39,12 @@ public:
     }
 
     void on_shutdown(
-      const std::chrono::milliseconds age,
-      const identifier_t source_id,
-      const verification_bits verified) noexcept {
+      const result_context&,
+      const shutdown_request& req) noexcept {
         log_info("received shutdown request from ${source}")
-          .arg("age", age)
-          .arg("source", source_id)
-          .arg("verified", verified);
+          .arg("age", req.age)
+          .arg("source", req.source_id)
+          .arg("verified", req.verified);
 
         _done = true;
     }
@@ -83,10 +79,8 @@ auto main(main_ctx& ctx) -> int {
 
     auto& ponger = the_reg.emplace<msgbus::pong_example>("PongEndpt");
 
-    while(!ponger.is_done()) {
-        if(!the_reg.update_all()) {
-            std::this_thread::sleep_for(std::chrono::milliseconds(1));
-        }
+    while(not ponger.is_done()) {
+        the_reg.update_and_process().or_sleep_for(std::chrono::milliseconds(1));
     }
 
     return 0;

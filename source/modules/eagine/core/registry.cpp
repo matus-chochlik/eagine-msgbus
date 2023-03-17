@@ -21,7 +21,8 @@ import :interface;
 import :endpoint;
 import :router;
 import :setup;
-import <vector>;
+import :service;
+import std;
 
 namespace eagine::msgbus {
 //------------------------------------------------------------------------------
@@ -30,6 +31,7 @@ struct registered_entry {
     std::unique_ptr<service_interface> _service{};
 
     auto update_service() noexcept -> work_done;
+    auto update_and_process_service() noexcept -> work_done;
 };
 //------------------------------------------------------------------------------
 /// @brief Class combining a local bus router and a set of endpoints.
@@ -46,24 +48,70 @@ public:
         return extract(_add_entry(log_id)._endpoint);
     }
 
+    /// @brief Returns the id of the internal router.
+    auto router_id() const noexcept -> identifier_t {
+        return _router.get_id();
+    }
+
     /// @brief Establishes an endpoint and instantiates a service object tied to it.
     /// @see establish
-    template <typename Service, typename... Args>
+    /// @see remove
+    template <std::derived_from<service_interface> Service, typename... Args>
     auto emplace(const identifier log_id, Args&&... args) noexcept
       -> Service& requires(std::is_base_of_v<service_interface, Service>) {
-                      auto& entry = _add_entry(log_id);
-                      auto temp{std::make_unique<Service>(
-                        extract(entry._endpoint), std::forward<Args>(args)...)};
-                      auto& result = extract(temp);
-                      entry._service = std::move(temp);
-                      return result;
-                  }
+          auto& entry = _add_entry(log_id);
+          auto temp{std::make_unique<Service>(
+            extract(entry._endpoint), std::forward<Args>(args)...)};
+          assert(temp);
+          entry._service = std::move(temp);
+          return *static_cast<Service*>(entry._service.get());
+      }
+
+    /// @brief Updates this registry until all registerd services have id or timeout.
+    auto wait_for_ids(const std::chrono::milliseconds) noexcept -> bool;
+
+    /// @brief Updates this registry until all specified services have id or timeout.
+    /// @return Indicates if the service has_id
+    template <typename R, typename P, composed_service... Service>
+    auto wait_for_id_of(
+      const std::chrono::duration<R, P> t,
+      Service&... service) noexcept {
+        timeout get_id_time{t};
+        while(not(... and service.has_id())) {
+            if(get_id_time.is_expired()) [[unlikely]] {
+                return false;
+            }
+            update_and_process();
+        }
+        return true;
+    }
+
+    /// @brief Returns a view of the registered services.
+    auto services() noexcept -> pointee_generator<service_interface*> {
+        for(auto pos{_entries.begin()}; pos != _entries.end(); ++pos) {
+            assert(pos->_service);
+            co_yield pos->_service.get();
+        }
+    }
 
     /// @brief Removes a previously emplaced service.
+    /// @see emplace
     void remove(service_interface&) noexcept;
 
-    auto update() noexcept -> work_done;
-    auto update_all() noexcept -> work_done;
+    /// @brief Updates the internal router.
+    /// @see update_only
+    /// @see update_and_process
+    auto update_self() noexcept -> work_done;
+
+    /// @brief Updates the internal router and the services without processing message.
+    /// @see update_self
+    /// @see update_and_process
+    auto update_only() noexcept -> work_done;
+
+    /// @brief Updates the internal router and all emplaced services.
+    /// @see update_self
+    /// @see update_only
+    auto update_and_process() noexcept -> work_done;
 
     auto is_done() noexcept -> bool {
         return _router.is_done();

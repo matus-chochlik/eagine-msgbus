@@ -8,7 +8,7 @@
 import eagine.core;
 import eagine.sslplus;
 import eagine.msgbus;
-import <thread>;
+import std;
 
 namespace eagine {
 namespace msgbus {
@@ -61,7 +61,7 @@ public:
     }
 
     void update() noexcept {
-        if(_ready && (_sent <= _max * 2) && (_sent < _rcvd + _lmod)) {
+        if(_ready and (_sent <= _max * 2) and (_sent < _rcvd + _lmod)) {
             bus_node().broadcast({"PingPong", "Ping"});
             if(++_sent % _lmod == 0) {
                 bus_node().log_info("sent ${count} pings").arg("count", _sent);
@@ -72,7 +72,7 @@ public:
     }
 
     auto is_done() const noexcept -> bool {
-        return (_rcvd >= _max) || _timeout;
+        return (_rcvd >= _max) or _timeout;
     }
 
     auto pings_per_second(const std::chrono::duration<float> s) const noexcept {
@@ -103,7 +103,7 @@ auto main(main_ctx& ctx) -> int {
 
     const time_measure run_time;
 
-    while(!ping.is_done()) {
+    while(not ping.is_done()) {
         ping.update();
         ping.process_all();
     }

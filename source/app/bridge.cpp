@@ -8,7 +8,7 @@
 import eagine.core;
 import eagine.sslplus;
 import eagine.msgbus;
-import <thread>;
+import std;
 
 namespace eagine {
 //------------------------------------------------------------------------------
@@ -50,7 +50,7 @@ public:
     }
 
     auto is_shut_down() const noexcept {
-        return _do_shutdown && _shutdown_timeout;
+        return _do_shutdown and _shutdown_timeout;
     }
 
 private:
@@ -73,17 +73,16 @@ private:
     }
 
     void on_shutdown(
-      const std::chrono::milliseconds age,
-      const identifier_t source_id,
-      const verification_bits verified) noexcept {
+      const result_context&,
+      const shutdown_request& req) noexcept {
         log_info("received ${age} old shutdown request from ${source}")
-          .arg("age", age)
-          .arg("source", source_id)
-          .arg("verified", verified);
+          .arg("age", req.age)
+          .arg("source", req.source_id)
+          .arg("verified", req.verified);
 
-        if(!_shutdown_ignore) {
-            if(age <= _shutdown_max_age) {
-                if(!_shutdown_verify || _shutdown_verified(verified)) {
+        if(not _shutdown_ignore) {
+            if(req.age <= _shutdown_max_age) {
+                if(not _shutdown_verify or _shutdown_verified(req.verified)) {
                     log_info("request is valid, shutting down");
                     _do_shutdown = true;
                     _shutdown_timeout.reset();
@@ -129,7 +128,7 @@ auto main(main_ctx& ctx) -> int {
         auto& wd = ctx.watchdog();
         wd.declare_initialized();
 
-        while(!(interrupted || node.is_shut_down() || bridge.is_done()))
+        while(not(interrupted or node.is_shut_down() or bridge.is_done()))
           [[likely]] {
             some_true something_done{};
             something_done(bridge.update());
@@ -205,7 +204,7 @@ void maybe_start_coprocess(
               ::pipe(static_cast<int*>(pipe_b2c));
             [[maybe_unused]] const int pipe_res_c2b =
               ::pipe(static_cast<int*>(pipe_c2b));
-            EAGINE_ASSERT(pipe_res_b2c == 0 && pipe_res_c2b == 0);
+            EAGINE_ASSERT(pipe_res_b2c == 0 and pipe_res_c2b == 0);
 
             const int fork_res = ::fork();
             EAGINE_ASSERT(fork_res >= 0);
@@ -220,7 +219,7 @@ void maybe_start_coprocess(
                     ::dup2(pipe_c2b[1], 1);
 
                     const char* ssh_exe = std::getenv("EAGINE_SSH");
-                    if(!ssh_exe) {
+                    if(not ssh_exe) {
                         ssh_exe = "ssh";
                     }
                     ::execlp( // NOLINT(hicpp-vararg)
@@ -260,7 +259,7 @@ auto maybe_cleanup(int result) -> int {
         ::kill(ssh_coprocess_pid, SIGTERM);
         ::waitpid(ssh_coprocess_pid, &status, 0);
         // NOLINTNEXTLINE(hicpp-signed-bitwise)
-        if(!WIFEXITED(status) || WEXITSTATUS(status) != 0) {
+        if(not WIFEXITED(status) or WEXITSTATUS(status) != 0) {
             return status;
         }
     }

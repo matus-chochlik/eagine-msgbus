@@ -16,8 +16,7 @@ import eagine.core.memory;
 import eagine.core.identifier;
 import eagine.core.utility;
 import eagine.msgbus.core;
-import <array>;
-import <chrono>;
+import std;
 
 namespace eagine::msgbus {
 //------------------------------------------------------------------------------
@@ -26,21 +25,35 @@ export using shutdown_service_clock = std::chrono::system_clock;
 export using shutdown_service_duration =
   std::chrono::duration<std::int64_t, std::milli>;
 //------------------------------------------------------------------------------
+/// @brief
+/// @ingroup msgbus
+/// @see shutdown_target_signals
+export struct shutdown_request {
+    /// @brief Id of the endpoint that sent the request.
+    identifier_t source_id;
+    /// @brief The age of the request.
+    std::chrono::milliseconds age;
+    /// @brief Bitfield indicating what part of the message could be verified.
+    verification_bits verified;
+};
+//------------------------------------------------------------------------------
 /// @brief Collection of signals emitted by the shutdown target service.
 /// @ingroup msgbus
 /// @see shutdown_target
 /// @see shutdown_invoker
 export struct shutdown_target_signals {
     /// @brief Triggered when a shutdown request is received.
-    signal<void(
-      const std::chrono::milliseconds age,
-      const identifier_t source_id,
-      const verification_bits verified) noexcept>
+    signal<void(const result_context&, const shutdown_request&) noexcept>
       shutdown_requested;
 };
 //------------------------------------------------------------------------------
 struct shutdown_target_intf : interface<shutdown_target_intf> {
     virtual void add_methods() noexcept = 0;
+
+    virtual auto decode_shutdown_request(
+      const message_context& msg_ctx,
+      const stored_message& message) noexcept
+      -> std::optional<shutdown_request> = 0;
 };
 //------------------------------------------------------------------------------
 auto make_shutdown_target_impl(subscriber&, shutdown_target_signals&)
@@ -54,6 +67,22 @@ export template <typename Base = subscriber>
 class shutdown_target
   : public Base
   , public shutdown_target_signals {
+public:
+    auto decode_shutdown_request(
+      const message_context& msg_ctx,
+      const stored_message& message) noexcept
+      -> std::optional<shutdown_request> {
+        return _impl->decode_shutdown_request(msg_ctx, message);
+    }
+
+    auto decode(const message_context& msg_ctx, const stored_message& message) {
+        return this->decode_chain(
+          msg_ctx,
+          message,
+          *static_cast<Base*>(this),
+          *this,
+          &shutdown_target::decode_shutdown_request);
+    }
 
 protected:
     using Base::Base;
@@ -90,10 +119,12 @@ public:
         auto serialized{default_serialize(count, cover(temp))};
         assert(serialized);
 
+        const message_id msg_id{"Shutdown", "shutdown"};
         message_view message{extract(serialized)};
         message.set_target_id(target_id);
-        this->bus_node().post_signed(
-          message_id{"Shutdown", "shutdown"}, message);
+        if(not this->bus_node().post_signed(msg_id, message)) {
+            this->bus_node().post(msg_id, message);
+        }
     }
 
 protected:

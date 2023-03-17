@@ -22,9 +22,7 @@ import :types;
 import :message;
 import :handler_map;
 import :endpoint;
-import <array>;
-export import <map>;
-import <tuple>;
+import std;
 
 namespace eagine::msgbus {
 //------------------------------------------------------------------------------
@@ -69,19 +67,18 @@ private:
         _source.reset(request.content());
         Deserializer read_backend(_source);
 
-        if(request.has_serializer_id(read_backend.type_id())) {
-            const auto read_errors = deserialize(args, read_backend);
-            if(!read_errors) {
+        if(request.has_serializer_id(read_backend.type_id())) [[likely]] {
+            if(deserialize(args, read_backend)) [[likely]] {
                 _sink.reset(buffer);
                 Serializer write_backend(_sink);
 
-                [[maybe_unused]] const auto errors =
-                  serialize(std::apply(func, args), write_backend);
-
-                assert(!errors);
-                message_view msg_out{_sink.done()};
-                msg_out.set_serializer_id(write_backend.type_id());
-                msg_ctx.bus_node().respond_to(request, response_id, msg_out);
+                if(serialize(std::apply(func, args), write_backend))
+                  [[likely]] {
+                    message_view msg_out{_sink.done()};
+                    msg_out.set_serializer_id(write_backend.type_id());
+                    msg_ctx.bus_node().respond_to(
+                      request, response_id, msg_out);
+                }
                 return true;
             }
         }
@@ -99,11 +96,11 @@ private:
         _sink.reset(buffer);
         Serializer write_backend(_sink);
 
-        [[maybe_unused]] const auto errors = serialize(func(), write_backend);
-        assert(!errors);
-        message_view msg_out{_sink.done()};
-        msg_out.set_serializer_id(write_backend.type_id());
-        msg_ctx.bus_node().respond_to(request, response_id, msg_out);
+        if(serialize(func(), write_backend)) [[likely]] {
+            message_view msg_out{_sink.done()};
+            msg_out.set_serializer_id(write_backend.type_id());
+            msg_ctx.bus_node().respond_to(request, response_id, msg_out);
+        }
         return true;
     }
 
@@ -215,11 +212,10 @@ public:
                 _source.reset(request.content());
                 Deserializer read_backend(_source);
 
-                if(request.has_serializer_id(read_backend.type_id())) {
+                if(request.has_serializer_id(read_backend.type_id()))
+                  [[likely]] {
                     auto& call = pos->second;
-                    const auto read_errors =
-                      deserialize(call.args, read_backend);
-                    if(!read_errors) {
+                    if(deserialize(call.args, read_backend)) [[likely]] {
                         call.too_late.reset(_default_timeout);
                         call.response_id = response_id;
                         call.invoker_id = request.source_id;
@@ -247,19 +243,18 @@ public:
             const auto invocation_id = pos->first;
             const auto& call = pos->second;
             ++pos;
-            if(!call.too_late) {
+            if(not call.too_late) {
                 _sink.reset(cover(buffer));
                 Serializer write_backend(_sink);
 
-                [[maybe_unused]] const auto errors =
-                  serialize(std::apply(call.func, call.args), write_backend);
-
-                assert(!errors);
-                message_view msg_out{_sink.done()};
-                msg_out.set_serializer_id(write_backend.type_id());
-                msg_out.set_target_id(call.invoker_id);
-                msg_out.set_sequence_no(invocation_id);
-                bus.post(call.response_id, msg_out);
+                if(serialize(std::apply(call.func, call.args), write_backend))
+                  [[likely]] {
+                    message_view msg_out{_sink.done()};
+                    msg_out.set_serializer_id(write_backend.type_id());
+                    msg_out.set_target_id(call.invoker_id);
+                    msg_out.set_sequence_no(invocation_id);
+                    bus.post(call.response_id, msg_out);
+                }
                 break;
             }
         }
@@ -320,11 +315,10 @@ public:
                 _source.reset(request.content());
                 Deserializer read_backend(_source);
 
-                if(request.has_serializer_id(read_backend.type_id())) {
+                if(request.has_serializer_id(read_backend.type_id()))
+                  [[likely]] {
                     auto& call = pos->second;
-                    const auto read_errors =
-                      deserialize(call.args, read_backend);
-                    if(!read_errors) {
+                    if(deserialize(call.args, read_backend)) [[likely]] {
                         call.response_id = response_id;
                         call.invoker_id = request.source_id;
                         call.func = func;
@@ -355,8 +349,7 @@ public:
                 _sink.reset(buffer);
                 Serializer write_backend(_sink);
 
-                const auto errors = serialize(call.result, write_backend);
-                if(!errors) {
+                if(serialize(call.result, write_backend)) [[likely]] {
                     message_view msg_out{_sink.done()};
                     msg_out.set_serializer_id(write_backend.type_id());
                     msg_out.set_target_id(call.invoker_id);

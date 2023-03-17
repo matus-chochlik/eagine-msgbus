@@ -23,10 +23,22 @@ eagine_add_module(
 	PARTITIONS
 		resource_transfer
 	SOURCES
-		resource_transfer_impl
+		resource_transfer
 	IMPORTS
 		eagine.core.reflection
 		eagine.core.valid_if
 		eagine.core.logging
 )
+
+
+eagine_add_module_tests(
+	eagine.msgbus.utility
+	UNITS
+		resource_transfer
+	IMPORTS
+		eagine.core
+		eagine.msgbus.core
+		eagine.msgbus.services
+)
+set_tests_properties(execute-test.eagine.msgbus.utility.resource_transfer PROPERTIES COST 25)
 

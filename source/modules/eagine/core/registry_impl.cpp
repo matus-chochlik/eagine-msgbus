@@ -5,6 +5,10 @@
 /// See accompanying file LICENSE_1_0.txt or copy at
 ///  http://www.boost.org/LICENSE_1_0.txt
 ///
+module;
+
+#include <cassert>
+
 module eagine.msgbus.core;
 
 import eagine.core.types;
@@ -12,10 +16,19 @@ import eagine.core.memory;
 import eagine.core.identifier;
 import eagine.core.utility;
 import eagine.core.main_ctx;
+import std;
 
 namespace eagine::msgbus {
 //------------------------------------------------------------------------------
 auto registered_entry::update_service() noexcept -> work_done {
+    some_true something_done;
+    if(_service) [[likely]] {
+        something_done(_service->update_only());
+    }
+    return something_done;
+}
+//------------------------------------------------------------------------------
+auto registered_entry::update_and_process_service() noexcept -> work_done {
     some_true something_done;
     if(_service) [[likely]] {
         something_done(_service->update_and_process_all());
@@ -53,11 +66,11 @@ void registry::remove(service_interface& service) noexcept {
     });
 }
 //------------------------------------------------------------------------------
-auto registry::update() noexcept -> work_done {
+auto registry::update_self() noexcept -> work_done {
     return _router.update(8);
 }
 //------------------------------------------------------------------------------
-auto registry::update_all() noexcept -> work_done {
+auto registry::update_only() noexcept -> work_done {
     some_true something_done{};
 
     something_done(_router.do_work());
@@ -70,6 +83,42 @@ auto registry::update_all() noexcept -> work_done {
     something_done(_router.do_maintenance());
 
     return something_done;
+}
+//------------------------------------------------------------------------------
+auto registry::update_and_process() noexcept -> work_done {
+    some_true something_done{};
+
+    something_done(_router.do_work());
+
+    for(auto& entry : _entries) {
+        something_done(entry.update_and_process_service());
+    }
+
+    something_done(_router.do_work());
+    something_done(_router.do_maintenance());
+
+    return something_done;
+}
+//------------------------------------------------------------------------------
+auto registry::wait_for_ids(const std::chrono::milliseconds t) noexcept
+  -> bool {
+    timeout get_id_time{t};
+    const auto missing_ids{[this]() {
+        for(const auto& entry : _entries) {
+            assert(entry._service);
+            if(not entry._service->has_id()) {
+                return true;
+            }
+        }
+        return false;
+    }};
+    while(missing_ids()) {
+        if(get_id_time.is_expired()) [[unlikely]] {
+            return false;
+        }
+        update_and_process();
+    }
+    return true;
 }
 //------------------------------------------------------------------------------
 } // namespace eagine::msgbus

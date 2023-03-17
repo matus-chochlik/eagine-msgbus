@@ -8,11 +8,7 @@
 import eagine.core;
 import eagine.sslplus;
 import eagine.msgbus;
-import <atomic>;
-import <chrono>;
-import <condition_variable>;
-import <mutex>;
-import <thread>;
+import std;
 
 namespace eagine {
 namespace msgbus {
@@ -45,13 +41,12 @@ public:
 
 private:
     void on_shutdown(
-      const std::chrono::milliseconds age,
-      const identifier_t source_id,
-      const verification_bits verified) noexcept {
+      const result_context&,
+      const shutdown_request& req) noexcept {
         log_info("received shutdown request from ${source}")
-          .arg("age", age)
-          .arg("source", source_id)
-          .arg("verified", verified);
+          .arg("age", req.age)
+          .arg("source", req.source_id)
+          .arg("verified", req.verified);
 
         _do_shutdown = true;
     }
@@ -108,9 +103,9 @@ auto main(main_ctx& ctx) -> int {
                     return false;
                 }
             }
-            return !(
-              helper_node.is_shut_down() ||
-              (shutdown_when_idle &&
+            return not(
+              helper_node.is_shut_down() or
+              (shutdown_when_idle and
                (helper_node.idle_time() > max_idle_time)));
         };
 
@@ -140,7 +135,7 @@ auto main(main_ctx& ctx) -> int {
     }
 
     std::unique_lock init_lock{helper_mutex};
-    the_reg.update();
+    the_reg.update_self();
     remaining--;
     helper_cond.notify_all();
     init_lock.unlock();
@@ -149,8 +144,8 @@ auto main(main_ctx& ctx) -> int {
     wd.declare_initialized();
 
     int idle_streak = 0;
-    while(!(interrupted || the_reg.is_done())) {
-        if(the_reg.update()) {
+    while(not(interrupted or the_reg.is_done())) {
+        if(the_reg.update_self()) {
             idle_streak = 0;
             std::this_thread::sleep_for(std::chrono::milliseconds(1));
         } else {
@@ -169,7 +164,7 @@ auto main(main_ctx& ctx) -> int {
 
     for(auto& helper : helpers) {
         helper.join();
-        the_reg.update();
+        the_reg.update_self();
     }
 
     the_reg.finish();
