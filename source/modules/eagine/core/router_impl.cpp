@@ -23,6 +23,12 @@ import std;
 
 namespace eagine::msgbus {
 //------------------------------------------------------------------------------
+// router_pending
+//------------------------------------------------------------------------------
+auto router_pending::age() const noexcept {
+    return std::chrono::steady_clock::now() - create_time;
+}
+//------------------------------------------------------------------------------
 // router_endpoint_info
 //------------------------------------------------------------------------------
 void router_endpoint_info::assign_instance_id(const message_view& msg) noexcept {
@@ -32,6 +38,13 @@ void router_endpoint_info::assign_instance_id(const message_view& msg) noexcept 
         subscriptions.clear();
         unsubscriptions.clear();
     }
+}
+//------------------------------------------------------------------------------
+// connection_update_work_unit
+//------------------------------------------------------------------------------
+auto connection_update_work_unit::do_it() noexcept -> bool {
+    _node->the_connection->update();
+    return true;
 }
 //------------------------------------------------------------------------------
 // routed_node
@@ -75,6 +88,12 @@ auto routed_node::is_allowed(const message_id msg_id) const noexcept -> bool {
         return not message_id_list_contains(message_block_list, msg_id);
     }
     return true;
+}
+//------------------------------------------------------------------------------
+void routed_node::init_update_connection(
+  std::latch& completed,
+  some_true_atomic& something_done) noexcept {
+    update_connection = {*this, completed, something_done};
 }
 //------------------------------------------------------------------------------
 auto routed_node::send(
@@ -1249,15 +1268,15 @@ auto router::_route_messages() noexcept -> work_done {
     return something_done;
 }
 //------------------------------------------------------------------------------
-auto router::_update_connections_by_workers(std::latch& completed) noexcept
-  -> work_done {
-    some_true something_done{};
+void router::_update_connections_by_workers(
+  some_true_atomic& something_done) noexcept {
+    std::latch completed{limit_cast<std::ptrdiff_t>(_nodes.size())};
     auto& work = workers();
 
     for(auto& entry : _nodes) {
         auto& node_in = std::get<1>(entry);
         if(node_in.the_connection) [[likely]] {
-            node_in.update_connection = {*node_in.the_connection, completed};
+            node_in.init_update_connection(completed, something_done);
             work.enqueue(node_in.update_connection);
         }
     }
@@ -1267,7 +1286,7 @@ auto router::_update_connections_by_workers(std::latch& completed) noexcept
         _no_connection_timeout.reset();
     }
 
-    return something_done;
+    completed.wait();
 }
 //------------------------------------------------------------------------------
 auto router::_update_connections_by_router() noexcept -> work_done {
@@ -1301,14 +1320,12 @@ auto router::do_maintenance() noexcept -> work_done {
 }
 //------------------------------------------------------------------------------
 auto router::do_work_by_workers() noexcept -> work_done {
-    some_true something_done{};
+    some_true_atomic something_done{};
 
     something_done(_handle_pending());
-    something_done(_route_messages());
-    std::latch completed{limit_cast<std::ptrdiff_t>(_nodes.size())};
-    something_done(_update_connections_by_workers(completed));
     something_done(_handle_accept());
-    completed.wait();
+    something_done(_route_messages());
+    _update_connections_by_workers(something_done);
 
     return something_done;
 }

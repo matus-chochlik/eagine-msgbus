@@ -23,6 +23,7 @@ import :context;
 import std;
 
 namespace eagine::msgbus {
+struct routed_node;
 //------------------------------------------------------------------------------
 struct router_pending {
     router_pending(std::unique_ptr<connection> a_connection) noexcept
@@ -33,9 +34,7 @@ struct router_pending {
 
     std::unique_ptr<connection> the_connection{};
 
-    auto age() const noexcept {
-        return std::chrono::steady_clock::now() - create_time;
-    }
+    auto age() const noexcept;
 };
 //------------------------------------------------------------------------------
 struct router_endpoint_info {
@@ -47,26 +46,28 @@ struct router_endpoint_info {
     void assign_instance_id(const message_view& msg) noexcept;
 };
 //------------------------------------------------------------------------------
-struct connection_update : latched_work_unit {
-    connection_update() noexcept = default;
-    connection_update(connection& conn, std::latch& done) noexcept
-      : latched_work_unit{done}
-      , _conn{&conn} {}
+struct connection_update_work_unit : latched_work_unit {
+    connection_update_work_unit() noexcept = default;
+    connection_update_work_unit(
+      routed_node& node,
+      std::latch& completed,
+      some_true_atomic& something_done) noexcept
+      : latched_work_unit{completed}
+      , _node{&node}
+      , _something_done{&something_done} {}
 
-    auto do_it() noexcept -> bool final {
-        _conn->update();
-        return true;
-    }
+    auto do_it() noexcept -> bool final;
 
 private:
-    connection* _conn{nullptr};
+    routed_node* _node{nullptr};
+    some_true_atomic* _something_done{nullptr};
 };
 //------------------------------------------------------------------------------
 struct routed_node {
     std::unique_ptr<connection> the_connection{};
     std::vector<message_id> message_block_list{};
     std::vector<message_id> message_allow_list{};
-    connection_update update_connection{};
+    connection_update_work_unit update_connection{};
     bool maybe_router{true};
     bool do_disconnect{false};
 
@@ -81,6 +82,8 @@ struct routed_node {
     void allow_message(const message_id) noexcept;
 
     auto is_allowed(const message_id) const noexcept -> bool;
+
+    void init_update_connection(std::latch&, some_true_atomic&) noexcept;
 
     auto send(const main_ctx_object&, const message_id, const message_view&)
       const noexcept -> bool;
@@ -330,7 +333,7 @@ private:
     auto _route_parent_messages(
       const std::chrono::steady_clock::duration) noexcept -> work_done;
     auto _route_messages() noexcept -> work_done;
-    auto _update_connections_by_workers(std::latch&) noexcept -> work_done;
+    void _update_connections_by_workers(some_true_atomic&) noexcept;
     auto _update_connections_by_router() noexcept -> work_done;
 
     shared_context _context{};
