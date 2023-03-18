@@ -356,6 +356,7 @@ auto router::_do_handle_pending() noexcept -> work_done {
             auto pos = _nodes.find(id);
             if(pos == _nodes.end()) {
                 pos = _nodes.try_emplace(id).first;
+                _update_use_workers();
             }
             pos->second.the_connection = std::move(pending.the_connection);
             pos->second.maybe_router = maybe_router;
@@ -450,6 +451,7 @@ auto router::_remove_disconnected() noexcept -> work_done {
         }
         return false;
     }) > 0);
+    _update_use_workers();
 
     return something_done;
 }
@@ -628,6 +630,27 @@ auto router::_handle_subscribed(
         message_id_list_add(info.subscriptions, sub_msg_id);
         message_id_list_remove(info.unsubscriptions, sub_msg_id);
     }
+    return should_be_forwarded;
+}
+//------------------------------------------------------------------------------
+auto router::_handle_clear_block_list(routed_node& node) noexcept
+  -> message_handling_result {
+    log_info("clearing router block_list").tag("clrBlkList");
+    node.message_block_list.clear();
+    return was_handled;
+}
+//------------------------------------------------------------------------------
+auto router::_handle_clear_allow_list(routed_node& node) noexcept
+  -> message_handling_result {
+    log_info("clearing router allow_list").tag("clrAlwList");
+    node.message_allow_list.clear();
+    return was_handled;
+}
+//------------------------------------------------------------------------------
+auto router::_handle_still_alive(
+  const identifier_t incoming_id,
+  const message_view& message) noexcept -> message_handling_result {
+    _update_endpoint_info(incoming_id, message);
     return should_be_forwarded;
 }
 //------------------------------------------------------------------------------
@@ -1032,16 +1055,11 @@ auto router::_do_handle_special(
         case id_v("notARouter"):
             return _handle_not_not_a_router(incoming_id, node, message);
         case id_v("clrBlkList"):
-            log_info("clearing router block_list").tag("clrBlkList");
-            node.message_block_list.clear();
-            return was_handled;
+            return _handle_clear_block_list(node);
         case id_v("clrAlwList"):
-            log_info("clearing router allow_list").tag("clrAlwList");
-            node.message_allow_list.clear();
-            return was_handled;
+            return _handle_clear_allow_list(node);
         case id_v("stillAlive"):
-            _update_endpoint_info(incoming_id, message);
-            return should_be_forwarded;
+            return _handle_still_alive(incoming_id, message);
         case id_v("msgAlwList"):
             return _handle_msg_allow(incoming_id, node, message);
         case id_v("msgBlkList"):
@@ -1066,8 +1084,8 @@ inline auto router::_handle_special(
     return should_be_forwarded;
 }
 //------------------------------------------------------------------------------
-auto router::_use_workers() const noexcept -> bool {
-    return _nodes.size() > 2;
+void router::_update_use_workers() noexcept {
+    _use_worker_threads = _nodes.size() > 2;
 }
 //------------------------------------------------------------------------------
 auto router::_forward_to(
@@ -1252,7 +1270,21 @@ auto router::_route_parent_messages(
     return something_done;
 }
 //------------------------------------------------------------------------------
-auto router::_route_messages() noexcept -> work_done {
+void router::_route_messages_by_workers(
+  some_true_atomic& something_done) noexcept {
+    const auto now{std::chrono::steady_clock::now()};
+    const auto message_age_inc{now - _prev_route_time};
+    _prev_route_time = now;
+
+    for(auto& entry : _nodes) {
+        something_done(_route_node_messages(
+          message_age_inc, std::get<0>(entry), std::get<1>(entry)));
+    }
+
+    something_done(_route_parent_messages(message_age_inc));
+}
+//------------------------------------------------------------------------------
+auto router::_route_messages_by_router() noexcept -> work_done {
     some_true something_done{};
     const auto now{std::chrono::steady_clock::now()};
     const auto message_age_inc{now - _prev_route_time};
@@ -1324,7 +1356,7 @@ auto router::do_work_by_workers() noexcept -> work_done {
 
     something_done(_handle_pending());
     something_done(_handle_accept());
-    something_done(_route_messages());
+    _route_messages_by_workers(something_done);
     _update_connections_by_workers(something_done);
 
     return something_done;
@@ -1335,10 +1367,22 @@ auto router::do_work_by_router() noexcept -> work_done {
 
     something_done(_handle_pending());
     something_done(_handle_accept());
-    something_done(_route_messages());
+    something_done(_route_messages_by_router());
     something_done(_update_connections_by_router());
 
     return something_done;
+}
+//------------------------------------------------------------------------------
+void router::post_blob(
+  const message_id msg_id,
+  const identifier_t source_id,
+  const identifier_t target_id,
+  const blob_id_t target_blob_id,
+  const memory::const_block blob,
+  const std::chrono::seconds max_time,
+  const message_priority priority) noexcept {
+    _blobs.push_outgoing(
+      msg_id, source_id, target_id, target_blob_id, blob, max_time, priority);
 }
 //------------------------------------------------------------------------------
 auto router::update(const valid_if_positive<int>& count) noexcept -> work_done {

@@ -166,7 +166,7 @@ public:
     }
 
     auto is_done() const noexcept -> bool {
-        return bool(no_connection_timeout());
+        return no_connection_timeout().is_expired();
     }
 
     void post_blob(
@@ -176,16 +176,7 @@ public:
       const blob_id_t target_blob_id,
       const memory::const_block blob,
       const std::chrono::seconds max_time,
-      const message_priority priority) noexcept {
-        _blobs.push_outgoing(
-          msg_id,
-          source_id,
-          target_id,
-          target_blob_id,
-          blob,
-          max_time,
-          priority);
-    }
+      const message_priority priority) noexcept;
 
 private:
     auto _uptime_seconds() noexcept -> std::int64_t;
@@ -227,6 +218,13 @@ private:
       const identifier_t incoming_id,
       const message_view&) noexcept -> message_handling_result;
 
+    auto _handle_clear_block_list(routed_node& node) noexcept
+      -> message_handling_result;
+    auto _handle_clear_allow_list(routed_node& node) noexcept
+      -> message_handling_result;
+    auto _handle_still_alive(
+      const identifier_t incoming_id,
+      const message_view&) noexcept -> message_handling_result;
     auto _handle_not_not_a_router(
       const identifier_t incoming_id,
       routed_node& node,
@@ -299,7 +297,10 @@ private:
       routed_node&,
       const message_view&) noexcept -> message_handling_result;
 
-    auto _use_workers() const noexcept -> bool;
+    auto _use_workers() const noexcept -> bool {
+        return _use_worker_threads;
+    }
+    void _update_use_workers() noexcept;
 
     auto _forward_to(
       const routed_node& node_out,
@@ -327,7 +328,8 @@ private:
       message_view& message) noexcept -> bool;
     auto _route_parent_messages(
       const std::chrono::steady_clock::duration) noexcept -> work_done;
-    auto _route_messages() noexcept -> work_done;
+    void _route_messages_by_workers(some_true_atomic&) noexcept;
+    auto _route_messages_by_router() noexcept -> work_done;
     void _update_connections_by_workers(some_true_atomic&) noexcept;
     auto _update_connections_by_router() noexcept -> work_done;
 
@@ -364,6 +366,7 @@ private:
       *this,
       msgbus_id{"blobFrgmnt"},
       msgbus_id{"blobResend"}};
+    bool _use_worker_threads{false};
 };
 //------------------------------------------------------------------------------
 } // namespace eagine::msgbus
