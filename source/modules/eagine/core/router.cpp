@@ -355,6 +355,13 @@ private:
       const message_id msg_id,
       const identifier_t incoming_id,
       message_view& message) noexcept -> bool;
+    auto _handle_message(
+      const identifier_t incoming_id,
+      const std::chrono::steady_clock::duration message_age_inc,
+      const message_id msg_id,
+      const message_age msg_age,
+      message_view message,
+      routed_node&) noexcept -> bool;
 
     auto _handle_special_parent_message(
       const message_id msg_id,

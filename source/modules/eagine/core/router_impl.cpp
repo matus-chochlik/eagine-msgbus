@@ -176,18 +176,8 @@ auto routed_node::route_messages(
                          const message_id msg_id,
                          const message_age msg_age,
                          message_view message) {
-        parent._message_age_avg.add(
-          message.add_age(msg_age).age() + message_age_inc);
-        if(
-          parent._handle_special(msg_id, incoming_id, *this, message) ==
-          was_handled) {
-            return true;
-        }
-        if(message.too_old()) [[unlikely]] {
-            ++parent._stats.dropped_messages;
-            return true;
-        }
-        return parent._route_message(msg_id, incoming_id, message);
+        return parent._handle_message(
+          incoming_id, message_age_inc, msg_id, msg_age, message, *this);
     }};
 
     if(_connection) [[likely]] {
@@ -1294,6 +1284,24 @@ auto router::_route_message(
         ++_stats.dropped_messages;
     }
     return result;
+}
+//------------------------------------------------------------------------------
+auto router::_handle_message(
+  const identifier_t incoming_id,
+  const std::chrono::steady_clock::duration message_age_inc,
+  const message_id msg_id,
+  const message_age msg_age,
+  message_view message,
+  routed_node& node) noexcept -> bool {
+    _message_age_avg.add(message.add_age(msg_age).age() + message_age_inc);
+    if(_handle_special(msg_id, incoming_id, node, message) == was_handled) {
+        return true;
+    }
+    if(message.too_old()) [[unlikely]] {
+        ++_stats.dropped_messages;
+        return true;
+    }
+    return _route_message(msg_id, incoming_id, message);
 }
 //------------------------------------------------------------------------------
 auto router::_handle_special_parent_message(
