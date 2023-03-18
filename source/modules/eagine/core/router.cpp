@@ -114,7 +114,10 @@ struct parent_router {
       const noexcept -> bool;
 };
 //------------------------------------------------------------------------------
-export class router : public main_ctx_object {
+export class router
+  : public main_ctx_object
+  , public acceptor_user
+  , public connection_user {
 public:
     router(main_ctx_parent parent) noexcept
       : main_ctx_object{"MsgBusRutr", parent}
@@ -127,14 +130,6 @@ public:
           "Message bus router id " + to_string(_id_base));
     }
 
-    operator acceptor_user&() noexcept {
-        return _user;
-    }
-
-    operator connection_user&() noexcept {
-        return _user;
-    }
-
     /// @brief Returns the unique id of this router.
     auto get_id() const noexcept {
         return _id_base;
@@ -143,8 +138,8 @@ public:
     void add_certificate_pem(const memory::const_block blk) noexcept;
     void add_ca_certificate_pem(const memory::const_block blk) noexcept;
 
-    auto add_acceptor(std::shared_ptr<acceptor>) noexcept -> bool;
-    auto add_connection(std::unique_ptr<connection>) noexcept -> bool;
+    auto add_acceptor(std::shared_ptr<acceptor>) noexcept -> bool final;
+    auto add_connection(std::unique_ptr<connection>) noexcept -> bool final;
 
     auto do_maintenance() noexcept -> work_done;
     auto do_work_by_workers() noexcept -> work_done;
@@ -357,24 +352,6 @@ private:
     std::int64_t _prev_forwarded_messages{0};
     router_statistics _stats{};
     message_flow_info _flow_info{};
-
-    struct user_impl final
-      : public acceptor_user
-      , public connection_user {
-        router& _parent;
-
-        user_impl(router& parent) noexcept
-          : _parent{parent} {}
-
-        auto add_acceptor(std::shared_ptr<acceptor> accp) noexcept
-          -> bool final {
-            return _parent.add_acceptor(std::move(accp));
-        }
-        auto add_connection(std::unique_ptr<connection> conn) noexcept
-          -> bool final {
-            return _parent.add_connection(std::move(conn));
-        }
-    } _user{*this};
 
     parent_router _parent_router;
     small_vector<std::shared_ptr<acceptor>, 2> _acceptors;
