@@ -23,7 +23,10 @@ import :context;
 import std;
 
 namespace eagine::msgbus {
+export class router;
 struct routed_node;
+//------------------------------------------------------------------------------
+enum message_handling_result { should_be_forwarded, was_handled };
 //------------------------------------------------------------------------------
 struct router_pending {
     router_pending(std::unique_ptr<connection> a_connection) noexcept
@@ -46,7 +49,8 @@ struct router_endpoint_info {
     void assign_instance_id(const message_view& msg) noexcept;
 };
 //------------------------------------------------------------------------------
-struct connection_update_work_unit : latched_work_unit {
+class connection_update_work_unit : public latched_work_unit {
+public:
     connection_update_work_unit() noexcept = default;
     connection_update_work_unit(
       routed_node& node,
@@ -63,14 +67,8 @@ private:
     some_true_atomic* _something_done{nullptr};
 };
 //------------------------------------------------------------------------------
-struct routed_node {
-    std::unique_ptr<connection> the_connection{};
-    std::vector<message_id> message_block_list{};
-    std::vector<message_id> message_allow_list{};
-    connection_update_work_unit update_connection{};
-    bool maybe_router{true};
-    bool do_disconnect{false};
-
+class routed_node {
+public:
     routed_node() noexcept;
     routed_node(routed_node&&) noexcept = default;
     routed_node(const routed_node&) = delete;
@@ -80,13 +78,51 @@ struct routed_node {
 
     void block_message(const message_id) noexcept;
     void allow_message(const message_id) noexcept;
+    void clear_block_list() noexcept;
+    void clear_allow_list() noexcept;
 
     auto is_allowed(const message_id) const noexcept -> bool;
 
-    void init_update_connection(std::latch&, some_true_atomic&) noexcept;
+    void setup(std::unique_ptr<connection>, bool maybe_router) noexcept;
+
+    void enqueue_update_connection(
+      workshop&,
+      std::latch&,
+      some_true_atomic&) noexcept;
+
+    void mark_not_a_router() noexcept;
+    auto update_connection() noexcept -> work_done;
+    void handle_bye_bye() noexcept;
+    auto should_disconnect() const noexcept -> bool;
+    void cleanup_connection() noexcept;
+    auto kind_of_connecton() const noexcept -> connection_kind;
+    auto query_statistics(connection_statistics&) const noexcept -> bool;
 
     auto send(const main_ctx_object&, const message_id, const message_view&)
       const noexcept -> bool;
+
+    auto route_messages(
+      router&,
+      const identifier_t incoming_id,
+      const std::chrono::steady_clock::duration message_age_inc) noexcept
+      -> work_done;
+
+    auto try_route(
+      const main_ctx_object&,
+      const message_id,
+      const message_view&) const noexcept -> bool;
+
+    auto process_blobs(
+      const identifier_t node_id,
+      blob_manipulator& blobs) noexcept -> work_done;
+
+private:
+    std::unique_ptr<connection> _connection{};
+    std::vector<message_id> _message_block_list{};
+    std::vector<message_id> _message_allow_list{};
+    connection_update_work_unit _update_connection_work{};
+    bool _maybe_router{true};
+    bool _do_disconnect{false};
 };
 //------------------------------------------------------------------------------
 struct parent_router {
@@ -106,6 +142,7 @@ struct parent_router {
       const noexcept;
 
     void announce_id(main_ctx_object&, const identifier_t id_base) noexcept;
+    auto query_statistics(connection_statistics&) const noexcept -> bool;
 
     auto update(main_ctx_object&, const identifier_t id_base) noexcept
       -> work_done;
@@ -179,6 +216,8 @@ public:
       const message_priority priority) noexcept;
 
 private:
+    friend class routed_node;
+
     auto _uptime_seconds() noexcept -> std::int64_t;
 
     void _setup_from_config();
@@ -200,8 +239,6 @@ private:
       const message_id,
       const span_size_t,
       blob_manipulator&) noexcept -> std::unique_ptr<target_blob_io>;
-
-    enum message_handling_result { should_be_forwarded, was_handled };
 
     auto _handle_blob(
       const message_id,
@@ -319,10 +356,6 @@ private:
       const identifier_t incoming_id,
       message_view& message) noexcept -> bool;
 
-    auto _route_node_messages(
-      const std::chrono::steady_clock::duration,
-      const identifier_t incoming_id,
-      routed_node&) noexcept -> work_done;
     auto _handle_special_parent_message(
       const message_id msg_id,
       message_view& message) noexcept -> bool;
