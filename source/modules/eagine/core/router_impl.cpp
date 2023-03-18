@@ -26,7 +26,20 @@ namespace eagine::msgbus {
 // router_pending
 //------------------------------------------------------------------------------
 auto router_pending::age() const noexcept {
-    return std::chrono::steady_clock::now() - create_time;
+    return std::chrono::steady_clock::now() - _create_time;
+}
+//------------------------------------------------------------------------------
+auto router_pending::update_connection() noexcept -> work_done {
+    return _connection->update();
+}
+//------------------------------------------------------------------------------
+auto router_pending::connection() noexcept -> msgbus::connection& {
+    return *_connection;
+}
+//------------------------------------------------------------------------------
+auto router_pending::release_connection() noexcept
+  -> std::unique_ptr<msgbus::connection> {
+    return std::move(_connection);
 }
 //------------------------------------------------------------------------------
 // router_endpoint_info
@@ -477,20 +490,20 @@ auto router::_do_handle_pending() noexcept -> work_done {
         id = 0;
         auto& pending = _pending[idx];
 
-        something_done(pending.the_connection->update());
+        something_done(pending.update_connection());
         something_done(
-          pending.the_connection->fetch_messages({construct_from, handler}));
-        something_done(pending.the_connection->update());
+          pending.connection().fetch_messages({construct_from, handler}));
+        something_done(pending.update_connection());
         // if we got the endpoint id message from the connection
         if(~id == 0) {
-            _assign_id(pending.the_connection);
+            _assign_id(pending.connection());
         } else if(id != 0) {
             log_info(
               "adopting pending connection from ${cnterpart} "
               "${id}")
               .tag("adPendConn")
-              .arg("kind", pending.the_connection->kind())
-              .arg("type", pending.the_connection->type_id())
+              .arg("kind", pending.connection().kind())
+              .arg("type", pending.connection().type_id())
               .arg("id", id)
               .arg(
                 "cnterpart",
@@ -500,14 +513,14 @@ auto router::_do_handle_pending() noexcept -> work_done {
             // send the special message confirming assigned endpoint id
             message_view confirmation{};
             confirmation.set_source_id(_id_base).set_target_id(id);
-            pending.the_connection->send(msgbus_id{"confirmId"}, confirmation);
+            pending.connection().send(msgbus_id{"confirmId"}, confirmation);
 
             auto pos = _nodes.find(id);
             if(pos == _nodes.end()) {
                 pos = _nodes.try_emplace(id).first;
                 _update_use_workers();
             }
-            pos->second.setup(std::move(pending.the_connection), maybe_router);
+            pos->second.setup(pending.release_connection(), maybe_router);
             _pending.erase(_pending.begin() + signedness_cast(idx));
             _recently_disconnected.erase(id);
             something_done();
@@ -534,7 +547,7 @@ auto router::_remove_timeouted() noexcept -> work_done {
             something_done();
             log_warning("removing timeouted pending ${type} connection")
               .tag("rmPendConn")
-              .arg("type", pending.the_connection->type_id())
+              .arg("type", pending.connection().type_id())
               .arg("age", pending.age());
             return true;
         }
@@ -595,8 +608,7 @@ auto router::_remove_disconnected() noexcept -> work_done {
     return something_done;
 }
 //------------------------------------------------------------------------------
-void router::_assign_id(std::unique_ptr<connection>& conn) noexcept {
-    assert(conn);
+void router::_assign_id(connection& conn) noexcept {
     // find a currently unused endpoint id value
     const auto seq_orig = _id_sequence;
     while(_nodes.find(_id_sequence) != _nodes.end()) {
@@ -609,12 +621,12 @@ void router::_assign_id(std::unique_ptr<connection>& conn) noexcept {
     //
     log_debug("assigning id ${id} to accepted ${type} connection")
       .tag("assignId")
-      .arg("type", conn->type_id())
+      .arg("type", conn.type_id())
       .arg("id", _id_sequence);
     // send the special message assigning the endpoint id
     message_view msg{};
     msg.set_target_id(_id_sequence++);
-    conn->send(msgbus_id{"assignId"}, msg);
+    conn.send(msgbus_id{"assignId"}, msg);
 }
 //------------------------------------------------------------------------------
 void router::_handle_connection(

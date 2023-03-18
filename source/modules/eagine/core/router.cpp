@@ -31,18 +31,6 @@ enum message_handling_result : bool {
     was_handled = true
 };
 //------------------------------------------------------------------------------
-struct router_pending {
-    router_pending(std::unique_ptr<connection> a_connection) noexcept
-      : the_connection{std::move(a_connection)} {}
-
-    std::chrono::steady_clock::time_point create_time{
-      std::chrono::steady_clock::now()};
-
-    std::unique_ptr<connection> the_connection{};
-
-    auto age() const noexcept;
-};
-//------------------------------------------------------------------------------
 struct router_endpoint_info {
     process_instance_id_t instance_id{0};
     timeout is_outdated{adjusted_duration(std::chrono::seconds{60})};
@@ -50,6 +38,26 @@ struct router_endpoint_info {
     std::vector<message_id> unsubscriptions{};
 
     void assign_instance_id(const message_view& msg) noexcept;
+};
+//------------------------------------------------------------------------------
+class router_pending {
+public:
+    router_pending(std::unique_ptr<connection> a_connection) noexcept
+      : _connection{std::move(a_connection)} {}
+
+    auto age() const noexcept;
+
+    auto update_connection() noexcept -> work_done;
+
+    auto connection() noexcept -> msgbus::connection&;
+
+    auto release_connection() noexcept -> std::unique_ptr<msgbus::connection>;
+
+private:
+    std::chrono::steady_clock::time_point _create_time{
+      std::chrono::steady_clock::now()};
+
+    std::unique_ptr<msgbus::connection> _connection{};
 };
 //------------------------------------------------------------------------------
 class connection_update_work_unit : public latched_work_unit {
@@ -250,7 +258,7 @@ private:
     auto _is_disconnected(const identifier_t) const noexcept -> bool;
     auto _mark_disconnected(const identifier_t endpoint_id) noexcept -> void;
     auto _remove_disconnected() noexcept -> work_done;
-    void _assign_id(std::unique_ptr<connection>& conn) noexcept;
+    void _assign_id(connection& conn) noexcept;
     void _handle_connection(std::unique_ptr<connection> conn) noexcept;
     auto _should_log_router_stats() noexcept -> bool;
     void _log_router_stats() noexcept;
