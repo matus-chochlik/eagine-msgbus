@@ -38,12 +38,10 @@ export constexpr auto endpoint_alive_notify_period() noexcept {
 /// @ingroup msgbus
 /// @see static_subscriber
 /// @see subscriber
-export class endpoint : public main_ctx_object {
+export class endpoint
+  : public main_ctx_object
+  , public connection_user {
 public:
-    operator connection_user&() noexcept {
-        return _user;
-    }
-
     static constexpr auto invalid_id() noexcept -> identifier_t {
         return invalid_endpoint_id();
     }
@@ -149,7 +147,8 @@ public:
     void add_ca_certificate_pem(const memory::const_block blk) noexcept;
 
     /// @brief Adds a connection for communication with a message bus router.
-    auto add_connection(std::unique_ptr<connection> conn) noexcept -> bool;
+    auto add_connection(std::unique_ptr<connection> conn) noexcept
+      -> bool final;
 
     /// @brief Tests if this has all prerequisites for sending and receiving messages.
     auto is_usable() const noexcept -> bool;
@@ -449,18 +448,6 @@ public:
 
 private:
     friend class friend_of_endpoint;
-
-    struct user_impl : connection_user {
-        endpoint& _parent;
-
-        user_impl(endpoint& parent) noexcept
-          : _parent{parent} {}
-
-        auto add_connection(std::unique_ptr<connection> conn) noexcept
-          -> bool final {
-            return _parent.add_connection(std::move(conn));
-        }
-    } _user{*this};
 
     shared_context _context{make_context(*this)};
 

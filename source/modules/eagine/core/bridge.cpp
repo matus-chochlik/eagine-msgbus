@@ -22,7 +22,9 @@ import std;
 namespace eagine::msgbus {
 //------------------------------------------------------------------------------
 export class bridge_state;
-export class bridge : public main_ctx_object {
+export class bridge
+  : public main_ctx_object
+  , public connection_user {
 
 public:
     bridge(main_ctx_parent parent) noexcept
@@ -31,14 +33,10 @@ public:
         _setup_from_config();
     }
 
-    operator connection_user&() noexcept {
-        return _user;
-    }
-
     void add_certificate_pem(const memory::const_block blk) noexcept;
     void add_ca_certificate_pem(const memory::const_block blk) noexcept;
 
-    auto add_connection(std::unique_ptr<connection>) noexcept -> bool;
+    auto add_connection(std::unique_ptr<connection>) noexcept -> bool final;
 
     auto has_id() const noexcept -> bool {
         return is_valid_endpoint_id(_id);
@@ -94,18 +92,6 @@ private:
     void _log_bridge_stats_c2o() noexcept;
     void _log_bridge_stats_i2c() noexcept;
     auto _forward_messages() noexcept -> work_done;
-
-    struct user_impl : connection_user {
-        bridge& _parent;
-
-        user_impl(bridge& parent) noexcept
-          : _parent{parent} {}
-
-        auto add_connection(std::unique_ptr<connection> conn) noexcept
-          -> bool final {
-            return _parent.add_connection(std::move(conn));
-        }
-    } _user{*this};
 
     shared_context _context{};
 
