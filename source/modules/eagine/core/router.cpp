@@ -26,7 +26,10 @@ namespace eagine::msgbus {
 export class router;
 struct routed_node;
 //------------------------------------------------------------------------------
-enum message_handling_result { should_be_forwarded, was_handled };
+enum message_handling_result : bool {
+    should_be_forwarded = false,
+    was_handled = true
+};
 //------------------------------------------------------------------------------
 struct router_pending {
     router_pending(std::unique_ptr<connection> a_connection) noexcept
@@ -95,7 +98,7 @@ public:
     void handle_bye_bye() noexcept;
     auto should_disconnect() const noexcept -> bool;
     void cleanup_connection() noexcept;
-    auto kind_of_connecton() const noexcept -> connection_kind;
+    auto kind_of_connection() const noexcept -> connection_kind;
     auto query_statistics(connection_statistics&) const noexcept -> bool;
 
     auto send(const main_ctx_object&, const message_id, const message_view&)
@@ -125,14 +128,17 @@ private:
     bool _do_disconnect{false};
 };
 //------------------------------------------------------------------------------
-struct parent_router {
-    std::unique_ptr<connection> the_connection{};
-    identifier_t confirmed_id{0};
-    timeout confirm_id_timeout{
-      adjusted_duration(std::chrono::seconds{2}),
-      nothing};
-
+class parent_router {
+public:
     void reset(std::unique_ptr<connection>) noexcept;
+
+    explicit operator bool() const noexcept {
+        return _connection and _confirmed_id;
+    }
+
+    auto id() const noexcept -> identifier_t {
+        return _confirmed_id;
+    }
 
     void confirm_id(
       const main_ctx_object&,
@@ -144,11 +150,25 @@ struct parent_router {
     void announce_id(main_ctx_object&, const identifier_t id_base) noexcept;
     auto query_statistics(connection_statistics&) const noexcept -> bool;
 
+    auto kind_of_connection() const noexcept -> connection_kind;
+
     auto update(main_ctx_object&, const identifier_t id_base) noexcept
       -> work_done;
 
     auto send(const main_ctx_object&, const message_id, const message_view&)
       const noexcept -> bool;
+
+    auto route_messages(
+      router&,
+      const std::chrono::steady_clock::duration message_age_inc) noexcept
+      -> work_done;
+
+private:
+    std::unique_ptr<connection> _connection{};
+    identifier_t _confirmed_id{0};
+    timeout _confirm_id_timeout{
+      adjusted_duration(std::chrono::seconds{2}),
+      nothing};
 };
 //------------------------------------------------------------------------------
 export class router
@@ -217,6 +237,7 @@ public:
 
 private:
     friend class routed_node;
+    friend class parent_router;
 
     auto _uptime_seconds() noexcept -> std::int64_t;
 
@@ -355,7 +376,13 @@ private:
       const message_id msg_id,
       const identifier_t incoming_id,
       message_view& message) noexcept -> bool;
-    auto _handle_message(
+    auto _handle_parent_message(
+      const identifier_t incoming_id,
+      const std::chrono::steady_clock::duration message_age_inc,
+      const message_id msg_id,
+      const message_age msg_age,
+      message_view message) noexcept -> bool;
+    auto _handle_node_message(
       const identifier_t incoming_id,
       const std::chrono::steady_clock::duration message_age_inc,
       const message_id msg_id,
@@ -366,8 +393,6 @@ private:
     auto _handle_special_parent_message(
       const message_id msg_id,
       message_view& message) noexcept -> bool;
-    auto _route_parent_messages(
-      const std::chrono::steady_clock::duration) noexcept -> work_done;
     void _route_messages_by_workers(some_true_atomic&) noexcept;
     auto _route_messages_by_router() noexcept -> work_done;
     void _update_connections_by_workers(some_true_atomic&) noexcept;
