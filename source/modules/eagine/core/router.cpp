@@ -128,9 +128,12 @@ public:
       blob_manipulator& blobs) noexcept -> work_done;
 
 private:
-    std::unique_ptr<connection> _connection{};
+    using lockable = std::mutex;
+
+    std::unique_ptr<lockable> _list_lock{std::make_unique<lockable>()};
     std::vector<message_id> _message_block_list{};
     std::vector<message_id> _message_allow_list{};
+    std::unique_ptr<connection> _connection{};
     connection_update_work_unit _update_connection_work{};
     bool _maybe_router{true};
     bool _do_disconnect{false};
@@ -405,6 +408,10 @@ private:
     auto _route_messages_by_router() noexcept -> work_done;
     void _update_connections_by_workers(some_true_atomic&) noexcept;
     auto _update_connections_by_router() noexcept -> work_done;
+
+    using lockable = std::mutex;
+
+    lockable _context_lock;
 
     shared_context _context{};
     const std::chrono::seconds _pending_timeout{

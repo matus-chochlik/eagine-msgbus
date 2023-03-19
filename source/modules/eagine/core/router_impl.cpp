@@ -94,6 +94,7 @@ auto routed_node::is_allowed(const message_id msg_id) const noexcept -> bool {
     if(is_special_message(msg_id)) {
         return true;
     }
+    const std::unique_lock lk_list{*_list_lock};
     if(not _message_allow_list.empty()) {
         return message_id_list_contains(_message_allow_list, msg_id);
     }
@@ -121,6 +122,7 @@ void routed_node::enqueue_update_connection(
 }
 //------------------------------------------------------------------------------
 void routed_node::mark_not_a_router() noexcept {
+    const std::unique_lock lk_list{*_list_lock};
     _maybe_router = false;
 }
 //------------------------------------------------------------------------------
@@ -132,6 +134,7 @@ auto routed_node::update_connection() noexcept -> work_done {
 }
 //------------------------------------------------------------------------------
 void routed_node::handle_bye_bye() noexcept {
+    const std::unique_lock lk_list{*_list_lock};
     if(not _maybe_router) {
         _do_disconnect = true;
     }
@@ -232,19 +235,23 @@ auto routed_node::process_blobs(
 }
 //------------------------------------------------------------------------------
 void routed_node::block_message(const message_id msg_id) noexcept {
+    const std::unique_lock lk_list{*_list_lock};
     message_id_list_add(_message_block_list, msg_id);
 }
 //------------------------------------------------------------------------------
 void routed_node::allow_message(const message_id msg_id) noexcept {
+    const std::unique_lock lk_list{*_list_lock};
     message_id_list_add(_message_allow_list, msg_id);
 }
 //------------------------------------------------------------------------------
 void routed_node::clear_block_list() noexcept {
-    return _message_block_list.clear();
+    const std::unique_lock lk_list{*_list_lock};
+    _message_block_list.clear();
 }
 //------------------------------------------------------------------------------
 void routed_node::clear_allow_list() noexcept {
-    return _message_allow_list.clear();
+    const std::unique_lock lk_list{*_list_lock};
+    _message_allow_list.clear();
 }
 //------------------------------------------------------------------------------
 // parent_router
@@ -372,12 +379,14 @@ auto router::_uptime_seconds() noexcept -> std::int64_t {
 }
 //------------------------------------------------------------------------------
 void router::add_certificate_pem(const memory::const_block blk) noexcept {
+    const std::unique_lock lk_ctx{_context_lock};
     if(_context) [[likely]] {
         _context->add_own_certificate_pem(blk);
     }
 }
 //------------------------------------------------------------------------------
 void router::add_ca_certificate_pem(const memory::const_block blk) noexcept {
+    const std::unique_lock lk_ctx{_context_lock};
     if(_context) [[likely]] {
         _context->add_ca_certificate_pem(blk);
     }
@@ -705,8 +714,11 @@ auto router::_handle_blob(
               .arg("pem", message.content());
             auto pos = _nodes.find(message.source_id);
             if(pos != _nodes.end()) {
-                if(_context->add_remote_certificate_pem(
-                     message.source_id, message.content())) {
+                if([&, this] {
+                       const std::unique_lock lk_ctx{_context_lock};
+                       return _context->add_remote_certificate_pem(
+                         message.source_id, message.content());
+                   }()) {
                     log_debug(
                       "verified and stored endpoint "
                       "certificate")
@@ -914,7 +926,10 @@ auto router::_handle_router_certificate_query(
       0U,
       message.source_id,
       message.sequence_no,
-      _context->get_own_certificate_pem(),
+      [this] {
+          const std::unique_lock lk_ctx{_context_lock};
+          return _context->get_own_certificate_pem();
+      }(),
       adjusted_duration(std::chrono::seconds{30}),
       message_priority::high);
     return was_handled;
@@ -922,8 +937,10 @@ auto router::_handle_router_certificate_query(
 //------------------------------------------------------------------------------
 auto router::_handle_endpoint_certificate_query(
   const message_view& message) noexcept -> message_handling_result {
-    if(const auto cert_pem{
-         _context->get_remote_certificate_pem(message.target_id)}) {
+    if(const auto cert_pem{[&, this] {
+           const std::unique_lock lk_ctx{_context_lock};
+           return _context->get_remote_certificate_pem(message.target_id);
+       }()}) {
         post_blob(
           msgbus_id{"eptCertPem"},
           message.target_id,
