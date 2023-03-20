@@ -130,10 +130,10 @@ ApplicationWindow {
                 text: qsTr("Solution progress")
             }
             TabButton {
-                text: qsTr("Helper contributions")
+                text: qsTr("Solution intervals")
             }
             TabButton {
-                text: qsTr("Solution intervals")
+                text: qsTr("Helper contributions")
             }
         }
 
@@ -157,20 +157,19 @@ ApplicationWindow {
                 model: backend.solutionProgress
             }
 
-            HelperContributionView {
-                Layout.fillWidth: true
-                Layout.fillHeight: true
-
-                model: backend.helperContributions
-            }
-
             SolutionIntervalView {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
 
                 model: backend.solutionIntervals
             }
-            
+
+            HelperContributionView {
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+
+                model: backend.helperContributions
+            }
         }
 
         RowLayout {
