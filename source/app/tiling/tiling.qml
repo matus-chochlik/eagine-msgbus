@@ -88,6 +88,9 @@ ApplicationWindow {
                 action: restartTiling
             }
             MenuItem {
+                action: resetTimeout
+            }
+            MenuItem {
                 action: saveAction
             }
             MenuSeparator { }

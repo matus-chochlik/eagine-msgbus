@@ -9,13 +9,16 @@ import std;
 #include "SolutionProgressViewModel.hpp"
 #include "TilingBackend.hpp"
 #include "TilingModel.hpp"
+#include <QDebug>
 #include <cassert>
 
 //------------------------------------------------------------------------------
 SolutionProgressViewModel::SolutionProgressViewModel(TilingBackend& backend)
   : QObject{nullptr}
   , eagine::main_ctx_object{"PrgrsModel", backend}
-  , _backend{backend} {
+  , _backend{backend}
+  , _imageDir{QDir::tempPath() + "/eagine-tiling-XXXXXX"}
+  , _imagePathFormat{_imageDir.filePath("%1.png")} {
     connect(
       _backend.getTilingTheme(),
       &TilingTheme::lightChanged,
@@ -33,6 +36,7 @@ void SolutionProgressViewModel::tilingReset() {
         } else {
             _image.fill(Qt::color0);
         }
+        _imageIndex = 0;
         emit imageChanged();
     }
 }
@@ -50,12 +54,20 @@ auto SolutionProgressViewModel::getSize() const -> QSize {
     return _backend.getTilingSize();
 }
 //------------------------------------------------------------------------------
+void SolutionProgressViewModel::saveImage() {
+    if(_doSaveImage) {
+        _image.save(_imagePathFormat.arg(_imageIndex, 7, 10, QChar('0')));
+        ++_imageIndex;
+    }
+}
+//------------------------------------------------------------------------------
 void SolutionProgressViewModel::tileSolved(int x, int y) {
     if(_backend.lightTheme()) {
         _image.setPixel(x, y, Qt::color0);
     } else {
         _image.setPixel(x, y, Qt::color1);
     }
+    saveImage();
     emit imageChanged();
 }
 //------------------------------------------------------------------------------
