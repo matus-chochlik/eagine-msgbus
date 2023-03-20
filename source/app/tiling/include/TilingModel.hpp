@@ -22,6 +22,7 @@ public:
     TilingModel(TilingBackend&);
 
     void initialize();
+    void reinitialize();
     void reinitialize(int w, int h);
     void update();
 

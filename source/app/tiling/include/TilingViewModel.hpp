@@ -39,6 +39,7 @@ public:
     auto getBoardCount() const -> QVariant;
     auto isComplete() const -> bool;
 
+    Q_INVOKABLE void reinitialize();
     Q_INVOKABLE void reinitialize(int w, int h);
     Q_INVOKABLE void saveAs(const QUrl& filePath);
 signals:

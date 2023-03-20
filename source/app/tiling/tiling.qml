@@ -24,6 +24,15 @@ ApplicationWindow {
         : qsTr("Tiling")
 
     Action {
+        id: restartTiling
+        text: qsTr("&Restart tiling")
+        shortcut: StandardKey.Refresh
+        onTriggered: {
+            backend.tiling.reinitialize()
+        }
+    }
+
+    Action {
         id: saveAction
         text: qsTr("&Save")
         shortcut: StandardKey.Save
@@ -65,6 +74,9 @@ ApplicationWindow {
                         }
                     }
                 }
+            }
+            MenuItem {
+                action: restartTiling
             }
             MenuItem {
                 action: saveAction

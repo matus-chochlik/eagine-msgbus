@@ -39,12 +39,7 @@ void TilingModel::initialize() {
     _resetCount = 0;
 }
 //------------------------------------------------------------------------------
-void TilingModel::reinitialize(int w, int h) {
-    if((_width != w) or (_height != h)) {
-        _width = w;
-        _height = h;
-        _cellCache.resize(eagine::std_size(w * h));
-    }
+void TilingModel::reinitialize() {
     zero(eagine::cover(_cellCache));
     _resetCount++;
 
@@ -55,6 +50,15 @@ void TilingModel::reinitialize(int w, int h) {
         .generate_medium());
     _backend.onTilingReset();
     emit reinitialized();
+}
+//------------------------------------------------------------------------------
+void TilingModel::reinitialize(int w, int h) {
+    if((_width != w) or (_height != h)) {
+        _width = w;
+        _height = h;
+        _cellCache.resize(eagine::std_size(w * h));
+    }
+    reinitialize();
 }
 //------------------------------------------------------------------------------
 void TilingModel::update() {
