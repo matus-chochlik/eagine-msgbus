@@ -31,13 +31,25 @@ enum message_handling_result : bool {
     was_handled = true
 };
 //------------------------------------------------------------------------------
-struct router_endpoint_info {
-    process_instance_id_t instance_id{0};
-    timeout is_outdated{adjusted_duration(std::chrono::seconds{60})};
-    std::vector<message_id> subscriptions{};
-    std::vector<message_id> unsubscriptions{};
+class router_endpoint_info {
+public:
+    void add_subscription(const message_id) noexcept;
+    void remove_subscription(const message_id) noexcept;
+    auto is_subscribed_to(const message_id) noexcept -> bool;
+    auto is_not_subscribed_to(const message_id) noexcept -> bool;
+    auto subscriptions() noexcept -> std::vector<message_id>;
 
+    auto has_instance_id() noexcept -> bool;
+    auto instance_id(const message_view& msg) noexcept -> process_instance_id_t;
     void assign_instance_id(const message_view& msg) noexcept;
+    void apply_instance_id(message_view& msg) noexcept;
+    auto is_outdated() const noexcept -> bool;
+
+private:
+    std::vector<message_id> _subscriptions{};
+    std::vector<message_id> _unsubscriptions{};
+    process_instance_id_t _instance_id{0};
+    timeout _is_outdated{adjusted_duration(std::chrono::seconds{60})};
 };
 //------------------------------------------------------------------------------
 class router_pending {

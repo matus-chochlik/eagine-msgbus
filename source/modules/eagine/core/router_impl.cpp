@@ -23,44 +23,7 @@ import std;
 
 namespace eagine::msgbus {
 //------------------------------------------------------------------------------
-// router_pending
-//------------------------------------------------------------------------------
-auto router_pending::age() const noexcept {
-    return std::chrono::steady_clock::now() - _create_time;
-}
-//------------------------------------------------------------------------------
-auto router_pending::update_connection() noexcept -> work_done {
-    return _connection->update();
-}
-//------------------------------------------------------------------------------
-auto router_pending::connection() noexcept -> msgbus::connection& {
-    return *_connection;
-}
-//------------------------------------------------------------------------------
-auto router_pending::release_connection() noexcept
-  -> std::unique_ptr<msgbus::connection> {
-    return std::move(_connection);
-}
-//------------------------------------------------------------------------------
-// router_endpoint_info
-//------------------------------------------------------------------------------
-void router_endpoint_info::assign_instance_id(const message_view& msg) noexcept {
-    is_outdated.reset();
-    if(instance_id != msg.sequence_no) {
-        instance_id = msg.sequence_no;
-        subscriptions.clear();
-        unsubscriptions.clear();
-    }
-}
-//------------------------------------------------------------------------------
-// connection_update_work_unit
-//------------------------------------------------------------------------------
-auto connection_update_work_unit::do_it() noexcept -> bool {
-    (*_something_done)(_node->update_connection());
-    return true;
-}
-//------------------------------------------------------------------------------
-// routed_node
+// helpers
 //------------------------------------------------------------------------------
 static inline auto message_id_list_contains(
   const std::vector<message_id>& list,
@@ -84,6 +47,90 @@ static inline void message_id_list_remove(
         list.erase(pos);
     }
 }
+//------------------------------------------------------------------------------
+// router_pending
+//------------------------------------------------------------------------------
+auto router_pending::age() const noexcept {
+    return std::chrono::steady_clock::now() - _create_time;
+}
+//------------------------------------------------------------------------------
+auto router_pending::update_connection() noexcept -> work_done {
+    return _connection->update();
+}
+//------------------------------------------------------------------------------
+auto router_pending::connection() noexcept -> msgbus::connection& {
+    return *_connection;
+}
+//------------------------------------------------------------------------------
+auto router_pending::release_connection() noexcept
+  -> std::unique_ptr<msgbus::connection> {
+    return std::move(_connection);
+}
+//------------------------------------------------------------------------------
+// router_endpoint_info
+//------------------------------------------------------------------------------
+void router_endpoint_info::add_subscription(const message_id msg_id) noexcept {
+    message_id_list_add(_subscriptions, msg_id);
+    message_id_list_remove(_unsubscriptions, msg_id);
+}
+//------------------------------------------------------------------------------
+void router_endpoint_info::remove_subscription(
+  const message_id msg_id) noexcept {
+    message_id_list_remove(_subscriptions, msg_id);
+    message_id_list_add(_unsubscriptions, msg_id);
+}
+//------------------------------------------------------------------------------
+auto router_endpoint_info::is_subscribed_to(const message_id msg_id) noexcept
+  -> bool {
+    return message_id_list_contains(_subscriptions, msg_id);
+}
+//------------------------------------------------------------------------------
+auto router_endpoint_info::is_not_subscribed_to(const message_id msg_id) noexcept
+  -> bool {
+    return message_id_list_contains(_unsubscriptions, msg_id);
+}
+//------------------------------------------------------------------------------
+auto router_endpoint_info::has_instance_id() noexcept -> bool {
+    return _instance_id != 0;
+}
+//------------------------------------------------------------------------------
+auto router_endpoint_info::subscriptions() noexcept -> std::vector<message_id> {
+    if(has_instance_id()) {
+        return _subscriptions;
+    }
+    return {};
+}
+//------------------------------------------------------------------------------
+auto router_endpoint_info::instance_id(const message_view& msg) noexcept
+  -> process_instance_id_t {
+    return _instance_id;
+}
+//------------------------------------------------------------------------------
+void router_endpoint_info::assign_instance_id(const message_view& msg) noexcept {
+    _is_outdated.reset();
+    if(_instance_id != msg.sequence_no) {
+        _instance_id = msg.sequence_no;
+        _subscriptions.clear();
+        _unsubscriptions.clear();
+    }
+}
+//------------------------------------------------------------------------------
+void router_endpoint_info::apply_instance_id(message_view& msg) noexcept {
+    msg.sequence_no = _instance_id;
+}
+//------------------------------------------------------------------------------
+auto router_endpoint_info::is_outdated() const noexcept -> bool {
+    return _is_outdated.is_expired();
+}
+//------------------------------------------------------------------------------
+// connection_update_work_unit
+//------------------------------------------------------------------------------
+auto connection_update_work_unit::do_it() noexcept -> bool {
+    (*_something_done)(_node->update_connection());
+    return true;
+}
+//------------------------------------------------------------------------------
+// routed_node
 //------------------------------------------------------------------------------
 routed_node::routed_node() noexcept {
     _message_block_list.reserve(8);
@@ -565,7 +612,7 @@ auto router::_remove_timeouted() noexcept -> work_done {
 
     _endpoint_infos.erase_if([this](auto& entry) {
         auto& [endpoint_id, info] = entry;
-        if(info.is_outdated) {
+        if(info.is_outdated()) {
             _endpoint_idx.erase(endpoint_id);
             _mark_disconnected(endpoint_id);
             return true;
@@ -773,8 +820,7 @@ auto router::_handle_subscribed(
           .arg("message", sub_msg_id);
 
         auto& info = _update_endpoint_info(incoming_id, message);
-        message_id_list_add(info.subscriptions, sub_msg_id);
-        message_id_list_remove(info.unsubscriptions, sub_msg_id);
+        info.add_subscription(sub_msg_id);
     }
     return should_be_forwarded;
 }
@@ -823,8 +869,7 @@ auto router::_handle_not_subscribed(
           .arg("message", sub_msg_id);
 
         auto& info = _update_endpoint_info(incoming_id, message);
-        message_id_list_remove(info.subscriptions, sub_msg_id);
-        message_id_list_add(info.unsubscriptions, sub_msg_id);
+        info.remove_subscription(sub_msg_id);
     }
     return should_be_forwarded;
 }
@@ -867,25 +912,21 @@ auto router::_handle_subscribers_query(const message_view& message) noexcept
   -> message_handling_result {
     const auto pos{_endpoint_infos.find(message.target_id)};
     if(pos != _endpoint_infos.end()) {
-        const auto& info = pos->second;
-        if(info.instance_id) {
+        auto& info = pos->second;
+        if(info.has_instance_id()) {
             message_id sub_msg_id{};
             if(default_deserialize_message_type(
                  sub_msg_id, message.content())) {
+                message_view response{message.data()};
+                response.setup_response(message);
+                response.set_source_id(message.target_id);
+                info.apply_instance_id(response);
                 // if we have the information cached, then respond
-                if(message_id_list_contains(info.subscriptions, sub_msg_id)) {
-                    message_view response{message.data()};
-                    response.setup_response(message);
-                    response.set_source_id(message.target_id);
-                    response.set_sequence_no(info.instance_id);
+                if(info.is_subscribed_to(sub_msg_id)) {
                     this->_route_message(
                       msgbus_id{"subscribTo"}, _id_base, response);
                 }
-                if(message_id_list_contains(info.unsubscriptions, sub_msg_id)) {
-                    message_view response{message.data()};
-                    response.setup_response(message);
-                    response.set_source_id(message.target_id);
-                    response.set_sequence_no(info.instance_id);
+                if(info.is_not_subscribed_to(sub_msg_id)) {
                     this->_route_message(
                       msgbus_id{"notSubTo"}, _id_base, response);
                 }
@@ -900,19 +941,17 @@ auto router::_handle_subscriptions_query(const message_view& message) noexcept
   -> message_handling_result {
     const auto pos = _endpoint_infos.find(message.target_id);
     if(pos != _endpoint_infos.end()) {
-        const auto& info = pos->second;
-        if(info.instance_id) {
-            for(auto& sub_msg_id : info.subscriptions) {
-                auto temp{default_serialize_buffer_for(sub_msg_id)};
-                if(auto serialized{
-                     default_serialize_message_type(sub_msg_id, cover(temp))}) {
-                    message_view response{extract(serialized)};
-                    response.setup_response(message);
-                    response.set_source_id(message.target_id);
-                    response.set_sequence_no(info.instance_id);
-                    this->_route_message(
-                      msgbus_id{"subscribTo"}, _id_base, response);
-                }
+        auto& info = pos->second;
+        for(auto& sub_msg_id : info.subscriptions()) {
+            auto temp{default_serialize_buffer_for(sub_msg_id)};
+            if(auto serialized{
+                 default_serialize_message_type(sub_msg_id, cover(temp))}) {
+                message_view response{extract(serialized)};
+                response.setup_response(message);
+                response.set_source_id(message.target_id);
+                info.apply_instance_id(response);
+                this->_route_message(
+                  msgbus_id{"subscribTo"}, _id_base, response);
             }
         }
     }
@@ -956,14 +995,14 @@ auto router::_handle_endpoint_certificate_query(
 //------------------------------------------------------------------------------
 auto router::_handle_topology_query(const message_view& message) noexcept
   -> message_handling_result {
-    router_topology_info info{};
+
+    router_topology_info info{
+      .router_id = _id_base, .instance_id = _instance_id};
 
     auto temp{default_serialize_buffer_for(info)};
     const auto respond{
       [&](identifier_t remote_id, const connection_kind conn_kind) {
-          info.router_id = _id_base;
           info.remote_id = remote_id;
-          info.instance_id = _instance_id;
           info.connect_kind = conn_kind;
           if(const auto serialized{default_serialize(info, cover(temp))})
             [[likely]] {
@@ -1282,8 +1321,8 @@ auto router::_route_targeted_message(
         }
     }
 
-    if(not _is_disconnected(message.target_id)) [[likely]] {
-        if(not has_routed) {
+    if(not has_routed) {
+        if(not _is_disconnected(message.target_id)) [[likely]] {
             for(const auto& [outgoing_id, node_out] : nodes) {
                 if(incoming_id != outgoing_id) {
                     has_routed |= node_out.try_route(*this, msg_id, message);
