@@ -71,6 +71,10 @@ void TilingModel::update() {
     }
 }
 //------------------------------------------------------------------------------
+void TilingModel::resetTimeout() {
+    _tiling.reset_solution_timeout(eagine::unsigned_constant<4>{});
+}
+//------------------------------------------------------------------------------
 auto TilingModel::getTilingSize() const noexcept -> QSize {
     const auto [x, y] = _tiling.tiling_size(eagine::unsigned_constant<4>{});
     return QSize{x, y};

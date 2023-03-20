@@ -44,6 +44,12 @@ void TilingViewModel::reinitialize(int w, int h) {
     }
 }
 //------------------------------------------------------------------------------
+void TilingViewModel::resetTimeout() {
+    if(auto tilingModel{_backend.getTilingModel()}) {
+        extract(tilingModel).resetTimeout();
+    }
+}
+//------------------------------------------------------------------------------
 void TilingViewModel::doSaveAs(const QUrl& filePath) {
     if(auto optTilingModel{_backend.getTilingModel()}) {
         QFile tilingFile(QDir::toNativeSeparators(filePath.toLocalFile()));

@@ -896,6 +896,8 @@ public:
       unsigned rank,
       const std::chrono::seconds sec) noexcept final;
 
+    void reset_solution_timeout(unsigned rank) noexcept final;
+
     auto solution_timeouted(unsigned rank) const noexcept -> bool final;
 
     auto updated_by_helper(const identifier_t helper_id, const unsigned rank)
@@ -1078,6 +1080,11 @@ void sudoku_solver_impl::set_solution_timeout(
   const std::chrono::seconds sec) noexcept {
     apply_to_sudoku_rank_unit(
       rank, [=](auto& info) { info.solution_timeout.reset(sec); }, _infos);
+}
+//------------------------------------------------------------------------------
+void sudoku_solver_impl::reset_solution_timeout(unsigned rank) noexcept {
+    apply_to_sudoku_rank_unit(
+      rank, [](auto& info) { info.solution_timeout.reset(); }, _infos);
 }
 //------------------------------------------------------------------------------
 auto sudoku_solver_impl::solution_timeouted(unsigned rank) const noexcept

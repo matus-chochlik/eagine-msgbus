@@ -33,6 +33,15 @@ ApplicationWindow {
     }
 
     Action {
+        id: resetTimeout
+        text: qsTr("&Reset timeout")
+        shortcut: StandardKey.Redo
+        onTriggered: {
+            backend.tiling.resetTimeout()
+        }
+    }
+
+    Action {
         id: saveAction
         text: qsTr("&Save")
         shortcut: StandardKey.Save

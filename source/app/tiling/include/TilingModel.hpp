@@ -25,6 +25,7 @@ public:
     void reinitialize();
     void reinitialize(int w, int h);
     void update();
+    void resetTimeout();
 
     auto getWidth() const noexcept -> int;
     auto getHeight() const noexcept -> int;

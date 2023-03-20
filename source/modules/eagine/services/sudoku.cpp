@@ -143,6 +143,8 @@ struct sudoku_solver_intf : interface<sudoku_solver_intf> {
       unsigned rank,
       const std::chrono::seconds sec) noexcept = 0;
 
+    virtual void reset_solution_timeout(unsigned rank) noexcept = 0;
+
     virtual auto solution_timeouted(unsigned rank) const noexcept -> bool = 0;
 
     virtual auto updated_by_helper(
@@ -303,6 +305,12 @@ public:
       const unsigned_constant<S>,
       const std::chrono::seconds sec) noexcept {
         _impl->set_solution_timeout(S, sec);
+    }
+
+    /// @brief Resets the solution timeout for the specified rank.
+    template <unsigned S>
+    void reset_solution_timeout(const unsigned_constant<S>) noexcept {
+        _impl->reset_solution_timeout(S);
     }
 
     /// @brief Indicates if the solution of board with the specified rank timeouted.
