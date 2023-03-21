@@ -9,7 +9,6 @@ import std;
 #include "SolutionProgressViewModel.hpp"
 #include "TilingBackend.hpp"
 #include "TilingModel.hpp"
-#include <QDebug>
 #include <cassert>
 
 //------------------------------------------------------------------------------
