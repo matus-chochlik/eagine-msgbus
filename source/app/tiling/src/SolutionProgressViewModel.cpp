@@ -18,6 +18,8 @@ SolutionProgressViewModel::SolutionProgressViewModel(TilingBackend& backend)
   , _backend{backend}
   , _imageDir{QDir::tempPath() + "/eagine-tiling-XXXXXX"}
   , _imagePathFormat{_imageDir.filePath("%1.png")} {
+    _doSaveImage = extract_or(
+      app_config().get<bool>("msgbus.sudoku.solver.gui.save_progress"), false);
     connect(
       _backend.getTilingTheme(),
       &TilingTheme::lightChanged,
