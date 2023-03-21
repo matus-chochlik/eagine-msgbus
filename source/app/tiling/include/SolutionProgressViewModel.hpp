@@ -43,7 +43,8 @@ private slots:
 private:
     TilingBackend& _backend;
     qlonglong _imageIndex{0};
-    QTemporaryDir _imageDir;
+    std::unique_ptr<QTemporaryDir> _imageDir;
+    std::vector<std::unique_ptr<QTemporaryDir>> _prevImageDirs;
     QString _imagePathFormat;
     QImage _image;
     QSize _size{1, 1};

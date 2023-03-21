@@ -12,12 +12,17 @@ import std;
 #include <cassert>
 
 //------------------------------------------------------------------------------
+static inline auto makeTempImageDir() {
+    return std::make_unique<QTemporaryDir>(
+      QDir::tempPath() + "/eagine-tiling-XXXXXX");
+}
+//------------------------------------------------------------------------------
 SolutionProgressViewModel::SolutionProgressViewModel(TilingBackend& backend)
   : QObject{nullptr}
   , eagine::main_ctx_object{"PrgrsModel", backend}
   , _backend{backend}
-  , _imageDir{QDir::tempPath() + "/eagine-tiling-XXXXXX"}
-  , _imagePathFormat{_imageDir.filePath("%1.png")} {
+  , _imageDir{makeTempImageDir()}
+  , _imagePathFormat{_imageDir->filePath("%1.png")} {
     _doSaveImage = extract_or(
       app_config().get<bool>("msgbus.sudoku.solver.gui.save_progress"), false);
     connect(
@@ -37,7 +42,12 @@ void SolutionProgressViewModel::tilingReset() {
         } else {
             _image.fill(Qt::color0);
         }
-        _imageIndex = 0;
+        if(_doSaveImage) {
+            _prevImageDirs.emplace_back(
+              std::exchange(_imageDir, makeTempImageDir()));
+            _imagePathFormat = _imageDir->filePath("%1.png");
+            _imageIndex = 0;
+        }
         emit imageChanged();
     }
 }
