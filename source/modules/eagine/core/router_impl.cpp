@@ -42,7 +42,7 @@ static inline void message_id_list_add(
 static inline void message_id_list_remove(
   std::vector<message_id>& list,
   const message_id& entry) noexcept {
-    const auto pos = std::find(list.begin(), list.end(), entry);
+    const auto pos{std::find(list.begin(), list.end(), entry)};
     if(pos != list.end()) {
         list.erase(pos);
     }
@@ -417,12 +417,96 @@ auto parent_router::route_messages(
     return false;
 }
 //------------------------------------------------------------------------------
+// router_stats
+//------------------------------------------------------------------------------
+auto router_stats::uptime() noexcept -> std::chrono::seconds {
+    return std::chrono::duration_cast<std::chrono::seconds>(
+      std::chrono::steady_clock::now() - _startup_time);
+}
+//------------------------------------------------------------------------------
+auto router_stats::time_since_last_routing() noexcept -> auto {
+    const auto now{std::chrono::steady_clock::now()};
+    const auto message_age_inc{now - _prev_route_time};
+    _prev_route_time = now;
+    return message_age_inc;
+}
+//------------------------------------------------------------------------------
+void router_stats::update_avg_msg_age(
+  const std::chrono::steady_clock::duration message_age_inc) noexcept {
+    _message_age_avg.add(message_age_inc);
+}
+//------------------------------------------------------------------------------
+auto router_stats::avg_msg_age() noexcept -> std::chrono::microseconds {
+    return std::chrono::duration_cast<std::chrono::microseconds>(
+      _message_age_avg.get());
+}
+//------------------------------------------------------------------------------
+auto router_stats::statistics() noexcept -> router_statistics {
+    return _stats;
+}
+//------------------------------------------------------------------------------
+auto router_stats::update_stats() noexcept
+  -> std::tuple<std::optional<message_flow_info>> {
+
+    const auto now{std::chrono::steady_clock::now()};
+    const std::chrono::duration<float> seconds{now - _forwarded_since_stat};
+    _stats.uptime_seconds = uptime().count();
+
+    if(seconds >= std::chrono::seconds{15}) [[unlikely]] {
+        _forwarded_since_stat = now;
+
+        _stats.messages_per_second = static_cast<std::int32_t>(
+          float(_stats.forwarded_messages - _prev_forwarded_messages) /
+          seconds.count());
+        _prev_forwarded_messages = _stats.forwarded_messages;
+
+        const auto avg_msg_age_us =
+          static_cast<std::int32_t>(avg_msg_age().count() + 500);
+        const auto avg_msg_age_ms = avg_msg_age_us / 1000;
+
+        _stats.message_age_us = avg_msg_age_us;
+
+        const bool flow_info_changed{
+          _flow_info.avg_msg_age_ms != avg_msg_age_ms};
+        _flow_info.set_average_message_age(
+          std::chrono::milliseconds{avg_msg_age_ms});
+        if(flow_info_changed) {
+            return {{_flow_info}};
+        }
+    }
+
+    return {};
+}
+//------------------------------------------------------------------------------
+void router_stats::message_dropped() noexcept {
+    ++_stats.dropped_messages;
+}
+//------------------------------------------------------------------------------
+void router_stats::log_stats(const main_ctx_object& user) noexcept {
+    if(++_stats.forwarded_messages % 1'000'000 == 0) {
+        const auto now{std::chrono::steady_clock::now()};
+        const std::chrono::duration<float> interval{now - _forwarded_since_log};
+        _forwarded_since_log = now;
+
+        if(interval > interval.zero()) [[likely]] {
+            const auto msgs_per_sec{1'000'000.F / interval.count()};
+
+            user.log_chart_sample("msgsPerSec", msgs_per_sec);
+            user.log_stat("forwarded ${count} messages")
+              .tag("msgStats")
+              .arg("count", _stats.forwarded_messages)
+              .arg("dropped", _stats.dropped_messages)
+              .arg("interval", interval)
+              .arg("avgMsgAge", avg_msg_age())
+              .arg("msgsPerSec", msgs_per_sec);
+        }
+    }
+}
+//------------------------------------------------------------------------------
 // router
 //------------------------------------------------------------------------------
 auto router::_uptime_seconds() noexcept -> std::int64_t {
-    return std::chrono::duration_cast<std::chrono::seconds>(
-             std::chrono::steady_clock::now() - _startup_time)
-      .count();
+    return _stats.uptime().count();
 }
 //------------------------------------------------------------------------------
 void router::add_certificate_pem(const memory::const_block blk) noexcept {
@@ -695,30 +779,6 @@ void router::_handle_connection(
     _pending.emplace_back(std::move(a_connection));
 }
 //------------------------------------------------------------------------------
-auto router::_should_log_router_stats() noexcept -> bool {
-    return ++_stats.forwarded_messages % 1'000'000 == 0;
-}
-//------------------------------------------------------------------------------
-void router::_log_router_stats() noexcept {
-    const auto now{std::chrono::steady_clock::now()};
-    const std::chrono::duration<float> interval{now - _forwarded_since_log};
-
-    if(interval > interval.zero()) [[likely]] {
-        const auto msgs_per_sec{1'000'000.F / interval.count()};
-
-        log_chart_sample("msgsPerSec", msgs_per_sec);
-        log_stat("forwarded ${count} messages")
-          .tag("msgStats")
-          .arg("count", _stats.forwarded_messages)
-          .arg("dropped", _stats.dropped_messages)
-          .arg("interval", interval)
-          .arg("avgMsgAge", _avg_msg_age())
-          .arg("msgsPerSec", msgs_per_sec);
-    }
-
-    _forwarded_since_log = now;
-}
-//------------------------------------------------------------------------------
 auto router::_process_blobs() noexcept -> work_done {
     some_true something_done{};
     const auto resend_request{
@@ -759,7 +819,7 @@ auto router::_handle_blob(
             log_trace("received endpoint certificate")
               .arg("source", message.source_id)
               .arg("pem", message.content());
-            auto pos = _nodes.find(message.source_id);
+            auto pos{_nodes.find(message.source_id)};
             if(pos != _nodes.end()) {
                 if([&, this] {
                        const std::unique_lock lk_ctx{_context_lock};
@@ -795,6 +855,26 @@ auto router::_update_endpoint_info(
     // sequence_no is the instance id in this message type
     info.assign_instance_id(message);
     return info;
+}
+//------------------------------------------------------------------------------
+auto router::_send_flow_info(const message_flow_info& flow_info) noexcept
+  -> work_done {
+    const auto send_info{[&](const identifier_t remote_id, auto& node) {
+        auto buf{default_serialize_buffer_for(flow_info)};
+        if(const auto serialized{default_serialize(flow_info, cover(buf))})
+          [[likely]] {
+            message_view response{extract(serialized)};
+            response.set_source_id(_id_base);
+            response.set_target_id(remote_id);
+            response.set_priority(message_priority::high);
+            node.send(*this, msgbus_id{"msgFlowInf"}, response);
+        }
+    }};
+
+    for(const auto& [nd_id, nd] : _nodes) {
+        send_info(nd_id, nd);
+    }
+    return not _nodes.empty();
 }
 //------------------------------------------------------------------------------
 auto router::_handle_ping(const message_view& message) noexcept
@@ -939,7 +1019,7 @@ auto router::_handle_subscribers_query(const message_view& message) noexcept
 //------------------------------------------------------------------------------
 auto router::_handle_subscriptions_query(const message_view& message) noexcept
   -> message_handling_result {
-    const auto pos = _endpoint_infos.find(message.target_id);
+    const auto pos{_endpoint_infos.find(message.target_id)};
     if(pos != _endpoint_infos.end()) {
         auto& info = pos->second;
         for(auto& sub_msg_id : info.subscriptions()) {
@@ -1022,56 +1102,12 @@ auto router::_handle_topology_query(const message_view& message) noexcept
     return should_be_forwarded;
 }
 //------------------------------------------------------------------------------
-auto router::_avg_msg_age() const noexcept -> std::chrono::microseconds {
-    return std::chrono::duration_cast<std::chrono::microseconds>(
-      _message_age_avg.get());
-}
-//------------------------------------------------------------------------------
 auto router::_update_stats() noexcept -> work_done {
-    some_true something_done;
-
-    const auto now = std::chrono::steady_clock::now();
-    const std::chrono::duration<float> seconds{now - _forwarded_since_stat};
-    if(seconds >= std::chrono::seconds{15}) [[unlikely]] {
-        _forwarded_since_stat = now;
-
-        _stats.messages_per_second = static_cast<std::int32_t>(
-          float(_stats.forwarded_messages - _prev_forwarded_messages) /
-          seconds.count());
-        _prev_forwarded_messages = _stats.forwarded_messages;
-
-        const auto avg_msg_age_us =
-          static_cast<std::int32_t>(_avg_msg_age().count() + 500);
-        const auto avg_msg_age_ms = avg_msg_age_us / 1000;
-
-        _stats.message_age_us = avg_msg_age_us;
-
-        const bool flow_info_changed =
-          _flow_info.avg_msg_age_ms != avg_msg_age_ms;
-        _flow_info.set_average_message_age(
-          std::chrono::milliseconds{avg_msg_age_ms});
-
-        if(flow_info_changed) {
-            const auto send_info{[&](const identifier_t remote_id, auto& node) {
-                auto buf{default_serialize_buffer_for(_flow_info)};
-                if(const auto serialized{
-                     default_serialize(_flow_info, cover(buf))}) [[likely]] {
-                    message_view response{extract(serialized)};
-                    response.set_source_id(_id_base);
-                    response.set_target_id(remote_id);
-                    response.set_priority(message_priority::high);
-                    node.send(*this, msgbus_id{"msgFlowInf"}, response);
-                    something_done();
-                }
-            }};
-
-            for(const auto& [nd_id, nd] : this->_nodes) {
-                send_info(nd_id, nd);
-            }
-        }
+    some_true something_done{};
+    const auto [new_flow_info] = _stats.update_stats();
+    if(new_flow_info) {
+        something_done(_send_flow_info(extract(new_flow_info)));
     }
-    _stats.uptime_seconds = _uptime_seconds();
-
     return something_done;
 }
 //------------------------------------------------------------------------------
@@ -1079,8 +1115,9 @@ auto router::_handle_stats_query(const message_view& message) noexcept
   -> message_handling_result {
     _update_stats();
 
-    auto rs_buf{default_serialize_buffer_for(_stats)};
-    if(const auto serialized{default_serialize(_stats, cover(rs_buf))})
+    const auto stats{_stats.statistics()};
+    auto rs_buf{default_serialize_buffer_for(stats)};
+    if(const auto serialized{default_serialize(stats, cover(rs_buf))})
       [[likely]] {
         message_view response{extract(serialized)};
         response.setup_response(message);
@@ -1283,9 +1320,7 @@ auto router::_forward_to(
   const routed_node& node_out,
   const message_id msg_id,
   message_view& message) noexcept -> bool {
-    if(_should_log_router_stats()) [[unlikely]] {
-        _log_router_stats();
-    }
+    _stats.log_stats(*this);
     return node_out.send(*this, msg_id, message);
 }
 //------------------------------------------------------------------------------
@@ -1301,7 +1336,7 @@ auto router::_route_targeted_message(
         if(pos->second == _id_base) {
             has_routed |= _parent_router.send(*this, msg_id, message);
         } else {
-            const auto node_pos = nodes.find(pos->second);
+            const auto node_pos{nodes.find(pos->second)};
             if(node_pos != nodes.end()) {
                 auto& node_out = node_pos->second;
                 if(node_out.is_allowed(msg_id)) {
@@ -1373,7 +1408,7 @@ auto router::_route_message(
         log_warning("message ${message} discarded after too many hops")
           .tag("tooMnyHops")
           .arg("message", msg_id);
-        ++_stats.dropped_messages;
+        _stats.message_dropped();
     }
     return result;
 }
@@ -1384,13 +1419,13 @@ auto router::_handle_parent_message(
   const message_id msg_id,
   const message_age msg_age,
   message_view message) noexcept -> bool {
-    _message_age_avg.add(message.add_age(msg_age).age() + message_age_inc);
+    _stats.update_avg_msg_age(message.add_age(msg_age).age() + message_age_inc);
 
     if(is_special_message(msg_id)) {
         return _handle_special_parent_message(msg_id, message);
     }
     if(message.too_old()) [[unlikely]] {
-        ++_stats.dropped_messages;
+        _stats.message_dropped();
         return true;
     }
     return _route_message(msg_id, incoming_id, message);
@@ -1403,12 +1438,13 @@ auto router::_handle_node_message(
   const message_age msg_age,
   message_view message,
   routed_node& node) noexcept -> bool {
-    _message_age_avg.add(message.add_age(msg_age).age() + message_age_inc);
+    _stats.update_avg_msg_age(message.add_age(msg_age).age() + message_age_inc);
+
     if(_handle_special(msg_id, incoming_id, node, message)) {
         return true;
     }
     if(message.too_old()) [[unlikely]] {
-        ++_stats.dropped_messages;
+        _stats.message_dropped();
         return true;
     }
     return _route_message(msg_id, incoming_id, message);
@@ -1436,9 +1472,7 @@ auto router::_handle_special_parent_message(
 //------------------------------------------------------------------------------
 void router::_route_messages_by_workers(
   some_true_atomic& something_done) noexcept {
-    const auto now{std::chrono::steady_clock::now()};
-    const auto message_age_inc{now - _prev_route_time};
-    _prev_route_time = now;
+    const auto message_age_inc{_stats.time_since_last_routing()};
 
     for(auto& [node_id, node] : _nodes) {
         something_done(node.route_messages(*this, node_id, message_age_inc));
@@ -1449,9 +1483,7 @@ void router::_route_messages_by_workers(
 //------------------------------------------------------------------------------
 auto router::_route_messages_by_router() noexcept -> work_done {
     some_true something_done{};
-    const auto now{std::chrono::steady_clock::now()};
-    const auto message_age_inc{now - _prev_route_time};
-    _prev_route_time = now;
+    const auto message_age_inc{_stats.time_since_last_routing()};
 
     for(auto& [node_id, node] : _nodes) {
         something_done(node.route_messages(*this, node_id, message_age_inc));
@@ -1575,11 +1607,7 @@ void router::cleanup() noexcept {
         std::get<1>(entry).cleanup_connection();
     }
 
-    log_stat("forwarded ${count} messages in total")
-      .tag("msgStats")
-      .arg("count", _stats.forwarded_messages)
-      .arg("dropped", _stats.dropped_messages)
-      .arg("avgMsgAge", _avg_msg_age());
+    _stats.log_stats(*this);
 }
 //------------------------------------------------------------------------------
 void router::finish() noexcept {

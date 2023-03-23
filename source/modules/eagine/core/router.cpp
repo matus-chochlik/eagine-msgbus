@@ -194,6 +194,39 @@ private:
       nothing};
 };
 //------------------------------------------------------------------------------
+class router_stats {
+public:
+    auto uptime() noexcept -> std::chrono::seconds;
+    auto time_since_last_routing() noexcept -> auto;
+    auto update_stats() noexcept
+      -> std::tuple<std::optional<message_flow_info>>;
+    void update_avg_msg_age(
+      const std::chrono::steady_clock::duration message_age_inc) noexcept;
+    auto avg_msg_age() noexcept -> std::chrono::microseconds;
+    auto statistics() noexcept -> router_statistics;
+
+    void message_dropped() noexcept;
+    void log_stats(const main_ctx_object&) noexcept;
+
+private:
+    using lockable = std::mutex;
+
+    lockable _main_lock;
+    std::chrono::steady_clock::time_point _startup_time{
+      std::chrono::steady_clock::now()};
+    std::chrono::steady_clock::time_point _prev_route_time{
+      std::chrono::steady_clock::now()};
+    std::chrono::steady_clock::time_point _forwarded_since_log{
+      std::chrono::steady_clock::now()};
+    std::chrono::steady_clock::time_point _forwarded_since_stat{
+      std::chrono::steady_clock::now()};
+    basic_sliding_average<std::chrono::steady_clock::duration, std::int32_t, 8, 64>
+      _message_age_avg{};
+    std::int64_t _prev_forwarded_messages{0};
+    router_statistics _stats{};
+    message_flow_info _flow_info{};
+};
+//------------------------------------------------------------------------------
 export class router
   : public main_ctx_object
   , public acceptor_user
@@ -275,8 +308,6 @@ private:
     auto _remove_disconnected() noexcept -> work_done;
     void _assign_id(connection& conn) noexcept;
     void _handle_connection(std::unique_ptr<connection> conn) noexcept;
-    auto _should_log_router_stats() noexcept -> bool;
-    void _log_router_stats() noexcept;
 
     auto _process_blobs() noexcept -> work_done;
     auto _do_get_blob_target_io(
@@ -292,6 +323,8 @@ private:
     auto _update_endpoint_info(
       const identifier_t incoming_id,
       const message_view&) noexcept -> router_endpoint_info&;
+
+    auto _send_flow_info(const message_flow_info&) noexcept -> work_done;
 
     auto _handle_ping(const message_view&) noexcept -> message_handling_result;
 
@@ -426,26 +459,16 @@ private:
     lockable _context_lock;
 
     shared_context _context{};
-    const std::chrono::seconds _pending_timeout{
-      adjusted_duration(std::chrono::seconds{30})};
-    timeout _no_connection_timeout{adjusted_duration(std::chrono::seconds{30})};
-    const process_instance_id_t _instance_id{process_instance_id()};
     identifier_t _id_base{0};
     identifier_t _id_end{0};
     identifier_t _id_sequence{0};
-    std::chrono::steady_clock::time_point _startup_time{
-      std::chrono::steady_clock::now()};
-    std::chrono::steady_clock::time_point _prev_route_time{
-      std::chrono::steady_clock::now()};
-    std::chrono::steady_clock::time_point _forwarded_since_log{
-      std::chrono::steady_clock::now()};
-    std::chrono::steady_clock::time_point _forwarded_since_stat{
-      std::chrono::steady_clock::now()};
-    basic_sliding_average<std::chrono::steady_clock::duration, std::int32_t, 8, 64>
-      _message_age_avg{};
-    std::int64_t _prev_forwarded_messages{0};
-    router_statistics _stats{};
-    message_flow_info _flow_info{};
+    const process_instance_id_t _instance_id{process_instance_id()};
+
+    const std::chrono::seconds _pending_timeout{
+      adjusted_duration(std::chrono::seconds{30})};
+    timeout _no_connection_timeout{adjusted_duration(std::chrono::seconds{30})};
+
+    router_stats _stats;
 
     parent_router _parent_router;
     small_vector<std::shared_ptr<acceptor>, 2> _acceptors;
