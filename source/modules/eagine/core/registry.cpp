@@ -49,7 +49,7 @@ public:
     }
 
     /// @brief Returns the id of the internal router.
-    auto router_id() const noexcept -> identifier_t {
+    auto router_id() noexcept -> identifier_t {
         return _router.get_id();
     }
 

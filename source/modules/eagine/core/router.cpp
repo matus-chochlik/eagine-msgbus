@@ -227,6 +227,22 @@ private:
     message_flow_info _flow_info{};
 };
 //------------------------------------------------------------------------------
+class router_ids {
+public:
+    auto router_id() noexcept -> identifier_t;
+    auto instance_id() noexcept -> process_instance_id_t;
+    void set_description(main_ctx_object&);
+    void setup_from_config(const main_ctx_object&);
+
+    auto get_next_id(router&) noexcept -> identifier_t;
+
+private:
+    identifier_t _id_base{0};
+    identifier_t _id_end{0};
+    identifier_t _id_sequence{0};
+    const process_instance_id_t _instance_id{process_instance_id()};
+};
+//------------------------------------------------------------------------------
 export class router
   : public main_ctx_object
   , public acceptor_user
@@ -235,18 +251,15 @@ public:
     router(main_ctx_parent parent) noexcept
       : main_ctx_object{"MsgBusRutr", parent}
       , _context{make_context(*this)} {
-        _setup_from_config();
-
-        using std::to_string;
-        object_description(
-          "Router-" + to_string(_id_base),
-          "Message bus router id " + to_string(_id_base));
+        _ids.setup_from_config(*this);
+        _ids.set_description(*this);
     }
 
     /// @brief Returns the unique id of this router.
-    auto get_id() const noexcept {
-        return _id_base;
-    }
+    auto get_id() noexcept -> identifier_t;
+
+    auto has_id(const identifier_t) noexcept -> bool;
+    auto has_node_id(const identifier_t) noexcept -> bool;
 
     void add_certificate_pem(const memory::const_block blk) noexcept;
     void add_ca_certificate_pem(const memory::const_block blk) noexcept;
@@ -296,8 +309,6 @@ private:
     friend class parent_router;
 
     auto _uptime_seconds() noexcept -> std::int64_t;
-
-    void _setup_from_config();
 
     auto _handle_accept() noexcept -> work_done;
     auto _do_handle_pending() noexcept -> work_done;
@@ -459,10 +470,7 @@ private:
     lockable _context_lock;
 
     shared_context _context{};
-    identifier_t _id_base{0};
-    identifier_t _id_end{0};
-    identifier_t _id_sequence{0};
-    const process_instance_id_t _instance_id{process_instance_id()};
+    router_ids _ids;
 
     const std::chrono::seconds _pending_timeout{
       adjusted_duration(std::chrono::seconds{30})};
