@@ -562,7 +562,64 @@ auto router_ids::get_next_id(router& parent) noexcept -> identifier_t {
     return _id_sequence++;
 }
 //------------------------------------------------------------------------------
+// router context
+//------------------------------------------------------------------------------
+router_context::router_context(shared_context context) noexcept
+  : _context{std::move(context)} {}
+//------------------------------------------------------------------------------
+auto router_context::add_certificate_pem(const memory::const_block blk) noexcept
+  -> bool {
+    if(_context) [[likely]] {
+        const std::unique_lock lk_ctx{_context_lock};
+        _context->add_own_certificate_pem(blk);
+    }
+    return false;
+}
+//------------------------------------------------------------------------------
+auto router_context::add_ca_certificate_pem(
+  const memory::const_block blk) noexcept -> bool {
+    if(_context) [[likely]] {
+        const std::unique_lock lk_ctx{_context_lock};
+        _context->add_ca_certificate_pem(blk);
+    }
+    return false;
+}
+//------------------------------------------------------------------------------
+auto router_context::add_remote_certificate_pem(
+  const identifier_t id,
+  const memory::const_block blk) noexcept -> bool {
+    if(_context) [[likely]] {
+        const std::unique_lock lk_ctx{_context_lock};
+        return _context->add_remote_certificate_pem(id, blk);
+    }
+    return false;
+}
+//------------------------------------------------------------------------------
+auto router_context::get_own_certificate_pem() noexcept -> memory::const_block {
+    if(_context) [[likely]] {
+        const std::unique_lock lk_ctx{_context_lock};
+        return _context->get_own_certificate_pem();
+    }
+    return {};
+}
+//------------------------------------------------------------------------------
+auto router_context::get_remote_certificate_pem(const identifier_t id) noexcept
+  -> memory::const_block {
+    if(_context) [[likely]] {
+        const std::unique_lock lk_ctx{_context_lock};
+        return _context->get_remote_certificate_pem(id);
+    }
+    return {};
+}
+//------------------------------------------------------------------------------
 // router
+//------------------------------------------------------------------------------
+router::router(main_ctx_parent parent) noexcept
+  : main_ctx_object{"MsgBusRutr", parent}
+  , _context{make_context(*this)} {
+    _ids.setup_from_config(*this);
+    _ids.set_description(*this);
+}
 //------------------------------------------------------------------------------
 auto router::_uptime_seconds() noexcept -> std::int64_t {
     return _stats.uptime().count();
@@ -581,17 +638,11 @@ auto router::has_node_id(const identifier_t id) noexcept -> bool {
 }
 //------------------------------------------------------------------------------
 void router::add_certificate_pem(const memory::const_block blk) noexcept {
-    const std::unique_lock lk_ctx{_context_lock};
-    if(_context) [[likely]] {
-        _context->add_own_certificate_pem(blk);
-    }
+    _context.add_certificate_pem(blk);
 }
 //------------------------------------------------------------------------------
 void router::add_ca_certificate_pem(const memory::const_block blk) noexcept {
-    const std::unique_lock lk_ctx{_context_lock};
-    if(_context) [[likely]] {
-        _context->add_ca_certificate_pem(blk);
-    }
+    _context.add_ca_certificate_pem(blk);
 }
 //------------------------------------------------------------------------------
 auto router::add_acceptor(std::shared_ptr<acceptor> an_acceptor) noexcept
@@ -855,11 +906,8 @@ auto router::_handle_blob(
               .arg("pem", message.content());
             auto pos{_nodes.find(message.source_id)};
             if(pos != _nodes.end()) {
-                if([&, this] {
-                       const std::unique_lock lk_ctx{_context_lock};
-                       return _context->add_remote_certificate_pem(
-                         message.source_id, message.content());
-                   }()) {
+                if(_context.add_remote_certificate_pem(
+                     message.source_id, message.content())) {
                     log_debug(
                       "verified and stored endpoint "
                       "certificate")
@@ -1081,10 +1129,7 @@ auto router::_handle_router_certificate_query(
       0U,
       message.source_id,
       message.sequence_no,
-      [this] {
-          const std::unique_lock lk_ctx{_context_lock};
-          return _context->get_own_certificate_pem();
-      }(),
+      _context.get_own_certificate_pem(),
       adjusted_duration(std::chrono::seconds{30}),
       message_priority::high);
     return was_handled;
@@ -1092,10 +1137,8 @@ auto router::_handle_router_certificate_query(
 //------------------------------------------------------------------------------
 auto router::_handle_endpoint_certificate_query(
   const message_view& message) noexcept -> message_handling_result {
-    if(const auto cert_pem{[&, this] {
-           const std::unique_lock lk_ctx{_context_lock};
-           return _context->get_remote_certificate_pem(message.target_id);
-       }()}) {
+    if(const auto cert_pem{
+         _context.get_remote_certificate_pem(message.target_id)}) {
         post_blob(
           msgbus_id{"eptCertPem"},
           message.target_id,

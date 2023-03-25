@@ -243,17 +243,31 @@ private:
     const process_instance_id_t _instance_id{process_instance_id()};
 };
 //------------------------------------------------------------------------------
+class router_context {
+public:
+    router_context(shared_context) noexcept;
+    auto add_certificate_pem(const memory::const_block blk) noexcept -> bool;
+    auto add_ca_certificate_pem(const memory::const_block blk) noexcept -> bool;
+    auto add_remote_certificate_pem(
+      const identifier_t,
+      const memory::const_block blk) noexcept -> bool;
+    auto get_own_certificate_pem() noexcept -> memory::const_block;
+    auto get_remote_certificate_pem(const identifier_t) noexcept
+      -> memory::const_block;
+
+private:
+    using lockable = std::mutex;
+
+    lockable _context_lock;
+    shared_context _context{};
+};
+//------------------------------------------------------------------------------
 export class router
   : public main_ctx_object
   , public acceptor_user
   , public connection_user {
 public:
-    router(main_ctx_parent parent) noexcept
-      : main_ctx_object{"MsgBusRutr", parent}
-      , _context{make_context(*this)} {
-        _ids.setup_from_config(*this);
-        _ids.set_description(*this);
-    }
+    router(main_ctx_parent parent) noexcept;
 
     /// @brief Returns the unique id of this router.
     auto get_id() noexcept -> identifier_t;
@@ -467,9 +481,7 @@ private:
 
     using lockable = std::mutex;
 
-    lockable _context_lock;
-
-    shared_context _context{};
+    router_context _context;
     router_ids _ids;
 
     const std::chrono::seconds _pending_timeout{
