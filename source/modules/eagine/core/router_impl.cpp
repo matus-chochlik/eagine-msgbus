@@ -930,11 +930,15 @@ void router::_handle_connection(
     _pending.emplace_back(std::move(a_connection));
 }
 //------------------------------------------------------------------------------
+auto router::_current_nodes() noexcept {
+    return cover(_nodes);
+}
+//------------------------------------------------------------------------------
 auto router::_process_blobs() noexcept -> work_done {
     some_true something_done{_blobs.process_blobs(get_id(), *this)};
 
     if(_blobs.has_outgoing()) {
-        for(auto& [node_id, node] : _nodes) {
+        for(auto& [node_id, node] : _current_nodes()) {
             something_done(node.process_blobs(node_id, _blobs));
         }
     }
@@ -1000,7 +1004,7 @@ auto router::_send_flow_info(const message_flow_info& flow_info) noexcept
         }
     }};
 
-    for(const auto& [node_id, node] : _nodes) {
+    for(const auto& [node_id, node] : _current_nodes()) {
         send_info(node_id, node);
     }
     return not _nodes.empty();
@@ -1220,7 +1224,7 @@ auto router::_handle_topology_query(const message_view& message) noexcept
           }
       }};
 
-    for(auto& [nd_id, nd] : this->_nodes) {
+    for(auto& [nd_id, nd] : _current_nodes()) {
         respond(nd_id, nd.kind_of_connection());
     }
     if(_parent_router) {
@@ -1270,7 +1274,7 @@ auto router::_handle_stats_query(const message_view& message) noexcept
         }
     }};
 
-    for(auto& [node_id, node] : _nodes) {
+    for(auto& [node_id, node] : _current_nodes()) {
         respond(node_id, node);
     }
     if(_parent_router) [[likely]] {
@@ -1456,14 +1460,13 @@ auto router::_route_targeted_message(
     bool has_routed = false;
     const auto own_id{get_id()};
     const auto pos{_endpoint_idx.find(message.target_id)};
-    const auto& nodes = this->_nodes;
     if(pos != _endpoint_idx.end()) {
         // if the message should go through the parent router
         if(pos->second == own_id) {
             has_routed |= _parent_router.send(*this, msg_id, message);
         } else {
-            const auto node_pos{nodes.find(pos->second)};
-            if(node_pos != nodes.end()) {
+            const auto node_pos{_nodes.find(pos->second)};
+            if(node_pos != _nodes.end()) {
                 auto& node_out = node_pos->second;
                 if(node_out.is_allowed(msg_id)) {
                     has_routed = _forward_to(node_out, msg_id, message);
@@ -1473,7 +1476,7 @@ auto router::_route_targeted_message(
     }
 
     if(not has_routed) {
-        for(const auto& [outgoing_id, node_out] : nodes) {
+        for(const auto& [outgoing_id, node_out] : _current_nodes()) {
             if(outgoing_id == message.target_id) {
                 if(node_out.is_allowed(msg_id)) {
                     has_routed = _forward_to(node_out, msg_id, message);
@@ -1484,7 +1487,7 @@ auto router::_route_targeted_message(
 
     if(not has_routed) {
         if(not _is_disconnected(message.target_id)) [[likely]] {
-            for(const auto& [outgoing_id, node_out] : nodes) {
+            for(const auto& [outgoing_id, node_out] : _current_nodes()) {
                 if(incoming_id != outgoing_id) {
                     has_routed |= node_out.try_route(*this, msg_id, message);
                 }
@@ -1502,8 +1505,7 @@ auto router::_route_broadcast_message(
   const message_id msg_id,
   const identifier_t incoming_id,
   message_view& message) noexcept -> bool {
-    const auto& nodes = this->_nodes;
-    for(const auto& [outgoing_id, node_out] : nodes) {
+    for(const auto& [outgoing_id, node_out] : _current_nodes()) {
         if(incoming_id != outgoing_id) {
             if(node_out.is_allowed(msg_id)) {
                 _forward_to(node_out, msg_id, message);
@@ -1682,6 +1684,14 @@ auto router::do_work_by_router() noexcept -> work_done {
     something_done(_update_connections_by_router());
 
     return something_done;
+}
+//------------------------------------------------------------------------------
+auto router::do_work() noexcept -> work_done {
+    if(_use_workers()) {
+        return do_work_by_workers();
+    } else {
+        return do_work_by_router();
+    }
 }
 //------------------------------------------------------------------------------
 auto router::update(const valid_if_positive<int>& count) noexcept -> work_done {

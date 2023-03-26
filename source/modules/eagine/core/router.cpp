@@ -325,13 +325,7 @@ public:
     auto do_maintenance() noexcept -> work_done;
     auto do_work_by_workers() noexcept -> work_done;
     auto do_work_by_router() noexcept -> work_done;
-    auto do_work() noexcept -> work_done {
-        if(_use_workers()) {
-            return do_work_by_workers();
-        } else {
-            return do_work_by_router();
-        }
-    }
+    auto do_work() noexcept -> work_done;
 
     auto update(const valid_if_positive<int>& count) noexcept -> work_done;
     auto update() noexcept -> work_done {
@@ -366,6 +360,8 @@ private:
     auto _remove_disconnected() noexcept -> work_done;
     void _assign_id(connection& conn) noexcept;
     void _handle_connection(std::unique_ptr<connection> conn) noexcept;
+
+    auto _current_nodes() noexcept;
 
     auto _process_blobs() noexcept -> work_done;
 
