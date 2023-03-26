@@ -962,7 +962,7 @@ auto router::_handle_blob(
                 }
             }
             if(message.target_id) {
-                post_blob(
+                _blobs.push_outgoing(
                   msgbus_id{"eptCertPem"},
                   message.source_id,
                   message.target_id,
@@ -1171,7 +1171,7 @@ auto router::_handle_subscriptions_query(const message_view& message) noexcept
 //------------------------------------------------------------------------------
 auto router::_handle_router_certificate_query(
   const message_view& message) noexcept -> message_handling_result {
-    post_blob(
+    _blobs.push_outgoing(
       msgbus_id{"rtrCertPem"},
       0U,
       message.source_id,
@@ -1186,7 +1186,7 @@ auto router::_handle_endpoint_certificate_query(
   const message_view& message) noexcept -> message_handling_result {
     if(const auto cert_pem{
          _context.get_remote_certificate_pem(message.target_id)}) {
-        post_blob(
+        _blobs.push_outgoing(
           msgbus_id{"eptCertPem"},
           message.target_id,
           message.source_id,
@@ -1682,18 +1682,6 @@ auto router::do_work_by_router() noexcept -> work_done {
     something_done(_update_connections_by_router());
 
     return something_done;
-}
-//------------------------------------------------------------------------------
-void router::post_blob(
-  const message_id msg_id,
-  const identifier_t source_id,
-  const identifier_t target_id,
-  const blob_id_t target_blob_id,
-  const memory::const_block blob,
-  const std::chrono::seconds max_time,
-  const message_priority priority) noexcept {
-    _blobs.push_outgoing(
-      msg_id, source_id, target_id, target_blob_id, blob, max_time, priority);
 }
 //------------------------------------------------------------------------------
 auto router::update(const valid_if_positive<int>& count) noexcept -> work_done {

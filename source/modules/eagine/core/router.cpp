@@ -350,15 +350,6 @@ public:
         return no_connection_timeout().is_expired();
     }
 
-    void post_blob(
-      const message_id msg_id,
-      const identifier_t source_id,
-      const identifier_t target_id,
-      const blob_id_t target_blob_id,
-      const memory::const_block blob,
-      const std::chrono::seconds max_time,
-      const message_priority priority) noexcept;
-
 private:
     friend class routed_node;
     friend class parent_router;
