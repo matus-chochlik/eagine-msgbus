@@ -823,7 +823,7 @@ auto router::_mark_disconnected(const identifier_t endpoint_id) noexcept
 auto router::_remove_disconnected() noexcept -> work_done {
     some_true something_done{};
 
-    for(auto& [endpoint_id, node] : _nodes) {
+    for(auto& [node_id, node] : _nodes) {
         if(node.should_disconnect()) [[unlikely]] {
             log_debug("removing disconnected connection").tag("rmDiscConn");
             node.cleanup_connection();
@@ -875,8 +875,8 @@ auto router::_process_blobs() noexcept -> work_done {
       {construct_from, resend_request}, min_connection_data_size));
 
     if(_blobs.has_outgoing()) {
-        for(auto& nd : _nodes) {
-            std::get<1>(nd).process_blobs(std::get<0>(nd), _blobs);
+        for(auto& [node_id, node] : _nodes) {
+            something_done(node.process_blobs(node_id, _blobs));
         }
     }
     return something_done;
@@ -953,8 +953,8 @@ auto router::_send_flow_info(const message_flow_info& flow_info) noexcept
         }
     }};
 
-    for(const auto& [nd_id, nd] : _nodes) {
-        send_info(nd_id, nd);
+    for(const auto& [node_id, node] : _nodes) {
+        send_info(node_id, node);
     }
     return not _nodes.empty();
 }
@@ -1223,8 +1223,8 @@ auto router::_handle_stats_query(const message_view& message) noexcept
         }
     }};
 
-    for(auto& [nd_id, nd] : _nodes) {
-        respond(nd_id, nd);
+    for(auto& [node_id, node] : _nodes) {
+        respond(node_id, node);
     }
     if(_parent_router) [[likely]] {
         respond(_parent_router.id(), _parent_router);
