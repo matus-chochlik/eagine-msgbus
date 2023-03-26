@@ -261,7 +261,7 @@ auto routed_node::try_route(
 //------------------------------------------------------------------------------
 auto routed_node::process_blobs(
   const identifier_t node_id,
-  blob_manipulator& blobs) noexcept -> work_done {
+  router_blobs& blobs) noexcept -> work_done {
     some_true something_done;
     if(_connection and _connection->is_usable()) [[likely]] {
         if(auto opt_max_size{_connection->max_data_size()}) {
@@ -272,10 +272,8 @@ auto routed_node::process_blobs(
                   }
                   return false;
               }};
-            if(blobs.process_outgoing(
-                 {construct_from, handle_send}, extract(opt_max_size), 4)) {
-                something_done();
-            }
+            something_done(blobs.process_outgoing(
+              {construct_from, handle_send}, extract(opt_max_size), 4));
         }
     }
     return something_done;
@@ -612,6 +610,74 @@ auto router_context::get_remote_certificate_pem(const identifier_t id) noexcept
     return {};
 }
 //------------------------------------------------------------------------------
+// router_blobs
+//------------------------------------------------------------------------------
+router_blobs::router_blobs(router& parent) noexcept
+  : _blobs{parent, msgbus_id{"blobFrgmnt"}, msgbus_id{"blobResend"}} {}
+//------------------------------------------------------------------------------
+auto router_blobs::has_outgoing() noexcept -> bool {
+    return _blobs.has_outgoing();
+}
+//------------------------------------------------------------------------------
+auto router_blobs::process_outgoing(
+  const send_handler handle_send,
+  const span_size_t max_data_size,
+  span_size_t max_messages) noexcept -> work_done {
+    return _blobs.process_outgoing(handle_send, max_data_size, max_messages);
+}
+//------------------------------------------------------------------------------
+void router_blobs::push_outgoing(
+  const message_id msg_id,
+  const identifier_t source_id,
+  const identifier_t target_id,
+  const blob_id_t target_blob_id,
+  const memory::const_block blob,
+  const std::chrono::seconds max_time,
+  const message_priority priority) noexcept {
+    _blobs.push_outgoing(
+      msg_id, source_id, target_id, target_blob_id, blob, max_time, priority);
+}
+//------------------------------------------------------------------------------
+auto router_blobs::process_blobs(
+  const identifier_t parent_id,
+  router& parent) noexcept -> work_done {
+    some_true something_done{_blobs.handle_complete() > 0};
+    const auto resend_request{
+      [&](message_id msg_id, message_view request) -> bool {
+          return parent._route_message(msg_id, parent_id, request);
+      }};
+    something_done(_blobs.update(
+      {construct_from, resend_request}, min_connection_data_size));
+
+    return something_done;
+}
+//------------------------------------------------------------------------------
+auto router_blobs::_get_blob_target_io(
+  const message_id msg_id,
+  const span_size_t size,
+  blob_manipulator& blobs) noexcept -> std::unique_ptr<target_blob_io> {
+    if(is_special_message(msg_id)) {
+        if(msg_id.has_method("eptCertPem")) {
+            return blobs.make_target_io(size);
+        }
+    }
+    return {};
+}
+//------------------------------------------------------------------------------
+void router_blobs::handle_fragment(
+  const message_view& message,
+  const fetch_handler handle_fetch) noexcept {
+    if(_blobs.process_incoming(
+         make_callable_ref<&router_blobs::_get_blob_target_io>(this),
+         message)) {
+        _blobs.fetch_all(handle_fetch);
+    }
+}
+//------------------------------------------------------------------------------
+void router_blobs::handle_resend(const message_view& message) noexcept {
+    _blobs.process_resend(message);
+}
+//------------------------------------------------------------------------------
 // router
 //------------------------------------------------------------------------------
 router::router(main_ctx_parent parent) noexcept
@@ -865,14 +931,7 @@ void router::_handle_connection(
 }
 //------------------------------------------------------------------------------
 auto router::_process_blobs() noexcept -> work_done {
-    some_true something_done{};
-    const auto resend_request{
-      [&](message_id msg_id, message_view request) -> bool {
-          return this->_route_message(msg_id, get_id(), request);
-      }};
-    something_done(_blobs.handle_complete() > 0);
-    something_done(_blobs.update(
-      {construct_from, resend_request}, min_connection_data_size));
+    some_true something_done{_blobs.process_blobs(get_id(), *this)};
 
     if(_blobs.has_outgoing()) {
         for(auto& [node_id, node] : _nodes) {
@@ -880,18 +939,6 @@ auto router::_process_blobs() noexcept -> work_done {
         }
     }
     return something_done;
-}
-//------------------------------------------------------------------------------
-auto router::_do_get_blob_target_io(
-  const message_id msg_id,
-  const span_size_t size,
-  blob_manipulator& blobs) noexcept -> std::unique_ptr<target_blob_io> {
-    if(is_special_message(msg_id)) {
-        if(msg_id.has_method("eptCertPem")) {
-            return blobs.make_target_io(size);
-        }
-    }
-    return {};
 }
 //------------------------------------------------------------------------------
 auto router::_handle_blob(
@@ -1249,17 +1296,15 @@ auto router::_handle_bye_bye(
 //------------------------------------------------------------------------------
 auto router::_handle_blob_fragment(const message_view& message) noexcept
   -> message_handling_result {
-    if(_blobs.process_incoming(
-         make_callable_ref<&router::_do_get_blob_target_io>(this), message)) {
-        _blobs.fetch_all(make_callable_ref<&router::_handle_blob>(this));
-    }
+    _blobs.handle_fragment(
+      message, make_callable_ref<&router::_handle_blob>(this));
     return has_id(message.target_id) ? was_handled : should_be_forwarded;
 }
 //------------------------------------------------------------------------------
 auto router::_handle_blob_resend(const message_view& message) noexcept
   -> message_handling_result {
     if(has_id(message.target_id)) {
-        _blobs.process_resend(message);
+        _blobs.handle_resend(message);
         return was_handled;
     }
     return should_be_forwarded;

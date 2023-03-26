@@ -25,6 +25,7 @@ import std;
 namespace eagine::msgbus {
 export class router;
 struct routed_node;
+struct router_blobs;
 //------------------------------------------------------------------------------
 enum message_handling_result : bool {
     should_be_forwarded = false,
@@ -135,9 +136,8 @@ public:
       const message_id,
       const message_view&) const noexcept -> bool;
 
-    auto process_blobs(
-      const identifier_t node_id,
-      blob_manipulator& blobs) noexcept -> work_done;
+    auto process_blobs(const identifier_t node_id, router_blobs& blobs) noexcept
+      -> work_done;
 
 private:
     using lockable = std::mutex;
@@ -262,6 +262,47 @@ private:
     shared_context _context{};
 };
 //------------------------------------------------------------------------------
+class router_blobs {
+public:
+    using send_handler = blob_manipulator::send_handler;
+    using fetch_handler = blob_manipulator::fetch_handler;
+
+    router_blobs(router& parent) noexcept;
+
+    auto has_outgoing() noexcept -> bool;
+
+    auto process_blobs(const identifier_t parent_id, router& parent) noexcept
+      -> work_done;
+
+    auto process_outgoing(
+      const send_handler,
+      const span_size_t max_data_size,
+      span_size_t max_messages) noexcept -> work_done;
+
+    void push_outgoing(
+      const message_id msg_id,
+      const identifier_t source_id,
+      const identifier_t target_id,
+      const blob_id_t target_blob_id,
+      const memory::const_block blob,
+      const std::chrono::seconds max_time,
+      const message_priority priority) noexcept;
+
+    void handle_fragment(
+      const message_view& message,
+      const fetch_handler) noexcept;
+
+    void handle_resend(const message_view& message) noexcept;
+
+private:
+    auto _get_blob_target_io(
+      const message_id,
+      const span_size_t,
+      blob_manipulator&) noexcept -> std::unique_ptr<target_blob_io>;
+
+    blob_manipulator _blobs;
+};
+//------------------------------------------------------------------------------
 export class router
   : public main_ctx_object
   , public acceptor_user
@@ -321,6 +362,7 @@ public:
 private:
     friend class routed_node;
     friend class parent_router;
+    friend class router_blobs;
 
     auto _uptime_seconds() noexcept -> std::int64_t;
 
@@ -335,10 +377,6 @@ private:
     void _handle_connection(std::unique_ptr<connection> conn) noexcept;
 
     auto _process_blobs() noexcept -> work_done;
-    auto _do_get_blob_target_io(
-      const message_id,
-      const span_size_t,
-      blob_manipulator&) noexcept -> std::unique_ptr<target_blob_io>;
 
     auto _handle_blob(
       const message_id,
@@ -483,24 +521,20 @@ private:
 
     router_context _context;
     router_ids _ids;
+    router_stats _stats;
+    router_blobs _blobs{*this};
+    parent_router _parent_router;
 
     const std::chrono::seconds _pending_timeout{
       adjusted_duration(std::chrono::seconds{30})};
     timeout _no_connection_timeout{adjusted_duration(std::chrono::seconds{30})};
 
-    router_stats _stats;
-
-    parent_router _parent_router;
     small_vector<std::shared_ptr<acceptor>, 2> _acceptors;
     std::vector<router_pending> _pending;
     flat_map<identifier_t, routed_node> _nodes;
     flat_map<identifier_t, identifier_t> _endpoint_idx;
     flat_map<identifier_t, router_endpoint_info> _endpoint_infos;
     flat_map<identifier_t, timeout> _recently_disconnected;
-    blob_manipulator _blobs{
-      *this,
-      msgbus_id{"blobFrgmnt"},
-      msgbus_id{"blobResend"}};
     bool _use_worker_threads{false};
 };
 //------------------------------------------------------------------------------
