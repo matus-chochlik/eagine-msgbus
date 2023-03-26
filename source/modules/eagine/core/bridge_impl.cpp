@@ -207,6 +207,12 @@ private:
 //------------------------------------------------------------------------------
 // bridge
 //------------------------------------------------------------------------------
+bridge::bridge(main_ctx_parent parent) noexcept
+  : main_ctx_object("MsgBusBrdg", parent)
+  , _context{make_context(*this)} {
+    _setup_from_config();
+}
+//------------------------------------------------------------------------------
 auto bridge::_uptime_seconds() noexcept -> std::int64_t {
     return std::chrono::duration_cast<std::chrono::seconds>(
              std::chrono::steady_clock::now() - _startup_time)

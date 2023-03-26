@@ -27,11 +27,7 @@ export class bridge
   , public connection_user {
 
 public:
-    bridge(main_ctx_parent parent) noexcept
-      : main_ctx_object("MsgBusBrdg", parent)
-      , _context{make_context(*this)} {
-        _setup_from_config();
-    }
+    bridge(main_ctx_parent parent) noexcept;
 
     void add_certificate_pem(const memory::const_block blk) noexcept;
     void add_ca_certificate_pem(const memory::const_block blk) noexcept;
