@@ -544,9 +544,9 @@ private:
     router_context _context;
     router_ids _ids;
     router_stats _stats;
-    router_blobs _blobs{*this};
     parent_router _parent_router;
     router_nodes _nodes;
+    router_blobs _blobs{*this};
 
     timeout _no_connection_timeout{adjusted_duration(std::chrono::seconds{30})};
 

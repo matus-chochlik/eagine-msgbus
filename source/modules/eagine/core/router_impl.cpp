@@ -460,27 +460,29 @@ auto router_nodes::_do_handle_pending(router& parent) noexcept -> work_done {
     bool maybe_router = true;
     const auto handler{
       [&](message_id msg_id, message_age, const message_view& msg) {
-          // this is a special message requesting endpoint id assignment
-          if(msg_id == msgbus_id{"requestId"}) {
-              id = ~id;
-              return true;
-          }
-          // this is a special message containing endpoint id
-          if(msg_id == msgbus_id{"annEndptId"}) {
-              id = msg.source_id;
-              maybe_router = false;
-              parent.log_debug("received endpoint id ${id}")
-                .tag("annEndptId")
-                .arg("id", id);
-              return true;
-          }
-          // this is a special message containing non-endpoint id
-          if(msg_id == msgbus_id{"announceId"}) {
-              id = msg.source_id;
-              parent.log_debug("received id ${id}")
-                .tag("announceId")
-                .arg("id", id);
-              return true;
+          if(is_special_message(msg_id)) {
+              // this is a special message requesting endpoint id assignment
+              if(msg_id.has_method("requestId")) {
+                  id = ~id;
+                  return true;
+              }
+              // this is a special message containing endpoint id
+              if(msg_id.has_method("annEndptId")) {
+                  id = msg.source_id;
+                  maybe_router = false;
+                  parent.log_debug("received endpoint id ${id}")
+                    .tag("annEndptId")
+                    .arg("id", id);
+                  return true;
+              }
+              // this is a special message containing non-endpoint id
+              if(msg_id.has_method("announceId")) {
+                  id = msg.source_id;
+                  parent.log_debug("received id ${id}")
+                    .tag("announceId")
+                    .arg("id", id);
+                  return true;
+              }
           }
           return false;
       }};
