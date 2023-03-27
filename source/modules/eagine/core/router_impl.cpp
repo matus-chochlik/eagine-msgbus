@@ -1732,6 +1732,8 @@ auto router::do_maintenance() noexcept -> work_done {
 
     something_done(_update_stats());
     something_done(_process_blobs());
+    something_done(_nodes.handle_pending(*this));
+    something_done(_nodes.handle_accept(*this));
     something_done(_nodes.remove_timeouted(*this));
     something_done(_nodes.remove_disconnected(*this));
 
@@ -1741,8 +1743,6 @@ auto router::do_maintenance() noexcept -> work_done {
 auto router::do_work_by_workers() noexcept -> work_done {
     some_true_atomic something_done{};
 
-    something_done(_nodes.handle_pending(*this));
-    something_done(_nodes.handle_accept(*this));
     _route_messages_by_workers(something_done);
     _update_connections_by_workers(something_done);
 
@@ -1752,8 +1752,6 @@ auto router::do_work_by_workers() noexcept -> work_done {
 auto router::do_work_by_router() noexcept -> work_done {
     some_true something_done{};
 
-    something_done(_nodes.handle_pending(*this));
-    something_done(_nodes.handle_accept(*this));
     something_done(_route_messages_by_router());
     something_done(_update_connections_by_router());
 
