@@ -101,8 +101,7 @@ auto router_endpoint_info::subscriptions() noexcept -> std::vector<message_id> {
     return {};
 }
 //------------------------------------------------------------------------------
-auto router_endpoint_info::instance_id(const message_view& msg) noexcept
-  -> process_instance_id_t {
+auto router_endpoint_info::instance_id() noexcept -> process_instance_id_t {
     return _instance_id;
 }
 //------------------------------------------------------------------------------
@@ -415,6 +414,271 @@ auto parent_router::route_messages(
     return false;
 }
 //------------------------------------------------------------------------------
+// router_nodes
+//------------------------------------------------------------------------------
+auto router_nodes::get() noexcept {
+    return cover(_nodes);
+}
+//------------------------------------------------------------------------------
+auto router_nodes::count() noexcept -> std::size_t {
+    return _nodes.size();
+}
+//------------------------------------------------------------------------------
+auto router_nodes::has_id(const identifier_t id) noexcept -> bool {
+    return _nodes.find(id) != _nodes.end();
+}
+//------------------------------------------------------------------------------
+auto router_nodes::find(const identifier_t id) noexcept
+  -> optional_reference<routed_node> {
+    if(const auto pos{_nodes.find(id)}; pos != _nodes.end()) {
+        return {pos->second};
+    }
+    return {nothing};
+}
+//------------------------------------------------------------------------------
+auto router_nodes::find_outgoing(const identifier_t target_id)
+  -> valid_endpoint_id {
+    if(const auto pos{_endpoint_idx.find(target_id)};
+       pos != _endpoint_idx.end()) {
+        return {pos->second};
+    }
+    return {invalid_endpoint_id()};
+}
+//------------------------------------------------------------------------------
+auto router_nodes::has_some() noexcept -> bool {
+    return not _nodes.empty() or not _pending.empty();
+}
+//------------------------------------------------------------------------------
+void router_nodes::add_acceptor(std::shared_ptr<acceptor> an_acceptor) noexcept {
+    _acceptors.emplace_back(std::move(an_acceptor));
+}
+//------------------------------------------------------------------------------
+auto router_nodes::_do_handle_pending(router& parent) noexcept -> work_done {
+    some_true something_done{};
+
+    identifier_t id = 0;
+    bool maybe_router = true;
+    const auto handler{
+      [&](message_id msg_id, message_age, const message_view& msg) {
+          // this is a special message requesting endpoint id assignment
+          if(msg_id == msgbus_id{"requestId"}) {
+              id = ~id;
+              return true;
+          }
+          // this is a special message containing endpoint id
+          if(msg_id == msgbus_id{"annEndptId"}) {
+              id = msg.source_id;
+              maybe_router = false;
+              parent.log_debug("received endpoint id ${id}")
+                .tag("annEndptId")
+                .arg("id", id);
+              return true;
+          }
+          // this is a special message containing non-endpoint id
+          if(msg_id == msgbus_id{"announceId"}) {
+              id = msg.source_id;
+              parent.log_debug("received id ${id}")
+                .tag("announceId")
+                .arg("id", id);
+              return true;
+          }
+          return false;
+      }};
+
+    std::size_t idx = 0;
+    while(idx < _pending.size()) {
+        id = 0;
+        auto& pending = _pending[idx];
+
+        something_done(pending.update_connection());
+        something_done(
+          pending.connection().fetch_messages({construct_from, handler}));
+        something_done(pending.update_connection());
+        // if we got the endpoint id message from the connection
+        if(~id == 0) {
+            parent._assign_id(pending.connection());
+        } else if(id != 0) {
+            parent
+              .log_info(
+                "adopting pending connection from ${cnterpart} "
+                "${id}")
+              .tag("adPendConn")
+              .arg("kind", pending.connection().kind())
+              .arg("type", pending.connection().type_id())
+              .arg("id", id)
+              .arg(
+                "cnterpart",
+                maybe_router ? string_view("non-endpoint")
+                             : string_view("endpoint"));
+
+            // send the special message confirming assigned endpoint id
+            message_view confirmation{};
+            confirmation.set_source_id(parent.get_id()).set_target_id(id);
+            pending.connection().send(msgbus_id{"confirmId"}, confirmation);
+
+            auto pos = _nodes.find(id);
+            if(pos == _nodes.end()) {
+                pos = _nodes.try_emplace(id).first;
+                parent._update_use_workers();
+            }
+            pos->second.setup(pending.release_connection(), maybe_router);
+            _pending.erase(_pending.begin() + signedness_cast(idx));
+            _recently_disconnected.erase(id);
+            something_done();
+        } else {
+            ++idx;
+        }
+    }
+    return something_done;
+}
+//------------------------------------------------------------------------------
+auto router_nodes::handle_pending(router& parent) noexcept -> work_done {
+
+    if(not _pending.empty()) [[unlikely]] {
+        return _do_handle_pending(parent);
+    }
+    return false;
+}
+//------------------------------------------------------------------------------
+auto router_nodes::handle_accept(router& parent) noexcept -> work_done {
+    some_true something_done{};
+
+    if(not _acceptors.empty()) [[likely]] {
+        const auto handle_conn{[&](std::unique_ptr<connection> a_connection) {
+            assert(a_connection);
+            parent.log_info("accepted pending connection")
+              .tag("acPendConn")
+              .arg("kind", a_connection->kind())
+              .arg("type", a_connection->type_id());
+            _pending.emplace_back(std::move(a_connection));
+        }};
+        acceptor::accept_handler handler{construct_from, handle_conn};
+        for(auto& an_acceptor : _acceptors) {
+            assert(an_acceptor);
+            something_done(an_acceptor->update());
+            something_done(an_acceptor->process_accepted(handler));
+        }
+    }
+    return something_done;
+}
+//------------------------------------------------------------------------------
+auto router_nodes::remove_timeouted(const main_ctx_object& user) noexcept
+  -> work_done {
+    some_true something_done{};
+
+    std::erase_if(_pending, [&, this](auto& pending) {
+        if(pending.age() > this->_pending_timeout) {
+            something_done();
+            user.log_warning("removing timeouted pending ${type} connection")
+              .tag("rmPendConn")
+              .arg("type", pending.connection().type_id())
+              .arg("age", pending.age());
+            return true;
+        }
+        return false;
+    });
+
+    _endpoint_infos.erase_if([this](auto& entry) {
+        auto& [endpoint_id, info] = entry;
+        if(info.is_outdated()) {
+            _endpoint_idx.erase(endpoint_id);
+            mark_disconnected(endpoint_id);
+            return true;
+        }
+        return false;
+    });
+
+    return something_done;
+}
+//------------------------------------------------------------------------------
+auto router_nodes::is_disconnected(const identifier_t endpoint_id) const noexcept
+  -> bool {
+    const auto pos{_recently_disconnected.find(endpoint_id)};
+    return (pos != _recently_disconnected.end()) and
+           not pos->second.is_expired();
+}
+//------------------------------------------------------------------------------
+void router_nodes::mark_disconnected(const identifier_t endpoint_id) noexcept {
+    const auto pos{_recently_disconnected.find(endpoint_id)};
+    if(pos != _recently_disconnected.end()) {
+        if(pos->second.is_expired()) {
+            _recently_disconnected.erase(pos);
+        }
+    }
+    _recently_disconnected.erase_if(
+      [](auto& p) { return std::get<1>(p).is_expired(); });
+    _recently_disconnected.emplace(endpoint_id, std::chrono::seconds{15});
+}
+//------------------------------------------------------------------------------
+auto router_nodes::remove_disconnected(const main_ctx_object& user) noexcept
+  -> work_done {
+    some_true something_done{};
+
+    for(auto& [node_id, node] : _nodes) {
+        if(node.should_disconnect()) [[unlikely]] {
+            user.log_debug("removing disconnected connection")
+              .tag("rmDiscConn");
+            node.cleanup_connection();
+        }
+    }
+    something_done(_nodes.erase_if([this](auto& p) {
+        if(p.second.should_disconnect()) [[unlikely]] {
+            mark_disconnected(p.first);
+            return true;
+        }
+        return false;
+    }) > 0);
+
+    return something_done;
+}
+//------------------------------------------------------------------------------
+auto router_nodes::update_endpoint_info(
+  const identifier_t incoming_id,
+  const message_view& message) noexcept -> router_endpoint_info& {
+    _endpoint_idx[message.source_id] = incoming_id;
+    auto& info = _endpoint_infos[message.source_id];
+    info.assign_instance_id(message);
+    return info;
+}
+//------------------------------------------------------------------------------
+auto router_nodes::subscribes_to(
+  const identifier_t target_id,
+  const message_id sub_msg_id) noexcept
+  -> std::tuple<tribool, tribool, process_instance_id_t> {
+
+    const auto pos{_endpoint_infos.find(target_id)};
+    if(pos != _endpoint_infos.end()) {
+        auto& info = pos->second;
+        if(info.has_instance_id()) {
+            return {
+              info.is_subscribed_to(sub_msg_id),
+              info.is_not_subscribed_to(sub_msg_id),
+              info.instance_id()};
+        }
+    }
+    return {indeterminate, indeterminate, 0U};
+}
+//------------------------------------------------------------------------------
+auto router_nodes::subscriptions_of(const identifier_t target_id) noexcept
+  -> std::tuple<std::vector<message_id>, process_instance_id_t> {
+    const auto pos{_endpoint_infos.find(target_id)};
+    if(pos != _endpoint_infos.end()) {
+        return {pos->second.subscriptions(), pos->second.instance_id()};
+    }
+    return {{}, 0U};
+}
+//------------------------------------------------------------------------------
+void router_nodes::erase(const identifier_t id) noexcept {
+    _endpoint_idx.erase(id);
+    _endpoint_infos.erase(id);
+}
+//------------------------------------------------------------------------------
+void router_nodes::cleanup() noexcept {
+    for(auto& entry : _nodes) {
+        std::get<1>(entry).cleanup_connection();
+    }
+}
+//------------------------------------------------------------------------------
 // router_stats
 //------------------------------------------------------------------------------
 auto router_stats::uptime() noexcept -> std::chrono::seconds {
@@ -700,7 +964,7 @@ auto router::has_id(const identifier_t id) noexcept -> bool {
 }
 //------------------------------------------------------------------------------
 auto router::has_node_id(const identifier_t id) noexcept -> bool {
-    return _nodes.find(id) != _nodes.end();
+    return _nodes.has_id(id);
 }
 //------------------------------------------------------------------------------
 void router::add_certificate_pem(const memory::const_block blk) noexcept {
@@ -718,7 +982,7 @@ auto router::add_acceptor(std::shared_ptr<acceptor> an_acceptor) noexcept
           .tag("addAccptor")
           .arg("kind", an_acceptor->kind())
           .arg("type", an_acceptor->type_id());
-        _acceptors.emplace_back(std::move(an_acceptor));
+        _nodes.add_acceptor(std::move(an_acceptor));
         return true;
     }
     return false;
@@ -737,173 +1001,11 @@ auto router::add_connection(std::unique_ptr<connection> a_connection) noexcept
     return false;
 }
 //------------------------------------------------------------------------------
-auto router::_handle_accept() noexcept -> work_done {
-    some_true something_done{};
-
-    if(not _acceptors.empty()) [[likely]] {
-        acceptor::accept_handler handler{
-          this, member_function_constant_t<&router::_handle_connection>{}};
-        for(auto& an_acceptor : _acceptors) {
-            assert(an_acceptor);
-            something_done(an_acceptor->update());
-            something_done(an_acceptor->process_accepted(handler));
-        }
-    }
-    return something_done;
-}
-//------------------------------------------------------------------------------
-auto router::_do_handle_pending() noexcept -> work_done {
-    some_true something_done{};
-
-    identifier_t id = 0;
-    bool maybe_router = true;
-    const auto handler{
-      [&](message_id msg_id, message_age, const message_view& msg) {
-          // this is a special message requesting endpoint id assignment
-          if(msg_id == msgbus_id{"requestId"}) {
-              id = ~id;
-              return true;
-          }
-          // this is a special message containing endpoint id
-          if(msg_id == msgbus_id{"annEndptId"}) {
-              id = msg.source_id;
-              maybe_router = false;
-              this->log_debug("received endpoint id ${id}")
-                .tag("annEndptId")
-                .arg("id", id);
-              return true;
-          }
-          // this is a special message containing non-endpoint id
-          if(msg_id == msgbus_id{"announceId"}) {
-              id = msg.source_id;
-              this->log_debug("received id ${id}")
-                .tag("announceId")
-                .arg("id", id);
-              return true;
-          }
-          return false;
-      }};
-
-    std::size_t idx = 0;
-    while(idx < _pending.size()) {
-        id = 0;
-        auto& pending = _pending[idx];
-
-        something_done(pending.update_connection());
-        something_done(
-          pending.connection().fetch_messages({construct_from, handler}));
-        something_done(pending.update_connection());
-        // if we got the endpoint id message from the connection
-        if(~id == 0) {
-            _assign_id(pending.connection());
-        } else if(id != 0) {
-            log_info(
-              "adopting pending connection from ${cnterpart} "
-              "${id}")
-              .tag("adPendConn")
-              .arg("kind", pending.connection().kind())
-              .arg("type", pending.connection().type_id())
-              .arg("id", id)
-              .arg(
-                "cnterpart",
-                maybe_router ? string_view("non-endpoint")
-                             : string_view("endpoint"));
-
-            // send the special message confirming assigned endpoint id
-            message_view confirmation{};
-            confirmation.set_source_id(get_id()).set_target_id(id);
-            pending.connection().send(msgbus_id{"confirmId"}, confirmation);
-
-            auto pos = _nodes.find(id);
-            if(pos == _nodes.end()) {
-                pos = _nodes.try_emplace(id).first;
-                _update_use_workers();
-            }
-            pos->second.setup(pending.release_connection(), maybe_router);
-            _pending.erase(_pending.begin() + signedness_cast(idx));
-            _recently_disconnected.erase(id);
-            something_done();
-        } else {
-            ++idx;
-        }
-    }
-    return something_done;
-}
-//------------------------------------------------------------------------------
-auto router::_handle_pending() noexcept -> work_done {
-
-    if(not _pending.empty()) [[unlikely]] {
-        return _do_handle_pending();
-    }
-    return false;
-}
-//------------------------------------------------------------------------------
-auto router::_remove_timeouted() noexcept -> work_done {
-    some_true something_done{};
-
-    std::erase_if(_pending, [this, &something_done](auto& pending) {
-        if(pending.age() > this->_pending_timeout) {
-            something_done();
-            log_warning("removing timeouted pending ${type} connection")
-              .tag("rmPendConn")
-              .arg("type", pending.connection().type_id())
-              .arg("age", pending.age());
-            return true;
-        }
-        return false;
-    });
-
-    _endpoint_infos.erase_if([this](auto& entry) {
-        auto& [endpoint_id, info] = entry;
-        if(info.is_outdated()) {
-            _endpoint_idx.erase(endpoint_id);
-            _mark_disconnected(endpoint_id);
-            return true;
-        }
-        return false;
-    });
-
-    return something_done;
-}
-//------------------------------------------------------------------------------
-auto router::_is_disconnected(const identifier_t endpoint_id) const noexcept
-  -> bool {
-    const auto pos = _recently_disconnected.find(endpoint_id);
-    return (pos != _recently_disconnected.end()) and
-           not pos->second.is_expired();
-}
-//------------------------------------------------------------------------------
-auto router::_mark_disconnected(const identifier_t endpoint_id) noexcept
-  -> void {
-    const auto pos = _recently_disconnected.find(endpoint_id);
-    if(pos != _recently_disconnected.end()) {
-        if(pos->second.is_expired()) {
-            _recently_disconnected.erase(pos);
-        }
-    }
-    _recently_disconnected.erase_if(
-      [](auto& p) { return std::get<1>(p).is_expired(); });
-    _recently_disconnected.emplace(endpoint_id, std::chrono::seconds{15});
-}
-//------------------------------------------------------------------------------
 auto router::_remove_disconnected() noexcept -> work_done {
-    some_true something_done{};
-
-    for(auto& [node_id, node] : _nodes) {
-        if(node.should_disconnect()) [[unlikely]] {
-            log_debug("removing disconnected connection").tag("rmDiscConn");
-            node.cleanup_connection();
-        }
+    some_true something_done{_nodes.remove_disconnected(*this)};
+    if(something_done) {
+        _update_use_workers();
     }
-    something_done(_nodes.erase_if([this](auto& p) {
-        if(p.second.should_disconnect()) [[unlikely]] {
-            _mark_disconnected(p.first);
-            return true;
-        }
-        return false;
-    }) > 0);
-    _update_use_workers();
-
     return something_done;
 }
 //------------------------------------------------------------------------------
@@ -920,18 +1022,8 @@ void router::_assign_id(connection& conn) noexcept {
     }
 }
 //------------------------------------------------------------------------------
-void router::_handle_connection(
-  std::unique_ptr<connection> a_connection) noexcept {
-    assert(a_connection);
-    log_info("accepted pending connection")
-      .tag("acPendConn")
-      .arg("kind", a_connection->kind())
-      .arg("type", a_connection->type_id());
-    _pending.emplace_back(std::move(a_connection));
-}
-//------------------------------------------------------------------------------
 auto router::_current_nodes() noexcept {
-    return cover(_nodes);
+    return _nodes.get();
 }
 //------------------------------------------------------------------------------
 auto router::_process_blobs() noexcept -> work_done {
@@ -955,8 +1047,7 @@ auto router::_handle_blob(
             log_trace("received endpoint certificate")
               .arg("source", message.source_id)
               .arg("pem", message.content());
-            auto pos{_nodes.find(message.source_id)};
-            if(pos != _nodes.end()) {
+            if(_nodes.has_id(message.source_id)) {
                 if(_context.add_remote_certificate_pem(
                      message.source_id, message.content())) {
                     log_debug(
@@ -983,11 +1074,7 @@ auto router::_handle_blob(
 auto router::_update_endpoint_info(
   const identifier_t incoming_id,
   const message_view& message) noexcept -> router_endpoint_info& {
-    _endpoint_idx[message.source_id] = incoming_id;
-    auto& info = _endpoint_infos[message.source_id];
-    // sequence_no is the instance id in this message type
-    info.assign_instance_id(message);
-    return info;
+    return _nodes.update_endpoint_info(incoming_id, message);
 }
 //------------------------------------------------------------------------------
 auto router::_send_flow_info(const message_flow_info& flow_info) noexcept
@@ -1007,7 +1094,7 @@ auto router::_send_flow_info(const message_flow_info& flow_info) noexcept
     for(const auto& [node_id, node] : _current_nodes()) {
         send_info(node_id, node);
     }
-    return not _nodes.empty();
+    return _nodes.count() > 0;
 }
 //------------------------------------------------------------------------------
 auto router::_handle_ping(const message_view& message) noexcept
@@ -1124,52 +1211,42 @@ auto router::_handle_msg_block(
 //------------------------------------------------------------------------------
 auto router::_handle_subscribers_query(const message_view& message) noexcept
   -> message_handling_result {
-    const auto pos{_endpoint_infos.find(message.target_id)};
-    if(pos != _endpoint_infos.end()) {
-        auto& info = pos->second;
-        if(info.has_instance_id()) {
-            message_id sub_msg_id{};
-            if(default_deserialize_message_type(
-                 sub_msg_id, message.content())) {
-                message_view response{message.data()};
-                response.setup_response(message);
-                response.set_source_id(message.target_id);
-                info.apply_instance_id(response);
-                // if we have the information cached, then respond
-                const auto own_id{get_id()};
-                if(info.is_subscribed_to(sub_msg_id)) {
-                    this->_route_message(
-                      msgbus_id{"subscribTo"}, own_id, response);
-                }
-                if(info.is_not_subscribed_to(sub_msg_id)) {
-                    this->_route_message(
-                      msgbus_id{"notSubTo"}, own_id, response);
-                }
+    message_id sub_msg_id{};
+    if(default_deserialize_message_type(sub_msg_id, message.content())) {
+        const auto [is_sub, is_not_sub, inst_id] =
+          _nodes.subscribes_to(message.target_id, sub_msg_id);
+        if(is_sub or is_not_sub) {
+            const auto own_id{get_id()};
+            message_view response{message.data()};
+            response.setup_response(message);
+            response.set_source_id(message.target_id);
+            response.sequence_no = inst_id;
+            if(is_sub) {
+                _route_message(msgbus_id{"subscribTo"}, own_id, response);
+            }
+            if(is_not_sub) {
+                _route_message(msgbus_id{"notSubTo"}, own_id, response);
             }
         }
     }
-
     return should_be_forwarded;
 }
 //------------------------------------------------------------------------------
 auto router::_handle_subscriptions_query(const message_view& message) noexcept
   -> message_handling_result {
-    const auto pos{_endpoint_infos.find(message.target_id)};
-    if(pos != _endpoint_infos.end()) {
-        auto& info = pos->second;
-        for(auto& sub_msg_id : info.subscriptions()) {
-            auto temp{default_serialize_buffer_for(sub_msg_id)};
-            if(auto serialized{
-                 default_serialize_message_type(sub_msg_id, cover(temp))}) {
-                message_view response{extract(serialized)};
-                response.setup_response(message);
-                response.set_source_id(message.target_id);
-                info.apply_instance_id(response);
-                this->_route_message(
-                  msgbus_id{"subscribTo"}, get_id(), response);
-            }
+    const auto [subs, inst_id] = _nodes.subscriptions_of(message.target_id);
+    for(const auto& sub_msg_id : subs) {
+        auto temp{default_serialize_buffer_for(sub_msg_id)};
+        if(auto serialized{
+             default_serialize_message_type(sub_msg_id, cover(temp))}) {
+            message_view response{extract(serialized)};
+            response.setup_response(message);
+            response.set_source_id(message.target_id);
+            response.sequence_no = inst_id;
+            _route_message(msgbus_id{"subscribTo"}, get_id(), response);
         }
     }
+
     return should_be_forwarded;
 }
 //------------------------------------------------------------------------------
@@ -1292,8 +1369,7 @@ auto router::_handle_bye_bye(
       .arg("source", message.source_id);
 
     node.handle_bye_bye();
-    _endpoint_idx.erase(message.source_id);
-    _endpoint_infos.erase(message.source_id);
+    _nodes.erase(message.source_id);
 
     return should_be_forwarded;
 }
@@ -1442,7 +1518,7 @@ inline auto router::_handle_special(
 }
 //------------------------------------------------------------------------------
 void router::_update_use_workers() noexcept {
-    _use_worker_threads = _nodes.size() > 2;
+    _use_worker_threads = _nodes.count() > 2;
 }
 //------------------------------------------------------------------------------
 auto router::_forward_to(
@@ -1459,15 +1535,13 @@ auto router::_route_targeted_message(
   message_view& message) noexcept -> bool {
     bool has_routed = false;
     const auto own_id{get_id()};
-    const auto pos{_endpoint_idx.find(message.target_id)};
-    if(pos != _endpoint_idx.end()) {
+    if(const auto outgoing_id{_nodes.find_outgoing(message.target_id)}) {
         // if the message should go through the parent router
-        if(pos->second == own_id) {
+        if(extract(outgoing_id) == own_id) {
             has_routed |= _parent_router.send(*this, msg_id, message);
         } else {
-            const auto node_pos{_nodes.find(pos->second)};
-            if(node_pos != _nodes.end()) {
-                auto& node_out = node_pos->second;
+            if(const auto found{_nodes.find(extract(outgoing_id))}) {
+                auto& node_out = extract(found);
                 if(node_out.is_allowed(msg_id)) {
                     has_routed = _forward_to(node_out, msg_id, message);
                 }
@@ -1486,7 +1560,7 @@ auto router::_route_targeted_message(
     }
 
     if(not has_routed) {
-        if(not _is_disconnected(message.target_id)) [[likely]] {
+        if(not _nodes.is_disconnected(message.target_id)) [[likely]] {
             for(const auto& [outgoing_id, node_out] : _current_nodes()) {
                 if(incoming_id != outgoing_id) {
                     has_routed |= node_out.try_route(*this, msg_id, message);
@@ -1602,7 +1676,7 @@ void router::_route_messages_by_workers(
   some_true_atomic& something_done) noexcept {
     const auto message_age_inc{_stats.time_since_last_routing()};
 
-    for(auto& [node_id, node] : _nodes) {
+    for(auto& [node_id, node] : _current_nodes()) {
         something_done(node.route_messages(*this, node_id, message_age_inc));
     }
 
@@ -1613,7 +1687,7 @@ auto router::_route_messages_by_router() noexcept -> work_done {
     some_true something_done{};
     const auto message_age_inc{_stats.time_since_last_routing()};
 
-    for(auto& [node_id, node] : _nodes) {
+    for(auto& [node_id, node] : _current_nodes()) {
         something_done(node.route_messages(*this, node_id, message_age_inc));
     }
 
@@ -1624,15 +1698,15 @@ auto router::_route_messages_by_router() noexcept -> work_done {
 //------------------------------------------------------------------------------
 void router::_update_connections_by_workers(
   some_true_atomic& something_done) noexcept {
-    std::latch completed{limit_cast<std::ptrdiff_t>(_nodes.size())};
+    std::latch completed{limit_cast<std::ptrdiff_t>(_nodes.count())};
 
-    for(auto& entry : _nodes) {
+    for(auto& entry : _current_nodes()) {
         std::get<1>(entry).enqueue_update_connection(
           workers(), completed, something_done);
     }
     something_done(_parent_router.update(*this, get_id()));
 
-    if(not _nodes.empty() or not _pending.empty()) [[likely]] {
+    if(_nodes.has_some()) [[likely]] {
         _no_connection_timeout.reset();
     }
 
@@ -1642,12 +1716,12 @@ void router::_update_connections_by_workers(
 auto router::_update_connections_by_router() noexcept -> work_done {
     some_true something_done{};
 
-    for(auto& entry : _nodes) {
+    for(auto& entry : _current_nodes()) {
         std::get<1>(entry).update_connection();
     }
     something_done(_parent_router.update(*this, get_id()));
 
-    if(not _nodes.empty() or not _pending.empty()) [[likely]] {
+    if(_nodes.has_some()) [[likely]] {
         _no_connection_timeout.reset();
     }
     return something_done;
@@ -1658,8 +1732,8 @@ auto router::do_maintenance() noexcept -> work_done {
 
     something_done(_update_stats());
     something_done(_process_blobs());
-    something_done(_remove_timeouted());
-    something_done(_remove_disconnected());
+    something_done(_nodes.remove_timeouted(*this));
+    something_done(_nodes.remove_disconnected(*this));
 
     return something_done;
 }
@@ -1667,8 +1741,8 @@ auto router::do_maintenance() noexcept -> work_done {
 auto router::do_work_by_workers() noexcept -> work_done {
     some_true_atomic something_done{};
 
-    something_done(_handle_pending());
-    something_done(_handle_accept());
+    something_done(_nodes.handle_pending(*this));
+    something_done(_nodes.handle_accept(*this));
     _route_messages_by_workers(something_done);
     _update_connections_by_workers(something_done);
 
@@ -1678,8 +1752,8 @@ auto router::do_work_by_workers() noexcept -> work_done {
 auto router::do_work_by_router() noexcept -> work_done {
     some_true something_done{};
 
-    something_done(_handle_pending());
-    something_done(_handle_accept());
+    something_done(_nodes.handle_pending(*this));
+    something_done(_nodes.handle_accept(*this));
     something_done(_route_messages_by_router());
     something_done(_update_connections_by_router());
 
@@ -1718,7 +1792,7 @@ void router::say_bye() noexcept {
     const auto msgid = msgbus_id{"byeByeRutr"};
     message_view msg{};
     msg.set_source_id(get_id());
-    for(auto& entry : _nodes) {
+    for(auto& entry : _current_nodes()) {
         auto& node{std::get<1>(entry)};
         node.send(*this, msgid, msg);
         node.update_connection();
@@ -1727,10 +1801,7 @@ void router::say_bye() noexcept {
 }
 //------------------------------------------------------------------------------
 void router::cleanup() noexcept {
-    for(auto& entry : _nodes) {
-        std::get<1>(entry).cleanup_connection();
-    }
-
+    _nodes.cleanup();
     _stats.log_stats(*this);
 }
 //------------------------------------------------------------------------------

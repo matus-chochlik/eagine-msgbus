@@ -103,6 +103,9 @@ export [[nodiscard]] constexpr auto is_valid_endpoint_id(
     return id != 0U;
 }
 //------------------------------------------------------------------------------
+export using valid_endpoint_id =
+  valid_if_not<identifier_t, invalid_endpoint_id()>;
+//------------------------------------------------------------------------------
 /// @brief Alias for message timestamp type.
 /// @ingroup msgbus
 /// @see message_age

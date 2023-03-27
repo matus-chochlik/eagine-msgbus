@@ -41,7 +41,7 @@ public:
     auto subscriptions() noexcept -> std::vector<message_id>;
 
     auto has_instance_id() noexcept -> bool;
-    auto instance_id(const message_view& msg) noexcept -> process_instance_id_t;
+    auto instance_id() noexcept -> process_instance_id_t;
     void assign_instance_id(const message_view& msg) noexcept;
     void apply_instance_id(message_view& msg) noexcept;
     auto is_outdated() const noexcept -> bool;
@@ -192,6 +192,47 @@ private:
     timeout _confirm_id_timeout{
       adjusted_duration(std::chrono::seconds{2}),
       nothing};
+};
+//------------------------------------------------------------------------------
+class router_nodes {
+public:
+    auto get() noexcept;
+    auto count() noexcept -> std::size_t;
+    auto has_id(const identifier_t id) noexcept -> bool;
+    auto find(const identifier_t id) noexcept
+      -> optional_reference<routed_node>;
+    auto find_outgoing(const identifier_t target_id) -> valid_endpoint_id;
+    auto has_some() noexcept -> bool;
+    void add_acceptor(std::shared_ptr<acceptor> an_acceptor) noexcept;
+    auto handle_pending(router&) noexcept -> work_done;
+    auto handle_accept(router&) noexcept -> work_done;
+    auto remove_timeouted(const main_ctx_object&) noexcept -> work_done;
+    auto is_disconnected(const identifier_t endpoint_id) const noexcept -> bool;
+    void mark_disconnected(const identifier_t endpoint_id) noexcept;
+    auto remove_disconnected(const main_ctx_object&) noexcept -> work_done;
+    auto update_endpoint_info(
+      const identifier_t incoming_id,
+      const message_view& message) noexcept -> router_endpoint_info&;
+
+    auto subscribes_to(const identifier_t, const message_id) noexcept
+      -> std::tuple<tribool, tribool, process_instance_id_t>;
+    auto subscriptions_of(const identifier_t target_id) noexcept
+      -> std::tuple<std::vector<message_id>, process_instance_id_t>;
+    void erase(const identifier_t) noexcept;
+    void cleanup() noexcept;
+
+private:
+    auto _do_handle_pending(router&) noexcept -> work_done;
+
+    const std::chrono::seconds _pending_timeout{
+      adjusted_duration(std::chrono::seconds{30})};
+
+    small_vector<std::shared_ptr<acceptor>, 2> _acceptors;
+    std::vector<router_pending> _pending;
+    flat_map<identifier_t, routed_node> _nodes;
+    flat_map<identifier_t, identifier_t> _endpoint_idx;
+    flat_map<identifier_t, router_endpoint_info> _endpoint_infos;
+    flat_map<identifier_t, timeout> _recently_disconnected;
 };
 //------------------------------------------------------------------------------
 class router_stats {
@@ -345,21 +386,15 @@ public:
     }
 
 private:
-    friend class routed_node;
     friend class parent_router;
+    friend class routed_node;
+    friend class router_nodes;
     friend class router_blobs;
 
     auto _uptime_seconds() noexcept -> std::int64_t;
 
-    auto _handle_accept() noexcept -> work_done;
-    auto _do_handle_pending() noexcept -> work_done;
-    auto _handle_pending() noexcept -> work_done;
-    auto _remove_timeouted() noexcept -> work_done;
-    auto _is_disconnected(const identifier_t) const noexcept -> bool;
-    auto _mark_disconnected(const identifier_t endpoint_id) noexcept -> void;
-    auto _remove_disconnected() noexcept -> work_done;
     void _assign_id(connection& conn) noexcept;
-    void _handle_connection(std::unique_ptr<connection> conn) noexcept;
+    auto _remove_disconnected() noexcept -> work_done;
 
     auto _current_nodes() noexcept;
 
@@ -511,17 +546,10 @@ private:
     router_stats _stats;
     router_blobs _blobs{*this};
     parent_router _parent_router;
+    router_nodes _nodes;
 
-    const std::chrono::seconds _pending_timeout{
-      adjusted_duration(std::chrono::seconds{30})};
     timeout _no_connection_timeout{adjusted_duration(std::chrono::seconds{30})};
 
-    small_vector<std::shared_ptr<acceptor>, 2> _acceptors;
-    std::vector<router_pending> _pending;
-    flat_map<identifier_t, routed_node> _nodes;
-    flat_map<identifier_t, identifier_t> _endpoint_idx;
-    flat_map<identifier_t, router_endpoint_info> _endpoint_infos;
-    flat_map<identifier_t, timeout> _recently_disconnected;
     bool _use_worker_threads{false};
 };
 //------------------------------------------------------------------------------
