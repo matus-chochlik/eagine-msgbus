@@ -7,6 +7,7 @@
 ///
 export module eagine.msgbus.core:bridge;
 
+import std;
 import eagine.core.types;
 import eagine.core.memory;
 import eagine.core.identifier;
@@ -17,7 +18,6 @@ import :types;
 import :message;
 import :interface;
 import :context;
-import std;
 
 namespace eagine::msgbus {
 //------------------------------------------------------------------------------

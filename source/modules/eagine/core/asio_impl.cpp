@@ -16,6 +16,8 @@ module;
 #include <cassert>
 
 module eagine.msgbus.core;
+
+import std;
 import eagine.core.debug;
 import eagine.core.types;
 import eagine.core.memory;
@@ -26,7 +28,6 @@ import eagine.core.serialization;
 import eagine.core.valid_if;
 import eagine.core.utility;
 import eagine.core.main_ctx;
-import std;
 
 namespace eagine::msgbus {
 //------------------------------------------------------------------------------

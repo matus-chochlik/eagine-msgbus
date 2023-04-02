@@ -7,6 +7,7 @@
 ///
 export module eagine.msgbus.core:router;
 
+import std;
 import eagine.core.types;
 import eagine.core.memory;
 import eagine.core.identifier;
@@ -20,7 +21,6 @@ import :message;
 import :interface;
 import :blobs;
 import :context;
-import std;
 
 namespace eagine::msgbus {
 export class router;

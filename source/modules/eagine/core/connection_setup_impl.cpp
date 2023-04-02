@@ -10,13 +10,14 @@ module;
 #include <cassert>
 
 module eagine.msgbus.core;
+
+import std;
 import eagine.core.types;
 import eagine.core.memory;
 import eagine.core.identifier;
 import eagine.core.main_ctx;
 import :types;
 import :direct;
-import std;
 
 namespace eagine::msgbus {
 //------------------------------------------------------------------------------

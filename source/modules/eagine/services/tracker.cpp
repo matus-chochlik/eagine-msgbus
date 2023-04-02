@@ -7,6 +7,7 @@
 ///
 export module eagine.msgbus.services:tracker;
 
+import std;
 import eagine.core.types;
 import eagine.core.memory;
 import eagine.core.identifier;
@@ -20,7 +21,6 @@ import :ping_pong;
 import :statistics;
 import :system_info;
 import :topology;
-import std;
 
 namespace eagine::msgbus {
 //------------------------------------------------------------------------------

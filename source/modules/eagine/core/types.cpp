@@ -7,12 +7,12 @@
 ///
 export module eagine.msgbus.core:types;
 
+import std;
 import eagine.core.types;
 import eagine.core.memory;
 import eagine.core.string;
 import eagine.core.reflection;
 import eagine.core.identifier;
-import std;
 
 namespace eagine {
 namespace msgbus {

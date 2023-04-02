@@ -11,12 +11,12 @@ module;
 
 module eagine.msgbus.core;
 
+import std;
 import eagine.core.types;
 import eagine.core.memory;
 import eagine.core.identifier;
 import eagine.core.utility;
 import eagine.core.main_ctx;
-import std;
 
 namespace eagine::msgbus {
 //------------------------------------------------------------------------------

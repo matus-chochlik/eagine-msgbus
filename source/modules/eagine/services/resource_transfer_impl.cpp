@@ -11,6 +11,7 @@ module;
 
 module eagine.msgbus.services;
 
+import std;
 import eagine.core.types;
 import eagine.core.memory;
 import eagine.core.string;
@@ -23,7 +24,6 @@ import eagine.core.logging;
 import eagine.core.math;
 import eagine.core.main_ctx;
 import eagine.msgbus.core;
-import std;
 
 namespace eagine::msgbus {
 //------------------------------------------------------------------------------

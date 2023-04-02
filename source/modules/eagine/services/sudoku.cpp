@@ -11,6 +11,7 @@ module;
 
 export module eagine.msgbus.services:sudoku;
 
+import std;
 import eagine.core.types;
 import eagine.core.memory;
 import eagine.core.identifier;
@@ -20,7 +21,6 @@ import eagine.core.utility;
 import eagine.core.runtime;
 import eagine.core.math;
 import eagine.msgbus.core;
-import std;
 
 namespace eagine::msgbus {
 //------------------------------------------------------------------------------

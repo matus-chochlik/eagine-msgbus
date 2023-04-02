@@ -7,6 +7,7 @@
 ///
 export module eagine.msgbus.core:service;
 
+import std;
 import eagine.core.types;
 import eagine.core.identifier;
 import eagine.core.serialization;
@@ -20,7 +21,6 @@ import :skeleton;
 import :endpoint;
 import :subscriber;
 import :handler_map;
-import std;
 
 namespace eagine::msgbus {
 //------------------------------------------------------------------------------

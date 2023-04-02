@@ -10,6 +10,7 @@ module;
 #include <cassert>
 
 export module eagine.msgbus.core:setup;
+import std;
 import eagine.core.types;
 import eagine.core.identifier;
 import eagine.core.main_ctx;
@@ -17,7 +18,6 @@ import :types;
 import :interface;
 import :router_address;
 import :connection_setup;
-import std;
 
 namespace eagine {
 namespace msgbus {

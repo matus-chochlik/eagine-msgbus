@@ -11,6 +11,7 @@ module;
 
 export module eagine.msgbus.core:remote_node;
 
+import std;
 import eagine.core.types;
 import eagine.core.memory;
 import eagine.core.build_info;
@@ -23,7 +24,6 @@ import eagine.core.valid_if;
 import eagine.core.logging;
 import eagine.core.main_ctx;
 import :types;
-import std;
 
 namespace eagine {
 namespace msgbus {
