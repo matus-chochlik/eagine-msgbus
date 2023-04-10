@@ -242,6 +242,21 @@ eagine_add_module(
 		tracker
 		sudoku
 	IMPORTS
+		eagine.core.build_info
+		eagine.core.container
+		eagine.core.identifier
+		eagine.core.logging
+		eagine.core.main_ctx
+		eagine.core.math
+		eagine.core.memory
+		eagine.core.runtime
+		eagine.core.serialization
+		eagine.core.string
+		eagine.core.types
+		eagine.core.units
+		eagine.core.utility
+		eagine.core.valid_if
+		eagine.msgbus.core
 )
 
 eagine_add_module_tests(
