@@ -25,9 +25,17 @@ eagine_add_module(
 	SOURCES
 		resource_transfer
 	IMPORTS
-		eagine.core.reflection
-		eagine.core.valid_if
 		eagine.core.logging
+		eagine.core.main_ctx
+		eagine.core.memory
+		eagine.core.reflection
+		eagine.core.resource
+		eagine.core.runtime
+		eagine.core.types
+		eagine.core.utility
+		eagine.core.valid_if
+		eagine.msgbus.core
+		eagine.msgbus.services
 )
 
 

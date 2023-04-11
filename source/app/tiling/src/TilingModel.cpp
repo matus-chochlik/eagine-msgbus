@@ -56,7 +56,7 @@ void TilingModel::reinitialize(int w, int h) {
     if((_width != w) or (_height != h)) {
         _width = w;
         _height = h;
-        _cellCache.resize(eagine::std_size(w * h));
+        _cellCache.resize(eagine::std_size(w * h), '\0');
     }
     reinitialize();
 }
