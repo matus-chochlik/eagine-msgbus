@@ -8,7 +8,6 @@ add_subdirectory(utility)
 
 eagine_add_module(
 	eagine.msgbus
-	PP_NAME MSGBUS
 	INTERFACES msgbus
 	IMPORTS
 		eagine.msgbus.core

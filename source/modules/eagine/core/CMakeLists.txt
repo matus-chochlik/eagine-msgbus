@@ -297,7 +297,6 @@ eagine_embed_target_resources(TARGET eagine.msgbus.core.embedded)
 
 eagine_add_module(
 	eagine.msgbus.core
-	PP_NAME MSGBUS_CORE
 	INTERFACES core
 	PARTITIONS
 		types

@@ -211,7 +211,6 @@ eagine_add_module(
 
 eagine_add_module(
 	eagine.msgbus.services
-	PP_NAME MSGBUS_SERVICES
 	INTERFACES services
 	PARTITIONS
 		ability

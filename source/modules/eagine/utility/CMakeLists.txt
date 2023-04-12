@@ -18,7 +18,6 @@ eagine_add_module(
 
 eagine_add_module(
 	eagine.msgbus.utility
-	PP_NAME MSGBUS_UTILITY
 	INTERFACES utility
 	PARTITIONS
 		resource_transfer
