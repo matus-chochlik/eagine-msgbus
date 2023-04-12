@@ -30,9 +30,10 @@ set(TILING_HEADERS
 )
 add_executable(
 	eagine-msgbus-tiling
-	${TILING_RESOURCES}
-	${TILING_SOURCES}
-	${TILING_HEADERS}
+	EXCLUDE_FROM_ALL
+		${TILING_RESOURCES}
+		${TILING_SOURCES}
+		${TILING_HEADERS}
 )
 
 eagine_add_exe_analysis(eagine-msgbus-tiling)

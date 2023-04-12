@@ -40,9 +40,10 @@ set(MONITOR_HEADERS
 )
 add_executable(
 	eagine-msgbus-monitor
-	${MONITOR_RESOURCES}
-	${MONITOR_SOURCES}
-	${MONITOR_HEADERS}
+	EXCLUDE_FROM_ALL
+		${MONITOR_RESOURCES}
+		${MONITOR_SOURCES}
+		${MONITOR_HEADERS}
 )
 
 eagine_add_exe_analysis(eagine-msgbus-monitor)
