@@ -70,12 +70,12 @@ auto main(main_ctx& ctx) -> int {
     msgbus::sudoku_tiling_node tiling_generator(ctx);
 
     const auto width =
-      extract_or(ctx.config().get<int>("msgbus.sudoku.solver.width"), 32);
+      ctx.config().get<int>("msgbus.sudoku.solver.width").value_or(32);
     const auto height =
-      extract_or(ctx.config().get<int>("msgbus.sudoku.solver.height"), 32);
+      ctx.config().get<int>("msgbus.sudoku.solver.height").value_or(32);
 
     const auto rank =
-      extract_or(ctx.config().get<int>("msgbus.sudoku.solver.rank"), 4);
+      ctx.config().get<int>("msgbus.sudoku.solver.rank").value_or(4);
 
     auto enqueue = [&](auto traits) {
         tiling_generator.reinitialize(

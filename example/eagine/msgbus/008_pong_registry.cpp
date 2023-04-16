@@ -82,7 +82,7 @@ auto main(main_ctx& ctx) -> int {
     if(auto arg{ctx.args().find("--ponger-count")}) {
         arg.next().parse(opt_ponger_count, ctx.log().error_stream());
     }
-    const auto ponger_count = extract_or(opt_ponger_count, 1);
+    const auto ponger_count = opt_ponger_count.value_or(1);
 
     std::atomic<int> still_working(ponger_count);
     std::vector<std::thread> workers;

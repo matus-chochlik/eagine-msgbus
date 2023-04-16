@@ -23,8 +23,9 @@ SolutionProgressViewModel::SolutionProgressViewModel(TilingBackend& backend)
   , _backend{backend}
   , _imageDir{makeTempImageDir()}
   , _imagePathFormat{_imageDir->filePath("%1.png")} {
-    _doSaveImage = extract_or(
-      app_config().get<bool>("msgbus.sudoku.solver.gui.save_progress"), false);
+    _doSaveImage = app_config()
+                     .get<bool>("msgbus.sudoku.solver.gui.save_progress")
+                     .value_or(false);
     connect(
       _backend.getTilingTheme(),
       &TilingTheme::lightChanged,

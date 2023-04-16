@@ -29,7 +29,7 @@ namespace eagine::msgbus {
 class bridge_state : public std::enable_shared_from_this<bridge_state> {
 public:
     bridge_state(const valid_if_positive<span_size_t>& max_data_size) noexcept
-      : _max_read{extract_or(max_data_size, 2048) * 2} {}
+      : _max_read{max_data_size.value_or(2048) * 2} {}
     bridge_state(bridge_state&&) = delete;
     bridge_state(const bridge_state&) = delete;
     auto operator=(bridge_state&&) = delete;

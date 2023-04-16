@@ -257,7 +257,7 @@ auto context::get_own_signature(const memory::const_block nonce) noexcept
                     const auto req_size{
                       _ssl.message_digest_sign_final.required_size(md_ctx)};
 
-                    _scratch_space.ensure(extract_or(req_size, 0));
+                    _scratch_space.ensure(req_size.value_or(0));
                     auto free{cover(_scratch_space)};
 
                     if(ok sig{_ssl.message_digest_sign_final(md_ctx, free)}) {

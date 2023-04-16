@@ -34,8 +34,8 @@ TilingModel::TilingModel(TilingBackend& backend)
 //------------------------------------------------------------------------------
 void TilingModel::initialize() {
     reinitialize(
-      extract_or(app_config().get<int>("msgbus.sudoku.solver.width"), 64),
-      extract_or(app_config().get<int>("msgbus.sudoku.solver.height"), 64));
+      app_config().get<int>("msgbus.sudoku.solver.width").value_or(64),
+      app_config().get<int>("msgbus.sudoku.solver.height").value_or(64));
     _resetCount = 0;
 }
 //------------------------------------------------------------------------------

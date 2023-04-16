@@ -344,9 +344,9 @@ auto resource_server_impl::get_resource(
                     read_io = std::make_unique<file_blob_io>(
                       std::move(file),
                       from_string<span_size_t>(
-                        extract_or(locator.argument("offs"), string_view{})),
+                        locator.argument("offs").or_default()),
                       from_string<span_size_t>(
-                        extract_or(locator.argument("size"), string_view{})));
+                        locator.argument("size").or_default()));
                 }
             }
         }
@@ -512,8 +512,8 @@ public:
 
     auto server_endpoint_id(const url& locator) noexcept -> identifier_t final {
         if(locator.has_scheme("eagimbe")) {
-            if(const auto opt_id{from_string<identifier_t>(
-                 extract_or(locator.host(), string_view{}))}) {
+            if(const auto opt_id{
+                 from_string<identifier_t>(locator.host().or_default())}) {
                 const auto endpoint_id = extract(opt_id);
                 const auto spos = _server_endpoints.find(endpoint_id);
                 if(spos != _server_endpoints.end()) {

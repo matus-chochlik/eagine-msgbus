@@ -287,7 +287,7 @@ public:
 
     /// @brief Returns the maximum block size that can be sent in a message.
     auto data_size() noexcept -> span_size_t {
-        return extract_or(max_data_size(), default_data_size());
+        return max_data_size().value_or(default_data_size());
     }
 
     /// @brief Sends a block of data with the specified priority.

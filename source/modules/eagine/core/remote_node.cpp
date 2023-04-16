@@ -1111,7 +1111,7 @@ export auto adapt_entry_arg(
         const msgbus::remote_node& value;
 
         void operator()(logger_backend& backend) const noexcept {
-            backend.add_unsigned(name, "uint64", extract_or(value.id(), 0U));
+            backend.add_unsigned(name, "uint64", value.id().value_or(0U));
 
             if(const auto opt_id{value.instance_id()}) {
                 backend.add_unsigned("instanceId", "uint32", extract(opt_id));
@@ -1156,7 +1156,7 @@ export auto adapt_entry_arg(
         const msgbus::remote_host& value;
 
         void operator()(logger_backend& backend) const noexcept {
-            backend.add_unsigned(name, "uint64", extract_or(value.id(), 0U));
+            backend.add_unsigned(name, "uint64", value.id().value_or(0U));
 
             if(const auto opt_name{value.name()}) {
                 backend.add_string("hostname", "string", extract(opt_name));

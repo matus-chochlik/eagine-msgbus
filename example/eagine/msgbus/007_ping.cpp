@@ -69,9 +69,9 @@ public:
       const valid_if_positive<std::intmax_t>& max)
       : main_ctx_object{"PingExampl", bus}
       , base{bus}
-      , _rep{extract_or(rep, 1)}
-      , _mod{extract_or(mod, 10000)}
-      , _max{extract_or(max, 100000)} {
+      , _rep{rep.value_or(1)}
+      , _mod{mod.value_or(10000)}
+      , _max{max.value_or(100000)} {
         object_description("Pinger", "Ping example");
 
         connect<&ping_example::on_id_assigned>(this, bus.id_assigned);

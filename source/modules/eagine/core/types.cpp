@@ -434,7 +434,7 @@ export auto parse_ipv4_addr(const string_view addr_str) noexcept
       addr_str ? addr_str : string_view{"localhost"}, string_view(":"));
     return {
       to_string(hostname),
-      extract_or(from_string<ipv4_port>(port_str), ipv4_port{34912U})};
+      from_string<ipv4_port>(port_str).value_or(ipv4_port{34912U})};
 }
 //------------------------------------------------------------------------------
 /// @brief Additional flags / options for a transfered blob.

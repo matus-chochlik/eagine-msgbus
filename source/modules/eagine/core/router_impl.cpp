@@ -786,18 +786,18 @@ void router_ids::set_description(main_ctx_object& user) {
 //------------------------------------------------------------------------------
 void router_ids::setup_from_config(const main_ctx_object& user) {
 
-    const auto id_count{extract_or(
-      user.app_config().get<host_id_t>("msgbus.router.id_count"), 1U << 12U)};
+    const auto id_count{user.app_config()
+                          .get<host_id_t>("msgbus.router.id_count")
+                          .value_or(1U << 12U)};
 
     const auto host_id{
-      identifier_t(extract_or(user.main_context().system().host_id(), 0U))};
+      identifier_t(user.main_context().system().host_id().value_or(0U))};
 
     _id_base =
-      extract_or(
-        user.app_config().get<identifier_t>("msgbus.router.id_major"),
-        host_id << 32U) +
-      extract_or(
-        user.app_config().get<identifier_t>("msgbus.router.id_minor"), 0U);
+      user.app_config()
+        .get<identifier_t>("msgbus.router.id_major")
+        .value_or(host_id << 32U) +
+      user.app_config().get<identifier_t>("msgbus.router.id_minor").value_or(0U);
 
     if(_id_base) {
         _id_end = _id_base + id_count;
@@ -1774,7 +1774,7 @@ auto router::update(const valid_if_positive<int>& count) noexcept -> work_done {
 
     something_done(do_maintenance());
 
-    int n = extract_or(count, 2);
+    int n = count.value_or(2);
     if(_use_workers()) {
         do {
             something_done(do_work_by_workers());

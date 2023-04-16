@@ -39,7 +39,7 @@ public:
 
 auto main(main_ctx& ctx) -> int {
     const auto worker_count =
-      extract_or(ctx.system().cpu_concurrent_threads(), 4) + 1;
+      ctx.system().cpu_concurrent_threads().value_or(4) + 1;
 
     auto acceptor = msgbus::make_direct_acceptor(ctx);
 

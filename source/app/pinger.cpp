@@ -71,8 +71,8 @@ public:
       const valid_if_positive<std::intmax_t>& max,
       const valid_if_positive<std::intmax_t>& limit)
       : base{"MsgBusPing", parent}
-      , _limit{extract_or(limit, 1000)}
-      , _max{extract_or(max, 100000)} {
+      , _limit{limit.value_or(1000)}
+      , _max{max.value_or(100000)} {
         this->object_description("Pinger", "Message bus ping");
 
         connect<&pinger_node::on_id_assigned>(this, bus_node().id_assigned);
