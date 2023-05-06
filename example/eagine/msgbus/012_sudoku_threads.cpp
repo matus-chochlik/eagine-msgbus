@@ -48,7 +48,7 @@ auto main(main_ctx& ctx) -> int {
     msgbus::example_solver solver(solver_endpoint);
 
     auto board_count = 5;
-    ctx.args().find("--count").parse_next(board_count, std::cerr);
+    ctx.config().fetch("count", board_count);
 
     const auto enqueue = [&](auto generator) {
         for(int id = 0; id < board_count; ++id) {
