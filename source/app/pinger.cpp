@@ -311,12 +311,12 @@ auto main(main_ctx& ctx) -> int {
 
     valid_if_positive<std::intmax_t> ping_count{};
     if(const auto arg{ctx.args().find("--ping-count")}) {
-        arg.next().parse(ping_count, ctx.log().error_stream());
+        assign_if_fits(arg.next(), ping_count);
     }
 
     valid_if_positive<std::intmax_t> limit_count{};
     if(const auto arg{ctx.args().find("--limit-count")}) {
-        arg.next().parse(limit_count, ctx.log().error_stream());
+        assign_if_fits(arg.next(), limit_count);
     }
 
     msgbus::pinger_node the_pinger{ctx, ping_count, limit_count};

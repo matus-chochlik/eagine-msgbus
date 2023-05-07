@@ -96,7 +96,7 @@ auto main(main_ctx& ctx) -> int {
 
     valid_if_positive<std::size_t> ping_count{};
     if(auto arg{ctx.args().find("--ping-count")}) {
-        arg.next().parse(ping_count, ctx.log().error_stream());
+        assign_if_fits(arg.next(), ping_count);
     }
 
     msgbus::ping ping(ctx, conn_setup, address, ping_count);

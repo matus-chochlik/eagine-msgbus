@@ -304,17 +304,17 @@ auto main(main_ctx& ctx) -> int {
 
     valid_if_positive<std::intmax_t> ping_repeat{};
     if(auto arg{ctx.args().find("--ping-repeat")}) {
-        arg.next().parse(ping_repeat, ctx.log().error_stream());
+        assign_if_fits(arg.next(), ping_repeat);
     }
 
     valid_if_positive<std::intmax_t> ping_batch{};
     if(auto arg{ctx.args().find("--ping-batch")}) {
-        arg.next().parse(ping_batch, ctx.log().error_stream());
+        assign_if_fits(arg.next(), ping_batch);
     }
 
     valid_if_positive<std::intmax_t> ping_count{};
     if(auto arg{ctx.args().find("--ping-count")}) {
-        arg.next().parse(ping_count, ctx.log().error_stream());
+        assign_if_fits(arg.next(), ping_count);
     }
 
     msgbus::ping_example the_pinger{bus, ping_repeat, ping_batch, ping_count};
