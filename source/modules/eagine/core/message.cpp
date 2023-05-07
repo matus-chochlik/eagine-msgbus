@@ -905,7 +905,7 @@ private:
 //------------------------------------------------------------------------------
 export class message_pack_info {
 public:
-    using bit_set = std::uint64_t;
+    using bit_set = std::uintmax_t;
 
     message_pack_info(const span_size_t total_size) noexcept
       : _total_size{limit_cast<std::uint16_t>(total_size)} {}
@@ -920,6 +920,10 @@ public:
 
     [[nodiscard]] auto bits() const noexcept -> bit_set {
         return _packed_bits;
+    }
+
+    [[nodiscard]] auto is_max_count(span_size_t n) const noexcept -> bool {
+        return n >= (sizeof(bit_set) * 8U);
     }
 
     [[nodiscard]] auto count() const noexcept -> span_size_t {
