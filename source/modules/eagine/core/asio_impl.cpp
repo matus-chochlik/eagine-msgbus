@@ -339,6 +339,7 @@ struct asio_connection_state : asio_connection_state_base {
               packed.is_max_count(curr_packed_count) or
               prev_packed_count == curr_packed_count};
             if(should_send) {
+                prev_packed_count = 0;
                 do_start_send(group, target, packed);
                 return true;
             }
