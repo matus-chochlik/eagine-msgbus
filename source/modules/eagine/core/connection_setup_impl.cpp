@@ -108,7 +108,8 @@ void connection_setup::add_factory(std::unique_ptr<connection_factory> factory) 
     if(factory) {
         const auto kind{factory->kind()};
 
-        log_debug("adding ${kind} connection factory ${factory}")
+        log_info("adding ${kind} connection factory ${factory}")
+          .tag("addCnFctry")
           .arg("kind", kind)
           .arg("addrKind", factory->addr_kind())
           .arg("factory", factory);
