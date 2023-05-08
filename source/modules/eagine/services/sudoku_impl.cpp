@@ -623,6 +623,7 @@ struct sudoku_solver_rank_info {
             spos->second++;
             const auto duration{
               std::chrono::steady_clock::now() - key_starts[done.key]};
+            key_starts.erase(done.key);
             solver.signals.solved_signal(rank)(
               result_context{msg_ctx, message},
               solved_sudoku_board<S>{
@@ -1302,7 +1303,7 @@ struct sudoku_tiling_rank_info : sudoku_tiles<S> {
 
         const auto coord{std::get<Coord>(sol.key)};
         if(this->set_board(coord, sol.board)) {
-            cells_done += this->cells_per_tile();
+            cells_done += this->cells_per_tile(coord);
             tiling.solver.base.bus_node()
               .log_info("solved board (${x}, ${y})")
               .arg("rank", S)

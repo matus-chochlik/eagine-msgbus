@@ -468,6 +468,18 @@ public:
         return cells_per_tile_side() * cells_per_tile_side();
     }
 
+    /// @brief Returns how many cells are in the specified (possibly clipped) tile.
+    /// @see cells_per_tile
+    auto cells_per_tile(Coord coord) const noexcept -> int {
+        const auto [x, y] = coord;
+        const int minu = std::max((x + 0) * cells_per_tile_side(), _minu);
+        const int maxu = std::min((x + 1) * cells_per_tile_side(), _maxu);
+        const int minv = std::max((y + 0) * cells_per_tile_side(), _minv);
+        const int maxv = std::min((y + 1) * cells_per_tile_side(), _maxv);
+
+        return (maxu - minu) * (maxv - minv);
+    }
+
     /// @brief Number of tiles on the x-axis.
     /// @see y_tiles_count
     auto x_tiles_count() const noexcept -> int {
