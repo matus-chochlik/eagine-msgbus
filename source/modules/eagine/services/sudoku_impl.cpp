@@ -499,6 +499,8 @@ struct sudoku_solver_rank_info {
     timeout solution_timeout{
       adjusted_duration(std::chrono::seconds{S * S * S * S})};
 
+    flat_map<sudoku_solver_key, std::chrono::steady_clock::time_point>
+      key_starts;
     flat_map<sudoku_solver_key, std::vector<basic_sudoku_board<S>>> key_boards;
 
     struct pending_info {
@@ -544,6 +546,9 @@ struct sudoku_solver_rank_info {
       const sudoku_solver_key key,
       basic_sudoku_board<S> board) noexcept {
         const auto alternative_count = board.alternative_count();
+        if(not key_starts.contains(key)) {
+            key_starts[key] = std::chrono::steady_clock::now();
+        }
         auto& boards = key_boards[key];
         auto pos = std::lower_bound(
           boards.begin(),
@@ -616,10 +621,15 @@ struct sudoku_solver_rank_info {
                 spos = solved_by_helper.emplace(done.used_helper, 0L).first;
             }
             spos->second++;
+            const auto duration{
+              std::chrono::steady_clock::now() - key_starts[done.key]};
             solver.signals.solved_signal(rank)(
               result_context{msg_ctx, message},
               solved_sudoku_board<S>{
-                .helper_id = done.used_helper, .key = done.key, .board = board});
+                .helper_id = done.used_helper,
+                .key = done.key,
+                .elapsed_time = duration,
+                .board = board});
             solution_timeout.reset();
         } else {
             add_board(solver, done.key, std::move(board));
@@ -800,6 +810,7 @@ struct sudoku_solver_rank_info {
     }
 
     void reset(auto& solver) noexcept {
+        key_starts.clear();
         key_boards.clear();
         pending.clear();
         remaining.clear();
@@ -1297,6 +1308,7 @@ struct sudoku_tiling_rank_info : sudoku_tiles<S> {
               .arg("rank", S)
               .arg("x", std::get<0>(coord))
               .arg("y", std::get<1>(coord))
+              .arg("time", sol.elapsed_time)
               .arg("helper", sol.helper_id)
               .arg(
                 "progress",

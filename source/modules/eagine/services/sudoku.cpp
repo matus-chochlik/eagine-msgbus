@@ -117,6 +117,8 @@ struct solved_sudoku_board {
     identifier_t helper_id{invalid_endpoint_id()};
     /// @brief Key, identifiying the board.
     sudoku_solver_key key{0};
+    /// @brief Elapsed time.
+    std::chrono::steady_clock::duration elapsed_time{};
     /// @brief The Sudoku board.
     basic_sudoku_board<S> board;
 };
