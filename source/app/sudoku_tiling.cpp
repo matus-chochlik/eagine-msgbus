@@ -51,6 +51,14 @@ private:
                 tiles.print(std::cout) << std::endl;
             }
         }
+        std::string file_path;
+        if(
+          tiles.are_complete() and
+          main_context().config().fetch(
+            "msgbus.sudoku.solver.output_path", file_path)) {
+            std::ofstream fout{file_path};
+            tiles.print(fout);
+        }
     }
 
     bool _block_cells{cfg_init("msgbus.sudoku.solver.block_cells", false)};

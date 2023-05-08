@@ -396,12 +396,12 @@ public:
 
     /// @brief Returns the width (in cells) of the tile.
     constexpr auto width() const noexcept -> int {
-        return limit_cast<int>(S * (S - 2));
+        return limit_cast<int>(S * (S - 1));
     }
 
     /// @brief Returns the height (in cells) of the tile.
     constexpr auto height() const noexcept -> int {
-        return limit_cast<int>(S * (S - 2));
+        return limit_cast<int>(S * (S - 1));
     }
 
     /// @brief Calls the specified function for each cell in the fragment.
@@ -459,7 +459,7 @@ public:
     /// @brief Returns how many cells are on the side of a single tile.
     /// @see cells_per_tile
     constexpr auto cells_per_tile_side() const noexcept -> int {
-        return S * (S - 2);
+        return S * (S - 1);
     }
 
     /// @brief Returns how many cells are in a single tile.
@@ -471,13 +471,15 @@ public:
     /// @brief Number of tiles on the x-axis.
     /// @see y_tiles_count
     auto x_tiles_count() const noexcept -> int {
-        return width() / cells_per_tile_side();
+        return (width() / cells_per_tile_side()) +
+               ((width() % cells_per_tile_side()) ? 1 : 0);
     }
 
     /// @brief Number of tiles on the x-axis.
     /// @see x_tiles_count
     auto y_tiles_count() const noexcept -> int {
-        return height() / cells_per_tile_side();
+        return (height() / cells_per_tile_side()) +
+               ((height() % cells_per_tile_side()) ? 1 : 0);
     }
 
     /// @brief Get the board at the specified coordinate if it is solved.
@@ -522,21 +524,21 @@ public:
     /// @brief Indicates in the specified coordinate is in the extent of this tiling.
     /// @see set_extent
     auto is_in_extent(const int x, const int y) const noexcept -> bool {
-        const int u = x * S * (S - 2);
-        const int v = y * S * (S - 2);
+        const int u = x * cells_per_tile_side();
+        const int v = y * cells_per_tile_side();
         return (u >= _minu) and (u < _maxu) and (v >= _minv) and (v < _maxv);
     }
 
     /// @brief Returns the extent between min and max in units of boards.
     auto boards_extent(const Coord min, const Coord max) const noexcept
       -> std::tuple<int, int, int, int> {
-        const auto conv = [](int c) {
-            const auto mult = S * (S - 2);
+        const auto conv{[this](int c) {
+            const auto mult = cells_per_tile_side();
             if(c < 0) {
-                return c / mult - ((-c % mult) ? 1 : 0);
+                return (c / mult) - ((-c % mult) ? 1 : 0);
             }
-            return c / mult + (c % mult ? 1 : 0);
-        };
+            return (c / mult) + (c % mult ? 1 : 0);
+        }};
         return {
           conv(std::get<0>(min)),
           conv(std::get<1>(min)),
@@ -576,24 +578,32 @@ public:
       -> std::ostream& {
         const auto [xmin, ymin, xmax, ymax] = boards_extent(min, max);
 
+        const int w{width()}, h{height()};
+        int c{0}, r{0};
         for(const auto y : integer_range(ymin, ymax)) {
-            for(const auto by : integer_range(1U, S - 1U)) {
+            for(const auto by : integer_range(1U, S)) {
                 for(const auto cy : integer_range(S)) {
                     for(const auto x : integer_range(xmin, xmax)) {
                         auto board = get_board(x, y);
-                        for(const auto bx : integer_range(1U, S - 1U)) {
+                        for(const auto bx : integer_range(1U, S)) {
                             for(const auto cx : integer_range(S)) {
-                                if(board) {
-                                    traits.print(
-                                      out,
-                                      extract(board).get({bx, by, cx, cy}));
-                                } else {
-                                    traits.print_empty(out);
+                                if(c++ < w) {
+                                    if(board) {
+                                        traits.print(
+                                          out,
+                                          extract(board).get({bx, by, cx, cy}));
+                                    } else {
+                                        traits.print_empty(out);
+                                    }
                                 }
                             }
                         }
                     }
                     out << '\n';
+                    if(++r >= h) {
+                        return out;
+                    }
+                    c = 0;
                 }
             }
         }
