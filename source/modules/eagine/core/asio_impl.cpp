@@ -337,21 +337,25 @@ struct asio_connection_state : asio_connection_state_base {
             const auto curr_packed_count{packed.count()};
             const bool should_send{
               packed.is_max_count(curr_packed_count) or
-              prev_packed_count == curr_packed_count};
+              (prev_packed_count == curr_packed_count)};
             if(should_send) {
                 prev_packed_count = 0;
+                is_sending = true;
                 do_start_send(group, target, packed);
                 return true;
             }
             prev_packed_count = curr_packed_count;
+            is_sending = false;
+            return true;
         }
+        is_sending = false;
         return false;
     }
 
     auto start_send(asio_connection_group<Kind, Proto>& group) noexcept
       -> bool {
         if(not is_sending) {
-            is_sending = start_send_if_needed(group);
+            return start_send_if_needed(group);
         }
         return is_sending;
     }
@@ -361,7 +365,7 @@ struct asio_connection_state : asio_connection_state_base {
       const endpoint_type& target_endpoint,
       const message_pack_info& to_be_removed) noexcept {
         group.on_sent(target_endpoint, to_be_removed);
-        is_sending = start_send_if_needed(group);
+        start_send_if_needed(group);
     }
 
     template <typename Handler>
