@@ -30,10 +30,23 @@ TilingViewModel::TilingViewModel(TilingBackend& backend)
       &TilingViewModel::onTilingModelChanged);
 }
 //------------------------------------------------------------------------------
+void TilingViewModel::reinitialize() {
+    if(auto tilingModel{_backend.getTilingModel()}) {
+        extract(tilingModel).reinitialize();
+        emit reinitialized();
+    }
+}
+//------------------------------------------------------------------------------
 void TilingViewModel::reinitialize(int w, int h) {
     if(auto tilingModel{_backend.getTilingModel()}) {
         extract(tilingModel).reinitialize(w, h);
         emit reinitialized();
+    }
+}
+//------------------------------------------------------------------------------
+void TilingViewModel::resetTimeout() {
+    if(auto tilingModel{_backend.getTilingModel()}) {
+        extract(tilingModel).resetTimeout();
     }
 }
 //------------------------------------------------------------------------------

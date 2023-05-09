@@ -11,6 +11,7 @@ module;
 
 module eagine.msgbus.core;
 
+import std;
 import eagine.core.types;
 import eagine.core.debug;
 import eagine.core.memory;
@@ -18,7 +19,6 @@ import eagine.core.utility;
 import eagine.core.identifier;
 import eagine.core.serialization;
 import eagine.core.valid_if;
-import std;
 
 namespace eagine::msgbus {
 //------------------------------------------------------------------------------

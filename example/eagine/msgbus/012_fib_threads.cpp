@@ -155,8 +155,7 @@ private:
 auto main(main_ctx& ctx) -> int {
     enable_message_bus(ctx);
 
-    const auto thread_count =
-      extract_or(ctx.system().cpu_concurrent_threads(), 4);
+    const auto thread_count = ctx.system().cpu_concurrent_threads().value_or(4);
 
     auto acceptor = msgbus::make_direct_acceptor(ctx);
 

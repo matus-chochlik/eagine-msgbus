@@ -85,7 +85,7 @@ auto main(main_ctx& ctx) -> int {
 
     if(const auto id_arg{ctx.args().find("--pingable-id").next()}) {
         identifier_t id{0};
-        if(id_arg.parse(id, ctx.log().error_stream())) {
+        if(assign_if_fits(id_arg, id)) {
             the_pingable.bus_node().preconfigure_id(id);
         }
     }

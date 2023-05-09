@@ -11,6 +11,7 @@ module;
 
 module eagine.msgbus.core;
 
+import std;
 import eagine.core.types;
 import eagine.core.memory;
 import eagine.core.string;
@@ -20,7 +21,6 @@ import eagine.core.utility;
 import eagine.core.valid_if;
 import eagine.core.runtime;
 import eagine.core.main_ctx;
-import std;
 
 namespace eagine::msgbus {
 //------------------------------------------------------------------------------
@@ -29,7 +29,7 @@ namespace eagine::msgbus {
 class bridge_state : public std::enable_shared_from_this<bridge_state> {
 public:
     bridge_state(const valid_if_positive<span_size_t>& max_data_size) noexcept
-      : _max_read{extract_or(max_data_size, 2048) * 2} {}
+      : _max_read{max_data_size.value_or(2048) * 2} {}
     bridge_state(bridge_state&&) = delete;
     bridge_state(const bridge_state&) = delete;
     auto operator=(bridge_state&&) = delete;
@@ -206,6 +206,12 @@ private:
 };
 //------------------------------------------------------------------------------
 // bridge
+//------------------------------------------------------------------------------
+bridge::bridge(main_ctx_parent parent) noexcept
+  : main_ctx_object("MsgBusBrdg", parent)
+  , _context{make_context(*this)} {
+    _setup_from_config();
+}
 //------------------------------------------------------------------------------
 auto bridge::_uptime_seconds() noexcept -> std::int64_t {
     return std::chrono::duration_cast<std::chrono::seconds>(

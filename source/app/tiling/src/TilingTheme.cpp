@@ -10,8 +10,8 @@ import eagine.core;
 TilingTheme::TilingTheme(eagine::main_ctx_parent parent)
   : QObject{nullptr}
   , eagine::main_ctx_object{"Theme", parent} {
-    setTileSize(extract_or(
-      app_config().get<int>("msgbus.sudoku.solver.gui.tile_size"), 16));
+    setTileSize(
+      app_config().get<int>("msgbus.sudoku.solver.gui.tile_size").value_or(16));
 }
 //------------------------------------------------------------------------------
 void TilingTheme::setLight(bool value) {

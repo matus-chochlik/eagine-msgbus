@@ -39,7 +39,7 @@ public:
 
 auto main(main_ctx& ctx) -> int {
     const auto worker_count =
-      extract_or(ctx.system().cpu_concurrent_threads(), 4) + 1;
+      ctx.system().cpu_concurrent_threads().value_or(4) + 1;
 
     auto acceptor = msgbus::make_direct_acceptor(ctx);
 
@@ -48,7 +48,7 @@ auto main(main_ctx& ctx) -> int {
     msgbus::example_solver solver(solver_endpoint);
 
     auto board_count = 5;
-    ctx.args().find("--count").parse_next(board_count, std::cerr);
+    ctx.config().fetch("count", board_count);
 
     const auto enqueue = [&](auto generator) {
         for(int id = 0; id < board_count; ++id) {

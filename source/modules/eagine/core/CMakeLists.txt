@@ -297,7 +297,6 @@ eagine_embed_target_resources(TARGET eagine.msgbus.core.embedded)
 
 eagine_add_module(
 	eagine.msgbus.core
-	PP_NAME MSGBUS_CORE
 	INTERFACES core
 	PARTITIONS
 		types
@@ -337,12 +336,23 @@ eagine_add_module(
 		registry
 		remote_node
 	IMPORTS
+		eagine.core.build_config
+		eagine.core.build_info
+		eagine.core.types
 		eagine.core.debug
+		eagine.core.memory
+		eagine.core.string
 		eagine.core.container
+		eagine.core.identifier
 		eagine.core.reflection
 		eagine.core.serialization
 		eagine.core.valid_if
+		eagine.core.runtime
 		eagine.core.utility
+		eagine.core.units
+		eagine.core.c_api
+		eagine.core.main_ctx
+		eagine.sslplus
 	PRIVATE_INCLUDE_DIRECTORIES
 		"${PROJECT_SOURCE_DIR}/submodules/asio/asio/include"
 )

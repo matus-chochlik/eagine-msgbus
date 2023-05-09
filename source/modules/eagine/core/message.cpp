@@ -11,6 +11,7 @@ module;
 
 export module eagine.msgbus.core:message;
 
+import std;
 import eagine.core.types;
 import eagine.core.memory;
 import eagine.core.identifier;
@@ -21,7 +22,6 @@ import eagine.core.utility;
 import eagine.core.runtime;
 import eagine.core.main_ctx;
 import :types;
-import std;
 
 namespace eagine {
 
@@ -102,6 +102,9 @@ export [[nodiscard]] constexpr auto is_valid_endpoint_id(
   const identifier_t id) noexcept -> bool {
     return id != 0U;
 }
+//------------------------------------------------------------------------------
+export using valid_endpoint_id =
+  valid_if_not<identifier_t, invalid_endpoint_id()>;
 //------------------------------------------------------------------------------
 /// @brief Alias for message timestamp type.
 /// @ingroup msgbus
@@ -902,7 +905,7 @@ private:
 //------------------------------------------------------------------------------
 export class message_pack_info {
 public:
-    using bit_set = std::uint64_t;
+    using bit_set = std::uintmax_t;
 
     message_pack_info(const span_size_t total_size) noexcept
       : _total_size{limit_cast<std::uint16_t>(total_size)} {}
@@ -917,6 +920,10 @@ public:
 
     [[nodiscard]] auto bits() const noexcept -> bit_set {
         return _packed_bits;
+    }
+
+    [[nodiscard]] auto is_max_count(span_size_t n) const noexcept -> bool {
+        return n >= (sizeof(bit_set) * 8U);
     }
 
     [[nodiscard]] auto count() const noexcept -> span_size_t {

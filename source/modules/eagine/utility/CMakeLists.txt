@@ -18,16 +18,23 @@ eagine_add_module(
 
 eagine_add_module(
 	eagine.msgbus.utility
-	PP_NAME MSGBUS_UTILITY
 	INTERFACES utility
 	PARTITIONS
 		resource_transfer
 	SOURCES
 		resource_transfer
 	IMPORTS
-		eagine.core.reflection
-		eagine.core.valid_if
 		eagine.core.logging
+		eagine.core.main_ctx
+		eagine.core.memory
+		eagine.core.reflection
+		eagine.core.resource
+		eagine.core.runtime
+		eagine.core.types
+		eagine.core.utility
+		eagine.core.valid_if
+		eagine.msgbus.core
+		eagine.msgbus.services
 )
 
 

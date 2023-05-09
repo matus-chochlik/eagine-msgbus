@@ -36,7 +36,7 @@ ${install_prefix}/bin/eagine-msgbus-sudoku_helper \
 sleep 5
 for t in $(seq 1 ${tilings})
 do
-	${install_prefix}/bin/eagine-msgbus-sudoku_tiling \
+	${install_prefix}/bin/eagine-msgbus-tiling \
 		"${log_args[@]}" \
 		"${conn_args[@]}" \
 		--msgbus-sudoku-solver-width ${2:-64} \

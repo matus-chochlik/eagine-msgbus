@@ -7,6 +7,7 @@
 ///
 export module eagine.msgbus.core:context;
 
+import std;
 import eagine.core.types;
 import eagine.core.memory;
 import eagine.core.identifier;
@@ -15,7 +16,6 @@ import eagine.core.main_ctx;
 import eagine.sslplus;
 import :types;
 import :message;
-import std;
 
 namespace eagine::msgbus {
 //------------------------------------------------------------------------------

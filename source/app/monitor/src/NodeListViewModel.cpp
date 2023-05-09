@@ -283,8 +283,8 @@ auto NodeListViewModel::Data::updateNode(
   const remote_node& node) -> int {
     const auto inst = node.instance();
     const auto nodeId = extract(node.id());
-    const auto instId = extract_or(inst.id(), 0U);
-    const auto hostId = instId ? extract_or(inst.host().id(), 0U) : 0U;
+    const auto instId = inst.id().value_or(0U);
+    const auto hostId = instId ? inst.host().id().value_or(0U) : 0U;
 
     const auto prevInstIdPos = node2Inst.find(nodeId);
     auto& hostInfo = hosts[hostId];
@@ -405,8 +405,8 @@ auto NodeListViewModel::Data::removeNode(eagine::identifier_t nodeId) -> bool {
 auto NodeListViewModel::Data::updateInst(
   MonitorBackend&,
   const remote_inst& inst) -> int {
-    const auto instId = extract_or(inst.id(), 0U);
-    const auto hostId = instId ? extract_or(inst.host().id(), 0U) : 0U;
+    const auto instId = inst.id().value_or(0U);
+    const auto hostId = instId ? inst.host().id().value_or(0U) : 0U;
 
     const auto hostPos = hosts.find(hostId);
     if(hostPos != hosts.end()) {
@@ -434,7 +434,7 @@ auto NodeListViewModel::Data::updateInst(
 auto NodeListViewModel::Data::updateHost(
   MonitorBackend&,
   const remote_host& host) -> int {
-    const auto hostId = extract_or(host.id(), 0U);
+    const auto hostId = host.id().value_or(0U);
     const auto hostPos = hosts.find(hostId);
     if(hostPos != hosts.end()) {
         auto& hostInfo = hostPos->second;
@@ -537,7 +537,7 @@ void NodeListViewModel::onNodeDisappeared(eagine::identifier_t nodeId) {
 void NodeListViewModel::onInstanceInfoChanged(const remote_inst& inst) {
     if(inst) {
         if(const auto row = _model.updateInst(_backend, inst); row >= 0) {
-            const auto instId = extract_or(inst.id(), 0U);
+            const auto instId = inst.id().value_or(0U);
             emit dataChanged(
               QAbstractItemModel::createIndex(row, 0, instId),
               QAbstractItemModel::createIndex(row + 1, 2, instId));
@@ -548,7 +548,7 @@ void NodeListViewModel::onInstanceInfoChanged(const remote_inst& inst) {
 void NodeListViewModel::onHostInfoChanged(const remote_host& host) {
     if(host) {
         if(const auto row = _model.updateHost(_backend, host); row >= 0) {
-            const auto hostId = extract_or(host.id(), 0U);
+            const auto hostId = host.id().value_or(0U);
             emit dataChanged(
               QAbstractItemModel::createIndex(row, 0, hostId),
               QAbstractItemModel::createIndex(row + 1, 2, hostId));

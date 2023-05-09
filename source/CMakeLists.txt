@@ -18,11 +18,13 @@ set(
 )
 
 if(TARGET eagine-msgbus-monitor)
-	list(APPEND EAGINE_MSGBUS_EXPORT_TARGETS eagine-msgbus-monitor)
+	# TODO: re-enable this when clang is fixed
+	# list(APPEND EAGINE_MSGBUS_EXPORT_TARGETS eagine-msgbus-monitor)
 endif()
 
 if(TARGET eagine-msgbus-tiling)
-	list(APPEND EAGINE_MSGBUS_EXPORT_TARGETS eagine-msgbus-tiling)
+	# TODO: re-enable this when clang is fixed
+	# list(APPEND EAGINE_MSGBUS_EXPORT_TARGETS eagine-msgbus-tiling)
 endif()
 
 install(

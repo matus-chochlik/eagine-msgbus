@@ -7,9 +7,9 @@
 ///
 
 #include <eagine/testing/unit_begin_ctx.hpp>
+import std;
 import eagine.core;
 import eagine.msgbus.core;
-import std;
 //------------------------------------------------------------------------------
 class test_pong : public eagine::msgbus::actor<1> {
 public:

@@ -7,6 +7,7 @@
 ///
 module eagine.msgbus.services;
 
+import std;
 import eagine.core.types;
 import eagine.core.memory;
 import eagine.core.identifier;
@@ -16,7 +17,6 @@ import eagine.core.valid_if;
 import eagine.core.build_info;
 import eagine.core.main_ctx;
 import eagine.msgbus.core;
-import std;
 
 namespace eagine::msgbus {
 //------------------------------------------------------------------------------

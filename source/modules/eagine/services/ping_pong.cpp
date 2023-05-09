@@ -7,12 +7,12 @@
 ///
 export module eagine.msgbus.services:ping_pong;
 
+import std;
 import eagine.core.types;
 import eagine.core.debug;
 import eagine.core.memory;
 import eagine.core.utility;
 import eagine.msgbus.core;
-import std;
 
 namespace eagine::msgbus {
 //------------------------------------------------------------------------------

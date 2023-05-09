@@ -20,6 +20,8 @@ module;
 #endif
 
 module eagine.msgbus.core;
+
+import std;
 import eagine.core.types;
 import eagine.core.memory;
 import eagine.core.identifier;
@@ -27,7 +29,6 @@ import eagine.core.serialization;
 import eagine.core.valid_if;
 import eagine.core.utility;
 import eagine.core.main_ctx;
-import std;
 import <cerrno>;
 
 namespace eagine::msgbus {
@@ -286,7 +287,7 @@ public:
 
     /// @brief Returns the maximum block size that can be sent in a message.
     auto data_size() noexcept -> span_size_t {
-        return extract_or(max_data_size(), default_data_size());
+        return max_data_size().value_or(default_data_size());
     }
 
     /// @brief Sends a block of data with the specified priority.

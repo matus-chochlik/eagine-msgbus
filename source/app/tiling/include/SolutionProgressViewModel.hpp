@@ -12,6 +12,8 @@ import std;
 #include <QImage>
 #include <QObject>
 #include <QSize>
+#include <QString>
+#include <QTemporaryDir>
 #include <QVariant>
 
 class TilingBackend;
@@ -30,6 +32,7 @@ public:
 
     auto getImage() const -> const QImage*;
     auto getSize() const -> QSize;
+    void saveImage();
     void tileSolved(int x, int y);
 signals:
     void sizeChanged();
@@ -39,8 +42,13 @@ private slots:
 
 private:
     TilingBackend& _backend;
+    qlonglong _imageIndex{0};
+    std::unique_ptr<QTemporaryDir> _imageDir;
+    std::vector<std::unique_ptr<QTemporaryDir>> _prevImageDirs;
+    QString _imagePathFormat;
     QImage _image;
     QSize _size{1, 1};
+    bool _doSaveImage{false};
 };
 //------------------------------------------------------------------------------
 #endif

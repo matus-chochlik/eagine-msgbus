@@ -7,6 +7,7 @@
 ///
 export module eagine.msgbus.core:connection_setup;
 
+import std;
 import eagine.core.types;
 import eagine.core.memory;
 import eagine.core.identifier;
@@ -14,7 +15,6 @@ import eagine.core.logging;
 import eagine.core.main_ctx;
 import :types;
 import :interface;
-import std;
 
 namespace eagine::msgbus {
 //------------------------------------------------------------------------------

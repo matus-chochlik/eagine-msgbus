@@ -11,6 +11,7 @@ module;
 
 export module eagine.msgbus.core:blobs;
 
+import std;
 import eagine.core.types;
 import eagine.core.memory;
 import eagine.core.identifier;
@@ -19,7 +20,6 @@ import eagine.core.utility;
 import eagine.core.main_ctx;
 import :types;
 import :message;
-import std;
 
 namespace eagine::msgbus {
 //------------------------------------------------------------------------------

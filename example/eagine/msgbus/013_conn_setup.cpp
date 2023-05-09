@@ -172,8 +172,7 @@ private:
 
 auto main(main_ctx& ctx) -> int {
 
-    const auto thread_count =
-      extract_or(ctx.system().cpu_concurrent_threads(), 4);
+    const auto thread_count = ctx.system().cpu_concurrent_threads().value_or(4);
 
     msgbus::connection_setup conn_setup(ctx);
 

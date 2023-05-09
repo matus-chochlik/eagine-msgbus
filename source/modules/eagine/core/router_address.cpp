@@ -7,13 +7,13 @@
 ///
 export module eagine.msgbus.core:router_address;
 
+import std;
 import eagine.core.types;
 import eagine.core.memory;
 import eagine.core.identifier;
 import eagine.core.container;
 import eagine.core.logging;
 import eagine.core.main_ctx;
-import std;
 
 namespace eagine::msgbus {
 //------------------------------------------------------------------------------

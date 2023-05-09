@@ -11,6 +11,7 @@ module;
 
 export module eagine.msgbus.services:stream;
 
+import std;
 import eagine.core.types;
 import eagine.core.memory;
 import eagine.core.identifier;
@@ -21,7 +22,6 @@ import eagine.core.valid_if;
 import eagine.msgbus.core;
 import :discovery;
 import :ping_pong;
-import std;
 
 namespace eagine::msgbus {
 //------------------------------------------------------------------------------

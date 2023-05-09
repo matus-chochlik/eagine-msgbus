@@ -7,9 +7,9 @@
 ///
 
 #include <eagine/testing/unit_begin_ctx.hpp>
+import std;
 import eagine.core;
 import eagine.msgbus.core;
-import std;
 //------------------------------------------------------------------------------
 template <typename Base = eagine::msgbus::subscriber>
 class test_pong : public Base {

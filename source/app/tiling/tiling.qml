@@ -24,6 +24,24 @@ ApplicationWindow {
         : qsTr("Tiling")
 
     Action {
+        id: restartTiling
+        text: qsTr("&Restart tiling")
+        shortcut: StandardKey.Refresh
+        onTriggered: {
+            backend.tiling.reinitialize()
+        }
+    }
+
+    Action {
+        id: resetTimeout
+        text: qsTr("&Reset timeout")
+        shortcut: StandardKey.Redo
+        onTriggered: {
+            backend.tiling.resetTimeout()
+        }
+    }
+
+    Action {
         id: saveAction
         text: qsTr("&Save")
         shortcut: StandardKey.Save
@@ -65,6 +83,12 @@ ApplicationWindow {
                         }
                     }
                 }
+            }
+            MenuItem {
+                action: restartTiling
+            }
+            MenuItem {
+                action: resetTimeout
             }
             MenuItem {
                 action: saveAction
@@ -130,10 +154,10 @@ ApplicationWindow {
                 text: qsTr("Solution progress")
             }
             TabButton {
-                text: qsTr("Helper contributions")
+                text: qsTr("Solution intervals")
             }
             TabButton {
-                text: qsTr("Solution intervals")
+                text: qsTr("Helper contributions")
             }
         }
 
@@ -157,20 +181,19 @@ ApplicationWindow {
                 model: backend.solutionProgress
             }
 
-            HelperContributionView {
-                Layout.fillWidth: true
-                Layout.fillHeight: true
-
-                model: backend.helperContributions
-            }
-
             SolutionIntervalView {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
 
                 model: backend.solutionIntervals
             }
-            
+
+            HelperContributionView {
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+
+                model: backend.helperContributions
+            }
         }
 
         RowLayout {

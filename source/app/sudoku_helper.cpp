@@ -70,9 +70,10 @@ auto main(main_ctx& ctx) -> int {
     auto max_idle_time = std::chrono::seconds(30);
     ctx.config().fetch("msgbus.sudoku.helper.max_idle_time", max_idle_time);
 
-    auto helper_count = extract_or(
-      ctx.config().get<span_size_t>("msgbus.sudoku.helper.count"),
-      extract_or(ctx.system().cpu_concurrent_threads(), 4));
+    auto helper_count =
+      ctx.config()
+        .get<span_size_t>("msgbus.sudoku.helper.count")
+        .value_or(ctx.system().cpu_concurrent_threads().value_or(4));
 
     std::mutex helper_mutex;
     std::condition_variable helper_cond;

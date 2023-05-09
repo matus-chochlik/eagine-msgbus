@@ -34,17 +34,12 @@ TilingModel::TilingModel(TilingBackend& backend)
 //------------------------------------------------------------------------------
 void TilingModel::initialize() {
     reinitialize(
-      extract_or(app_config().get<int>("msgbus.sudoku.solver.width"), 64),
-      extract_or(app_config().get<int>("msgbus.sudoku.solver.height"), 64));
+      app_config().get<int>("msgbus.sudoku.solver.width").value_or(64),
+      app_config().get<int>("msgbus.sudoku.solver.height").value_or(64));
     _resetCount = 0;
 }
 //------------------------------------------------------------------------------
-void TilingModel::reinitialize(int w, int h) {
-    if((_width != w) or (_height != h)) {
-        _width = w;
-        _height = h;
-        _cellCache.resize(eagine::std_size(w * h));
-    }
+void TilingModel::reinitialize() {
     zero(eagine::cover(_cellCache));
     _resetCount++;
 
@@ -57,6 +52,15 @@ void TilingModel::reinitialize(int w, int h) {
     emit reinitialized();
 }
 //------------------------------------------------------------------------------
+void TilingModel::reinitialize(int w, int h) {
+    if((_width != w) or (_height != h)) {
+        _width = w;
+        _height = h;
+        _cellCache.resize(eagine::std_size(w * h), '\0');
+    }
+    reinitialize();
+}
+//------------------------------------------------------------------------------
 void TilingModel::update() {
     if(not _tiling.tiling_complete()) {
         _tiling.process_all();
@@ -65,6 +69,10 @@ void TilingModel::update() {
             reinitialize(_width, _height);
         }
     }
+}
+//------------------------------------------------------------------------------
+void TilingModel::resetTimeout() {
+    _tiling.reset_solution_timeout(eagine::unsigned_constant<4>{});
 }
 //------------------------------------------------------------------------------
 auto TilingModel::getTilingSize() const noexcept -> QSize {

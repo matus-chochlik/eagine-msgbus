@@ -11,6 +11,7 @@ module;
 
 export module eagine.msgbus.core:registry;
 
+import std;
 import eagine.core.types;
 import eagine.core.memory;
 import eagine.core.identifier;
@@ -22,7 +23,6 @@ import :endpoint;
 import :router;
 import :setup;
 import :service;
-import std;
 
 namespace eagine::msgbus {
 //------------------------------------------------------------------------------
@@ -49,7 +49,7 @@ public:
     }
 
     /// @brief Returns the id of the internal router.
-    auto router_id() const noexcept -> identifier_t {
+    auto router_id() noexcept -> identifier_t {
         return _router.get_id();
     }
 

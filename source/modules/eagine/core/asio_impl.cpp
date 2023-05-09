@@ -16,6 +16,8 @@ module;
 #include <cassert>
 
 module eagine.msgbus.core;
+
+import std;
 import eagine.core.debug;
 import eagine.core.types;
 import eagine.core.memory;
@@ -26,7 +28,6 @@ import eagine.core.serialization;
 import eagine.core.valid_if;
 import eagine.core.utility;
 import eagine.core.main_ctx;
-import std;
 
 namespace eagine::msgbus {
 //------------------------------------------------------------------------------
@@ -212,6 +213,7 @@ struct asio_connection_state : asio_connection_state_base {
 
     asio_socket_type<Kind, Proto> socket;
     endpoint_type conn_endpoint{};
+    span_size_t prev_packed_count{0};
 
     asio_connection_state(
       main_ctx_parent parent,
@@ -232,118 +234,128 @@ struct asio_connection_state : asio_connection_state_base {
           block_size} {}
 
     auto is_usable() const noexcept -> bool {
-        if(common) [[likely]] {
-            return socket.is_open();
-        }
-        return false;
+        return common and socket.is_open();
     }
 
-    auto log_usage_stats(const span_size_t threshold = 0) noexcept -> bool {
-        if(total_sent_size >= threshold) [[unlikely]] {
-            usage_ratio = float(total_used_size) / float(total_sent_size);
-            const auto slack = 1.F - usage_ratio;
-            const auto msgs_per_block =
-              total_sent_blocks
-                ? float(total_sent_messages) / float(total_sent_blocks)
-                : 0.F;
-            used_per_sec =
-              float(total_used_size) /
-              std::chrono::duration<float>(clock_type::now() - send_start_time)
-                .count();
-            const auto sent_per_sec =
-              float(total_sent_size) /
-              std::chrono::duration<float>(clock_type::now() - send_start_time)
-                .count();
+    void do_log_usage_stats() noexcept {
+        const auto now{clock_type::now()};
+        usage_ratio = float(total_used_size) / float(total_sent_size);
+        const auto slack = 1.F - usage_ratio;
+        const auto msgs_per_block =
+          total_sent_blocks
+            ? float(total_sent_messages) / float(total_sent_blocks)
+            : 0.F;
+        used_per_sec =
+          float(total_used_size) /
+          std::chrono::duration<float>(now - send_start_time).count();
+        const auto sent_per_sec =
+          float(total_sent_size) /
+          std::chrono::duration<float>(now - send_start_time).count();
 
-            log_stat("message slack ratio: ${slack}")
-              .tag("msgSlack")
-              .arg("usedSize", "ByteSize", total_used_size)
-              .arg("sentSize", "ByteSize", total_sent_size)
-              .arg("msgsPerBlk", msgs_per_block)
-              .arg("usedPerSec", "ByteSize", used_per_sec)
-              .arg("sentPerSec", "ByteSize", sent_per_sec)
-              .arg("addrKind", Kind)
-              .arg("protocol", Proto)
-              .arg("slack", "Ratio", slack);
-            return true;
+        log_stat("message slack ratio: ${slack}")
+          .tag("msgSlack")
+          .arg("usedSize", "ByteSize", total_used_size)
+          .arg("sentSize", "ByteSize", total_sent_size)
+          .arg("msgsPerBlk", msgs_per_block)
+          .arg("usedPerSec", "ByteSize", used_per_sec)
+          .arg("sentPerSec", "ByteSize", sent_per_sec)
+          .arg("addrKind", Kind)
+          .arg("protocol", Proto)
+          .arg("slack", "Ratio", slack);
+
+        total_used_size = 0;
+        total_sent_size = 0;
+        send_start_time = now;
+    }
+
+    void log_usage_stats(const span_size_t threshold = 0) noexcept {
+        if(total_sent_size >= threshold) [[unlikely]] {
+            do_log_usage_stats();
         }
-        return false;
     }
 
     template <typename Handler>
-    void do_start_send(
+    void start_async_send(
       const stream_protocol_tag,
       const endpoint_type&,
       const memory::const_block blk,
-      const Handler handler) noexcept {
+      Handler handler) noexcept {
         asio::async_write(
-          socket, asio::buffer(blk.data(), blk.size()), handler);
+          socket, asio::buffer(blk.data(), blk.size()), std::move(handler));
     }
 
     template <typename Handler>
-    void do_start_send(
+    void start_async_send(
       const datagram_protocol_tag,
-      const endpoint_type& target_endpoint,
+      const endpoint_type& target,
       const memory::const_block blk,
-      const Handler handler) noexcept {
+      Handler handler) noexcept {
         socket.async_send_to(
-          asio::buffer(blk.data(), blk.size()), target_endpoint, handler);
+          asio::buffer(blk.data(), blk.size()), target, std::move(handler));
     }
 
     void handle_send_error(const std::error_code error) noexcept {
         log_error("failed to send data: ${error}").arg("error", error.message());
-        this->is_sending = false;
-        this->socket.close();
+        is_sending = false;
+        socket.close();
     }
 
-    void do_start_send(asio_connection_group<Kind, Proto>& group) noexcept {
-        using std::get;
+    void do_start_send(
+      asio_connection_group<Kind, Proto>& group,
+      const endpoint_type& target,
+      const message_pack_info& packed) noexcept {
 
-        endpoint_type target_endpoint{conn_endpoint};
-        const auto packed =
-          group.pack_into(target_endpoint, cover(write_buffer));
+        start_async_send(
+          connection_protocol_tag<Proto>{},
+          target,
+          view(write_buffer),
+          [this, &group, target, packed, self{self_ref()}](
+            const std::error_code error,
+            [[maybe_unused]] const std::size_t length) {
+              if(not error) [[likely]] {
+                  assert(span_size(length) == packed.total());
+                  handle_sent(group, target, packed);
+              } else {
+                  handle_send_error(error);
+              }
+          });
+
+        total_used_size += packed.used();
+        total_sent_size += packed.total();
+        total_sent_messages += packed.count();
+        total_sent_blocks += 1;
+
+        const auto quarter_of_gib{span_size(2U << 27U)};
+        log_usage_stats(quarter_of_gib);
+    }
+
+    auto start_send_if_needed(asio_connection_group<Kind, Proto>& group) noexcept
+      -> bool {
+        endpoint_type target{conn_endpoint};
+        const auto packed{group.pack_into(target, cover(write_buffer))};
         if(not packed.is_empty()) {
-            is_sending = true;
-
-            do_start_send(
-              connection_protocol_tag<Proto>{},
-              target_endpoint,
-              view(write_buffer),
-              [this, &group, target_endpoint, packed, self{self_ref()}](
-                const std::error_code error,
-                [[maybe_unused]] const std::size_t length) {
-                  if(not error) [[likely]] {
-                      assert(span_size(length) == packed.total());
-                      log_trace("sent data")
-                        .arg("usedSize", "ByteSize", packed.used())
-                        .arg("sentSize", "ByteSize", packed.total());
-
-                      total_used_size += packed.used();
-                      total_sent_size += packed.total();
-                      total_sent_messages += packed.count();
-                      total_sent_blocks += 1;
-
-                      if(this->log_usage_stats(span_size(2U << 27U)))
-                        [[unlikely]] {
-                          total_used_size = 0;
-                          total_sent_size = 0;
-                          send_start_time = clock_type::now();
-                      }
-
-                      this->handle_sent(group, target_endpoint, packed);
-                  } else {
-                      this->handle_send_error(error);
-                  }
-              });
-        } else {
+            const auto curr_packed_count{packed.count()};
+            const bool should_send{
+              packed.is_max_count(curr_packed_count) or
+              (prev_packed_count == curr_packed_count)};
+            if(should_send) {
+                prev_packed_count = 0;
+                is_sending = true;
+                do_start_send(group, target, packed);
+                return true;
+            }
+            prev_packed_count = curr_packed_count;
             is_sending = false;
+            return true;
         }
+        is_sending = false;
+        return false;
     }
 
     auto start_send(asio_connection_group<Kind, Proto>& group) noexcept
       -> bool {
         if(not is_sending) {
-            do_start_send(group);
+            return start_send_if_needed(group);
         }
         return is_sending;
     }
@@ -353,7 +365,7 @@ struct asio_connection_state : asio_connection_state_base {
       const endpoint_type& target_endpoint,
       const message_pack_info& to_be_removed) noexcept {
         group.on_sent(target_endpoint, to_be_removed);
-        do_start_send(group);
+        start_send_if_needed(group);
     }
 
     template <typename Handler>
@@ -391,8 +403,8 @@ struct asio_connection_state : asio_connection_state_base {
                   .arg("error", error.message());
             }
         }
-        this->is_recving = false;
-        this->socket.close();
+        is_recving = false;
+        socket.close();
     }
 
     void do_start_receive(asio_connection_group<Kind, Proto>& group) noexcept {
@@ -406,12 +418,9 @@ struct asio_connection_state : asio_connection_state_base {
             const std::error_code error, const std::size_t length) {
               memory::const_block rcvd{head(blk, span_size(length))};
               if(not error) [[likely]] {
-                  log_trace("received data (size: ${size})")
-                    .arg("size", "ByteSize", length);
-
-                  this->handle_received(rcvd, group);
+                  handle_received(rcvd, group);
               } else {
-                  this->handle_receive_error(rcvd, group, error);
+                  handle_receive_error(rcvd, group, error);
               }
           });
     }
