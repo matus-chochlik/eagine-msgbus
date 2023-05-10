@@ -57,7 +57,7 @@ private:
           main_context().config().fetch(
             "msgbus.sudoku.solver.output_path", file_path)) {
             std::ofstream fout{file_path};
-            tiles.print(fout);
+            tiles.print(fout) << std::endl;
         }
     }
 
