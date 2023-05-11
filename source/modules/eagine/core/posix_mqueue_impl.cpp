@@ -375,6 +375,11 @@ public:
     }
 };
 //------------------------------------------------------------------------------
+[[nodiscard]] static constexpr auto posix_mqueue_translate_priority(
+  const message_priority priority) noexcept {
+    return limit_cast<unsigned>(std::to_underlying(priority));
+}
+//------------------------------------------------------------------------------
 /// @brief Implementation of connection on top of POSIX message queues.
 /// @ingroup msgbus
 /// @see posix_mqueue
@@ -425,7 +430,7 @@ public:
             default_serializer_backend backend(sink);
             if(serialize_message(msg_id, message, backend)) [[likely]] {
                 const std::unique_lock lock{_mutex};
-                _outgoing.push(sink.done());
+                _outgoing.push(sink.done(), message.priority);
                 return true;
             } else {
                 log_error("failed to serialize message");
@@ -469,7 +474,10 @@ protected:
                              msgbus_id{"pmqConnect"},
                              message_view(_data_queue.get_name()),
                              backend)) [[likely]] {
-                            connect_queue.send(1, as_chars(sink.done()));
+                            connect_queue.send(
+                              posix_mqueue_translate_priority(
+                                message_priority::normal),
+                              as_chars(sink.done()));
                             _buffer.resize(_data_queue.data_size());
                             something_done();
                         } else {
@@ -513,8 +521,13 @@ protected:
 protected:
     auto _handle_send(
       const message_timestamp,
+      const message_priority priority,
       const memory::const_block data) noexcept -> bool {
-        return not _data_queue.send(1, as_chars(data)).had_error();
+        return not _data_queue
+                     .send(
+                       posix_mqueue_translate_priority(priority),
+                       as_chars(data))
+                     .had_error();
     }
 
     void _handle_receive(
