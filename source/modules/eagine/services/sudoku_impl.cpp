@@ -281,14 +281,14 @@ auto sudoku_helper_rank_info<S>::process_board(
   const auto& candidate,
   bool& done,
   int levels) noexcept {
-    const auto send_board = [&, this](auto& board, bool is_solved) {
+    const auto send_board{[&, this](auto& board, bool is_solved) {
         do_send_board(
           bus, compressor, target_id, sequence_no, board, is_solved);
-    };
-    const auto process_recursive = [&, this](auto& board) {
+    }};
+    const auto process_recursive{[&, this](auto& board) {
         process_board(
           bus, compressor, target_id, sequence_no, board, done, levels - 1);
-    };
+    }};
 
     candidate.for_each_alternative(
       candidate.find_unsolved(), [&](const auto& intermediate) {

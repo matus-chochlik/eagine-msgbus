@@ -331,7 +331,7 @@ struct asio_connection_state : asio_connection_state_base {
     }
 
     auto priority_to_countdown(const message_priority priority) const noexcept {
-        return span_size(std::to_underlying(priority)) * 2;
+        return span_size(std::to_underlying(priority));
     }
 
     void reset_send_countdown() noexcept {
@@ -339,11 +339,11 @@ struct asio_connection_state : asio_connection_state_base {
     }
 
     void update_send_countdown(const span_size_t packed_count) noexcept {
-        send_countdown = (packed_count / (prev_packed_count + 1)) + 1;
+        send_countdown -= (packed_count == prev_packed_count) ? 1 : 0;
     }
 
     auto send_countdown_end(const message_priority priority) const noexcept {
-        return send_countdown < priority_to_countdown(priority);
+        return send_countdown <= priority_to_countdown(priority);
     }
 
     auto start_send_if_needed(asio_connection_group<Kind, Proto>& group) noexcept
