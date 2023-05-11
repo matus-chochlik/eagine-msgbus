@@ -214,6 +214,7 @@ struct asio_connection_state : asio_connection_state_base {
     asio_socket_type<Kind, Proto> socket;
     endpoint_type conn_endpoint{};
     span_size_t prev_packed_count{0};
+    span_size_t send_countdown{0};
 
     asio_connection_state(
       main_ctx_parent parent,
@@ -329,17 +330,35 @@ struct asio_connection_state : asio_connection_state_base {
         log_usage_stats(quarter_of_gib);
     }
 
+    auto priority_to_countdown(const message_priority priority) const noexcept {
+        return span_size(std::to_underlying(priority)) * 2;
+    }
+
+    void reset_send_countdown() noexcept {
+        send_countdown = priority_to_countdown(message_priority::critical);
+    }
+
+    void update_send_countdown(const span_size_t packed_count) noexcept {
+        send_countdown = (packed_count / (prev_packed_count + 1)) + 1;
+    }
+
+    auto send_countdown_end(const message_priority priority) const noexcept {
+        return send_countdown < priority_to_countdown(priority);
+    }
+
     auto start_send_if_needed(asio_connection_group<Kind, Proto>& group) noexcept
       -> bool {
         endpoint_type target{conn_endpoint};
         const auto packed{group.pack_into(target, cover(write_buffer))};
         if(not packed.is_empty()) {
             const auto curr_packed_count{packed.count()};
-            const bool should_send{
-              packed.is_max_count(curr_packed_count) or
-              (prev_packed_count == curr_packed_count)};
-            if(should_send) {
+            update_send_countdown(curr_packed_count);
+
+            if(
+              send_countdown_end(packed.max_priority()) or
+              packed.is_max_count(curr_packed_count)) {
                 prev_packed_count = 0;
+                reset_send_countdown();
                 is_sending = true;
                 do_start_send(group, target, packed);
                 return true;
