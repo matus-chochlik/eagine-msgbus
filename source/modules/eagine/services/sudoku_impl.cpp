@@ -497,7 +497,7 @@ struct sudoku_solver_rank_info {
 
     timeout search_timeout{std::chrono::seconds(3), nothing};
     timeout solution_timeout{
-      adjusted_duration(std::chrono::seconds{S * S * S * S})};
+      adjusted_duration(std::chrono::seconds{S * S * S * S * S})};
 
     flat_map<sudoku_solver_key, std::chrono::steady_clock::time_point>
       key_starts;
@@ -1306,6 +1306,7 @@ struct sudoku_tiling_rank_info : sudoku_tiles<S> {
             cells_done += this->cells_per_tile(coord);
             tiling.solver.base.bus_node()
               .log_info("solved board (${x}, ${y})")
+              .tag("solvdBoard")
               .arg("rank", S)
               .arg("x", std::get<0>(coord))
               .arg("y", std::get<1>(coord))
