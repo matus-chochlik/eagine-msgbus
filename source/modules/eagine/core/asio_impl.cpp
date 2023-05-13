@@ -377,15 +377,16 @@ struct asio_connection_state : asio_connection_state_base {
         if(not is_sending) {
             return start_send_if_needed(group, false);
         }
-        return is_sending;
+        return true;
     }
 
     void handle_sent(
       asio_connection_group<Kind, Proto>& group,
       const endpoint_type& target_endpoint,
       const message_pack_info& to_be_removed) noexcept {
+        const bool sent_something{not to_be_removed.is_empty()};
         group.on_sent(target_endpoint, to_be_removed);
-        start_send_if_needed(group, true);
+        start_send_if_needed(group, sent_something);
     }
 
     template <typename Handler>
