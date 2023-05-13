@@ -346,11 +346,12 @@ struct asio_connection_state : asio_connection_state_base {
         return send_countdown <= priority_to_countdown(priority);
     }
 
-    auto start_send_if_needed(asio_connection_group<Kind, Proto>& group) noexcept
-      -> bool {
+    auto start_send_if_needed(
+      asio_connection_group<Kind, Proto>& group,
+      bool force) noexcept -> bool {
         endpoint_type target{conn_endpoint};
         const auto packed{group.pack_into(target, cover(write_buffer))};
-        if(not packed.is_empty()) {
+        if(force or not packed.is_empty()) {
             const auto curr_packed_count{packed.count()};
             update_send_countdown(curr_packed_count);
 
@@ -374,7 +375,7 @@ struct asio_connection_state : asio_connection_state_base {
     auto start_send(asio_connection_group<Kind, Proto>& group) noexcept
       -> bool {
         if(not is_sending) {
-            return start_send_if_needed(group);
+            return start_send_if_needed(group, false);
         }
         return is_sending;
     }
@@ -384,7 +385,7 @@ struct asio_connection_state : asio_connection_state_base {
       const endpoint_type& target_endpoint,
       const message_pack_info& to_be_removed) noexcept {
         group.on_sent(target_endpoint, to_be_removed);
-        start_send_if_needed(group);
+        start_send_if_needed(group, true);
     }
 
     template <typename Handler>
