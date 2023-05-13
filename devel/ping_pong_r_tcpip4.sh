@@ -4,34 +4,10 @@
 # See accompanying file LICENSE_1_0.txt or copy at
 #  http://www.boost.org/LICENSE_1_0.txt
 #
-variant=${1:-007}
-install_prefix="$(<$(dirname ${0})/../INSTALL_PREFIX)"
-log_args=("--min-log-severity" "stat")
-conn_type="--msgbus-asio-tcp-ipv4"
-#
-pids=()
-#
-${install_prefix}/bin/eagine-msgbus-router \
-	"${log_args[@]}" \
-	${conn_type} \
-	--msgbus-router-shutdown-verify false \
-	& pids+=($!)
-sleep 1
-${install_prefix}/share/eagine/example/msgbus/eagine-${variant}_ping \
-	"${log_args[@]}" \
-	--ping-count ${2:-1M} \
-	--ping-batch ${3:-10k} \
-	--ping-repeat ${4:-1} \
-	${conn_type} \
-	& pids+=($!)
-sleep 5
-${install_prefix}/share/eagine/example/msgbus/eagine-${variant}_pong \
-	--pingable-id 2222 \
-	"${log_args[@]}" \
-	${conn_type} \
-	& pids+=($!)
-
-for pid in ${pids[@]}
-do wait ${pid}
-done
-
+"$(dirname ${0})/procman.sh" \
+	-S "conn_type=tcpip4" \
+	-S "variant=${1:-007}" \
+	-S "ping_count=${2:-1M}" \
+	-S "ping_batch=${3:-10k}" \
+	-S "ping_repeat=${4:-1}" \
+	"$(dirname ${0})/ping_pong_r.eagiproc"

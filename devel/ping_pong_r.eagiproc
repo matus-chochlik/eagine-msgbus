@@ -5,11 +5,13 @@
 	"ports": "$(range 34910 34919)",
 	"rutr_addr_args_posixmq": ["/$(uid posixmq)"],
 	"rutr_addr_args_local": ["$(in_work_dir router.socket)"],
-	"rutr_addr_args_tcpipv4": ["localhost:$[ports[0]]"],
+	"rutr_addr_args_tcpip4": ["localhost:$[ports[0]]"],
+	"rutr_addr_args_udpip4": ["localhost:$[ports[0]]"],
 	"rutr_addr_args": "$[rutr_addr_args_${conn_type}...]",
 	"conn_type_arg_posixmq": "posix-mqueue",
 	"conn_type_arg_local": "asio-local-stream",
-	"conn_type_arg_tcpipv4": "asio-tcp-ipv4",
+	"conn_type_arg_tcpip4": "asio-tcp-ipv4",
+	"conn_type_arg_udpip4": "asio-udp-ipv4",
 	"conn_type_arg": "--msgbus-${conn_type_arg_${conn_type}}",
 	"conn_args": ["${conn_type_arg}", "$[rutr_addr_args...]"],
 	"ping_count": "1M",
@@ -18,7 +20,6 @@
 	"variant": "007"
 },"pipelines":[{
 	"identity": "router",
-	"instances": "*",
 	"required_by": ["ping", "pong"],
 	"command": [
 		"$(eagiapp msgbus-router)", "$<identity router>",
