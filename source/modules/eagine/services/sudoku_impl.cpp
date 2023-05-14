@@ -708,7 +708,7 @@ struct sudoku_solver_rank_info {
             query.sequence_no = sequence_no;
             query.key = std::move(key);
             query.too_late.reset(
-              adjusted_duration(std::chrono::seconds{S * S * S}));
+              adjusted_duration(std::chrono::seconds{S * S * S * S}));
             boards.erase(pos);
             if(boards.empty()) {
                 key_boards.erase(kbpos);
