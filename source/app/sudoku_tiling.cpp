@@ -120,6 +120,31 @@ auto main(main_ctx& ctx) -> int {
         }
     }};
 
+    const auto log_contribution_histogram{[&] {
+        const auto do_log{[&](auto r) {
+            tiling_generator.log_contribution_histogram(r);
+        }};
+        switch(rank) {
+            case 3:;
+                do_log(unsigned_constant<3>{});
+                break;
+            case 4:
+                do_log(unsigned_constant<4>{});
+                break;
+            case 5:
+                do_log(unsigned_constant<5>{});
+                break;
+            default:
+                break;
+        }
+    }};
+
+    resetting_timeout log_contribution_timeout{
+      ctx.config()
+        .get<std::chrono::seconds>(
+          "msgbus.sudoku.solver.log_contribution_timeout")
+        .value_or(std::chrono::minutes{5})};
+
     while(keep_running()) {
         tiling_generator.update();
         try_enqueue(unsigned_constant<3>{});
@@ -137,23 +162,15 @@ auto main(main_ctx& ctx) -> int {
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
         }
 
+        if(log_contribution_timeout) {
+            log_contribution_histogram();
+        }
+
         wd.notify_alive();
     }
     wd.announce_shutdown();
 
-    switch(rank) {
-        case 3:
-            tiling_generator.log_contribution_histogram(unsigned_constant<3>{});
-            break;
-        case 4:
-            tiling_generator.log_contribution_histogram(unsigned_constant<4>{});
-            break;
-        case 5:
-            tiling_generator.log_contribution_histogram(unsigned_constant<5>{});
-            break;
-        default:
-            break;
-    }
+    log_contribution_histogram();
 
     return 0;
 }
