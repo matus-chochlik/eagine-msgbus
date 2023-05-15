@@ -105,9 +105,12 @@ auto main(main_ctx& ctx) -> int {
             return -1;
     }
 
-    const auto keep_running = [&] {
+    const auto keep_running{[&] {
         return not(interrupted or tiling_generator.tiling_complete());
-    };
+    }};
+
+    auto& wd = ctx.watchdog();
+    wd.declare_initialized();
 
     int idle_streak = 0;
     while(keep_running()) {
@@ -133,7 +136,9 @@ auto main(main_ctx& ctx) -> int {
             std::this_thread::sleep_for(
               std::chrono::microseconds(math::minimum(++idle_streak, 50000)));
         }
+        wd.notify_alive();
     }
+    wd.announce_shutdown();
 
     switch(rank) {
         case 3:
