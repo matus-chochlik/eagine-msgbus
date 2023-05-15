@@ -12,6 +12,7 @@ module;
 export module eagine.msgbus.core:endpoint;
 
 import std;
+import eagine.core.build_config;
 import eagine.core.types;
 import eagine.core.memory;
 import eagine.core.identifier;
@@ -442,8 +443,15 @@ public:
     }
 
     /// @brief Returns the average message age in the connected router.
+    /// @see flow_congestion
     auto flow_average_message_age() const noexcept {
         return _flow_info.average_message_age();
+    }
+
+    /// @brief Indicates if the connected router is congested.
+    /// @see flow_average_message_age
+    auto flow_congestion() const noexcept -> bool {
+        return _flow_info.average_message_age() >= _flow_age_warning;
     }
 
 private:
@@ -460,6 +468,7 @@ private:
 
     endpoint_statistics _stats{};
     message_flow_info _flow_info{};
+    const std::chrono::milliseconds _flow_age_warning{debug_build ? 3500 : 750};
 
     auto _uptime_seconds() noexcept -> std::int64_t;
 

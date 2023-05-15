@@ -121,21 +121,19 @@ auto endpoint::_handle_flow_info(const message_view& message) noexcept
     message_flow_info flow_info{};
     if(default_deserialize(flow_info, message.content())) [[likely]] {
         if(_flow_info != flow_info) {
-            const std::chrono::milliseconds age_warning{
-              debug_build ? 2500 : 500};
             if(
-              (_flow_info.average_message_age() < age_warning) and
-              (flow_info.average_message_age() >= age_warning)) {
+              (_flow_info.average_message_age() < _flow_age_warning) and
+              (flow_info.average_message_age() >= _flow_age_warning)) {
                 log_warning("average message age is too high:  ${avgMsgAge}")
                   .tag("msgAgeHigh")
-                  .arg("warnLimit", age_warning)
+                  .arg("warnLimit", _flow_age_warning)
                   .arg("avgMsgAge", flow_info.average_message_age());
             } else if(
-              (flow_info.average_message_age() < age_warning) and
-              (_flow_info.average_message_age() >= age_warning)) {
+              (flow_info.average_message_age() < _flow_age_warning) and
+              (_flow_info.average_message_age() >= _flow_age_warning)) {
                 log_info("average message age returned to normal: ${avgMsgAge}")
                   .tag("msgAgeNorm")
-                  .arg("warnLimit", age_warning)
+                  .arg("warnLimit", _flow_age_warning)
                   .arg("avgMsgAge", flow_info.average_message_age());
             }
             _flow_info = flow_info;
