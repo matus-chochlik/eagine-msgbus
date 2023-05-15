@@ -85,10 +85,10 @@ auto main(main_ctx& ctx) -> int {
     const auto rank =
       ctx.config().get<int>("msgbus.sudoku.solver.rank").value_or(4);
 
-    auto enqueue = [&](auto traits) {
+    auto enqueue{[&](auto traits) {
         tiling_generator.reinitialize(
           {width, height}, traits.make_generator().generate_medium());
-    };
+    }};
 
     switch(rank) {
         case 3:
@@ -113,29 +113,30 @@ auto main(main_ctx& ctx) -> int {
     wd.declare_initialized();
 
     int idle_streak = 0;
-    while(keep_running()) {
-        tiling_generator.update();
-        if(
-          rank == 3 and tiling_generator.solution_timeouted(
-                          unsigned_constant<3>{})) [[unlikely]] {
+
+    const auto try_enqueue{[&](auto r) {
+        if(rank == r and tiling_generator.solution_timeouted(r)) [[unlikely]] {
             enqueue(default_sudoku_board_traits<3>());
         }
-        if(
-          rank == 4 and tiling_generator.solution_timeouted(
-                          unsigned_constant<4>{})) [[unlikely]] {
-            enqueue(default_sudoku_board_traits<4>());
-        }
-        if(
-          rank == 5 and tiling_generator.solution_timeouted(
-                          unsigned_constant<5>{})) [[unlikely]] {
-            enqueue(default_sudoku_board_traits<5>());
-        }
+    }};
+
+    while(keep_running()) {
+        tiling_generator.update();
+        try_enqueue(unsigned_constant<3>{});
+        try_enqueue(unsigned_constant<4>{});
+        try_enqueue(unsigned_constant<5>{});
+
         if(tiling_generator.process_all()) {
             idle_streak = 0;
         } else {
             std::this_thread::sleep_for(
               std::chrono::microseconds(math::minimum(++idle_streak, 50000)));
         }
+
+        if(tiling_generator.bus_node().flow_congestion()) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        }
+
         wd.notify_alive();
     }
     wd.announce_shutdown();
