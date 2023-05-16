@@ -438,7 +438,7 @@ void serialized_message_storage_push_cleanup(unsigned, auto& s) {
         eagine::msgbus::message_view message{
           eagine::memory::as_bytes(msg_id.method().name().view())};
         if(eagine::msgbus::serialize_message(msg_id, message, backend)) {
-            storage.push(sink.done());
+            storage.push(sink.done(), eagine::msgbus::message_priority::normal);
             test.check(not storage.empty(), "is not empty");
             test.check_equal(storage.count(), r + 1, "count");
         } else {
@@ -480,7 +480,7 @@ void serialized_message_storage_push_top_pop(unsigned, auto& s) {
         eagine::msgbus::message_view msg{
           eagine::memory::as_bytes(msg_id.method().name().view())};
         if(eagine::msgbus::serialize_message(msg_id, msg, backend)) {
-            storage.push(sink.done());
+            storage.push(sink.done(), eagine::msgbus::message_priority::normal);
             test.check(not storage.empty(), "is not empty");
             test.check_equal(storage.count(), r + 1, "count");
         } else {
@@ -528,7 +528,7 @@ void serialized_message_storage_push_fetch(unsigned, auto& s) {
         eagine::msgbus::message_view message{
           eagine::memory::as_bytes(msg_id.class_().name().view())};
         if(eagine::msgbus::serialize_message(msg_id, message, backend)) {
-            storage.push(sink.done());
+            storage.push(sink.done(), eagine::msgbus::message_priority::normal);
             test.check(not storage.empty(), "is not empty");
             test.check_equal(storage.count(), r + 1, "count");
         } else {
@@ -540,6 +540,7 @@ void serialized_message_storage_push_fetch(unsigned, auto& s) {
       {eagine::construct_from,
        [&](
          const eagine::msgbus::message_timestamp msg_ts,
+         const eagine::msgbus::message_priority,
          const eagine::msgbus::message_view& msg) {
            test.check(msg_ts.time_since_epoch().count() >= 0, "timestamp");
 
@@ -567,6 +568,7 @@ void serialized_message_storage_push_fetch(unsigned, auto& s) {
       {eagine::construct_from,
        [&](
          const eagine::msgbus::message_timestamp msg_ts,
+         const eagine::msgbus::message_priority,
          const eagine::msgbus::message_view& msg) {
            test.check(msg_ts.time_since_epoch().count() >= 0, "timestamp");
 
