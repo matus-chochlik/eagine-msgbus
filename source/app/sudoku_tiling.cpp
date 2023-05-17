@@ -117,6 +117,7 @@ auto main(main_ctx& ctx) -> int {
     const auto try_enqueue{[&](auto r) {
         if(rank == r and tiling_generator.solution_timeouted(r)) [[unlikely]] {
             enqueue(default_sudoku_board_traits<3>());
+            tiling_generator.reset_solution_timeout(r);
         }
     }};
 
