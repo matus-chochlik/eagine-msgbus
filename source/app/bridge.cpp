@@ -124,9 +124,11 @@ auto main(main_ctx& ctx) -> int {
     msgbus::setup_connectors(ctx, node_endpoint);
     {
         msgbus::bridge_node node{node_endpoint};
+        node.declare_state("running", "brdgStart", "brdgFinish");
 
         auto& wd = ctx.watchdog();
         wd.declare_initialized();
+        node.log_info("message bus bridge started").tag("brdgStart");
 
         while(not(interrupted or node.is_shut_down() or bridge.is_done()))
           [[likely]] {
@@ -145,6 +147,7 @@ auto main(main_ctx& ctx) -> int {
             }
             wd.notify_alive();
         }
+        node.log_info("message bus bridge finishing").tag("brdgFinish");
         wd.announce_shutdown();
     }
     bridge.finish();

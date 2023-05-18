@@ -29,6 +29,20 @@ namespace eagine::msgbus {
 //------------------------------------------------------------------------------
 // endpoint
 //------------------------------------------------------------------------------
+auto endpoint::_declare_states() noexcept {
+    declare_state("msgCongest", "msgAgeHigh", "msgAgeNorm");
+}
+//------------------------------------------------------------------------------
+endpoint::endpoint(main_ctx_object obj) noexcept
+  : main_ctx_object{std::move(obj)} {
+    _declare_states();
+}
+//------------------------------------------------------------------------------
+endpoint::endpoint(const identifier id, main_ctx_parent parent) noexcept
+  : main_ctx_object{id, parent} {
+    _declare_states();
+}
+//------------------------------------------------------------------------------
 auto endpoint::_uptime_seconds() noexcept -> std::int64_t {
     return std::chrono::duration_cast<std::chrono::seconds>(
              std::chrono::steady_clock::now() - _startup_time)

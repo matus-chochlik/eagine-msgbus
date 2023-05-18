@@ -130,9 +130,11 @@ auto main(main_ctx& ctx) -> int {
     node_endpoint.add_connection(std::move(node_connection));
     {
         msgbus::router_node node{node_endpoint};
+        node.declare_state("running", "rutrStart", "rutrFinish");
 
         auto& wd = ctx.watchdog();
         wd.declare_initialized();
+        node.log_info("message bus router started").tag("rutrStart");
 
         while(not(interrupted or node.is_shut_down())) [[likely]] {
             some_true something_done{};
@@ -150,12 +152,14 @@ auto main(main_ctx& ctx) -> int {
             }
             wd.notify_alive();
         }
+        node.log_info("message bus router finishing").tag("rutrFinish");
         wd.announce_shutdown();
     }
 
     router.finish();
 
     log.stat("message bus router finishing")
+      .tag("routrStats")
       .arg("working", cycles_work)
       .arg("idling", cycles_idle)
       .arg(

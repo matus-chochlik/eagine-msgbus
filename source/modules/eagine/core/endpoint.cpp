@@ -65,12 +65,10 @@ public:
     signal<void() noexcept> connection_lost;
 
     /// @brief Construction with a reference to parent main context object.
-    endpoint(main_ctx_object obj) noexcept
-      : main_ctx_object{std::move(obj)} {}
+    endpoint(main_ctx_object obj) noexcept;
 
     /// @brief Construction with an enpoint id and parent main context object.
-    endpoint(const identifier id, main_ctx_parent parent) noexcept
-      : main_ctx_object{id, parent} {}
+    endpoint(const identifier id, main_ctx_parent parent) noexcept;
 
     /// @brief Not copy constructible.
     endpoint(const endpoint&) = delete;
@@ -495,6 +493,8 @@ private:
     };
 
     flat_map<message_id, std::unique_ptr<incoming_state>> _incoming{};
+
+    auto _declare_states() noexcept;
 
     auto _ensure_incoming(const message_id msg_id) noexcept -> incoming_state& {
         auto pos = _incoming.find(msg_id);
