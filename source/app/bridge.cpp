@@ -101,9 +101,10 @@ private:
 //------------------------------------------------------------------------------
 auto main(main_ctx& ctx) -> int {
     const signal_switch interrupted;
-    enable_message_bus(ctx);
+    const auto& log = ctx.log();
+    log.active_state("BrdgNodeEp", "running");
 
-    auto& log = ctx.log();
+    enable_message_bus(ctx);
 
     log.info("message bus bridge starting up");
 
@@ -125,7 +126,6 @@ auto main(main_ctx& ctx) -> int {
     {
         msgbus::bridge_node node{node_endpoint};
         node.declare_state("running", "brdgStart", "brdgFinish");
-        node.active_state("running");
 
         auto& wd = ctx.watchdog();
         wd.declare_initialized();

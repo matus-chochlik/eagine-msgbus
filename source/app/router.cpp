@@ -104,9 +104,11 @@ private:
 //------------------------------------------------------------------------------
 auto main(main_ctx& ctx) -> int {
     const signal_switch interrupted;
+    const auto& log = ctx.log();
+    log.active_state("RutrNodeEp", "running");
+
     enable_message_bus(ctx);
 
-    const auto& log = ctx.log();
     log.info("message bus router starting up");
 
     ctx.system().preinitialize();
@@ -131,7 +133,6 @@ auto main(main_ctx& ctx) -> int {
     {
         msgbus::router_node node{node_endpoint};
         node.declare_state("running", "rutrStart", "rutrFinish");
-        node.active_state("running");
 
         auto& wd = ctx.watchdog();
         wd.declare_initialized();
