@@ -131,6 +131,7 @@ auto main(main_ctx& ctx) -> int {
     {
         msgbus::router_node node{node_endpoint};
         node.declare_state("running", "rutrStart", "rutrFinish");
+        node.active_state("running");
 
         auto& wd = ctx.watchdog();
         wd.declare_initialized();

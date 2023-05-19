@@ -125,6 +125,7 @@ auto main(main_ctx& ctx) -> int {
     {
         msgbus::bridge_node node{node_endpoint};
         node.declare_state("running", "brdgStart", "brdgFinish");
+        node.active_state("running");
 
         auto& wd = ctx.watchdog();
         wd.declare_initialized();
