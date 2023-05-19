@@ -20,6 +20,7 @@ class sudoku_tiling_node : public service_node<sudoku_tiling_base> {
 public:
     sudoku_tiling_node(main_ctx_parent parent)
       : service_node<sudoku_tiling_base>{"TilingNode", parent} {
+        declare_state("running", "tlngStart", "tlngFinish");
         connect<&sudoku_tiling_node::_handle_generated<3>>(
           this, tiles_generated_3);
         connect<&sudoku_tiling_node::_handle_generated<4>>(
@@ -32,6 +33,18 @@ public:
         info.description = "sudoku solver tiling generator application";
 
         setup_connectors(main_context(), *this);
+    }
+
+    static void active_state(const logger& log) noexcept {
+        log.active_state("TilingNode", "running");
+    }
+
+    void log_start() noexcept {
+        log_info("starting").tag("tlngStart");
+    }
+
+    void log_finish() noexcept {
+        log_info("finishing").tag("tlngFinish");
     }
 
 private:
@@ -72,6 +85,8 @@ private:
 
 auto main(main_ctx& ctx) -> int {
     const signal_switch interrupted;
+    msgbus::sudoku_tiling_node::active_state(ctx.log());
+
     enable_message_bus(ctx);
     ctx.preinitialize();
 
@@ -146,6 +161,7 @@ auto main(main_ctx& ctx) -> int {
           "msgbus.sudoku.solver.log_contribution_timeout")
         .value_or(std::chrono::minutes{5})};
 
+    tiling_generator.log_start();
     while(keep_running()) {
         tiling_generator.update();
         try_enqueue(unsigned_constant<3>{});
@@ -169,6 +185,7 @@ auto main(main_ctx& ctx) -> int {
 
         wd.notify_alive();
     }
+    tiling_generator.log_finish();
     wd.announce_shutdown();
 
     log_contribution_histogram();

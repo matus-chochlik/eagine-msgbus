@@ -25,6 +25,8 @@ public:
     bridge_node(endpoint& bus)
       : main_ctx_object{"BridgeNode", bus}
       , base{bus} {
+        declare_state("running", "brdgStart", "brdgFinish");
+
         if(_shutdown_ignore) {
             log_info("shutdown requests are ignored due to configuration");
         } else {
@@ -43,6 +45,18 @@ public:
         info.description =
           "endpoint monitoring and controlling a message bus bridge";
         info.is_bridge_node = true;
+    }
+
+    static void active_state(const logger& log) {
+        log.active_state("BridgeNode", "running");
+    }
+
+    void log_start() {
+        log_info("message bus bridge started").tag("brdgStart");
+    }
+
+    void log_finish() {
+        log_info("message bus bridge finishing").tag("brdgFinish");
     }
 
     auto update() -> work_done {
@@ -102,7 +116,7 @@ private:
 auto main(main_ctx& ctx) -> int {
     const signal_switch interrupted;
     const auto& log = ctx.log();
-    log.active_state("BridgeNode", "running");
+    msgbus::bridge_node::active_state(log);
 
     enable_message_bus(ctx);
 
@@ -125,11 +139,10 @@ auto main(main_ctx& ctx) -> int {
     msgbus::setup_connectors(ctx, node_endpoint);
     {
         msgbus::bridge_node node{node_endpoint};
-        node.declare_state("running", "brdgStart", "brdgFinish");
 
         auto& wd = ctx.watchdog();
         wd.declare_initialized();
-        node.log_info("message bus bridge started").tag("brdgStart");
+        node.log_start();
 
         while(not(interrupted or node.is_shut_down() or bridge.is_done()))
           [[likely]] {
@@ -148,7 +161,7 @@ auto main(main_ctx& ctx) -> int {
             }
             wd.notify_alive();
         }
-        node.log_info("message bus bridge finishing").tag("brdgFinish");
+        node.log_finish();
         wd.announce_shutdown();
     }
     bridge.finish();

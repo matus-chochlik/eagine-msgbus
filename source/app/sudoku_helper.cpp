@@ -58,6 +58,10 @@ private:
 
 auto main(main_ctx& ctx) -> int {
     const signal_switch interrupted;
+    const auto& log = ctx.log();
+    log.active_state("running");
+    log.declare_state("running", "helpStart", "helpFinish");
+
     enable_message_bus(ctx);
     ctx.preinitialize();
 
@@ -82,7 +86,7 @@ auto main(main_ctx& ctx) -> int {
 
     std::atomic<span_size_t> remaining = helper_count + 1;
 
-    auto helper_main = [&]() {
+    auto helper_main{[&]() {
         std::unique_lock init_lock{helper_mutex};
         auto& helper_node =
           the_reg.emplace<msgbus::sudoku_helper_node>("SdkHlpEndp");
@@ -118,7 +122,7 @@ auto main(main_ctx& ctx) -> int {
                   math::minimum(++idle_streak, 100000)));
             }
         }
-    };
+    }};
 
     for(span_size_t i = 0; i < helper_count; ++i) {
         helpers.emplace_back([&]() {
@@ -145,6 +149,7 @@ auto main(main_ctx& ctx) -> int {
     wd.declare_initialized();
 
     int idle_streak = 0;
+    log.info("starting").tag("helpStart");
     while(not(interrupted or the_reg.is_done())) {
         if(the_reg.update_self()) {
             idle_streak = 0;
@@ -161,6 +166,7 @@ auto main(main_ctx& ctx) -> int {
             break;
         }
     }
+    log.info("starting").tag("helpFinish");
     wd.announce_shutdown();
 
     for(auto& helper : helpers) {
