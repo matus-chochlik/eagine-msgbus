@@ -105,7 +105,7 @@ private:
 auto main(main_ctx& ctx) -> int {
     const signal_switch interrupted;
     const auto& log = ctx.log();
-    log.active_state("RutrNodeEp", "running");
+    log.active_state("RouterNode", "running");
 
     enable_message_bus(ctx);
 

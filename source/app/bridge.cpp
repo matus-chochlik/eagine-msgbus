@@ -102,7 +102,7 @@ private:
 auto main(main_ctx& ctx) -> int {
     const signal_switch interrupted;
     const auto& log = ctx.log();
-    log.active_state("BrdgNodeEp", "running");
+    log.active_state("BridgeNode", "running");
 
     enable_message_bus(ctx);
 
