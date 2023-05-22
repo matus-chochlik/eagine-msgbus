@@ -55,11 +55,11 @@ public:
     }
 
     void log_start() noexcept {
-        log_info("message bus router started").tag("rutrStart");
+        log_change("message bus router started").tag("rutrStart");
     }
 
     void log_finish() noexcept {
-        log_info("message bus router finishing").tag("rutrFinish");
+        log_change("message bus router finishing").tag("rutrFinish");
     }
 
     auto update() -> work_done {

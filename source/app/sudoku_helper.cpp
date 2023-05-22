@@ -149,7 +149,7 @@ auto main(main_ctx& ctx) -> int {
     wd.declare_initialized();
 
     int idle_streak = 0;
-    log.info("starting").tag("helpStart");
+    log.change("starting").tag("helpStart");
     while(not(interrupted or the_reg.is_done())) {
         if(the_reg.update_self()) {
             idle_streak = 0;
@@ -166,7 +166,7 @@ auto main(main_ctx& ctx) -> int {
             break;
         }
     }
-    log.info("starting").tag("helpFinish");
+    log.change("starting").tag("helpFinish");
     wd.announce_shutdown();
 
     for(auto& helper : helpers) {

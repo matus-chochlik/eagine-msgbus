@@ -52,11 +52,11 @@ public:
     }
 
     void log_start() {
-        log_info("message bus bridge started").tag("brdgStart");
+        log_change("message bus bridge started").tag("brdgStart");
     }
 
     void log_finish() {
-        log_info("message bus bridge finishing").tag("brdgFinish");
+        log_change("message bus bridge finishing").tag("brdgFinish");
     }
 
     auto update() -> work_done {

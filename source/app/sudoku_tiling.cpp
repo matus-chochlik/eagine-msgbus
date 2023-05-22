@@ -40,11 +40,11 @@ public:
     }
 
     void log_start() noexcept {
-        log_info("starting").tag("tlngStart");
+        log_change("starting").tag("tlngStart");
     }
 
     void log_finish() noexcept {
-        log_info("finishing").tag("tlngFinish");
+        log_change("finishing").tag("tlngFinish");
     }
 
 private:

@@ -145,7 +145,8 @@ auto endpoint::_handle_flow_info(const message_view& message) noexcept
             } else if(
               (flow_info.average_message_age() < _flow_age_warning) and
               (_flow_info.average_message_age() >= _flow_age_warning)) {
-                log_info("average message age returned to normal: ${avgMsgAge}")
+                log_change(
+                  "average message age returned to normal: ${avgMsgAge}")
                   .tag("msgAgeNorm")
                   .arg("warnLimit", _flow_age_warning)
                   .arg("avgMsgAge", flow_info.average_message_age());
