@@ -1314,7 +1314,7 @@ struct sudoku_tiling_rank_info : sudoku_tiles<S> {
               .arg("helper", sol.helper_id)
               .arg(
                 "progress",
-                "Progress",
+                "mainPrgrss",
                 0.F,
                 float(cells_done),
                 float(this->cell_count()));
