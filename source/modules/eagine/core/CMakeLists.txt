@@ -41,6 +41,8 @@ eagine_add_module(
 		eagine.core.reflection
 		eagine.core.serialization
 		eagine.core.utility
+		eagine.core.runtime
+		eagine.core.valid_if
 		eagine.core.main_ctx
 )
 
@@ -262,6 +264,7 @@ eagine_add_module(
 	IMPORTS
 		types
 		eagine.core.types
+		eagine.core.build_info
 		eagine.core.memory
 		eagine.core.identifier
 		eagine.core.reflection
@@ -277,21 +280,14 @@ eagine_add_module(
 eagine_add_module(
 	eagine.msgbus.core PARTITION resources
 	IMPORTS
-		eagine.core.types
-		eagine.core.memory
-		eagine.core.logging
-		eagine.core.main_ctx
-		eagine.core.resource
+		eagine.core
 )
 
 eagine_add_module(
 	eagine.msgbus.core PARTITION embedded
 	IMPORTS
 		resources
-		eagine.core.types
-		eagine.core.memory
-		eagine.core.identifier
-		eagine.core.resource
+		eagine.core
 )
 eagine_embed_target_resources(TARGET eagine.msgbus.core.embedded)
 
