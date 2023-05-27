@@ -279,6 +279,7 @@ eagine_add_module_tests(
 		sudoku
 	IMPORTS
 		eagine.core
+		eagine.core.main_ctx
 		eagine.msgbus.core
 )
 set_tests_properties(execute-test.eagine.msgbus.services.ping_pong PROPERTIES COST 12)

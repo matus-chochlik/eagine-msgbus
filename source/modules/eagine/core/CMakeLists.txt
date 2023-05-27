@@ -368,6 +368,7 @@ eagine_add_module_tests(
 		registry
 	IMPORTS
 		eagine.core
+		eagine.core.main_ctx
 )
 set_tests_properties(execute-test.eagine.msgbus.core.loopback PROPERTIES COST 20)
 set_tests_properties(execute-test.eagine.msgbus.core.direct PROPERTIES COST 20)

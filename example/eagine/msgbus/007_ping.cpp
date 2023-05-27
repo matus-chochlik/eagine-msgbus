@@ -176,7 +176,7 @@ public:
                   .arg("msgsPerSec", msgs_per_sec)
                   .arg(
                     "done",
-                    "Progress",
+                    "MainPrgrss",
                     0.F,
                     static_cast<float>(_rcvd),
                     static_cast<float>(_max));
