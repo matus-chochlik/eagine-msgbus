@@ -118,6 +118,7 @@ eagine_add_module(
 	IMPORTS
 		eagine.core.types
 		eagine.core.memory
+		eagine.core.build_info
 		eagine.core.identifier
 		eagine.core.utility
 		eagine.core.valid_if
@@ -130,6 +131,7 @@ eagine_add_module(
 	IMPORTS
 		eagine.core.types
 		eagine.core.memory
+		eagine.core.build_info
 		eagine.core.identifier
 		eagine.core.utility
 		eagine.core.valid_if
@@ -153,6 +155,7 @@ eagine_add_module(
 		eagine.core.types
 		eagine.core.memory
 		eagine.core.identifier
+		eagine.core.reflection
 		eagine.core.container
 		eagine.core.utility
 		eagine.core.valid_if
@@ -182,6 +185,7 @@ eagine_add_module(
 	IMPORTS
 		eagine.core.types
 		eagine.core.memory
+		eagine.core.math
 		eagine.core.identifier
 		eagine.core.container
 		eagine.core.serialization
