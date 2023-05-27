@@ -57,11 +57,23 @@ void connection_setup::_do_setup_connectors(
     }
 }
 //------------------------------------------------------------------------------
+// setup_acceptors
+//------------------------------------------------------------------------------
 void connection_setup::setup_acceptors(
   acceptor_user& target,
   const string_view address) {
     const std::unique_lock lock{_mutex};
     _factory_map.visit_all(_make_call_setup_acceptors(target, address));
+}
+//------------------------------------------------------------------------------
+void connection_setup::setup_acceptors(
+  acceptor_user& target,
+  const identifier address) {
+    setup_acceptors(target, address.name().view());
+}
+//------------------------------------------------------------------------------
+void connection_setup::setup_acceptors(acceptor_user& target) {
+    setup_acceptors(target, string_view{});
 }
 //------------------------------------------------------------------------------
 void connection_setup::setup_acceptors(
@@ -87,6 +99,34 @@ void connection_setup::setup_connectors(
     _factory_map.visit_all(_make_call_setup_connectors(target, address));
 }
 //------------------------------------------------------------------------------
+void connection_setup::setup_acceptors(
+  acceptor_user& target,
+  const connection_kinds kinds,
+  const identifier address) {
+    setup_acceptors(target, kinds, address.name().view());
+}
+//------------------------------------------------------------------------------
+void connection_setup::setup_acceptors(
+  acceptor_user& target,
+  const connection_kinds kinds) {
+    setup_acceptors(target, kinds, string_view{});
+}
+//------------------------------------------------------------------------------
+void connection_setup::setup_acceptors(
+  acceptor_user& target,
+  const connection_kind kind,
+  const identifier address) {
+    setup_acceptors(target, kind, address.name().view());
+}
+//------------------------------------------------------------------------------
+void connection_setup::setup_acceptors(
+  acceptor_user& target,
+  const connection_kind kind) {
+    setup_acceptors(target, kind, string_view{});
+}
+//------------------------------------------------------------------------------
+// setup_connectors
+//------------------------------------------------------------------------------
 void connection_setup::setup_connectors(
   connection_user& target,
   const connection_kinds kinds,
@@ -102,6 +142,44 @@ void connection_setup::setup_connectors(
     const std::unique_lock lock{_mutex};
     _factory_map.visit(kind, _make_call_setup_connectors(target, address));
 }
+//------------------------------------------------------------------------------
+void connection_setup::setup_connectors(
+  connection_user& target,
+  const identifier address) {
+    setup_connectors(target, address.name().view());
+}
+//------------------------------------------------------------------------------
+void connection_setup::setup_connectors(connection_user& target) {
+    setup_connectors(target, string_view{});
+}
+//------------------------------------------------------------------------------
+void connection_setup::setup_connectors(
+  connection_user& target,
+  const connection_kinds kinds,
+  const identifier address) {
+    setup_connectors(target, kinds, address.name().view());
+}
+//------------------------------------------------------------------------------
+void connection_setup::setup_connectors(
+  connection_user& target,
+  const connection_kinds kinds) {
+    setup_connectors(target, kinds, string_view{});
+}
+//------------------------------------------------------------------------------
+void connection_setup::setup_connectors(
+  connection_user& target,
+  const connection_kind kind,
+  const identifier address) {
+    setup_connectors(target, kind, address.name().view());
+}
+//------------------------------------------------------------------------------
+void connection_setup::setup_connectors(
+  connection_user& target,
+  const connection_kind kind) {
+    setup_connectors(target, kind, string_view{});
+}
+//------------------------------------------------------------------------------
+// add_factory
 //------------------------------------------------------------------------------
 void connection_setup::add_factory(std::unique_ptr<connection_factory> factory) {
     const std::unique_lock lock{_mutex};
@@ -120,6 +198,8 @@ void connection_setup::add_factory(std::unique_ptr<connection_factory> factory) 
           });
     }
 }
+//------------------------------------------------------------------------------
+// configure
 //------------------------------------------------------------------------------
 void connection_setup_configure(
   connection_setup& setup,

@@ -72,14 +72,10 @@ public:
     void setup_acceptors(acceptor_user& target, const string_view address);
 
     /// @brief Sets up acceptors listening on the specified address.
-    void setup_acceptors(acceptor_user& target, const identifier address) {
-        setup_acceptors(target, address.name());
-    }
+    void setup_acceptors(acceptor_user& target, const identifier address);
 
     /// @brief Sets up acceptors listening on the default address.
-    void setup_acceptors(acceptor_user& target) {
-        setup_acceptors(target, string_view{});
-    }
+    void setup_acceptors(acceptor_user& target);
 
     /// @brief Sets up acceptors listening on the specified address.
     void setup_acceptors(
@@ -91,14 +87,10 @@ public:
     void setup_acceptors(
       acceptor_user& target,
       const connection_kinds kinds,
-      const identifier address) {
-        setup_acceptors(target, kinds, address.name());
-    }
+      const identifier address);
 
     /// @brief Sets up acceptors listening on the default address.
-    void setup_acceptors(acceptor_user& target, const connection_kinds kinds) {
-        setup_acceptors(target, kinds, string_view{});
-    }
+    void setup_acceptors(acceptor_user& target, const connection_kinds kinds);
 
     /// @brief Sets up acceptors listening on the specified address.
     void setup_acceptors(
@@ -110,27 +102,19 @@ public:
     void setup_acceptors(
       acceptor_user& target,
       const connection_kind kind,
-      const identifier address) {
-        setup_acceptors(target, kind, address.name());
-    }
+      const identifier address);
 
     /// @brief Sets up acceptors listening on the default address.
-    void setup_acceptors(acceptor_user& target, const connection_kind kind) {
-        setup_acceptors(target, kind, string_view{});
-    }
+    void setup_acceptors(acceptor_user& target, const connection_kind kind);
 
     /// @brief Sets up connectors connecting to the specified address.
     void setup_connectors(connection_user& target, const string_view address);
 
     /// @brief Sets up connectors connecting to the specified address.
-    void setup_connectors(connection_user& target, const identifier address) {
-        setup_connectors(target, address.name());
-    }
+    void setup_connectors(connection_user& target, const identifier address);
 
     /// @brief Sets up connectors connecting to the default address.
-    void setup_connectors(connection_user& target) {
-        setup_connectors(target, string_view{});
-    }
+    void setup_connectors(connection_user& target);
 
     /// @brief Sets up connectors connecting to the specified address.
     void setup_connectors(
@@ -142,16 +126,10 @@ public:
     void setup_connectors(
       connection_user& target,
       const connection_kinds kinds,
-      const identifier address) {
-        setup_connectors(target, kinds, address.name());
-    }
+      const identifier address);
 
     /// @brief Sets up connectors connecting to the default address.
-    void setup_connectors(
-      connection_user& target,
-      const connection_kinds kinds) {
-        setup_connectors(target, kinds, string_view{});
-    }
+    void setup_connectors(connection_user& target, const connection_kinds kinds);
 
     /// @brief Sets up connectors connecting to the specified address.
     void setup_connectors(
@@ -163,14 +141,10 @@ public:
     void setup_connectors(
       connection_user& target,
       const connection_kind kind,
-      const identifier address) {
-        setup_connectors(target, kind, address.name());
-    }
+      const identifier address);
 
     /// @brief Sets up connectors connecting to the default address.
-    void setup_connectors(connection_user& target, const connection_kind kind) {
-        setup_connectors(target, kind, string_view{});
-    }
+    void setup_connectors(connection_user& target, const connection_kind kind);
 
     /// @brief Adds a new connection factory.
     void add_factory(std::unique_ptr<connection_factory> factory);
