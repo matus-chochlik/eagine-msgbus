@@ -9,6 +9,7 @@ eagine_add_module(
 		eagine.core.memory
 		eagine.core.identifier
 		eagine.core.valid_if
+		eagine.core.utility
 		eagine.core.runtime
 		eagine.core.main_ctx
 		eagine.core.resource
