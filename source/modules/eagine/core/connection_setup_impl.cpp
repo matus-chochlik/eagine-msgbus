@@ -57,6 +57,22 @@ void connection_setup::_do_setup_connectors(
     }
 }
 //------------------------------------------------------------------------------
+auto connection_setup::_make_call_setup_acceptors(
+  acceptor_user& target,
+  const string_view address) noexcept {
+    return [this, &target, address](auto, auto& factories) {
+        _do_setup_acceptors(target, address, factories);
+    };
+}
+//------------------------------------------------------------------------------
+auto connection_setup::_make_call_setup_connectors(
+  connection_user& target,
+  const string_view address) noexcept {
+    return [this, &target, address](const auto, auto& factories) {
+        _do_setup_connectors(target, address, factories);
+    };
+}
+//------------------------------------------------------------------------------
 // setup_acceptors
 //------------------------------------------------------------------------------
 void connection_setup::setup_acceptors(

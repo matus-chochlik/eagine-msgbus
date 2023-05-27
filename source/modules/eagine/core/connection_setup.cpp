@@ -182,19 +182,11 @@ private:
 
     auto _make_call_setup_acceptors(
       acceptor_user& target,
-      const string_view address) {
-        return [this, &target, address](auto, auto& factories) {
-            _do_setup_acceptors(target, address, factories);
-        };
-    }
+      const string_view address) noexcept;
 
     auto _make_call_setup_connectors(
       connection_user& target,
-      const string_view address) {
-        return [this, &target, address](const auto, auto& factories) {
-            _do_setup_connectors(target, address, factories);
-        };
-    }
+      const string_view address) noexcept;
 };
 //------------------------------------------------------------------------------
 } // namespace eagine::msgbus
