@@ -4,9 +4,4 @@
 # See accompanying file LICENSE_1_0.txt or copy at
 #  http://www.boost.org/LICENSE_1_0.txt
 #
-"$(dirname ${0})/ping_pong_r.sh" \
-	-S "variant=${1:-007}" \
-	-S "ping_count=${2:-1M}" \
-	-S "ping_batch=${3:-10k}" \
-	-S "ping_repeat=${4:-1}" \
-	-S "conn_type=posixmq"
+"$(dirname ${0})/procman.sh" "${@}" "$(dirname ${0})/ping_pong_r.eagiproc"
