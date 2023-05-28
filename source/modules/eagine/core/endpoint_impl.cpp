@@ -572,13 +572,11 @@ auto endpoint::_update_check_id() noexcept -> work_done {
 }
 //------------------------------------------------------------------------------
 auto endpoint::_update_send_outbox() noexcept -> work_done {
-    some_true something_done{};
 
     log_debug("sending ${count} messages from outbox")
       .arg("count", _outgoing.count());
-    something_done(
-      _outgoing.fetch_all(make_callable_ref<&endpoint::_handle_send>(this)));
-    return something_done;
+    return _outgoing.fetch_all(
+      make_callable_ref<&endpoint::_handle_send>(this));
 }
 //------------------------------------------------------------------------------
 auto endpoint::update() noexcept -> work_done {
@@ -597,10 +595,12 @@ auto endpoint::update() noexcept -> work_done {
             if(not _connection->is_usable()) [[unlikely]] {
                 _had_working_connection = false;
                 connection_lost();
+                something_done();
             }
-        } else {
+        } else if(_connection->is_usable()) {
             _had_working_connection = true;
             connection_established(had_id);
+            something_done();
         }
         if(not had_id and _no_id_timeout) [[unlikely]] {
             something_done(_update_request_id());

@@ -369,9 +369,7 @@ auto posix_mqueue::receive(
         if(received > 0) [[likely]] {
             handler(priority, head(blk, received));
             return true;
-        } else if(
-          (_last_errno != 0) and (_last_errno != EAGAIN) and
-          (_last_errno != ETIMEDOUT)) [[unlikely]] {
+        } else if(had_error() and not needs_retry()) [[unlikely]] {
             log_error("failed to receive message")
               .arg("name", get_name())
               .arg("errno", _last_errno);
@@ -508,9 +506,8 @@ auto posix_mqueue_connection::send(
             const std::unique_lock lock{_mutex};
             _outgoing.push(sink.done(), message.priority);
             return true;
-        } else {
-            log_error("failed to serialize message");
         }
+        log_error("failed to serialize message");
     }
     return false;
 }
