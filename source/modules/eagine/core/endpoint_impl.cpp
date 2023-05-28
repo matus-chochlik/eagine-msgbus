@@ -29,8 +29,37 @@ namespace eagine::msgbus {
 //------------------------------------------------------------------------------
 // endpoint
 //------------------------------------------------------------------------------
+auto endpoint::_default_store_handler() noexcept -> fetch_handler {
+    return make_callable_ref<&endpoint::_store_message>(this);
+}
+//------------------------------------------------------------------------------
 auto endpoint::_declare_states() noexcept {
     declare_state("msgCongest", "msgAgeHigh", "msgAgeNorm");
+}
+//------------------------------------------------------------------------------
+auto endpoint::_ensure_incoming(const message_id msg_id) noexcept
+  -> incoming_state& {
+    auto pos = _incoming.find(msg_id);
+    if(pos == _incoming.end()) {
+        pos =
+          _incoming.emplace(msg_id, std::make_unique<incoming_state>()).first;
+    }
+    assert(pos->second);
+    return *pos->second;
+}
+//------------------------------------------------------------------------------
+auto endpoint::_find_incoming(const message_id msg_id) const noexcept
+  -> incoming_state* {
+    const auto pos = _incoming.find(msg_id);
+    return (pos != _incoming.end()) ? pos->second.get() : nullptr;
+}
+//------------------------------------------------------------------------------
+auto endpoint::_get_incoming(const message_id msg_id) const noexcept
+  -> incoming_state& {
+    const auto pos = _incoming.find(msg_id);
+    assert(pos != _incoming.end());
+    assert(pos->second);
+    return *pos->second;
 }
 //------------------------------------------------------------------------------
 endpoint::endpoint(main_ctx_object obj) noexcept
@@ -73,18 +102,22 @@ auto endpoint::_do_send(const message_id msg_id, message_view message) noexcept
             _had_working_connection = true;
             connection_established(has_id());
         }
-        log_trace("sending message ${message}")
-          .arg("message", msg_id)
-          .arg("target", message.target_id)
-          .arg("source", message.source_id);
         return true;
-    } else {
-        if(_had_working_connection) {
-            _had_working_connection = false;
-            connection_lost();
-        }
+    }
+
+    if(_had_working_connection) {
+        _had_working_connection = false;
+        connection_lost();
     }
     return false;
+}
+//------------------------------------------------------------------------------
+auto endpoint::_handle_send(
+  const message_id msg_id,
+  const message_age,
+  const message_view& message) noexcept -> bool {
+    // TODO: use message age
+    return _do_send(msg_id, message);
 }
 //------------------------------------------------------------------------------
 auto endpoint::_handle_assign_id(const message_view& message) noexcept
@@ -488,6 +521,66 @@ auto endpoint::post_signed(
     return false;
 }
 //------------------------------------------------------------------------------
+auto endpoint::_update_no_connection() noexcept -> work_done {
+    some_true something_done{};
+    log_warning(_log_no_connection, "endpoint has no connection")
+      .tag("noConnect");
+    if(_had_working_connection) {
+        _had_working_connection = false;
+        connection_lost();
+        something_done();
+    }
+    return something_done;
+}
+//------------------------------------------------------------------------------
+auto endpoint::_update_request_id() noexcept -> work_done {
+    some_true something_done{};
+    if(not has_preconfigured_id()) {
+        log_debug("requesting endpoint id");
+        _connection->send(msgbus_id{"requestId"}, {});
+        ++_stats.sent_messages;
+        _no_id_timeout.reset();
+        something_done();
+    }
+    return something_done;
+}
+//------------------------------------------------------------------------------
+auto endpoint::_update_check_id() noexcept -> work_done {
+    some_true something_done{};
+    if(has_id()) {
+        log_debug("announcing endpoint id ${id} assigned by router")
+          .arg("id", get_id());
+        // send the endpoint id through all connections
+        _do_send(msgbus_id{"annEndptId"}, {});
+        // send request for router certificate
+        _do_send(msgbus_id{"rtrCertQry"}, {});
+        something_done();
+    } else if(has_preconfigured_id()) {
+        if(_no_id_timeout) {
+            log_debug("announcing preconfigured endpoint id ${id}")
+              .arg("id", get_preconfigured_id());
+            // send the endpoint id through all connections
+            message_view ann_in_msg{};
+            ann_in_msg.set_source_id(get_preconfigured_id());
+            _connection->send(msgbus_id{"annEndptId"}, ann_in_msg);
+            ++_stats.sent_messages;
+            _no_id_timeout.reset();
+            something_done();
+        }
+    }
+    return something_done;
+}
+//------------------------------------------------------------------------------
+auto endpoint::_update_send_outbox() noexcept -> work_done {
+    some_true something_done{};
+
+    log_debug("sending ${count} messages from outbox")
+      .arg("count", _outgoing.count());
+    something_done(
+      _outgoing.fetch_all(make_callable_ref<&endpoint::_handle_send>(this)));
+    return something_done;
+}
+//------------------------------------------------------------------------------
 auto endpoint::update() noexcept -> work_done {
     const auto exec_time{measure_time_interval("busUpdate")};
     some_true something_done{};
@@ -495,12 +588,7 @@ auto endpoint::update() noexcept -> work_done {
     something_done(_process_blobs());
 
     if(not _connection) [[unlikely]] {
-        log_warning(_log_no_connection, "endpoint has no connection")
-          .tag("noConnect");
-        if(_had_working_connection) {
-            _had_working_connection = false;
-            connection_lost();
-        }
+        something_done(_update_no_connection());
     }
 
     const bool had_id{has_id()};
@@ -515,42 +603,14 @@ auto endpoint::update() noexcept -> work_done {
             connection_established(had_id);
         }
         if(not had_id and _no_id_timeout) [[unlikely]] {
-            if(not has_preconfigured_id()) {
-                log_debug("requesting endpoint id");
-                _connection->send(msgbus_id{"requestId"}, {});
-                ++_stats.sent_messages;
-                _no_id_timeout.reset();
-                something_done();
-            }
+            something_done(_update_request_id());
         }
         something_done(_connection->update());
         something_done(_connection->fetch_messages(_store_handler));
-    }
 
-    // if processing the messages assigned the endpoint id
-    if(not had_id) [[unlikely]] {
-        if(_connection) {
-            if(has_id()) {
-                log_debug("announcing endpoint id ${id} assigned by router")
-                  .arg("id", get_id());
-                // send the endpoint id through all connections
-                _do_send(msgbus_id{"annEndptId"}, {});
-                // send request for router certificate
-                _do_send(msgbus_id{"rtrCertQry"}, {});
-                something_done();
-            } else if(has_preconfigured_id()) {
-                if(_no_id_timeout) {
-                    log_debug("announcing preconfigured endpoint id ${id}")
-                      .arg("id", get_preconfigured_id());
-                    // send the endpoint id through all connections
-                    message_view ann_in_msg{};
-                    ann_in_msg.set_source_id(get_preconfigured_id());
-                    _connection->send(msgbus_id{"annEndptId"}, ann_in_msg);
-                    ++_stats.sent_messages;
-                    _no_id_timeout.reset();
-                    something_done();
-                }
-            }
+        // if processing the messages assigned the endpoint id
+        if(not had_id) [[unlikely]] {
+            something_done(_update_check_id());
         }
     }
 
@@ -560,10 +620,7 @@ auto endpoint::update() noexcept -> work_done {
 
     // if we have a valid id and we have messages in outbox
     if(has_id() and not _outgoing.empty()) [[unlikely]] {
-        log_debug("sending ${count} messages from outbox")
-          .arg("count", _outgoing.count());
-        something_done(_outgoing.fetch_all(
-          make_callable_ref<&endpoint::_handle_send>(this)));
+        something_done(_update_send_outbox());
     }
 
     return something_done;

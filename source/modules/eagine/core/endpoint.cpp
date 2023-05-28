@@ -496,29 +496,13 @@ private:
 
     auto _declare_states() noexcept;
 
-    auto _ensure_incoming(const message_id msg_id) noexcept -> incoming_state& {
-        auto pos = _incoming.find(msg_id);
-        if(pos == _incoming.end()) {
-            pos = _incoming.emplace(msg_id, std::make_unique<incoming_state>())
-                    .first;
-        }
-        assert(pos->second);
-        return *pos->second;
-    }
+    auto _ensure_incoming(const message_id msg_id) noexcept -> incoming_state&;
 
     auto _find_incoming(const message_id msg_id) const noexcept
-      -> incoming_state* {
-        const auto pos = _incoming.find(msg_id);
-        return (pos != _incoming.end()) ? pos->second.get() : nullptr;
-    }
+      -> incoming_state*;
 
     auto _get_incoming(const message_id msg_id) const noexcept
-      -> incoming_state& {
-        const auto pos = _incoming.find(msg_id);
-        assert(pos != _incoming.end());
-        assert(pos->second);
-        return *pos->second;
-    }
+      -> incoming_state&;
 
     blob_manipulator _blobs{
       *this,
@@ -527,9 +511,7 @@ private:
 
     auto _process_blobs() noexcept -> work_done;
 
-    auto _default_store_handler() noexcept -> fetch_handler {
-        return make_callable_ref<&endpoint::_store_message>(this);
-    }
+    auto _default_store_handler() noexcept -> fetch_handler;
 
     fetch_handler _store_handler{_default_store_handler()};
 
@@ -538,10 +520,7 @@ private:
     auto _handle_send(
       const message_id msg_id,
       const message_age,
-      const message_view& message) noexcept -> bool {
-        // TODO: use message age
-        return _do_send(msg_id, message);
-    }
+      const message_view& message) noexcept -> bool;
 
     enum message_handling_result {
         should_be_stored,
@@ -576,6 +555,11 @@ private:
     auto _handle_special(const message_id msg_id, const message_view&) noexcept
       -> message_handling_result;
 
+    auto _update_no_connection() noexcept -> work_done;
+    auto _update_request_id() noexcept -> work_done;
+    auto _update_check_id() noexcept -> work_done;
+    auto _update_send_outbox() noexcept -> work_done;
+
     auto _store_message(
       const message_id msg_id,
       const message_age,
@@ -609,7 +593,7 @@ private:
       , _blobs{std::move(temp._blobs)}
       , _store_handler{std::move(store_message)} {}
 
-    repeating_log_entry_control _log_no_connection{std::chrono::seconds{1}};
+    repeating_log_entry_control _log_no_connection{std::chrono::seconds{5}};
 };
 //------------------------------------------------------------------------------
 /// @brief Base for classes that need access to enpoint internal functionality
