@@ -136,6 +136,7 @@ eagine_add_module(
 		interface context
 		eagine.core.build_config
 		eagine.core.types
+		eagine.core.debug
 		eagine.core.memory
 		eagine.core.identifier
 		eagine.core.container

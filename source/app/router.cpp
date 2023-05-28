@@ -173,7 +173,7 @@ auto main(main_ctx& ctx) -> int {
 
     router.finish();
 
-    log.stat("message bus router finishing")
+    log.stat("message bus router stats")
       .tag("routrStats")
       .arg("working", cycles_work)
       .arg("idling", cycles_idle)

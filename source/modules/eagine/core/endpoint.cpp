@@ -14,6 +14,7 @@ export module eagine.msgbus.core:endpoint;
 import std;
 import eagine.core.build_config;
 import eagine.core.types;
+import eagine.core.debug;
 import eagine.core.memory;
 import eagine.core.identifier;
 import eagine.core.container;
@@ -466,7 +467,10 @@ private:
 
     endpoint_statistics _stats{};
     message_flow_info _flow_info{};
-    const std::chrono::milliseconds _flow_age_warning{debug_build ? 3500 : 750};
+    const std::chrono::milliseconds _flow_age_warning{
+      running_on_valgrind() ? 25000
+      : debug_build         ? 3500
+                            : 750};
 
     auto _uptime_seconds() noexcept -> std::int64_t;
 

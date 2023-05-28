@@ -1789,7 +1789,7 @@ auto router::update(const valid_if_positive<int>& count) noexcept -> work_done {
 }
 //------------------------------------------------------------------------------
 void router::say_bye() noexcept {
-    const auto msgid = msgbus_id{"byeByeRutr"};
+    const auto msgid{msgbus_id{"byeByeRutr"}};
     message_view msg{};
     msg.set_source_id(get_id());
     for(auto& entry : _current_nodes()) {

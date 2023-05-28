@@ -163,8 +163,7 @@ public:
             ping(
               pingable_id,
               std::chrono::duration_cast<std::chrono::milliseconds>(
-                adjusted_duration(
-                  should_ping.period(), memory_access_rate::low)));
+                adjusted_duration(should_ping.period())));
             should_ping.reset();
             return true;
         }
@@ -176,10 +175,7 @@ public:
     /// @see ping_timeouted
     /// @see has_pending_pings
     void ping(const identifier_t pingable_id) noexcept {
-        ping(
-          pingable_id,
-          std::chrono::milliseconds{5000},
-          memory_access_rate::low);
+        ping(pingable_id, adjusted_duration(std::chrono::milliseconds{5000}));
     }
 
     auto decode_ping_response(

@@ -228,7 +228,9 @@ public:
                         const auto limit =
                           _limit / span_size(_targets.size() + 1);
                         if(balance <= limit) {
-                            this->ping(pingable_id, std::chrono::seconds(15));
+                            this->ping(
+                              pingable_id,
+                              adjusted_duration(std::chrono::seconds(10)));
                             entry.sent++;
                             if((++_sent % _mod) == 0) [[unlikely]] {
                                 log_info("sent ${sent} pings")
