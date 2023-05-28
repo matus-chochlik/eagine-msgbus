@@ -166,7 +166,7 @@ auto main(main_ctx& ctx) -> int {
             break;
         }
     }
-    log.change("starting").tag("helpFinish");
+    log.change("finished").tag("helpFinish");
     wd.announce_shutdown();
 
     for(auto& helper : helpers) {

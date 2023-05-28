@@ -473,7 +473,8 @@ struct asio_connection_state : asio_connection_state_base {
 
     void cleanup(asio_connection_group<Kind, Proto>& group) noexcept {
         log_usage_stats();
-        while(is_usable() and start_send(group)) {
+        const timeout too_long{std::chrono::seconds{5}};
+        while(is_usable() and start_send(group) and not too_long) {
             log_debug("flushing connection outbox");
             update();
         }

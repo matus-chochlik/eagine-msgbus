@@ -308,6 +308,10 @@ private:
 
 auto main(main_ctx& ctx) -> int {
     const signal_switch interrupted;
+    const auto& log = ctx.log();
+    log.active_state("pinging");
+    log.declare_state("pinging", "pingStart", "pingFinish");
+
     enable_message_bus(ctx);
     ctx.preinitialize();
 
@@ -325,6 +329,7 @@ auto main(main_ctx& ctx) -> int {
 
     resetting_timeout do_chart_stats{std::chrono::seconds{15}, nothing};
 
+    log.change("starting").tag("pingStart");
     while(not the_pinger.is_done() or interrupted) {
         the_pinger.process_all();
         if(not the_pinger.update()) {
@@ -341,6 +346,7 @@ auto main(main_ctx& ctx) -> int {
             }
         }
     }
+    log.change("finished").tag("pingFinish");
     the_pinger.log_stats();
 
     return 0;
