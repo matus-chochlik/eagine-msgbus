@@ -23,6 +23,7 @@
 	"required_by": ["ping", "pong"],
 	"command": [
 		"$(eagiapp msgbus-router)", "$<identity router>",
+		"--log-active-state", "RouterNode", "running",
 		"--msgbus-router-shutdown-verify", "false",
 		"--msgbus-router-shutdown-delay", "15s",
 		"$[conn_args...]",
@@ -32,6 +33,7 @@
 	"required_by": ["pong"],
 	"command": [
 		"$(eagiapp ${variant}_ping)", "$<identity ping>",
+		"--log-active-state", "PingExe", "pinging",
 		"--ping-count", "${ping_count}",
 		"--ping-batch", "${ping_batch}",
 		"--ping-repeat", "${ping_repeat}",
@@ -43,6 +45,7 @@
 	"parallel": true,
 	"command": [
 		"$(eagiapp ${variant}_pong)", "$<identity pong>",
+		"--log-active-state", "PongExe", "ponging",
 		"$[conn_args...]",
 		"$[log_args...]"]
 }],"expect":{

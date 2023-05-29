@@ -20,6 +20,7 @@
 	"required_by": ["helper", "solver"],
 	"command": [
 		"$(eagiapp msgbus-router)", "$<identity router>",
+		"--log-active-state", "RouterNode", "running",
 		"--msgbus-router-shutdown-verify", "false",
 		"--msgbus-router-shutdown-delay", "15s",
 		"--msgbus-router-id-major", 1,
@@ -31,6 +32,7 @@
 	"required_by": ["solver"],
 	"command": [
 		"$(eagiapp msgbus-sudoku_helper)", "$<identity helper>",
+		"--log-active-state", "SudokuHlpr", "running",
 		"--msgbus-router-id-major", 1000,
 		"--msgbus-router-id-count", 999,
 		"$[conn_args...]",
@@ -41,6 +43,7 @@
 	"parallel": 2,
 	"command": [
 		"$(eagiapp msgbus-sudoku_tiling)", "$<identity solver>",
+		"--log-active-state", "TilingNode", "running",
 		"--msgbus-sudoku-solver-width", "${tile_size}",
 		"--msgbus-sudoku-solver-height", "${tile_size}",
 		"--msgbus-sudoku-solver-output-path", "/tmp/tiling-$<uid>.txt",
