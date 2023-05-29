@@ -8,8 +8,7 @@ add_subdirectory(utility)
 
 eagine_add_module(
 	eagine.msgbus
-	INTERFACES msgbus
-	IMPORTS
+	SUBMODULES
 		eagine.msgbus.core
 		eagine.msgbus.services
 		eagine.msgbus.utility

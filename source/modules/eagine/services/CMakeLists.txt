@@ -215,25 +215,6 @@ eagine_add_module(
 
 eagine_add_module(
 	eagine.msgbus.services
-	INTERFACES services
-	PARTITIONS
-		ability
-		discovery
-		shutdown
-		topology
-		ping_pong
-		statistics
-		application_info
-		endpoint_info
-		host_info
-		system_info
-		compiler_info
-		build_info
-		common_info
-		stream
-		resource_transfer
-		sudoku
-		tracker
 	SOURCES
 		shutdown
 		discovery

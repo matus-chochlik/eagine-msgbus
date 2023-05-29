@@ -295,32 +295,6 @@ eagine_embed_target_resources(TARGET eagine.msgbus.core)
 
 eagine_add_module(
 	eagine.msgbus.core
-	INTERFACES core
-	PARTITIONS
-		types
-		future
-		handler_map
-		message
-		context
-		router_address
-		interface
-		blobs
-		loopback
-		direct
-		connection_setup
-		endpoint
-		invoker
-		skeleton
-		subscriber
-		actor
-		router
-		bridge
-		service
-		setup
-		registry
-		remote_node
-		resources
-		embedded
 	SOURCES
 		message
 		context

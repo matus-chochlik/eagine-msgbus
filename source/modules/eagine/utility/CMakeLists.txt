@@ -19,9 +19,6 @@ eagine_add_module(
 
 eagine_add_module(
 	eagine.msgbus.utility
-	INTERFACES utility
-	PARTITIONS
-		resource_transfer
 	SOURCES
 		resource_transfer
 	IMPORTS
