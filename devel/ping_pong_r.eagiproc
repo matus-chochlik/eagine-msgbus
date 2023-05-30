@@ -13,7 +13,7 @@
 	"conn_type_arg_tcpip4": "asio-tcp-ipv4",
 	"conn_type_arg_udpip4": "asio-udp-ipv4",
 	"conn_type_arg": "--msgbus-${conn_type_arg_${conn_type}}",
-	"conn_args": ["${conn_type_arg}", "$[rutr_addr_args...]"],
+	"conn_args": ["${conn_type_arg}", "--msgbus-router-address", "$[rutr_addr_args...]"],
 	"ping_count": "1M",
 	"ping_batch": "10k",
 	"ping_repeat": 1,

@@ -1,0 +1,83 @@
+{"variables":{
+	"min_log_severity": "stat",
+	"log_args": ["--min-log-severity", "${min_log_severity}"],
+	"conn_type": "local",
+	"ports": "$(range 34910 34919)",
+	"ping_addr_args_posixmq": ["/$(uid posixmq_ping)"],
+	"ping_addr_args_local": ["$(in_work_dir ping.socket)"],
+	"ping_addr_args_tcpip4": ["localhost:$[ports[0]]"],
+	"ping_addr_args_udpip4": ["localhost:$[ports[0]]"],
+	"ping_addr_args": "$[ping_addr_args_${conn_type}...]",
+	"pong_addr_args_posixmq": ["/$(uid posixmq_pong)"],
+	"pong_addr_args_local": ["$(in_work_dir pong.socket)"],
+	"pong_addr_args_tcpip4": ["localhost:$[ports[1]]"],
+	"pong_addr_args_udpip4": ["localhost:$[ports[1]]"],
+	"pong_addr_args": "$[pong_addr_args_${conn_type}...]",
+	"conn_type_arg_posixmq": "posix-mqueue",
+	"conn_type_arg_local": "asio-local-stream",
+	"conn_type_arg_tcpip4": "asio-tcp-ipv4",
+	"conn_type_arg_udpip4": "asio-udp-ipv4",
+	"conn_type_arg": "--msgbus-${conn_type_arg_${conn_type}}",
+	"conn_args_ping": ["${conn_type_arg}", "--msgbus-router-address", "$[ping_addr_args...]"],
+	"conn_args_pong": ["${conn_type_arg}", "--msgbus-router-address", "$[pong_addr_args...]"],
+	"ping_count": "1M",
+	"ping_batch": "10k",
+	"ping_repeat": 1,
+	"variant": "007"
+},"pipelines":[{
+	"identity": "router_ping",
+	"required_by": ["ping"],
+	"command": [
+		"$(eagiapp msgbus-router)", "$<identity router_ping>",
+		"--log-active-state", "RouterNode", "running",
+		"--msgbus-router-id-major", 1000,
+		"--msgbus-router-id-count", 1000,
+		"--msgbus-router-shutdown-verify", "false",
+		"--msgbus-router-shutdown-delay", "15s",
+		"$[conn_args_ping...]",
+		"$[log_args...]"]
+},{
+	"identity": "router_pong",
+	"required_by": ["pong"],
+	"command": [
+		"$(eagiapp msgbus-router)", "$<identity router_ping>",
+		"--log-active-state", "RouterNode", "running",
+		"--msgbus-router-id-major", 2000,
+		"--msgbus-router-id-count", 1000,
+		"--msgbus-router-shutdown-verify", "false",
+		"--msgbus-router-shutdown-delay", "15s",
+		"$[conn_args_pong...]",
+		"$[log_args...]"]
+},{
+	"identity": "bridge",
+	"required_by": ["ping","pong"],
+	"command": [
+		"$(eagiapp local-bridge)",
+		"-c", "--msgbus-bridge-shutdown-verify", "false", "$[log_args...]",
+		"-l", "$<identity bridge_ping>",
+		"${conn_type_arg}", "--msgbus-router-address", "$[ping_addr_args...]",
+		"-r", "$<identity bridge_pong>",
+		"${conn_type_arg}", "--msgbus-router-address", "$[pong_addr_args...]"]
+},{
+	"identity": "ping",
+	"required_by": ["pong"],
+	"command": [
+		"$(eagiapp ${variant}_ping)", "$<identity ping>",
+		"--log-active-state", "PingExe", "pinging",
+		"--ping-count", "${ping_count}",
+		"--ping-batch", "${ping_batch}",
+		"--ping-repeat", "${ping_repeat}",
+		"$[conn_args_ping...]",
+		"$[log_args...]"]
+},{
+	"identity": "pong",
+	"instances": 2,
+	"parallel": true,
+	"command": [
+		"$(eagiapp ${variant}_pong)", "$<identity pong>",
+		"--log-active-state", "PongExe", "ponging",
+		"$[conn_args_pong...]",
+		"$[log_args...]"]
+}],"expect":{
+	"clean_shutdown": ["router_ping", "router_pong", "ping", "pong"]
+}}
