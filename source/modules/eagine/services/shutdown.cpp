@@ -120,7 +120,7 @@ public:
         assert(serialized);
 
         const message_id msg_id{"Shutdown", "shutdown"};
-        message_view message{extract(serialized)};
+        message_view message{*serialized};
         message.set_target_id(target_id);
         if(not this->bus_node().post_signed(msg_id, message)) {
             this->bus_node().post(msg_id, message);

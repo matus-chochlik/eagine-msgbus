@@ -226,7 +226,7 @@ export struct message_info {
         if(const auto new_age{convert_if_fits<age_t>(
              int(age_quarter_seconds) + int(added_quarter_seconds))})
           [[likely]] {
-            age_quarter_seconds = extract(new_age);
+            age_quarter_seconds = *new_age;
         } else {
             age_quarter_seconds = std::numeric_limits<age_t>::max();
         }
@@ -405,7 +405,7 @@ export template <typename Backend>
 
     if(serialized) [[likely]] {
         if(auto sink{backend.sink()}) [[likely]] {
-            serialized = merge(serialized, extract(sink).write(msg.data()));
+            serialized = merge(serialized, sink->write(msg.data()));
         } else {
             serialized =
               merge(serialized, serialization_error_code::backend_error);
@@ -654,7 +654,7 @@ export template <typename Backend>
 
     if(deserialized) [[likely]] {
         if(auto source{backend.source()}) [[likely]] {
-            msg.fetch_all_from(extract(source));
+            msg.fetch_all_from(*source);
         } else {
             deserialized =
               merge(deserialized, deserialization_error_code::backend_error);

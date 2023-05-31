@@ -1133,15 +1133,15 @@ export auto adapt_entry_arg(
                 backend.add_float("pingSucces", "Ratio", extract(opt_rate));
             }
             if(const auto opt_bld{value.instance().build_version()}) {
-                backend.add_adapted("buildInfo", extract(opt_bld));
+                backend.add_adapted("buildInfo", *opt_bld);
             }
 
             if(const auto opt_name{value.display_name()}) {
-                backend.add_string("dispName", "string", extract(opt_name));
+                backend.add_string("dispName", "string", *opt_name);
             }
 
             if(const auto opt_desc{value.description()}) {
-                backend.add_string("descrption", "string", extract(opt_desc));
+                backend.add_string("descrption", "string", *opt_desc);
             }
         }
     };

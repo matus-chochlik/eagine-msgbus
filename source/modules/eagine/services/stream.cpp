@@ -282,7 +282,7 @@ private:
 
         if(auto serialized{default_serialize(info, cover(buffer))}) {
             const auto msg_id{message_id{"eagiStream", "announce"}};
-            message_view message{extract(serialized)};
+            message_view message{*serialized};
             message.set_target_id(relay_id);
             this->bus_node().set_next_sequence_id(msg_id, message);
             this->bus_node().post(msg_id, message);
@@ -296,7 +296,7 @@ private:
         auto serialized{default_serialize(stream_id, cover(buffer))};
         assert(serialized);
         const auto msg_id{message_id{"eagiStream", "retract"}};
-        message_view message{extract(serialized)};
+        message_view message{*serialized};
         message.set_target_id(relay_id);
         this->bus_node().set_next_sequence_id(msg_id, message);
         this->bus_node().post(msg_id, message);
@@ -439,7 +439,7 @@ private:
         auto buffer = default_serialize_buffer_for(key);
         auto serialized{default_serialize(key, cover(buffer))};
         assert(serialized);
-        message_view message{extract(serialized)};
+        message_view message{*serialized};
         message.set_target_id(this->stream_relay());
         this->bus_node().post(message_id{"eagiStream", "startFrwrd"}, message);
     }
@@ -448,7 +448,7 @@ private:
         auto buffer = default_serialize_buffer_for(key);
         auto serialized{default_serialize(key, cover(buffer))};
         assert(serialized);
-        message_view message{extract(serialized)};
+        message_view message{*serialized};
         message.set_target_id(this->stream_relay());
         this->bus_node().post(message_id{"eagiStream", "stopFrwrd"}, message);
     }

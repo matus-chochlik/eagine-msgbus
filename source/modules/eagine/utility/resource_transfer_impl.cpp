@@ -35,10 +35,11 @@ void resource_data_server_node::_init() {
     info.display_name = "resource server node";
     info.description = "message bus resource server";
 
-    if(const auto fs_root_path{main_context().config().get<std::string>(
-         "msgbus.resource_server.root_path")}) {
-        set_file_root(extract(fs_root_path));
-    }
+    main_context()
+      .config()
+      .get<std::string>("msgbus.resource_server.root_path")
+      .and_then(
+        [this](const auto& fs_root_path) { set_file_root(fs_root_path); });
 }
 //------------------------------------------------------------------------------
 void resource_data_server_node::_handle_shutdown(
@@ -336,7 +337,7 @@ void resource_data_consumer_node::_handle_resource_found(
                      info.blob_priority,
                      info.blob_timeout)}) {
                     info.source_server_id = server_id;
-                    info.blob_stream_id = extract(id);
+                    info.blob_stream_id = *id;
                     log_info("fetching resource ${locator} from server ${id}")
                       .tag("qryResCont")
                       .arg("locator", info.locator.str())

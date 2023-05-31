@@ -113,8 +113,7 @@ void message_storage::cleanup(const cleanup_predicate predicate) noexcept {
 }
 //------------------------------------------------------------------------------
 void message_storage::log_stats(main_ctx_object& user) {
-    if(const auto opt_stats{_buffers.stats()}) {
-        const auto& stats{extract(opt_stats)};
+    _buffers.stats().and_then([&](const auto& stats) {
         user.log_stat("message storage buffer pool stats")
           .arg("maxBufSize", stats.max_buffer_size())
           .arg("maxCount", stats.max_buffer_count())
@@ -122,7 +121,7 @@ void message_storage::log_stats(main_ctx_object& user) {
           .arg("poolHits", stats.number_of_hits())
           .arg("poolEats", stats.number_of_eats())
           .arg("poolDscrds", stats.number_of_discards());
-    }
+    });
 }
 //------------------------------------------------------------------------------
 // serialized_message_storage
@@ -226,8 +225,7 @@ void serialized_message_storage::cleanup(
 }
 //------------------------------------------------------------------------------
 void serialized_message_storage::log_stats(main_ctx_object& user) {
-    if(const auto opt_stats{_buffers.stats()}) {
-        const auto& stats{extract(opt_stats)};
+    _buffers.stats().and_then([&](auto stats) {
         user.log_stat("serialized message storage buffer pool stats")
           .arg("maxBufSize", stats.max_buffer_size())
           .arg("maxCount", stats.max_buffer_count())
@@ -235,7 +233,7 @@ void serialized_message_storage::log_stats(main_ctx_object& user) {
           .arg("poolHits", stats.number_of_hits())
           .arg("poolEats", stats.number_of_eats())
           .arg("poolDscrds", stats.number_of_discards());
-    }
+    });
 }
 //------------------------------------------------------------------------------
 // message_priority_queue

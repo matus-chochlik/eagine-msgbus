@@ -66,7 +66,7 @@ private:
         // TODO: and_then when 23 is available
         if(const auto decoded{do_decode_shutdown_request(msg_ctx, message)}) {
             signals.shutdown_requested(
-              result_context{msg_ctx, message}, extract(decoded));
+              result_context{msg_ctx, message}, *decoded);
         }
         return true;
     }

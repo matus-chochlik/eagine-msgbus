@@ -602,8 +602,7 @@ public:
                                 if(c++ < w) {
                                     if(board) {
                                         traits.print(
-                                          out,
-                                          extract(board).get({bx, by, cx, cy}));
+                                          out, board->get({bx, by, cx, cy}));
                                     } else {
                                         traits.print_empty(out);
                                     }
@@ -697,8 +696,7 @@ void sudoku_fragment_view<S>::for_each_cell(Function function) const {
                   limit_cast<unsigned>(1 + y / S),
                   limit_cast<unsigned>(x % S),
                   limit_cast<unsigned>(y % S)};
-                function(
-                  frag_coord, cell_offset, extract(board).get(cell_coord));
+                function(frag_coord, cell_offset, board->get(cell_coord));
             }
         }
     }

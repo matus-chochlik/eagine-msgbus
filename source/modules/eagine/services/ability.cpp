@@ -133,8 +133,7 @@ public:
         auto serialized{default_serialize(msg_id, cover(temp))};
         assert(serialized);
 
-        message_view message{extract(serialized)};
-        this->bus_node().broadcast(message_id{"Ability", "query"}, message);
+        this->bus_node().broadcast(message_id{"Ability", "query"}, *serialized);
     }
 
     auto do_decode_ability_info(
