@@ -404,12 +404,7 @@ export template <typename Backend>
     auto serialized{serialize_message_header(msg_id, msg, backend)};
 
     if(serialized) [[likely]] {
-        if(auto sink{backend.sink()}) [[likely]] {
-            serialized = merge(serialized, sink->write(msg.data()));
-        } else {
-            serialized =
-              merge(serialized, serialization_error_code::backend_error);
-        }
+        serialized = merge(serialized, backend.sink().write(msg.data()));
     }
 
     return serialized;
