@@ -76,6 +76,10 @@ private:
 } // namespace msgbus
 
 auto main(main_ctx& ctx) -> int {
+    const auto& log{ctx.log()};
+    log.active_state("ponging");
+    log.declare_state("ponging", "pongStart", "pongFinish");
+
     enable_message_bus(ctx);
     ctx.preinitialize();
 
@@ -91,10 +95,12 @@ auto main(main_ctx& ctx) -> int {
     msgbus::pong_example the_ponger{bus};
     msgbus::setup_connectors(ctx, the_ponger);
 
+    log.change("starting").tag("pongStart");
     while(not the_ponger.is_done()) {
         the_ponger.process_all();
         the_ponger.update().or_sleep_for(std::chrono::milliseconds(1));
     }
+    log.change("finished").tag("pongFinish");
 
     return 0;
 }

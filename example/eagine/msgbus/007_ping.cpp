@@ -176,7 +176,7 @@ public:
                   .arg("msgsPerSec", msgs_per_sec)
                   .arg(
                     "done",
-                    "Progress",
+                    "MainPrgrss",
                     0.F,
                     static_cast<float>(_rcvd),
                     static_cast<float>(_max));
@@ -208,7 +208,9 @@ public:
                 (1.F + std::log(static_cast<float>(1 + _targets.size()))))};
             for(auto& [pingable_id, entry] : _targets) {
                 if((_rcvd < _max) and (_sent < lim)) {
-                    this->ping(pingable_id, std::chrono::seconds(3 + _rep));
+                    this->ping(
+                      pingable_id,
+                      adjusted_duration(std::chrono::seconds(3 + _rep)));
                     if((++_sent % _mod) == 0) [[unlikely]] {
                         log_info("sent ${sent} pings")
                           .tag("sentPings")
@@ -297,6 +299,10 @@ private:
 } // namespace msgbus
 
 auto main(main_ctx& ctx) -> int {
+    const auto& log{ctx.log()};
+    log.active_state("pinging");
+    log.declare_state("pinging", "pingStart", "pingFinish");
+
     enable_message_bus(ctx);
     ctx.preinitialize();
 
@@ -322,6 +328,7 @@ auto main(main_ctx& ctx) -> int {
 
     resetting_timeout do_chart_stats{std::chrono::seconds(15), nothing};
 
+    log.change("starting").tag("pingStart");
     while(not the_pinger.is_done()) {
         the_pinger.process_all();
         if(not the_pinger.update()) {
@@ -338,6 +345,7 @@ auto main(main_ctx& ctx) -> int {
             }
         }
     }
+    log.change("finished").tag("pingFinish");
     the_pinger.shutdown();
     the_pinger.log_stats();
 

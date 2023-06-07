@@ -272,7 +272,7 @@ auto routed_node::process_blobs(
                   return false;
               }};
             something_done(blobs.process_outgoing(
-              {construct_from, handle_send}, extract(opt_max_size), 4));
+              {construct_from, handle_send}, *opt_max_size, 4));
         }
     }
     return something_done;
@@ -1316,7 +1316,7 @@ auto router::_update_stats() noexcept -> work_done {
     some_true something_done{};
     const auto [new_flow_info] = _stats.update_stats();
     if(new_flow_info) {
-        something_done(_send_flow_info(extract(new_flow_info)));
+        something_done(_send_flow_info(*new_flow_info));
     }
     return something_done;
 }
@@ -1539,15 +1539,14 @@ auto router::_route_targeted_message(
     const auto own_id{get_id()};
     if(const auto outgoing_id{_nodes.find_outgoing(message.target_id)}) {
         // if the message should go through the parent router
-        if(extract(outgoing_id) == own_id) {
+        if(*outgoing_id == own_id) {
             has_routed |= _parent_router.send(*this, msg_id, message);
         } else {
-            if(const auto found{_nodes.find(extract(outgoing_id))}) {
-                auto& node_out = extract(found);
+            _nodes.find(*outgoing_id).and_then([&](auto& node_out) {
                 if(node_out.is_allowed(msg_id)) {
                     has_routed = _forward_to(node_out, msg_id, message);
                 }
-            }
+            });
         }
     }
 
@@ -1789,7 +1788,7 @@ auto router::update(const valid_if_positive<int>& count) noexcept -> work_done {
 }
 //------------------------------------------------------------------------------
 void router::say_bye() noexcept {
-    const auto msgid = msgbus_id{"byeByeRutr"};
+    const auto msgid{msgbus_id{"byeByeRutr"}};
     message_view msg{};
     msg.set_source_id(get_id());
     for(auto& entry : _current_nodes()) {

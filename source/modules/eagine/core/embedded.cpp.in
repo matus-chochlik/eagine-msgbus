@@ -6,11 +6,7 @@
 ///  http://www.boost.org/LICENSE_1_0.txt
 ///
 export module eagine.msgbus.core:embedded;
-import eagine.core.types;
-import eagine.core.memory;
-import eagine.core.identifier;
-import eagine.core.resource;
-import eagine.core.main_ctx;
+import eagine.core;
 import :resources;
 
 namespace eagine::msgbus {

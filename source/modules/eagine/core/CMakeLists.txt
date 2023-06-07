@@ -2,7 +2,7 @@
 # Distributed under the Boost Software License, Version 1.0.
 # See accompanying file LICENSE_1_0.txt or copy at
 #  http://www.boost.org/LICENSE_1_0.txt
-configure_file(embedded.cpp.in embedded.cpp @ONLY)
+configure_file(embedded.cpp.in embedded.cppm @ONLY)
 
 eagine_add_module(
 	eagine.msgbus.core PARTITION types
@@ -41,6 +41,8 @@ eagine_add_module(
 		eagine.core.reflection
 		eagine.core.serialization
 		eagine.core.utility
+		eagine.core.runtime
+		eagine.core.valid_if
 		eagine.core.main_ctx
 )
 
@@ -100,6 +102,7 @@ eagine_add_module(
 		eagine.core.memory
 		eagine.core.identifier
 		eagine.core.utility
+		eagine.core.main_ctx
 )
 
 eagine_add_module(
@@ -133,6 +136,7 @@ eagine_add_module(
 		interface context
 		eagine.core.build_config
 		eagine.core.types
+		eagine.core.debug
 		eagine.core.memory
 		eagine.core.identifier
 		eagine.core.container
@@ -262,6 +266,7 @@ eagine_add_module(
 	IMPORTS
 		types
 		eagine.core.types
+		eagine.core.build_info
 		eagine.core.memory
 		eagine.core.identifier
 		eagine.core.reflection
@@ -277,52 +282,19 @@ eagine_add_module(
 eagine_add_module(
 	eagine.msgbus.core PARTITION resources
 	IMPORTS
-		eagine.core.types
-		eagine.core.memory
-		eagine.core.logging
-		eagine.core.main_ctx
-		eagine.core.resource
+		eagine.core
 )
 
 eagine_add_module(
 	eagine.msgbus.core PARTITION embedded
 	IMPORTS
 		resources
-		eagine.core.types
-		eagine.core.memory
-		eagine.core.identifier
-		eagine.core.resource
+		eagine.core
 )
-eagine_embed_target_resources(TARGET eagine.msgbus.core.embedded)
+eagine_embed_target_resources(TARGET eagine.msgbus.core)
 
 eagine_add_module(
 	eagine.msgbus.core
-	INTERFACES core
-	PARTITIONS
-		types
-		future
-		handler_map
-		message
-		context
-		router_address
-		interface
-		blobs
-		loopback
-		direct
-		connection_setup
-		endpoint
-		invoker
-		skeleton
-		subscriber
-		actor
-		router
-		bridge
-		service
-		setup
-		registry
-		remote_node
-		resources
-		embedded
 	SOURCES
 		message
 		context
@@ -371,6 +343,7 @@ eagine_add_module_tests(
 		registry
 	IMPORTS
 		eagine.core
+		eagine.core.main_ctx
 )
 set_tests_properties(execute-test.eagine.msgbus.core.loopback PROPERTIES COST 20)
 set_tests_properties(execute-test.eagine.msgbus.core.direct PROPERTIES COST 20)

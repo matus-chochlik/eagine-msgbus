@@ -28,6 +28,8 @@ public:
     router_node(endpoint& bus)
       : main_ctx_object{"RouterNode", bus}
       , base{bus} {
+        declare_state("running", "rutrStart", "rutrFinish");
+
         if(_shutdown_ignore) {
             log_info("shutdown requests are ignored due to configuration");
         } else {
@@ -46,6 +48,18 @@ public:
         info.description =
           "endpoint monitoring and controlling a message bus router";
         info.is_router_node = true;
+    }
+
+    static void active_state(const logger& log) noexcept {
+        log.active_state("RouterNode", "running");
+    }
+
+    void log_start() noexcept {
+        log_change("message bus router started").tag("rutrStart");
+    }
+
+    void log_finish() noexcept {
+        log_change("message bus router finishing").tag("rutrFinish");
     }
 
     auto update() -> work_done {
@@ -104,9 +118,11 @@ private:
 //------------------------------------------------------------------------------
 auto main(main_ctx& ctx) -> int {
     const signal_switch interrupted;
+    const auto& log = ctx.log();
+    msgbus::router_node::active_state(log);
+
     enable_message_bus(ctx);
 
-    const auto& log = ctx.log();
     log.info("message bus router starting up");
 
     ctx.system().preinitialize();
@@ -133,6 +149,7 @@ auto main(main_ctx& ctx) -> int {
 
         auto& wd = ctx.watchdog();
         wd.declare_initialized();
+        node.log_start();
 
         while(not(interrupted or node.is_shut_down())) [[likely]] {
             some_true something_done{};
@@ -150,12 +167,14 @@ auto main(main_ctx& ctx) -> int {
             }
             wd.notify_alive();
         }
+        node.log_finish();
         wd.announce_shutdown();
     }
 
     router.finish();
 
-    log.stat("message bus router finishing")
+    log.stat("message bus router stats")
+      .tag("routrStats")
       .arg("working", cycles_work)
       .arg("idling", cycles_idle)
       .arg(

@@ -12,7 +12,9 @@ module;
 export module eagine.msgbus.core:endpoint;
 
 import std;
+import eagine.core.build_config;
 import eagine.core.types;
+import eagine.core.debug;
 import eagine.core.memory;
 import eagine.core.identifier;
 import eagine.core.container;
@@ -64,12 +66,10 @@ public:
     signal<void() noexcept> connection_lost;
 
     /// @brief Construction with a reference to parent main context object.
-    endpoint(main_ctx_object obj) noexcept
-      : main_ctx_object{std::move(obj)} {}
+    endpoint(main_ctx_object obj) noexcept;
 
     /// @brief Construction with an enpoint id and parent main context object.
-    endpoint(const identifier id, main_ctx_parent parent) noexcept
-      : main_ctx_object{id, parent} {}
+    endpoint(const identifier id, main_ctx_parent parent) noexcept;
 
     /// @brief Not copy constructible.
     endpoint(const endpoint&) = delete;
@@ -442,8 +442,15 @@ public:
     }
 
     /// @brief Returns the average message age in the connected router.
+    /// @see flow_congestion
     auto flow_average_message_age() const noexcept {
         return _flow_info.average_message_age();
+    }
+
+    /// @brief Indicates if the connected router is congested.
+    /// @see flow_average_message_age
+    auto flow_congestion() const noexcept -> bool {
+        return _flow_info.average_message_age() >= _flow_age_warning;
     }
 
 private:
@@ -460,6 +467,10 @@ private:
 
     endpoint_statistics _stats{};
     message_flow_info _flow_info{};
+    const std::chrono::milliseconds _flow_age_warning{
+      running_on_valgrind() ? 25000
+      : debug_build         ? 3500
+                            : 750};
 
     auto _uptime_seconds() noexcept -> std::int64_t;
 
@@ -487,29 +498,15 @@ private:
 
     flat_map<message_id, std::unique_ptr<incoming_state>> _incoming{};
 
-    auto _ensure_incoming(const message_id msg_id) noexcept -> incoming_state& {
-        auto pos = _incoming.find(msg_id);
-        if(pos == _incoming.end()) {
-            pos = _incoming.emplace(msg_id, std::make_unique<incoming_state>())
-                    .first;
-        }
-        assert(pos->second);
-        return *pos->second;
-    }
+    auto _declare_states() noexcept;
+
+    auto _ensure_incoming(const message_id msg_id) noexcept -> incoming_state&;
 
     auto _find_incoming(const message_id msg_id) const noexcept
-      -> incoming_state* {
-        const auto pos = _incoming.find(msg_id);
-        return (pos != _incoming.end()) ? pos->second.get() : nullptr;
-    }
+      -> incoming_state*;
 
     auto _get_incoming(const message_id msg_id) const noexcept
-      -> incoming_state& {
-        const auto pos = _incoming.find(msg_id);
-        assert(pos != _incoming.end());
-        assert(pos->second);
-        return *pos->second;
-    }
+      -> incoming_state&;
 
     blob_manipulator _blobs{
       *this,
@@ -518,9 +515,7 @@ private:
 
     auto _process_blobs() noexcept -> work_done;
 
-    auto _default_store_handler() noexcept -> fetch_handler {
-        return make_callable_ref<&endpoint::_store_message>(this);
-    }
+    auto _default_store_handler() noexcept -> fetch_handler;
 
     fetch_handler _store_handler{_default_store_handler()};
 
@@ -529,10 +524,7 @@ private:
     auto _handle_send(
       const message_id msg_id,
       const message_age,
-      const message_view& message) noexcept -> bool {
-        // TODO: use message age
-        return _do_send(msg_id, message);
-    }
+      const message_view& message) noexcept -> bool;
 
     enum message_handling_result {
         should_be_stored,
@@ -567,6 +559,11 @@ private:
     auto _handle_special(const message_id msg_id, const message_view&) noexcept
       -> message_handling_result;
 
+    auto _update_no_connection() noexcept -> work_done;
+    auto _update_request_id() noexcept -> work_done;
+    auto _update_check_id() noexcept -> work_done;
+    auto _update_send_outbox() noexcept -> work_done;
+
     auto _store_message(
       const message_id msg_id,
       const message_age,
@@ -600,7 +597,7 @@ private:
       , _blobs{std::move(temp._blobs)}
       , _store_handler{std::move(store_message)} {}
 
-    repeating_log_entry_control _log_no_connection{std::chrono::seconds{1}};
+    repeating_log_entry_control _log_no_connection{std::chrono::seconds{5}};
 };
 //------------------------------------------------------------------------------
 /// @brief Base for classes that need access to enpoint internal functionality

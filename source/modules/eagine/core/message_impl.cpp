@@ -113,8 +113,7 @@ void message_storage::cleanup(const cleanup_predicate predicate) noexcept {
 }
 //------------------------------------------------------------------------------
 void message_storage::log_stats(main_ctx_object& user) {
-    if(const auto opt_stats{_buffers.stats()}) {
-        const auto& stats{extract(opt_stats)};
+    _buffers.stats().and_then([&](const auto& stats) {
         user.log_stat("message storage buffer pool stats")
           .arg("maxBufSize", stats.max_buffer_size())
           .arg("maxCount", stats.max_buffer_count())
@@ -122,7 +121,7 @@ void message_storage::log_stats(main_ctx_object& user) {
           .arg("poolHits", stats.number_of_hits())
           .arg("poolEats", stats.number_of_eats())
           .arg("poolDscrds", stats.number_of_discards());
-    }
+    });
 }
 //------------------------------------------------------------------------------
 // serialized_message_storage
@@ -131,15 +130,15 @@ auto serialized_message_storage::fetch_all(const fetch_handler handler) noexcept
   -> bool {
     bool fetched_some{false};
     bool clear_all{true};
-    for(auto& [message, timestamp] : _messages) {
-        if(handler(timestamp, view(message))) [[likely]] {
+    for(auto& [message, timestamp, priority] : _messages) {
+        if(handler(timestamp, priority, view(message))) [[likely]] {
             _buffers.eat(std::move(message));
             fetched_some = true;
         } else {
             clear_all = false;
         }
     }
-    if(clear_all) {
+    if(clear_all) [[likely]] {
         _messages.clear();
     } else {
         std::erase_if(
@@ -168,9 +167,9 @@ public:
         return _current_bit == 0U;
     }
 
-    void add(const span_size_t size) noexcept {
+    void add(const span_size_t size, const message_priority priority) noexcept {
         _blk = skip(_blk, size);
-        _info.add(size, _current_bit);
+        _info.add(size, priority, _current_bit);
     }
 
     void next() noexcept {
@@ -191,14 +190,14 @@ auto serialized_message_storage::pack_into(memory::block dest) noexcept
   -> message_pack_info {
     message_packing_context packing{dest};
 
-    for(const auto& [message, timestamp] : _messages) {
+    for(const auto& [message, timestamp, priority] : _messages) {
         (void)(timestamp);
         if(packing.is_full()) [[unlikely]] {
             break;
         }
         if(const auto packed{
              store_data_with_size(view(message), packing.dest())}) [[likely]] {
-            packing.add(packed.size());
+            packing.add(packed.size(), priority);
         }
         packing.next();
     }
@@ -226,8 +225,7 @@ void serialized_message_storage::cleanup(
 }
 //------------------------------------------------------------------------------
 void serialized_message_storage::log_stats(main_ctx_object& user) {
-    if(const auto opt_stats{_buffers.stats()}) {
-        const auto& stats{extract(opt_stats)};
+    _buffers.stats().and_then([&](auto stats) {
         user.log_stat("serialized message storage buffer pool stats")
           .arg("maxBufSize", stats.max_buffer_size())
           .arg("maxCount", stats.max_buffer_count())
@@ -235,7 +233,7 @@ void serialized_message_storage::log_stats(main_ctx_object& user) {
           .arg("poolHits", stats.number_of_hits())
           .arg("poolEats", stats.number_of_eats())
           .arg("poolDscrds", stats.number_of_discards());
-    }
+    });
 }
 //------------------------------------------------------------------------------
 // message_priority_queue
@@ -276,7 +274,7 @@ auto connection_outgoing_messages::enqueue(
       [[likely]] {
         user.log_trace("enqueuing message ${message} to be sent")
           .arg("message", msg_id);
-        _serialized.push(sink.done());
+        _serialized.push(sink.done(), message.priority);
         return true;
     } else {
         user.log_error("failed to serialize message ${message}")
@@ -292,35 +290,36 @@ auto connection_outgoing_messages::enqueue(
 auto connection_incoming_messages::fetch_messages(
   main_ctx_object& user,
   const fetch_handler handler) noexcept -> bool {
-    const auto unpacker{
-      [this, &user](
-        const message_timestamp data_ts, const memory::const_block data) {
-          for_each_data_with_size(
-            data, [this, &user, data_ts](const memory::const_block blk) {
-                if(not blk.empty()) [[likely]] {
-                    _unpacked.push_if([&user, data_ts, blk](
-                                        message_id& msg_id,
-                                        message_timestamp& msg_ts,
-                                        stored_message& message) {
-                        block_data_source source(blk);
-                        default_deserializer_backend backend(source);
-                        if(const auto deserialized{deserialize_message(
-                             msg_id, message, backend)}) [[likely]] {
-                            user.log_trace("fetched message ${message}")
-                              .arg("message", msg_id);
-                            msg_ts = data_ts;
-                            return true;
-                        } else {
-                            user.log_error("failed to deserialize message")
-                              .arg("errors", get_errors(deserialized))
-                              .arg("block", blk);
-                            return false;
-                        }
-                    });
-                }
-            });
-          return true;
-      }};
+    const auto unpacker{[this, &user](
+                          const message_timestamp data_ts,
+                          const message_priority,
+                          const memory::const_block data) {
+        for_each_data_with_size(
+          data, [this, &user, data_ts](const memory::const_block blk) {
+              if(not blk.empty()) [[likely]] {
+                  _unpacked.push_if([&user, data_ts, blk](
+                                      message_id& msg_id,
+                                      message_timestamp& msg_ts,
+                                      stored_message& message) {
+                      block_data_source source(blk);
+                      default_deserializer_backend backend(source);
+                      if(const auto deserialized{deserialize_message(
+                           msg_id, message, backend)}) [[likely]] {
+                          user.log_trace("fetched message ${message}")
+                            .arg("message", msg_id);
+                          msg_ts = data_ts;
+                          return true;
+                      } else {
+                          user.log_error("failed to deserialize message")
+                            .arg("errors", get_errors(deserialized))
+                            .arg("block", blk);
+                          return false;
+                      }
+                  });
+              }
+          });
+        return true;
+    }};
 
     if(_packed.fetch_all({construct_from, unpacker})) {
         _unpacked.fetch_all(handler);

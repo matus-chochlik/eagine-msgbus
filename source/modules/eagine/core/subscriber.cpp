@@ -201,7 +201,7 @@ protected:
       -> decode_result_t<Base, Decoded0, Decoded...> {
         decode_result_t<Base, Decoded0, Decoded...> result{};
         if(auto decoded{(obj.*decoder)(msg_ctx, message)}) {
-            result = std::move(extract(decoded));
+            result = std::move(*decoded);
         } else {
             std::visit(
               [&](auto&& decoded) -> void { result = std::move(decoded); },
@@ -277,7 +277,7 @@ protected:
         for(const auto& entry : msg_handlers) {
             assert(entry.queue);
             const message_context msg_ctx{this->bus_node(), entry.msg_id};
-            if(extract(entry.queue).process_all(msg_ctx, entry.handler)) {
+            if(entry.queue->process_all(msg_ctx, entry.handler)) {
                 return true;
             }
         }
@@ -290,7 +290,7 @@ protected:
         for(const auto& entry : msg_handlers) {
             assert(entry.queue);
             const message_context msg_ctx{this->bus_node(), entry.msg_id};
-            done += extract(entry.queue).process_all(msg_ctx, entry.handler);
+            done += entry.queue->process_all(msg_ctx, entry.handler);
         }
         return done > 0;
     }

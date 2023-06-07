@@ -214,6 +214,7 @@ struct asio_connection_state : asio_connection_state_base {
     asio_socket_type<Kind, Proto> socket;
     endpoint_type conn_endpoint{};
     span_size_t prev_packed_count{0};
+    span_size_t send_countdown{0};
 
     asio_connection_state(
       main_ctx_parent parent,
@@ -329,17 +330,36 @@ struct asio_connection_state : asio_connection_state_base {
         log_usage_stats(quarter_of_gib);
     }
 
-    auto start_send_if_needed(asio_connection_group<Kind, Proto>& group) noexcept
-      -> bool {
+    auto priority_to_countdown(const message_priority priority) const noexcept {
+        return span_size(std::to_underlying(priority));
+    }
+
+    void reset_send_countdown() noexcept {
+        send_countdown = priority_to_countdown(message_priority::critical);
+    }
+
+    void update_send_countdown(const span_size_t packed_count) noexcept {
+        send_countdown -= (packed_count == prev_packed_count) ? 1 : 0;
+    }
+
+    auto send_countdown_end(const message_priority priority) const noexcept {
+        return send_countdown <= priority_to_countdown(priority);
+    }
+
+    auto start_send_if_needed(
+      asio_connection_group<Kind, Proto>& group,
+      bool force) noexcept -> bool {
         endpoint_type target{conn_endpoint};
         const auto packed{group.pack_into(target, cover(write_buffer))};
-        if(not packed.is_empty()) {
+        if(force or not packed.is_empty()) {
             const auto curr_packed_count{packed.count()};
-            const bool should_send{
-              packed.is_max_count(curr_packed_count) or
-              (prev_packed_count == curr_packed_count)};
-            if(should_send) {
+            update_send_countdown(curr_packed_count);
+
+            if(
+              send_countdown_end(packed.max_priority()) or
+              packed.is_max_count(curr_packed_count)) {
                 prev_packed_count = 0;
+                reset_send_countdown();
                 is_sending = true;
                 do_start_send(group, target, packed);
                 return true;
@@ -355,17 +375,18 @@ struct asio_connection_state : asio_connection_state_base {
     auto start_send(asio_connection_group<Kind, Proto>& group) noexcept
       -> bool {
         if(not is_sending) {
-            return start_send_if_needed(group);
+            return start_send_if_needed(group, false);
         }
-        return is_sending;
+        return true;
     }
 
     void handle_sent(
       asio_connection_group<Kind, Proto>& group,
       const endpoint_type& target_endpoint,
       const message_pack_info& to_be_removed) noexcept {
+        const bool sent_something{not to_be_removed.is_empty()};
         group.on_sent(target_endpoint, to_be_removed);
-        start_send_if_needed(group);
+        start_send_if_needed(group, sent_something);
     }
 
     template <typename Handler>
@@ -452,7 +473,8 @@ struct asio_connection_state : asio_connection_state_base {
 
     void cleanup(asio_connection_group<Kind, Proto>& group) noexcept {
         log_usage_stats();
-        while(is_usable() and start_send(group)) {
+        const timeout too_long{std::chrono::seconds{5}};
+        while(is_usable() and start_send(group) and not too_long) {
             log_debug("flushing connection outbox");
             update();
         }

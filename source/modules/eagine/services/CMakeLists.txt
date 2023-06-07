@@ -118,6 +118,7 @@ eagine_add_module(
 	IMPORTS
 		eagine.core.types
 		eagine.core.memory
+		eagine.core.build_info
 		eagine.core.identifier
 		eagine.core.utility
 		eagine.core.valid_if
@@ -130,6 +131,7 @@ eagine_add_module(
 	IMPORTS
 		eagine.core.types
 		eagine.core.memory
+		eagine.core.build_info
 		eagine.core.identifier
 		eagine.core.utility
 		eagine.core.valid_if
@@ -153,6 +155,7 @@ eagine_add_module(
 		eagine.core.types
 		eagine.core.memory
 		eagine.core.identifier
+		eagine.core.reflection
 		eagine.core.container
 		eagine.core.utility
 		eagine.core.valid_if
@@ -182,6 +185,7 @@ eagine_add_module(
 	IMPORTS
 		eagine.core.types
 		eagine.core.memory
+		eagine.core.math
 		eagine.core.identifier
 		eagine.core.container
 		eagine.core.serialization
@@ -211,25 +215,6 @@ eagine_add_module(
 
 eagine_add_module(
 	eagine.msgbus.services
-	INTERFACES services
-	PARTITIONS
-		ability
-		discovery
-		shutdown
-		topology
-		ping_pong
-		statistics
-		application_info
-		endpoint_info
-		host_info
-		system_info
-		compiler_info
-		build_info
-		common_info
-		stream
-		resource_transfer
-		sudoku
-		tracker
 	SOURCES
 		shutdown
 		discovery
@@ -275,6 +260,7 @@ eagine_add_module_tests(
 		sudoku
 	IMPORTS
 		eagine.core
+		eagine.core.main_ctx
 		eagine.msgbus.core
 )
 set_tests_properties(execute-test.eagine.msgbus.services.ping_pong PROPERTIES COST 12)

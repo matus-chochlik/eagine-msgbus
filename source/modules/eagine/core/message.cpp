@@ -226,7 +226,7 @@ export struct message_info {
         if(const auto new_age{convert_if_fits<age_t>(
              int(age_quarter_seconds) + int(added_quarter_seconds))})
           [[likely]] {
-            age_quarter_seconds = extract(new_age);
+            age_quarter_seconds = *new_age;
         } else {
             age_quarter_seconds = std::numeric_limits<age_t>::max();
         }
@@ -404,12 +404,7 @@ export template <typename Backend>
     auto serialized{serialize_message_header(msg_id, msg, backend)};
 
     if(serialized) [[likely]] {
-        if(auto sink{backend.sink()}) [[likely]] {
-            serialized = merge(serialized, extract(sink).write(msg.data()));
-        } else {
-            serialized =
-              merge(serialized, serialization_error_code::backend_error);
-        }
+        serialized = merge(serialized, backend.sink().write(msg.data()));
     }
 
     return serialized;
@@ -654,7 +649,7 @@ export template <typename Backend>
 
     if(deserialized) [[likely]] {
         if(auto source{backend.source()}) [[likely]] {
-            msg.fetch_all_from(extract(source));
+            msg.fetch_all_from(*source);
         } else {
             deserialized =
               merge(deserialized, deserialization_error_code::backend_error);
@@ -948,23 +943,34 @@ public:
         return float(used()) / float(total());
     }
 
-    void add(const span_size_t msg_size, const bit_set current_bit) noexcept {
+    [[nodiscard]] auto max_priority() const noexcept {
+        return _max_priority;
+    }
+
+    void add(
+      const span_size_t msg_size,
+      const message_priority priority,
+      const bit_set current_bit) noexcept {
         _packed_size += limit_cast<std::uint16_t>(msg_size);
         _packed_bits |= current_bit;
+        _max_priority = std::max(_max_priority, priority);
     }
 
 private:
     bit_set _packed_bits{0U};
     std::uint16_t _packed_size{0};
     const std::uint16_t _total_size{0};
+    message_priority _max_priority{message_priority::idle};
 };
 //------------------------------------------------------------------------------
 export class serialized_message_storage {
 public:
     /// The return value indicates if the message is considered handled
     /// and should be removed.
-    using fetch_handler = callable_ref<
-      bool(const message_timestamp, const memory::const_block) noexcept>;
+    using fetch_handler = callable_ref<bool(
+      const message_timestamp,
+      const message_priority,
+      const memory::const_block) noexcept>;
 
     serialized_message_storage() noexcept {
         _messages.reserve(32);
@@ -991,11 +997,13 @@ public:
         _messages.erase(_messages.begin());
     }
 
-    void push(const memory::const_block message) noexcept {
+    void push(
+      const memory::const_block message,
+      const message_priority priority) noexcept {
         assert(not message.empty());
         auto buf = _buffers.get(message.size());
         memory::copy_into(message, buf);
-        _messages.emplace_back(std::move(buf), _clock_t::now());
+        _messages.emplace_back(std::move(buf), _clock_t::now(), priority);
     }
 
     auto fetch_all(const fetch_handler handler) noexcept -> bool;
@@ -1010,7 +1018,8 @@ public:
 private:
     using _clock_t = std::chrono::steady_clock;
     memory::buffer_pool _buffers{};
-    std::vector<std::tuple<memory::buffer, message_timestamp>> _messages;
+    std::vector<std::tuple<memory::buffer, message_timestamp, message_priority>>
+      _messages;
 };
 //------------------------------------------------------------------------------
 export class endpoint;
@@ -1194,7 +1203,7 @@ public:
 
     void push(const memory::const_block data) noexcept {
         assert(not data.empty());
-        _packed.push(data);
+        _packed.push(data, message_priority::normal);
     }
 
     auto fetch_messages(

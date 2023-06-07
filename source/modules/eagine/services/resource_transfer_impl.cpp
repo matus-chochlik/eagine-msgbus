@@ -85,10 +85,10 @@ public:
         _file.seekg(0, std::ios::end);
         _size = limit_cast<span_size_t>(_file.tellg());
         if(size) {
-            _size = _size ? math::minimum(_size, extract(size)) : extract(size);
+            _size = _size ? math::minimum(_size, *size) : *size;
         }
         if(offs) {
-            _offs = math::minimum(_size, extract(offs));
+            _offs = math::minimum(_size, *offs);
         }
     }
 
@@ -252,7 +252,7 @@ void resource_server_impl::notify_resource_available(
     if(const auto serialized{default_serialize(locator, cover(buffer))})
       [[likely]] {
         const auto msg_id{message_id{"eagiRsrces", "available"}};
-        message_view message{extract(serialized)};
+        message_view message{*serialized};
         message.set_target_id(broadcast_endpoint_id());
         base.bus_node().post(msg_id, message);
     }
@@ -267,8 +267,7 @@ auto resource_server_impl::get_file_path(const url& locator) const noexcept
   -> std::filesystem::path {
     try {
         if(const auto loc_path_str{locator.path_str()}) {
-            std::filesystem::path loc_path{
-              std::string_view{extract(loc_path_str)}};
+            std::filesystem::path loc_path{std::string_view{*loc_path_str}};
             if(_root_path.empty()) {
                 if(loc_path.is_absolute()) {
                     return loc_path;
@@ -319,16 +318,15 @@ auto resource_server_impl::get_resource(
     if(not read_io) {
         if(locator.has_scheme("eagires")) {
             if(const auto count{locator.argument("count")}) {
-                if(const auto bytes{from_string<span_size_t>(extract(count))}) {
+                if(const auto bytes{from_string<span_size_t>(*count)}) {
                     if(locator.has_path("/random")) {
-                        read_io =
-                          std::make_unique<random_byte_blob_io>(extract(bytes));
+                        read_io = std::make_unique<random_byte_blob_io>(*bytes);
                     } else if(locator.has_path("/zeroes")) {
-                        read_io = std::make_unique<single_byte_blob_io>(
-                          extract(bytes), 0x0U);
+                        read_io =
+                          std::make_unique<single_byte_blob_io>(*bytes, 0x0U);
                     } else if(locator.has_path("/ones")) {
-                        read_io = std::make_unique<single_byte_blob_io>(
-                          extract(bytes), 0x1U);
+                        read_io =
+                          std::make_unique<single_byte_blob_io>(*bytes, 0x1U);
                     }
                 }
             }
@@ -514,15 +512,14 @@ public:
         if(locator.has_scheme("eagimbe")) {
             if(const auto opt_id{
                  from_string<identifier_t>(locator.host().or_default())}) {
-                const auto endpoint_id = extract(opt_id);
-                const auto spos = _server_endpoints.find(endpoint_id);
+                const auto spos = _server_endpoints.find(*opt_id);
                 if(spos != _server_endpoints.end()) {
-                    return endpoint_id;
+                    return *opt_id;
                 }
             }
         } else if(locator.has_scheme("eagimbh")) {
             if(const auto hostname{locator.host()}) {
-                const auto hpos = _hostname_to_endpoint.find(extract(hostname));
+                const auto hpos = _hostname_to_endpoint.find(*hostname);
                 if(hpos != _hostname_to_endpoint.end()) {
                     for(const auto endpoint_id : std::get<1>(*hpos)) {
                         const auto spos = _server_endpoints.find(endpoint_id);
@@ -544,7 +541,7 @@ public:
         if(const auto serialized{
              default_serialize(locator.str(), cover(buffer))}) [[likely]] {
             const auto msg_id{message_id{"eagiRsrces", "qryResurce"}};
-            message_view message{extract(serialized)};
+            message_view message{*serialized};
             message.set_target_id(endpoint_id);
             base.bus_node().set_next_sequence_id(msg_id, message);
             base.bus_node().post(msg_id, message);
@@ -569,7 +566,7 @@ public:
         if(const auto serialized{
              default_serialize(locator.str(), cover(buffer))}) {
             const auto msg_id{message_id{"eagiRsrces", "getContent"}};
-            message_view message{extract(serialized)};
+            message_view message{*serialized};
             message.set_target_id(endpoint_id);
             message.set_priority(priority);
             base.bus_node().set_next_sequence_id(msg_id, message);
@@ -649,7 +646,7 @@ private:
       const result_context& ctx,
       const valid_if_positive<host_id_t>& host_id) noexcept {
         if(host_id) {
-            _host_id_to_endpoint[extract(host_id)].insert(ctx.source_id());
+            _host_id_to_endpoint[*host_id].insert(ctx.source_id());
         }
     }
 
@@ -657,7 +654,7 @@ private:
       const result_context& ctx,
       const valid_if_not_empty<std::string>& hostname) noexcept {
         if(hostname) {
-            _hostname_to_endpoint[extract(hostname)].insert(ctx.source_id());
+            _hostname_to_endpoint[*hostname].insert(ctx.source_id());
         }
     }
 

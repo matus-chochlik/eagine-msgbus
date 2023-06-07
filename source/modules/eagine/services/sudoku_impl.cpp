@@ -281,14 +281,14 @@ auto sudoku_helper_rank_info<S>::process_board(
   const auto& candidate,
   bool& done,
   int levels) noexcept {
-    const auto send_board = [&, this](auto& board, bool is_solved) {
+    const auto send_board{[&, this](auto& board, bool is_solved) {
         do_send_board(
           bus, compressor, target_id, sequence_no, board, is_solved);
-    };
-    const auto process_recursive = [&, this](auto& board) {
+    }};
+    const auto process_recursive{[&, this](auto& board) {
         process_board(
           bus, compressor, target_id, sequence_no, board, done, levels - 1);
-    };
+    }};
 
     candidate.for_each_alternative(
       candidate.find_unsolved(), [&](const auto& intermediate) {
@@ -497,7 +497,7 @@ struct sudoku_solver_rank_info {
 
     timeout search_timeout{std::chrono::seconds(3), nothing};
     timeout solution_timeout{
-      adjusted_duration(std::chrono::seconds{S * S * S * S})};
+      adjusted_duration(std::chrono::seconds{S * S * S * S * S})};
 
     flat_map<sudoku_solver_key, std::chrono::steady_clock::time_point>
       key_starts;
@@ -708,7 +708,7 @@ struct sudoku_solver_rank_info {
             query.sequence_no = sequence_no;
             query.key = std::move(key);
             query.too_late.reset(
-              adjusted_duration(std::chrono::seconds{S * S * S}));
+              adjusted_duration(std::chrono::seconds{S * S * S * S}));
             boards.erase(pos);
             if(boards.empty()) {
                 key_boards.erase(kbpos);
@@ -1306,6 +1306,7 @@ struct sudoku_tiling_rank_info : sudoku_tiles<S> {
             cells_done += this->cells_per_tile(coord);
             tiling.solver.base.bus_node()
               .log_info("solved board (${x}, ${y})")
+              .tag("solvdBoard")
               .arg("rank", S)
               .arg("x", std::get<0>(coord))
               .arg("y", std::get<1>(coord))
@@ -1313,7 +1314,7 @@ struct sudoku_tiling_rank_info : sudoku_tiles<S> {
               .arg("helper", sol.helper_id)
               .arg(
                 "progress",
-                "Progress",
+                "mainPrgrss",
                 0.F,
                 float(cells_done),
                 float(this->cell_count()));

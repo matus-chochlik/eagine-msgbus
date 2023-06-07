@@ -21,7 +21,7 @@ namespace eagine::msgbus {
 /// @brief Basic interface for retrieving message bus connection information.
 /// @ingroup msgbus
 /// @see connection
-struct connection_info : interface<connection_info> {
+export struct connection_info : interface<connection_info> {
 
     /// @brief Returns the connection kind.
     virtual auto kind() -> connection_kind = 0;
@@ -152,13 +152,13 @@ struct connection_factory : connection_info {
     /// @brief Make a new acceptor listening on the specified address.
     /// @see make_connector
     [[nodiscard]] auto make_acceptor(const identifier id) {
-        return make_acceptor(id.name());
+        return make_acceptor(id.name().view());
     }
 
     /// @brief Make a new connector connecting to the specified address.
     /// @see make_acceptor
     [[nodiscard]] auto make_connector(const identifier id) {
-        return make_connector(id.name());
+        return make_connector(id.name().view());
     }
 };
 //------------------------------------------------------------------------------

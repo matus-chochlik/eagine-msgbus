@@ -56,23 +56,24 @@ private:
 };
 //------------------------------------------------------------------------------
 export void enable(main_ctx& ctx) {
-    auto setters{ctx.setters()};
-    assert(setters);
-    auto msg_bus{std::make_shared<message_bus_setup>(ctx)};
-    extract(msg_bus).configure(ctx.config());
-    extract(setters).inject(std::move(msg_bus));
+    assert(ctx.setters());
+    ctx.setters().and_then([&](auto& setters) {
+        auto msg_bus{std::make_shared<message_bus_setup>(ctx)};
+        msg_bus->configure(ctx.config());
+        setters.inject(std::move(msg_bus));
+    });
 }
 
 export void setup_connectors(main_ctx& ctx, connection_user& target) {
     const auto mbsetup{ctx.locate<message_bus_setup>()};
     assert(mbsetup);
-    extract(mbsetup).setup_connectors(target);
+    mbsetup->setup_connectors(target);
 }
 
 export void setup_acceptors(main_ctx& ctx, acceptor_user& target) {
     const auto mbsetup{ctx.locate<message_bus_setup>()};
     assert(mbsetup);
-    extract(mbsetup).setup_acceptors(target);
+    mbsetup->setup_acceptors(target);
 }
 //------------------------------------------------------------------------------
 } // namespace msgbus

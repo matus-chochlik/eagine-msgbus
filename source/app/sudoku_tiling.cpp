@@ -20,6 +20,7 @@ class sudoku_tiling_node : public service_node<sudoku_tiling_base> {
 public:
     sudoku_tiling_node(main_ctx_parent parent)
       : service_node<sudoku_tiling_base>{"TilingNode", parent} {
+        declare_state("running", "tlngStart", "tlngFinish");
         connect<&sudoku_tiling_node::_handle_generated<3>>(
           this, tiles_generated_3);
         connect<&sudoku_tiling_node::_handle_generated<4>>(
@@ -32,6 +33,18 @@ public:
         info.description = "sudoku solver tiling generator application";
 
         setup_connectors(main_context(), *this);
+    }
+
+    static void active_state(const logger& log) noexcept {
+        log.active_state("TilingNode", "running");
+    }
+
+    void log_start() noexcept {
+        log_change("starting").tag("tlngStart");
+    }
+
+    void log_finish() noexcept {
+        log_change("finishing").tag("tlngFinish");
     }
 
 private:
@@ -57,7 +70,7 @@ private:
           main_context().config().fetch(
             "msgbus.sudoku.solver.output_path", file_path)) {
             std::ofstream fout{file_path};
-            tiles.print(fout);
+            tiles.print(fout) << std::endl;
         }
     }
 
@@ -72,6 +85,8 @@ private:
 
 auto main(main_ctx& ctx) -> int {
     const signal_switch interrupted;
+    msgbus::sudoku_tiling_node::active_state(ctx.log());
+
     enable_message_bus(ctx);
     ctx.preinitialize();
 
@@ -85,10 +100,10 @@ auto main(main_ctx& ctx) -> int {
     const auto rank =
       ctx.config().get<int>("msgbus.sudoku.solver.rank").value_or(4);
 
-    auto enqueue = [&](auto traits) {
+    auto enqueue{[&](auto traits) {
         tiling_generator.reinitialize(
           {width, height}, traits.make_generator().generate_medium());
-    };
+    }};
 
     switch(rank) {
         case 3:
@@ -105,49 +120,75 @@ auto main(main_ctx& ctx) -> int {
             return -1;
     }
 
-    const auto keep_running = [&] {
+    const auto keep_running{[&] {
         return not(interrupted or tiling_generator.tiling_complete());
-    };
+    }};
+
+    auto& wd = ctx.watchdog();
+    wd.declare_initialized();
 
     int idle_streak = 0;
+
+    const auto try_enqueue{[&](auto r) {
+        if(rank == r and tiling_generator.solution_timeouted(r)) [[unlikely]] {
+            enqueue(default_sudoku_board_traits<3>());
+            tiling_generator.reset_solution_timeout(r);
+        }
+    }};
+
+    const auto log_contribution_histogram{[&] {
+        const auto do_log{[&](auto r) {
+            tiling_generator.log_contribution_histogram(r);
+        }};
+        switch(rank) {
+            case 3:;
+                do_log(unsigned_constant<3>{});
+                break;
+            case 4:
+                do_log(unsigned_constant<4>{});
+                break;
+            case 5:
+                do_log(unsigned_constant<5>{});
+                break;
+            default:
+                break;
+        }
+    }};
+
+    resetting_timeout log_contribution_timeout{
+      ctx.config()
+        .get<std::chrono::seconds>(
+          "msgbus.sudoku.solver.log_contribution_timeout")
+        .value_or(std::chrono::minutes{5})};
+
+    tiling_generator.log_start();
     while(keep_running()) {
         tiling_generator.update();
-        if(
-          rank == 3 and tiling_generator.solution_timeouted(
-                          unsigned_constant<3>{})) [[unlikely]] {
-            enqueue(default_sudoku_board_traits<3>());
-        }
-        if(
-          rank == 4 and tiling_generator.solution_timeouted(
-                          unsigned_constant<4>{})) [[unlikely]] {
-            enqueue(default_sudoku_board_traits<4>());
-        }
-        if(
-          rank == 5 and tiling_generator.solution_timeouted(
-                          unsigned_constant<5>{})) [[unlikely]] {
-            enqueue(default_sudoku_board_traits<5>());
-        }
+        try_enqueue(unsigned_constant<3>{});
+        try_enqueue(unsigned_constant<4>{});
+        try_enqueue(unsigned_constant<5>{});
+
         if(tiling_generator.process_all()) {
             idle_streak = 0;
         } else {
             std::this_thread::sleep_for(
               std::chrono::microseconds(math::minimum(++idle_streak, 50000)));
         }
-    }
 
-    switch(rank) {
-        case 3:
-            tiling_generator.log_contribution_histogram(unsigned_constant<3>{});
-            break;
-        case 4:
-            tiling_generator.log_contribution_histogram(unsigned_constant<4>{});
-            break;
-        case 5:
-            tiling_generator.log_contribution_histogram(unsigned_constant<5>{});
-            break;
-        default:
-            break;
+        if(tiling_generator.bus_node().flow_congestion()) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        }
+
+        if(log_contribution_timeout) {
+            log_contribution_histogram();
+        }
+
+        wd.notify_alive();
     }
+    tiling_generator.log_finish();
+    wd.announce_shutdown();
+
+    log_contribution_histogram();
 
     return 0;
 }
