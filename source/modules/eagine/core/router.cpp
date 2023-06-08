@@ -58,19 +58,29 @@ public:
     router_pending(unique_holder<connection> a_connection) noexcept
       : _connection{std::move(a_connection)} {}
 
-    auto age() const noexcept;
+    void id_assigned(identifier_t id) noexcept;
+    auto assigned_id() const noexcept -> identifier_t;
+
+    void identified_as_endpoint() noexcept;
+    auto maybe_router() const noexcept -> bool;
+    auto kind() const noexcept -> string_view;
+    auto connection_kind() const noexcept;
+    auto connection_type() const noexcept;
+
+    auto should_be_removed() noexcept -> bool;
+    auto can_be_adopted() noexcept -> bool;
 
     auto update_connection() noexcept -> work_done;
+    auto fetch_messages(connection::fetch_handler) noexcept -> work_done;
 
     auto connection() noexcept -> msgbus::connection&;
-
     auto release_connection() noexcept -> unique_holder<msgbus::connection>;
 
 private:
-    std::chrono::steady_clock::time_point _create_time{
-      std::chrono::steady_clock::now()};
-
+    identifier_t _id{invalid_endpoint_id()};
+    timeout _too_old{adjusted_duration(std::chrono::seconds{30})};
     unique_holder<msgbus::connection> _connection{};
+    bool _maybe_router{true};
 };
 //------------------------------------------------------------------------------
 class connection_update_work_unit : public latched_work_unit {
@@ -221,10 +231,8 @@ public:
     void cleanup() noexcept;
 
 private:
+    void _adopt_pending(router&, router_pending&) noexcept;
     auto _do_handle_pending(router&) noexcept -> work_done;
-
-    const std::chrono::seconds _pending_timeout{
-      adjusted_duration(std::chrono::seconds{30})};
 
     small_vector<std::shared_ptr<acceptor>, 2> _acceptors;
     std::vector<router_pending> _pending;

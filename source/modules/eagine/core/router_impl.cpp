@@ -50,12 +50,52 @@ static inline void message_id_list_remove(
 //------------------------------------------------------------------------------
 // router_pending
 //------------------------------------------------------------------------------
-auto router_pending::age() const noexcept {
-    return std::chrono::steady_clock::now() - _create_time;
+void router_pending::id_assigned(identifier_t id) noexcept {
+    _id = id;
+}
+//------------------------------------------------------------------------------
+auto router_pending::assigned_id() const noexcept -> identifier_t {
+    return _id;
+}
+//------------------------------------------------------------------------------
+void router_pending::identified_as_endpoint() noexcept {
+    _maybe_router = false;
+}
+//------------------------------------------------------------------------------
+auto router_pending::maybe_router() const noexcept -> bool {
+    return _maybe_router;
+}
+//------------------------------------------------------------------------------
+auto router_pending::kind() const noexcept -> string_view {
+    if(_maybe_router) {
+        return "node";
+    }
+    return "endpoint";
+}
+//------------------------------------------------------------------------------
+auto router_pending::connection_kind() const noexcept {
+    return _connection->kind();
+}
+//------------------------------------------------------------------------------
+auto router_pending::connection_type() const noexcept {
+    return _connection->type_id();
+}
+//------------------------------------------------------------------------------
+auto router_pending::should_be_removed() noexcept -> bool {
+    return _too_old.is_expired() or not _connection;
+}
+//------------------------------------------------------------------------------
+auto router_pending::can_be_adopted() noexcept -> bool {
+    return is_valid_endpoint_id(_id) and not(_too_old);
 }
 //------------------------------------------------------------------------------
 auto router_pending::update_connection() noexcept -> work_done {
     return _connection->update();
+}
+//------------------------------------------------------------------------------
+auto router_pending::fetch_messages(connection::fetch_handler handler) noexcept
+  -> work_done {
+    return _connection->fetch_messages(handler);
 }
 //------------------------------------------------------------------------------
 auto router_pending::connection() noexcept -> msgbus::connection& {
@@ -457,23 +497,49 @@ void router_nodes::add_acceptor(std::shared_ptr<acceptor> an_acceptor) noexcept 
     _acceptors.emplace_back(std::move(an_acceptor));
 }
 //------------------------------------------------------------------------------
+void router_nodes::_adopt_pending(
+  router& parent,
+  router_pending& pending) noexcept {
+    const auto id{pending.assigned_id()};
+    parent.log_info("adopting pending connection from ${cnterpart} ${id}")
+      .tag("adPendConn")
+      .arg("kind", pending.connection_kind())
+      .arg("type", pending.connection_type())
+      .arg("cnterpart", pending.kind())
+      .arg("id", id);
+
+    // send the special message confirming assigned endpoint id
+    message_view confirmation{};
+    confirmation.set_source_id(parent.get_id()).set_target_id(id);
+    pending.connection().send(msgbus_id{"confirmId"}, confirmation);
+
+    auto pos = _nodes.find(id);
+    if(pos == _nodes.end()) {
+        pos = _nodes.try_emplace(id).first;
+        parent._update_use_workers();
+    }
+    pos->second.setup(pending.release_connection(), pending.maybe_router());
+    _recently_disconnected.erase(id);
+}
+//------------------------------------------------------------------------------
 auto router_nodes::_do_handle_pending(router& parent) noexcept -> work_done {
     some_true something_done{};
 
     identifier_t id = 0;
-    bool maybe_router = true;
+    bool id_requested = false;
+    bool is_endpoint = false;
     const auto handler{
       [&](message_id msg_id, message_age, const message_view& msg) {
           if(is_special_message(msg_id)) {
               // this is a special message requesting endpoint id assignment
               if(msg_id.has_method("requestId")) {
-                  id = ~id;
+                  id_requested = true;
                   return true;
               }
               // this is a special message containing endpoint id
               if(msg_id.has_method("annEndptId")) {
                   id = msg.source_id;
-                  maybe_router = false;
+                  is_endpoint = true;
                   parent.log_debug("received endpoint id ${id}")
                     .tag("annEndptId")
                     .arg("id", id);
@@ -493,46 +559,36 @@ auto router_nodes::_do_handle_pending(router& parent) noexcept -> work_done {
 
     std::size_t idx = 0;
     while(idx < _pending.size()) {
-        id = 0;
         auto& pending = _pending[idx];
-
-        something_done(pending.update_connection());
-        something_done(
-          pending.connection().fetch_messages({construct_from, handler}));
-        something_done(pending.update_connection());
-        // if we got the endpoint id message from the connection
-        if(~id == 0) {
-            parent._assign_id(pending.connection());
-        } else if(id != 0) {
-            parent
-              .log_info(
-                "adopting pending connection from ${cnterpart} "
-                "${id}")
-              .tag("adPendConn")
-              .arg("kind", pending.connection().kind())
-              .arg("type", pending.connection().type_id())
-              .arg("id", id)
-              .arg(
-                "cnterpart",
-                maybe_router ? string_view("non-endpoint")
-                             : string_view("endpoint"));
-
-            // send the special message confirming assigned endpoint id
-            message_view confirmation{};
-            confirmation.set_source_id(parent.get_id()).set_target_id(id);
-            pending.connection().send(msgbus_id{"confirmId"}, confirmation);
-
-            auto pos = _nodes.find(id);
-            if(pos == _nodes.end()) {
-                pos = _nodes.try_emplace(id).first;
-                parent._update_use_workers();
-            }
-            pos->second.setup(pending.release_connection(), maybe_router);
+        if(pending.should_be_removed()) {
             _pending.erase(_pending.begin() + signedness_cast(idx));
-            _recently_disconnected.erase(id);
-            something_done();
         } else {
-            ++idx;
+            id = invalid_endpoint_id();
+            id_requested = false;
+            is_endpoint = false;
+
+            something_done(pending.update_connection());
+            something_done(pending.fetch_messages({construct_from, handler}));
+            something_done(pending.update_connection());
+
+            if(is_endpoint) {
+                pending.identified_as_endpoint();
+            }
+
+            if(id_requested) {
+                parent._assign_id(pending.connection());
+                something_done();
+            } else if(is_valid_endpoint_id(id)) {
+                pending.id_assigned(id);
+                something_done();
+            } else {
+                ++idx;
+            }
+
+            if(pending.can_be_adopted()) {
+                _adopt_pending(parent, pending);
+                something_done();
+            }
         }
     }
     return something_done;
@@ -573,12 +629,11 @@ auto router_nodes::remove_timeouted(const main_ctx_object& user) noexcept
     some_true something_done{};
 
     std::erase_if(_pending, [&, this](auto& pending) {
-        if(pending.age() > this->_pending_timeout) {
+        if(pending.should_be_removed()) {
             something_done();
             user.log_warning("removing timeouted pending ${type} connection")
               .tag("rmPendConn")
-              .arg("type", pending.connection().type_id())
-              .arg("age", pending.age());
+              .arg("type", pending.connection().type_id());
             return true;
         }
         return false;
