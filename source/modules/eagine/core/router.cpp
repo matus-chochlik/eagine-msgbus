@@ -55,7 +55,7 @@ private:
 //------------------------------------------------------------------------------
 class router_pending {
 public:
-    router_pending(std::unique_ptr<connection> a_connection) noexcept
+    router_pending(unique_holder<connection> a_connection) noexcept
       : _connection{std::move(a_connection)} {}
 
     auto age() const noexcept;
@@ -64,13 +64,13 @@ public:
 
     auto connection() noexcept -> msgbus::connection&;
 
-    auto release_connection() noexcept -> std::unique_ptr<msgbus::connection>;
+    auto release_connection() noexcept -> unique_holder<msgbus::connection>;
 
 private:
     std::chrono::steady_clock::time_point _create_time{
       std::chrono::steady_clock::now()};
 
-    std::unique_ptr<msgbus::connection> _connection{};
+    unique_holder<msgbus::connection> _connection{};
 };
 //------------------------------------------------------------------------------
 class connection_update_work_unit : public latched_work_unit {
@@ -107,7 +107,7 @@ public:
 
     auto is_allowed(const message_id) const noexcept -> bool;
 
-    void setup(std::unique_ptr<connection>, bool maybe_router) noexcept;
+    void setup(unique_holder<connection>, bool maybe_router) noexcept;
 
     void enqueue_update_connection(
       workshop&,
@@ -115,6 +115,7 @@ public:
       some_true_atomic&) noexcept;
 
     void mark_not_a_router() noexcept;
+    auto do_update_connection() noexcept -> work_done;
     auto update_connection() noexcept -> work_done;
     void handle_bye_bye() noexcept;
     auto should_disconnect() const noexcept -> bool;
@@ -140,20 +141,18 @@ public:
       -> work_done;
 
 private:
-    using lockable = std::mutex;
-
-    std::unique_ptr<lockable> _list_lock{std::make_unique<lockable>()};
+    unique_holder<std::shared_mutex> _list_lock{default_selector};
+    unique_holder<connection> _connection{};
+    connection_update_work_unit _update_connection_work{};
     std::vector<message_id> _message_block_list{};
     std::vector<message_id> _message_allow_list{};
-    std::unique_ptr<connection> _connection{};
-    connection_update_work_unit _update_connection_work{};
     bool _maybe_router{true};
     bool _do_disconnect{false};
 };
 //------------------------------------------------------------------------------
 class parent_router {
 public:
-    void reset(std::unique_ptr<connection>) noexcept;
+    void reset(unique_holder<connection>) noexcept;
 
     explicit operator bool() const noexcept {
         return _connection and _confirmed_id;
@@ -187,7 +186,7 @@ public:
       -> work_done;
 
 private:
-    std::unique_ptr<connection> _connection{};
+    unique_holder<connection> _connection{};
     identifier_t _confirmed_id{0};
     timeout _confirm_id_timeout{
       adjusted_duration(std::chrono::seconds{2}),

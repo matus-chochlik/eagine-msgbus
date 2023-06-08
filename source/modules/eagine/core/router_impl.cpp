@@ -63,7 +63,7 @@ auto router_pending::connection() noexcept -> msgbus::connection& {
 }
 //------------------------------------------------------------------------------
 auto router_pending::release_connection() noexcept
-  -> std::unique_ptr<msgbus::connection> {
+  -> unique_holder<msgbus::connection> {
     return std::move(_connection);
 }
 //------------------------------------------------------------------------------
@@ -125,7 +125,7 @@ auto router_endpoint_info::is_outdated() const noexcept -> bool {
 // connection_update_work_unit
 //------------------------------------------------------------------------------
 auto connection_update_work_unit::do_it() noexcept -> bool {
-    (*_something_done)(_node->update_connection());
+    (*_something_done)(_node->do_update_connection());
     return true;
 }
 //------------------------------------------------------------------------------
@@ -140,7 +140,7 @@ auto routed_node::is_allowed(const message_id msg_id) const noexcept -> bool {
     if(is_special_message(msg_id)) {
         return true;
     }
-    const std::unique_lock lk_list{*_list_lock};
+    const std::shared_lock lk_list{*_list_lock};
     if(not _message_allow_list.empty()) {
         return message_id_list_contains(_message_allow_list, msg_id);
     }
@@ -151,7 +151,7 @@ auto routed_node::is_allowed(const message_id msg_id) const noexcept -> bool {
 }
 //------------------------------------------------------------------------------
 void routed_node::setup(
-  std::unique_ptr<connection> conn,
+  unique_holder<connection> conn,
   bool maybe_router) noexcept {
     _connection = std::move(conn);
     _maybe_router = maybe_router;
@@ -170,6 +170,10 @@ void routed_node::enqueue_update_connection(
 void routed_node::mark_not_a_router() noexcept {
     const std::unique_lock lk_list{*_list_lock};
     _maybe_router = false;
+}
+//------------------------------------------------------------------------------
+auto routed_node::do_update_connection() noexcept -> work_done {
+    return _connection->update();
 }
 //------------------------------------------------------------------------------
 auto routed_node::update_connection() noexcept -> work_done {
@@ -301,7 +305,7 @@ void routed_node::clear_allow_list() noexcept {
 // parent_router
 //------------------------------------------------------------------------------
 inline void parent_router::reset(
-  std::unique_ptr<connection> a_connection) noexcept {
+  unique_holder<connection> a_connection) noexcept {
     _connection = std::move(a_connection);
     _confirmed_id = 0;
 }
@@ -546,7 +550,7 @@ auto router_nodes::handle_accept(router& parent) noexcept -> work_done {
     some_true something_done{};
 
     if(not _acceptors.empty()) [[likely]] {
-        const auto handle_conn{[&](std::unique_ptr<connection> a_connection) {
+        const auto handle_conn{[&](unique_holder<connection> a_connection) {
             assert(a_connection);
             parent.log_info("accepted pending connection")
               .tag("acPendConn")
