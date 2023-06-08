@@ -1167,7 +1167,8 @@ struct sudoku_tiling_rank_info : sudoku_tiles<S> {
           .log_debug("enqueuing initial board (${x}, ${y})")
           .arg("x", x)
           .arg("y", y)
-          .arg("rank", S);
+          .arg("rank", S)
+          .arg("progress", "MainPrgrss", 0.F, 0.F, float(this->cell_count()));
         cells_done = 0;
     }
 
@@ -1176,8 +1177,8 @@ struct sudoku_tiling_rank_info : sudoku_tiles<S> {
         bool should_enqueue = false;
         if(y > 0) {
             if(x > 0) {
-                const auto left = this->get_board(x - 1, y);
-                const auto down = this->get_board(x, y - 1);
+                const auto left{this->get_board(x - 1, y)};
+                const auto down{this->get_board(x, y - 1)};
                 if(left and down) {
                     for(const auto by : integer_range(S - 1U)) {
                         board.set_block(
@@ -1190,8 +1191,8 @@ struct sudoku_tiling_rank_info : sudoku_tiles<S> {
                     should_enqueue = true;
                 }
             } else if(x < 0) {
-                const auto right = this->get_board(x + 1, y);
-                const auto down = this->get_board(x, y - 1);
+                const auto right{this->get_board(x + 1, y)};
+                const auto down{this->get_board(x, y - 1)};
                 if(right and down) {
                     for(const auto by : integer_range(S - 1U)) {
                         board.set_block(
@@ -1204,7 +1205,7 @@ struct sudoku_tiling_rank_info : sudoku_tiles<S> {
                     should_enqueue = true;
                 }
             } else {
-                const auto down = this->get_board(x, y - 1);
+                const auto down{this->get_board(x, y - 1)};
                 if(down) {
                     for(const auto bx : integer_range(S)) {
                         board.set_block(
@@ -1215,8 +1216,8 @@ struct sudoku_tiling_rank_info : sudoku_tiles<S> {
             }
         } else if(y < 0) {
             if(x > 0) {
-                const auto left = this->get_board(x - 1, y);
-                const auto up = this->get_board(x, y + 1);
+                const auto left{this->get_board(x - 1, y)};
+                const auto up{this->get_board(x, y + 1)};
                 if(left and up) {
                     for(const auto by : integer_range(1U, S)) {
                         board.set_block(
@@ -1229,8 +1230,8 @@ struct sudoku_tiling_rank_info : sudoku_tiles<S> {
                     should_enqueue = true;
                 }
             } else if(x < 0) {
-                const auto right = this->get_board(x + 1, y);
-                const auto up = this->get_board(x, y + 1);
+                const auto right{this->get_board(x + 1, y)};
+                const auto up{this->get_board(x, y + 1)};
                 if(right and up) {
                     for(const auto by : integer_range(1U, S)) {
                         board.set_block(
@@ -1243,7 +1244,7 @@ struct sudoku_tiling_rank_info : sudoku_tiles<S> {
                     should_enqueue = true;
                 }
             } else {
-                const auto up = this->get_board(x, y + 1);
+                const auto up{this->get_board(x, y + 1)};
                 if(up) {
                     for(const auto bx : integer_range(S)) {
                         board.set_block(
@@ -1254,7 +1255,7 @@ struct sudoku_tiling_rank_info : sudoku_tiles<S> {
             }
         } else {
             if(x > 0) {
-                const auto left = this->get_board(x - 1, y);
+                const auto left{this->get_board(x - 1, y)};
                 if(left) {
                     for(const auto by : integer_range(S)) {
                         board.set_block(
@@ -1263,7 +1264,7 @@ struct sudoku_tiling_rank_info : sudoku_tiles<S> {
                     should_enqueue = true;
                 }
             } else if(x < 0) {
-                const auto right = this->get_board(x + 1, y);
+                const auto right{this->get_board(x + 1, y)};
                 if(right) {
                     for(const auto by : integer_range(S)) {
                         board.set_block(
@@ -1314,7 +1315,7 @@ struct sudoku_tiling_rank_info : sudoku_tiles<S> {
               .arg("helper", sol.helper_id)
               .arg(
                 "progress",
-                "mainPrgrss",
+                "MainPrgrss",
                 0.F,
                 float(cells_done),
                 float(this->cell_count()));
