@@ -93,7 +93,9 @@ private:
     std::reference_wrapper<router> _parent;
     identifier_t _id{invalid_endpoint_id()};
     timeout _too_old{adjusted_duration(std::chrono::seconds{30})};
-    timeout _should_request_pwd{std::chrono::seconds{2}, nothing};
+    timeout _should_request_pwd{
+      adjusted_duration(std::chrono::seconds{2}),
+      nothing};
     unique_holder<msgbus::connection> _connection{};
     message_storage _outbox;
     std::vector<byte> _nonce{};
