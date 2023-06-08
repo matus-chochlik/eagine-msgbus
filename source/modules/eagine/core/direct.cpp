@@ -428,11 +428,11 @@ private:
 //------------------------------------------------------------------------------
 export auto make_direct_acceptor(main_ctx_parent parent)
   -> std::unique_ptr<direct_acceptor_intf> {
-    return std::make_unique<direct_acceptor<std::mutex>>(parent);
+    return std::make_unique<direct_acceptor<spinlock>>(parent);
 }
 //------------------------------------------------------------------------------
 export auto make_direct_connection_factory(main_ctx_parent parent) {
-    return std::make_unique<direct_connection_factory<std::mutex>>(parent);
+    return std::make_unique<direct_connection_factory<spinlock>>(parent);
 }
 //------------------------------------------------------------------------------
 } // namespace eagine::msgbus
