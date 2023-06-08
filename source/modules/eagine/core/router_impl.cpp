@@ -50,23 +50,56 @@ static inline void message_id_list_remove(
 //------------------------------------------------------------------------------
 // router_pending
 //------------------------------------------------------------------------------
-void router_pending::id_assigned(identifier_t id) noexcept {
-    _id = id;
+router_pending::router_pending(
+  router& parent,
+  unique_holder<msgbus::connection> conn) noexcept
+  : _parent{parent}
+  , _connection{std::move(conn)}
+  , _connection_type{_connection->type_id()}
+  , _connection_kind{_connection->kind()} {
+    if(parent.password_is_required()) {
+        _nonce.resize(128);
+        parent.main_context().fill_with_random_bytes(cover(_nonce));
+        parent.log_info("password is required on pending ${type} connection")
+          .tag("connPwdReq")
+          .arg("kind", _connection_kind)
+          .arg("type", _connection_type);
+    }
+}
+//------------------------------------------------------------------------------
+void router_pending::_assign_id() noexcept {
+    auto& parent{_parent.get()};
+    if(const auto next_id{parent._get_next_id()}) {
+        parent.log_info("assigning id ${id} to accepted ${type} connection")
+          .tag("assignId")
+          .arg("type", _connection_type)
+          .arg("id", next_id);
+        // send the special message assigning the endpoint id
+        message_view msg{};
+        msg.set_source_id(parent.get_id());
+        msg.set_target_id(next_id);
+        post(msgbus_id{"assignId"}, msg);
+    }
 }
 //------------------------------------------------------------------------------
 auto router_pending::assigned_id() const noexcept -> identifier_t {
     return _id;
 }
 //------------------------------------------------------------------------------
-void router_pending::identified_as_endpoint() noexcept {
-    _maybe_router = false;
+auto router_pending::password_is_required() const noexcept -> bool {
+    return not _nonce.empty();
+}
+//------------------------------------------------------------------------------
+auto router_pending::should_request_password() const noexcept -> bool {
+    return is_valid_endpoint_id(_id) and password_is_required() and
+           _should_request_pwd and not _password_verified;
 }
 //------------------------------------------------------------------------------
 auto router_pending::maybe_router() const noexcept -> bool {
     return _maybe_router;
 }
 //------------------------------------------------------------------------------
-auto router_pending::kind() const noexcept -> string_view {
+auto router_pending::node_kind() const noexcept -> string_view {
     if(_maybe_router) {
         return "node";
     }
@@ -74,32 +107,117 @@ auto router_pending::kind() const noexcept -> string_view {
 }
 //------------------------------------------------------------------------------
 auto router_pending::connection_kind() const noexcept {
-    return _connection->kind();
+    return _connection_kind;
 }
 //------------------------------------------------------------------------------
 auto router_pending::connection_type() const noexcept {
-    return _connection->type_id();
+    return _connection_type;
+}
+//------------------------------------------------------------------------------
+auto router_pending::has_timeouted() noexcept -> bool {
+    return _too_old.is_expired();
 }
 //------------------------------------------------------------------------------
 auto router_pending::should_be_removed() noexcept -> bool {
-    return _too_old.is_expired() or not _connection;
+    return has_timeouted() or not _connection;
 }
 //------------------------------------------------------------------------------
 auto router_pending::can_be_adopted() noexcept -> bool {
-    return is_valid_endpoint_id(_id) and not(_too_old);
+    return is_valid_endpoint_id(_id) and not(_too_old) and
+           (not password_is_required() or _password_verified);
 }
 //------------------------------------------------------------------------------
-auto router_pending::update_connection() noexcept -> work_done {
-    return _connection->update();
+auto router_pending::try_request_password() noexcept -> work_done {
+    if(should_request_password()) {
+        auto& parent{_parent.get()};
+        parent.log_info("requesting router password from ${type} connection")
+          .tag("reqRutrPwd")
+          .arg("type", _connection_type)
+          .arg("id", _id);
+
+        message_view msg{view(_nonce)};
+        msg.set_source_id(parent.get_id());
+        msg.set_target_id(_id);
+        post(msgbus_id{"reqRutrPwd"}, msg);
+        _should_request_pwd.reset();
+        return true;
+    }
+    return false;
 }
 //------------------------------------------------------------------------------
-auto router_pending::fetch_messages(connection::fetch_handler handler) noexcept
-  -> work_done {
-    return _connection->fetch_messages(handler);
+void router_pending::post(
+  const message_id msg_id,
+  const message_view& msg) noexcept {
+    _outbox.push(msg_id, msg);
 }
 //------------------------------------------------------------------------------
-auto router_pending::connection() noexcept -> msgbus::connection& {
-    return *_connection;
+auto router_pending::_handle_msg(
+  message_id msg_id,
+  message_age,
+  const message_view& msg) noexcept -> bool {
+    auto& parent{_parent.get()};
+    if(is_special_message(msg_id)) {
+        // this is a special message requesting endpoint id assignment
+        if(msg_id.has_method("requestId")) {
+            _assign_id();
+            return true;
+        }
+        // this is a special message containing endpoint id
+        if(msg_id.has_method("annEndptId")) {
+            _id = msg.source_id;
+            _maybe_router = false;
+            parent.log_debug("received endpoint id ${id}")
+              .tag("annEndptId")
+              .arg("id", _id);
+            return true;
+        }
+        // this is a special message containing non-endpoint id
+        if(msg_id.has_method("announceId")) {
+            _id = msg.source_id;
+            parent.log_debug("received id ${id}")
+              .tag("announceId")
+              .arg("id", _id);
+            return true;
+        }
+        if(msg_id.has_method("encRutrPwd")) {
+            if(parent.main_context().matches_encrypted_shared_password(
+                 view(_nonce), "msgbus.router.password", msg.data())) {
+                parent.log_info("verified password on pending connection")
+                  .tag("vfyRutrPwd");
+                _password_verified = true;
+            }
+            return true;
+        }
+    }
+    return false;
+}
+//------------------------------------------------------------------------------
+auto router_pending::_msg_handler() noexcept {
+    return connection::fetch_handler{
+      this, member_function_constant_t<&router_pending::_handle_msg>{}};
+}
+//------------------------------------------------------------------------------
+auto router_pending::_handle_send(
+  const message_id msg_id,
+  const message_age,
+  const message_view& message) noexcept -> bool {
+    return _connection->send(msg_id, message);
+}
+//------------------------------------------------------------------------------
+auto router_pending::_send_handler() noexcept {
+    return message_storage::fetch_handler{
+      this, member_function_constant_t<&router_pending::_handle_send>{}};
+}
+//------------------------------------------------------------------------------
+auto router_pending::update() noexcept -> work_done {
+    some_true something_done;
+    something_done(_connection->update());
+    something_done(_connection->fetch_messages(_msg_handler()));
+    something_done(try_request_password());
+    something_done(_outbox.fetch_all(_send_handler()));
+    something_done(_connection->update());
+
+    return something_done();
 }
 //------------------------------------------------------------------------------
 auto router_pending::release_connection() noexcept
@@ -505,13 +623,13 @@ void router_nodes::_adopt_pending(
       .tag("adPendConn")
       .arg("kind", pending.connection_kind())
       .arg("type", pending.connection_type())
-      .arg("cnterpart", pending.kind())
+      .arg("cnterpart", pending.node_kind())
       .arg("id", id);
 
     // send the special message confirming assigned endpoint id
     message_view confirmation{};
     confirmation.set_source_id(parent.get_id()).set_target_id(id);
-    pending.connection().send(msgbus_id{"confirmId"}, confirmation);
+    pending.post(msgbus_id{"confirmId"}, confirmation);
 
     auto pos = _nodes.find(id);
     if(pos == _nodes.end()) {
@@ -525,70 +643,19 @@ void router_nodes::_adopt_pending(
 auto router_nodes::_do_handle_pending(router& parent) noexcept -> work_done {
     some_true something_done{};
 
-    identifier_t id = 0;
-    bool id_requested = false;
-    bool is_endpoint = false;
-    const auto handler{
-      [&](message_id msg_id, message_age, const message_view& msg) {
-          if(is_special_message(msg_id)) {
-              // this is a special message requesting endpoint id assignment
-              if(msg_id.has_method("requestId")) {
-                  id_requested = true;
-                  return true;
-              }
-              // this is a special message containing endpoint id
-              if(msg_id.has_method("annEndptId")) {
-                  id = msg.source_id;
-                  is_endpoint = true;
-                  parent.log_debug("received endpoint id ${id}")
-                    .tag("annEndptId")
-                    .arg("id", id);
-                  return true;
-              }
-              // this is a special message containing non-endpoint id
-              if(msg_id.has_method("announceId")) {
-                  id = msg.source_id;
-                  parent.log_debug("received id ${id}")
-                    .tag("announceId")
-                    .arg("id", id);
-                  return true;
-              }
-          }
-          return false;
-      }};
-
     std::size_t idx = 0;
     while(idx < _pending.size()) {
         auto& pending = _pending[idx];
         if(pending.should_be_removed()) {
             _pending.erase(_pending.begin() + signedness_cast(idx));
+            something_done();
         } else {
-            id = invalid_endpoint_id();
-            id_requested = false;
-            is_endpoint = false;
-
-            something_done(pending.update_connection());
-            something_done(pending.fetch_messages({construct_from, handler}));
-            something_done(pending.update_connection());
-
-            if(is_endpoint) {
-                pending.identified_as_endpoint();
-            }
-
-            if(id_requested) {
-                parent._assign_id(pending.connection());
-                something_done();
-            } else if(is_valid_endpoint_id(id)) {
-                pending.id_assigned(id);
-                something_done();
-            } else {
-                ++idx;
-            }
-
+            something_done(pending.update());
             if(pending.can_be_adopted()) {
                 _adopt_pending(parent, pending);
                 something_done();
             }
+            ++idx;
         }
     }
     return something_done;
@@ -612,7 +679,7 @@ auto router_nodes::handle_accept(router& parent) noexcept -> work_done {
               .tag("acPendConn")
               .arg("kind", a_connection->kind())
               .arg("type", a_connection->type_id());
-            _pending.emplace_back(std::move(a_connection));
+            _pending.emplace_back(parent, std::move(a_connection));
         }};
         acceptor::accept_handler handler{construct_from, handle_conn};
         for(auto& an_acceptor : _acceptors) {
@@ -629,11 +696,11 @@ auto router_nodes::remove_timeouted(const main_ctx_object& user) noexcept
     some_true something_done{};
 
     std::erase_if(_pending, [&, this](auto& pending) {
-        if(pending.should_be_removed()) {
+        if(pending.has_timeouted()) {
             something_done();
             user.log_warning("removing timeouted pending ${type} connection")
               .tag("rmPendConn")
-              .arg("type", pending.connection().type_id());
+              .arg("type", pending.connection_type());
             return true;
         }
         return false;
@@ -1007,7 +1074,10 @@ void router_blobs::handle_resend(const message_view& message) noexcept {
 //------------------------------------------------------------------------------
 router::router(main_ctx_parent parent) noexcept
   : main_ctx_object{"MsgBusRutr", parent}
-  , _context{make_context(*this)} {
+  , _context{make_context(*this)}
+  , _password_is_required{app_config()
+                            .get<bool>("msgbus.router.requires_password")
+                            .value_or(false)} {
     _ids.setup_from_config(*this);
     _ids.set_description(*this);
 }
@@ -1026,6 +1096,10 @@ auto router::has_id(const identifier_t id) noexcept -> bool {
 //------------------------------------------------------------------------------
 auto router::has_node_id(const identifier_t id) noexcept -> bool {
     return _nodes.has_id(id);
+}
+//------------------------------------------------------------------------------
+auto router::password_is_required() const noexcept -> bool {
+    return _password_is_required;
 }
 //------------------------------------------------------------------------------
 void router::add_certificate_pem(const memory::const_block blk) noexcept {
@@ -1070,17 +1144,8 @@ auto router::_remove_disconnected() noexcept -> work_done {
     return something_done;
 }
 //------------------------------------------------------------------------------
-void router::_assign_id(connection& conn) noexcept {
-    if(const auto next_id{_ids.get_next_id(*this)}) {
-        log_debug("assigning id ${id} to accepted ${type} connection")
-          .tag("assignId")
-          .arg("type", conn.type_id())
-          .arg("id", next_id);
-        // send the special message assigning the endpoint id
-        message_view msg{};
-        msg.set_target_id(next_id);
-        conn.send(msgbus_id{"assignId"}, msg);
-    }
+auto router::_get_next_id() noexcept -> identifier_t {
+    return _ids.get_next_id(*this);
 }
 //------------------------------------------------------------------------------
 auto router::_current_nodes() noexcept {

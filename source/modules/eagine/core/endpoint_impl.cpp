@@ -123,9 +123,12 @@ auto endpoint::_handle_send(
 auto endpoint::_handle_assign_id(const message_view& message) noexcept
   -> message_handling_result {
     if(not has_id()) {
+        _router_id = message.source_id;
         _endpoint_id = message.target_id;
         id_assigned(_endpoint_id);
-        log_debug("assigned endpoint id ${id} by router").arg("id", get_id());
+        log_debug("assigned endpoint id ${id} by router ${router_id}")
+          .arg("router_id", _router_id)
+          .arg("id", get_id());
     }
     return was_handled;
 }
@@ -133,10 +136,12 @@ auto endpoint::_handle_assign_id(const message_view& message) noexcept
 auto endpoint::_handle_confirm_id(const message_view& message) noexcept
   -> message_handling_result {
     if(not has_id()) {
+        _router_id = message.source_id;
         _endpoint_id = message.target_id;
         if(get_id() == get_preconfigured_id()) [[likely]] {
             id_assigned(_endpoint_id);
-            log_debug("confirmed endpoint id ${id} by router")
+            log_debug("confirmed endpoint id ${id} by router ${router_id}")
+              .arg("router_id", _router_id)
               .arg("id", get_id());
             // send request for router certificate
             post(msgbus_id{"rtrCertQry"}, {});
@@ -144,6 +149,22 @@ auto endpoint::_handle_confirm_id(const message_view& message) noexcept
             log_error("mismatching preconfigured and confirmed ids")
               .arg("confirmed", get_id())
               .arg("preconfed", get_preconfigured_id());
+        }
+    }
+    return was_handled;
+}
+//------------------------------------------------------------------------------
+auto endpoint::_handle_password_request(const message_view& message) noexcept
+  -> message_handling_result {
+    if(is_valid_endpoint_id(_router_id) and (message.source_id == _router_id)) {
+        if(has_id() and (message.target_id == _endpoint_id)) {
+            memory::buffer encrypted;
+            if(main_context().encrypt_shared_password(
+                 message.data(), "msgbus.router.password", encrypted)) {
+                message_view response{view(encrypted)};
+                response.setup_response(message);
+                post(msgbus_id{"encRutrPwd"}, response);
+            }
         }
     }
     return was_handled;
@@ -341,6 +362,8 @@ auto endpoint::_handle_special(
                 return _handle_topology_query(message);
             case id_v("statsQuery"):
                 return _handle_stats_query(message);
+            case id_v("reqRutrPwd"):
+                return _handle_password_request(message);
             case id_v("ping"):
             case id_v("pong"):
             case id_v("subscribTo"):

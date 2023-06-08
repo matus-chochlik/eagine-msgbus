@@ -460,6 +460,7 @@ private:
 
     identifier_t _preconfd_id{invalid_id()};
     identifier_t _endpoint_id{invalid_id()};
+    identifier_t _router_id{invalid_id()};
     const process_instance_id_t _instance_id{process_instance_id()};
 
     std::chrono::steady_clock::time_point _startup_time{
@@ -535,6 +536,8 @@ private:
     auto _handle_assign_id(const message_view&) noexcept
       -> message_handling_result;
     auto _handle_confirm_id(const message_view&) noexcept
+      -> message_handling_result;
+    auto _handle_password_request(const message_view&) noexcept
       -> message_handling_result;
     auto _handle_blob_fragment(const message_view&) noexcept
       -> message_handling_result;

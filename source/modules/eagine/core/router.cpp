@@ -55,31 +55,51 @@ private:
 //------------------------------------------------------------------------------
 class router_pending {
 public:
-    router_pending(unique_holder<connection> a_connection) noexcept
-      : _connection{std::move(a_connection)} {}
+    router_pending(router&, unique_holder<connection>) noexcept;
 
-    void id_assigned(identifier_t id) noexcept;
     auto assigned_id() const noexcept -> identifier_t;
 
-    void identified_as_endpoint() noexcept;
+    auto password_is_required() const noexcept -> bool;
+    auto should_request_password() const noexcept -> bool;
+    auto try_request_password() noexcept -> work_done;
+
     auto maybe_router() const noexcept -> bool;
-    auto kind() const noexcept -> string_view;
+    auto node_kind() const noexcept -> string_view;
     auto connection_kind() const noexcept;
     auto connection_type() const noexcept;
 
+    auto has_timeouted() noexcept -> bool;
     auto should_be_removed() noexcept -> bool;
     auto can_be_adopted() noexcept -> bool;
 
-    auto update_connection() noexcept -> work_done;
-    auto fetch_messages(connection::fetch_handler) noexcept -> work_done;
+    auto update() noexcept -> work_done;
 
-    auto connection() noexcept -> msgbus::connection&;
+    void post(const message_id msg_id, const message_view&) noexcept;
     auto release_connection() noexcept -> unique_holder<msgbus::connection>;
 
 private:
+    void _assign_id() noexcept;
+    auto _handle_msg(
+      message_id msg_id,
+      message_age,
+      const message_view& msg) noexcept -> bool;
+    auto _msg_handler() noexcept;
+    auto _handle_send(
+      const message_id msg_id,
+      const message_age,
+      const message_view& message) noexcept -> bool;
+    auto _send_handler() noexcept;
+
+    std::reference_wrapper<router> _parent;
     identifier_t _id{invalid_endpoint_id()};
     timeout _too_old{adjusted_duration(std::chrono::seconds{30})};
+    timeout _should_request_pwd{std::chrono::seconds{2}, nothing};
     unique_holder<msgbus::connection> _connection{};
+    message_storage _outbox;
+    std::vector<byte> _nonce{};
+    identifier _connection_type;
+    msgbus::connection_kind _connection_kind;
+    bool _password_verified{false};
     bool _maybe_router{true};
 };
 //------------------------------------------------------------------------------
@@ -363,6 +383,7 @@ public:
 
     auto has_id(const identifier_t) noexcept -> bool;
     auto has_node_id(const identifier_t) noexcept -> bool;
+    auto password_is_required() const noexcept -> bool;
 
     void add_certificate_pem(const memory::const_block blk) noexcept;
     void add_ca_certificate_pem(const memory::const_block blk) noexcept;
@@ -395,13 +416,14 @@ public:
 private:
     friend class parent_router;
     friend class routed_node;
+    friend class router_pending;
     friend class router_nodes;
     friend class router_blobs;
 
     auto _uptime_seconds() noexcept -> std::int64_t;
-
-    void _assign_id(connection& conn) noexcept;
     auto _remove_disconnected() noexcept -> work_done;
+
+    auto _get_next_id() noexcept -> identifier_t;
 
     auto _current_nodes() noexcept;
 
@@ -557,6 +579,7 @@ private:
 
     timeout _no_connection_timeout{adjusted_duration(std::chrono::seconds{30})};
 
+    bool _password_is_required{false};
     bool _use_worker_threads{false};
 };
 //------------------------------------------------------------------------------
