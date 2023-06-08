@@ -60,7 +60,7 @@ public:
     void send_to_server(
       const message_id msg_id,
       const message_view& message) noexcept {
-        const std::unique_lock lock{_lockable};
+        const std::unique_lock lock{_client_to_server_lock};
         _client_to_server.back().push(msg_id, message);
     }
 
@@ -69,7 +69,7 @@ public:
       const message_id msg_id,
       const message_view& message) noexcept -> bool {
         if(_client_connected) [[likely]] {
-            const std::unique_lock lock{_lockable};
+            const std::unique_lock lock{_server_to_client_lock};
             _server_to_client.back().push(msg_id, message);
             return true;
         }
@@ -80,7 +80,7 @@ public:
     auto fetch_from_client(const connection::fetch_handler handler) noexcept
       -> std::tuple<bool, bool> {
         auto& c2s = [this]() -> message_storage& {
-            const std::unique_lock lock{_lockable};
+            const std::unique_lock lock{_client_to_server_lock};
             _client_to_server.swap();
             return _client_to_server.front();
         }();
@@ -91,7 +91,7 @@ public:
     auto fetch_from_server(const connection::fetch_handler handler) noexcept
       -> bool {
         auto& s2c = [this]() -> message_storage& {
-            const std::unique_lock lock{_lockable};
+            const std::unique_lock lock{_server_to_client_lock};
             _server_to_client.swap();
             return _server_to_client.front();
         }();
@@ -99,7 +99,8 @@ public:
     }
 
 private:
-    Lockable _lockable;
+    Lockable _server_to_client_lock;
+    Lockable _client_to_server_lock;
     double_buffer<message_storage> _server_to_client;
     double_buffer<message_storage> _client_to_server;
     std::atomic<bool> _server_connected{true};
