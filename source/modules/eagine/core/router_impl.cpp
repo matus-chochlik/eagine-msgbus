@@ -59,7 +59,6 @@ router_pending::router_pending(
   , _connection_kind{_connection->kind()} {
     if(parent.password_is_required()) {
         _nonce.resize(128);
-        parent.main_context().fill_with_random_bytes(cover(_nonce));
         parent.log_info("password is required on pending ${type} connection")
           .tag("connPwdReq")
           .arg("kind", _connection_kind)
@@ -135,6 +134,7 @@ auto router_pending::try_request_password() noexcept -> work_done {
           .arg("type", _connection_type)
           .arg("id", _id);
 
+        parent.main_context().fill_with_random_bytes(cover(_nonce));
         message_view msg{view(_nonce)};
         msg.set_source_id(parent.get_id());
         msg.set_target_id(_id);
@@ -1376,6 +1376,22 @@ auto router::_handle_subscriptions_query(const message_view& message) noexcept
     return should_be_forwarded;
 }
 //------------------------------------------------------------------------------
+auto router::_handle_password_request(const message_view& message) noexcept
+  -> message_handling_result {
+    if(_parent_router and (message.source_id == _parent_router.id())) {
+        if(has_id(message.target_id)) {
+            memory::buffer encrypted;
+            if(main_context().encrypt_shared_password(
+                 message.data(), "msgbus.router.password", encrypted)) {
+                message_view response{view(encrypted)};
+                response.setup_response(message);
+                _route_message(msgbus_id{"encRutrPwd"}, get_id(), response);
+            }
+        }
+    }
+    return was_handled;
+}
+//------------------------------------------------------------------------------
 auto router::_handle_router_certificate_query(
   const message_view& message) noexcept -> message_handling_result {
     _blobs.push_outgoing(
@@ -1545,6 +1561,8 @@ auto router::_handle_special_common(
             return _handle_topology_query(message);
         case id_v("statsQuery"):
             return _handle_stats_query(message);
+        case id_v("reqRutrPwd"):
+            return _handle_password_request(message);
         case id_v("pong"):
         case id_v("topoRutrCn"):
         case id_v("topoBrdgCn"):

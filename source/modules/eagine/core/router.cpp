@@ -94,7 +94,7 @@ private:
     identifier_t _id{invalid_endpoint_id()};
     timeout _too_old{adjusted_duration(std::chrono::seconds{30})};
     timeout _should_request_pwd{
-      adjusted_duration(std::chrono::seconds{2}),
+      adjusted_duration(std::chrono::seconds{3}),
       nothing};
     unique_holder<msgbus::connection> _connection{};
     message_storage _outbox;
@@ -475,6 +475,9 @@ private:
       -> message_handling_result;
 
     auto _handle_subscriptions_query(const message_view&) noexcept
+      -> message_handling_result;
+
+    auto _handle_password_request(const message_view&) noexcept
       -> message_handling_result;
 
     auto _handle_router_certificate_query(const message_view&) noexcept
