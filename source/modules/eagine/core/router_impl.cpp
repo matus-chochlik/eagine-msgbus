@@ -57,7 +57,9 @@ router_pending::router_pending(
   , _connection{std::move(conn)}
   , _connection_type{_connection->type_id()}
   , _connection_kind{_connection->kind()} {
-    if(parent.password_is_required()) {
+    if(
+      parent.password_is_required() and
+      (_connection->kind() != connection_kind::in_process)) {
         _nonce.resize(128);
         parent.log_info("password is required on pending ${type} connection")
           .tag("connPwdReq")
@@ -77,7 +79,7 @@ void router_pending::_assign_id() noexcept {
         message_view msg{};
         msg.set_source_id(parent.get_id());
         msg.set_target_id(next_id);
-        post(msgbus_id{"assignId"}, msg);
+        send(msgbus_id{"assignId"}, msg);
     }
 }
 //------------------------------------------------------------------------------
@@ -138,17 +140,17 @@ auto router_pending::try_request_password() noexcept -> work_done {
         message_view msg{view(_nonce)};
         msg.set_source_id(parent.get_id());
         msg.set_target_id(_id);
-        post(msgbus_id{"reqRutrPwd"}, msg);
+        send(msgbus_id{"reqRutrPwd"}, msg);
         _should_request_pwd.reset();
         return true;
     }
     return false;
 }
 //------------------------------------------------------------------------------
-void router_pending::post(
+void router_pending::send(
   const message_id msg_id,
   const message_view& msg) noexcept {
-    _outbox.push(msg_id, msg);
+    _connection->send(msg_id, msg);
 }
 //------------------------------------------------------------------------------
 auto router_pending::_handle_msg(
@@ -182,8 +184,14 @@ auto router_pending::_handle_msg(
         if(msg_id.has_method("encRutrPwd")) {
             if(parent.main_context().matches_encrypted_shared_password(
                  view(_nonce), "msgbus.router.password", msg.data())) {
-                parent.log_info("verified password on pending connection")
-                  .tag("vfyRutrPwd");
+                parent
+                  .log_info(
+                    "verified password on pending ${type} connection "
+                    "from ${cnterpart} ${id}")
+                  .tag("vfyRutrPwd")
+                  .arg("cnterpart", node_kind())
+                  .arg("type", _connection_type)
+                  .arg("id", _id);
                 _password_verified = true;
             }
             return true;
@@ -197,24 +205,11 @@ auto router_pending::_msg_handler() noexcept {
       this, member_function_constant_t<&router_pending::_handle_msg>{}};
 }
 //------------------------------------------------------------------------------
-auto router_pending::_handle_send(
-  const message_id msg_id,
-  const message_age,
-  const message_view& message) noexcept -> bool {
-    return _connection->send(msg_id, message);
-}
-//------------------------------------------------------------------------------
-auto router_pending::_send_handler() noexcept {
-    return message_storage::fetch_handler{
-      this, member_function_constant_t<&router_pending::_handle_send>{}};
-}
-//------------------------------------------------------------------------------
 auto router_pending::update() noexcept -> work_done {
     some_true something_done;
     something_done(_connection->update());
     something_done(_connection->fetch_messages(_msg_handler()));
     something_done(try_request_password());
-    something_done(_outbox.fetch_all(_send_handler()));
     something_done(_connection->update());
 
     return something_done();
@@ -629,7 +624,7 @@ void router_nodes::_adopt_pending(
     // send the special message confirming assigned endpoint id
     message_view confirmation{};
     confirmation.set_source_id(parent.get_id()).set_target_id(id);
-    pending.post(msgbus_id{"confirmId"}, confirmation);
+    pending.send(msgbus_id{"confirmId"}, confirmation);
 
     auto pos = _nodes.find(id);
     if(pos == _nodes.end()) {
@@ -1176,9 +1171,7 @@ auto router::_handle_blob(
             if(_nodes.has_id(message.source_id)) {
                 if(_context.add_remote_certificate_pem(
                      message.source_id, message.content())) {
-                    log_debug(
-                      "verified and stored endpoint "
-                      "certificate")
+                    log_debug("verified and stored endpoint certificate")
                       .arg("source", message.source_id);
                 }
             }
@@ -1378,15 +1371,13 @@ auto router::_handle_subscriptions_query(const message_view& message) noexcept
 //------------------------------------------------------------------------------
 auto router::_handle_password_request(const message_view& message) noexcept
   -> message_handling_result {
-    if(_parent_router and (message.source_id == _parent_router.id())) {
-        if(has_id(message.target_id)) {
-            memory::buffer encrypted;
-            if(main_context().encrypt_shared_password(
-                 message.data(), "msgbus.router.password", encrypted)) {
-                message_view response{view(encrypted)};
-                response.setup_response(message);
-                _route_message(msgbus_id{"encRutrPwd"}, get_id(), response);
-            }
+    if(has_id(message.target_id)) {
+        memory::buffer encrypted;
+        if(main_context().encrypt_shared_password(
+             message.data(), "msgbus.router.password", encrypted)) {
+            message_view response{view(encrypted)};
+            response.setup_response(message);
+            _parent_router.send(*this, msgbus_id{"encRutrPwd"}, response);
         }
     }
     return was_handled;

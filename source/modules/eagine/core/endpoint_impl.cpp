@@ -163,7 +163,7 @@ auto endpoint::_handle_password_request(const message_view& message) noexcept
                  message.data(), "msgbus.router.password", encrypted)) {
                 message_view response{view(encrypted)};
                 response.setup_response(message);
-                _outgoing.push(msgbus_id{"encRutrPwd"}, response);
+                _do_send(msgbus_id{"encRutrPwd"}, response);
             }
         }
     }

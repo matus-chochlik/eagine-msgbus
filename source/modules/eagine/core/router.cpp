@@ -74,7 +74,7 @@ public:
 
     auto update() noexcept -> work_done;
 
-    void post(const message_id msg_id, const message_view&) noexcept;
+    void send(const message_id msg_id, const message_view&) noexcept;
     auto release_connection() noexcept -> unique_holder<msgbus::connection>;
 
 private:
@@ -97,7 +97,6 @@ private:
       adjusted_duration(std::chrono::seconds{3}),
       nothing};
     unique_holder<msgbus::connection> _connection{};
-    message_storage _outbox;
     std::vector<byte> _nonce{};
     identifier _connection_type;
     msgbus::connection_kind _connection_kind;
