@@ -432,10 +432,12 @@ public:
 
     /// @brief Opens the connection.
     auto open(std::string name) noexcept -> bool {
+        const std::unique_lock lock_data_queue{_mutex_data_queue};
         return not _data_queue.set_name(std::move(name)).open().had_error();
     }
 
     auto is_usable() noexcept -> bool final {
+        const std::unique_lock lock_data_queue{_mutex_data_queue};
         return _data_queue.is_usable();
     }
 
@@ -444,7 +446,6 @@ public:
     }
 
     auto update() noexcept -> work_done override {
-        const std::unique_lock lock{_mutex};
         some_true something_done{};
         something_done(_receive());
         something_done(_send());
@@ -456,7 +457,7 @@ public:
 
     auto fetch_messages(const fetch_handler handler) noexcept
       -> work_done final {
-        const std::unique_lock lock{_mutex};
+        const std::unique_lock lock{_mutex_incoming};
         return _incoming.fetch_all(handler);
     }
 
@@ -479,7 +480,9 @@ protected:
       const unsigned,
       const memory::span<const char> data) noexcept;
 
-    std::mutex _mutex;
+    std::mutex _mutex_data_queue;
+    std::mutex _mutex_incoming;
+    std::mutex _mutex_outgoing;
     memory::buffer _buffer;
     message_storage _incoming;
     serialized_message_storage _outgoing;
@@ -493,6 +496,7 @@ posix_mqueue_connection::posix_mqueue_connection(
   std::shared_ptr<posix_mqueue_shared_state> shared_state) noexcept
   : main_ctx_object{"MQueConn", parent}
   , _shared_state{std::move(shared_state)} {
+    const std::unique_lock lock_data_queue{_mutex_data_queue};
     _buffer.resize(_data_queue.data_size());
 }
 //------------------------------------------------------------------------------
@@ -503,7 +507,7 @@ auto posix_mqueue_connection::send(
         block_data_sink sink(cover(_buffer));
         default_serializer_backend backend(sink);
         if(serialize_message(msg_id, message, backend)) [[likely]] {
-            const std::unique_lock lock{_mutex};
+            const std::unique_lock lock_outgoing{_mutex_outgoing};
             _outgoing.push(sink.done(), message.priority);
             return true;
         }
@@ -515,6 +519,7 @@ auto posix_mqueue_connection::send(
 auto posix_mqueue_connection::_checkup(posix_mqueue& connect_queue) noexcept
   -> work_done {
     some_true something_done{};
+    const std::unique_lock lock_data_queue{_mutex_data_queue};
     if(not _data_queue.is_usable()) [[unlikely]] {
         something_done(_reconnect(connect_queue));
     }
@@ -523,7 +528,9 @@ auto posix_mqueue_connection::_checkup(posix_mqueue& connect_queue) noexcept
 //------------------------------------------------------------------------------
 auto posix_mqueue_connection::_receive() noexcept -> work_done {
     some_true something_done{};
+    const std::unique_lock lock_data_queue{_mutex_data_queue};
     if(_data_queue.is_usable()) [[likely]] {
+        const std::unique_lock lock_incoming{_mutex_incoming};
         const posix_mqueue::receive_handler handler{
           make_callable_ref<&posix_mqueue_connection::_handle_receive>(this)};
         while(_data_queue.receive(as_chars(cover(_buffer)), handler)) {
@@ -534,7 +541,9 @@ auto posix_mqueue_connection::_receive() noexcept -> work_done {
 }
 //------------------------------------------------------------------------------
 auto posix_mqueue_connection::_send() noexcept -> bool {
+    const std::unique_lock lock_data_queue{_mutex_data_queue};
     if(_data_queue.is_usable()) [[likely]] {
+        const std::unique_lock lock_outgoing{_mutex_outgoing};
         return _outgoing.fetch_all(
           make_callable_ref<&posix_mqueue_connection::_handle_send>(this));
     }
@@ -643,7 +652,6 @@ public:
     }
 
     auto update() noexcept -> work_done final {
-        const std::unique_lock lock{_mutex};
         some_true something_done{};
         something_done(_checkup());
         something_done(_receive());
