@@ -32,7 +32,7 @@ public:
     void add_certificate_pem(const memory::const_block blk) noexcept;
     void add_ca_certificate_pem(const memory::const_block blk) noexcept;
 
-    auto add_connection(std::unique_ptr<connection>) noexcept -> bool final;
+    auto add_connection(unique_holder<connection>) noexcept -> bool final;
 
     auto has_id() const noexcept -> bool {
         return is_valid_endpoint_id(_id);
@@ -115,7 +115,7 @@ private:
 
     std::shared_ptr<bridge_state> _state{};
     timeout _no_connection_timeout{adjusted_duration(std::chrono::seconds{30})};
-    std::unique_ptr<connection> _connection{};
+    unique_holder<connection> _connection{};
 };
 //------------------------------------------------------------------------------
 } // namespace eagine::msgbus

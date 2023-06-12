@@ -233,7 +233,7 @@ public:
       -> optional_reference<routed_node>;
     auto find_outgoing(const identifier_t target_id) -> valid_endpoint_id;
     auto has_some() noexcept -> bool;
-    void add_acceptor(std::shared_ptr<acceptor> an_acceptor) noexcept;
+    void add_acceptor(shared_holder<acceptor> an_acceptor) noexcept;
     auto handle_pending(router&) noexcept -> work_done;
     auto handle_accept(router&) noexcept -> work_done;
     auto remove_timeouted(const main_ctx_object&) noexcept -> work_done;
@@ -255,7 +255,7 @@ private:
     void _adopt_pending(router&, router_pending&) noexcept;
     auto _do_handle_pending(router&) noexcept -> work_done;
 
-    small_vector<std::shared_ptr<acceptor>, 2> _acceptors;
+    small_vector<shared_holder<acceptor>, 2> _acceptors;
     std::vector<router_pending> _pending;
     flat_map<identifier_t, routed_node> _nodes;
     flat_map<identifier_t, identifier_t> _endpoint_idx;
@@ -367,7 +367,7 @@ private:
     auto _get_blob_target_io(
       const message_id,
       const span_size_t,
-      blob_manipulator&) noexcept -> std::unique_ptr<target_blob_io>;
+      blob_manipulator&) noexcept -> unique_holder<target_blob_io>;
 
     blob_manipulator _blobs;
 };
@@ -389,8 +389,8 @@ public:
     void add_certificate_pem(const memory::const_block blk) noexcept;
     void add_ca_certificate_pem(const memory::const_block blk) noexcept;
 
-    auto add_acceptor(std::shared_ptr<acceptor>) noexcept -> bool final;
-    auto add_connection(std::unique_ptr<connection>) noexcept -> bool final;
+    auto add_acceptor(shared_holder<acceptor>) noexcept -> bool final;
+    auto add_connection(unique_holder<connection>) noexcept -> bool final;
 
     auto do_maintenance() noexcept -> work_done;
     auto do_work_by_workers() noexcept -> work_done;

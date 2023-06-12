@@ -606,7 +606,7 @@ auto router_nodes::has_some() noexcept -> bool {
     return not _nodes.empty() or not _pending.empty();
 }
 //------------------------------------------------------------------------------
-void router_nodes::add_acceptor(std::shared_ptr<acceptor> an_acceptor) noexcept {
+void router_nodes::add_acceptor(shared_holder<acceptor> an_acceptor) noexcept {
     _acceptors.emplace_back(std::move(an_acceptor));
 }
 //------------------------------------------------------------------------------
@@ -1042,7 +1042,7 @@ auto router_blobs::process_blobs(
 auto router_blobs::_get_blob_target_io(
   const message_id msg_id,
   const span_size_t size,
-  blob_manipulator& blobs) noexcept -> std::unique_ptr<target_blob_io> {
+  blob_manipulator& blobs) noexcept -> unique_holder<target_blob_io> {
     if(is_special_message(msg_id)) {
         if(msg_id.has_method("eptCertPem")) {
             return blobs.make_target_io(size);
@@ -1105,7 +1105,7 @@ void router::add_ca_certificate_pem(const memory::const_block blk) noexcept {
     _context.add_ca_certificate_pem(blk);
 }
 //------------------------------------------------------------------------------
-auto router::add_acceptor(std::shared_ptr<acceptor> an_acceptor) noexcept
+auto router::add_acceptor(shared_holder<acceptor> an_acceptor) noexcept
   -> bool {
     if(an_acceptor) {
         log_info("adding connection acceptor")
@@ -1118,7 +1118,7 @@ auto router::add_acceptor(std::shared_ptr<acceptor> an_acceptor) noexcept
     return false;
 }
 //------------------------------------------------------------------------------
-auto router::add_connection(std::unique_ptr<connection> a_connection) noexcept
+auto router::add_connection(unique_holder<connection> a_connection) noexcept
   -> bool {
     if(a_connection) {
         log_info("assigning parent router connection")

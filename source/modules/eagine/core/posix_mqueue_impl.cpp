@@ -760,7 +760,7 @@ auto posix_mqueue_acceptor::process_accepted(
 
         if(auto conn{
              std::make_unique<posix_mqueue_connection>(*this, _shared_state)}) {
-            if(extract(conn).open(to_string(message.text_content()))) {
+            if(conn->open(to_string(message.text_content()))) {
                 handler(std::move(conn));
             }
         }
@@ -836,16 +836,19 @@ public:
 
     /// @brief Makes an connection acceptor listening at queue with the specified name.
     auto make_acceptor(const string_view address) noexcept
-      -> std::unique_ptr<acceptor> final {
-        return std::make_unique<posix_mqueue_acceptor>(
-          *this, to_string(address), _shared_state);
+      -> unique_holder<acceptor> final {
+        return {
+          hold<posix_mqueue_acceptor>, *this, to_string(address), _shared_state};
     }
 
     /// @brief Makes a connector connecting to queue with the specified name.
     auto make_connector(const string_view address) noexcept
-      -> std::unique_ptr<connection> final {
-        return std::make_unique<posix_mqueue_connector>(
-          *this, to_string(address), _shared_state);
+      -> unique_holder<connection> final {
+        return {
+          hold<posix_mqueue_connector>,
+          *this,
+          to_string(address),
+          _shared_state};
     }
 
 private:
@@ -865,9 +868,9 @@ private:
 //------------------------------------------------------------------------------
 auto make_posix_mqueue_connection_factory(
   [[maybe_unused]] main_ctx_parent parent)
-  -> std::unique_ptr<connection_factory> {
+  -> unique_holder<connection_factory> {
 #if EAGINE_POSIX
-    return std::make_unique<posix_mqueue_connection_factory>(parent);
+    return {hold<posix_mqueue_connection_factory>, parent};
 #else
     return {};
 #endif

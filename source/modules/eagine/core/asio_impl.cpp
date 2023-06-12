@@ -1446,15 +1446,23 @@ public:
       : asio_connection_factory{parent, default_block_size()} {}
 
     auto make_acceptor(const string_view addr_str) noexcept
-      -> std::unique_ptr<acceptor> final {
-        return std::make_unique<asio_acceptor<Kind, Proto>>(
-          *this, _asio_state, addr_str, _block_size);
+      -> unique_holder<acceptor> final {
+        return {
+          hold<asio_acceptor<Kind, Proto>>,
+          *this,
+          _asio_state,
+          addr_str,
+          _block_size};
     }
 
     auto make_connector(const string_view addr_str) noexcept
-      -> std::unique_ptr<connection> final {
-        return std::make_unique<asio_connector<Kind, Proto>>(
-          *this, _asio_state, addr_str, _block_size);
+      -> unique_holder<connection> final {
+        return {
+          hold<asio_connector<Kind, Proto>>,
+          *this,
+          _asio_state,
+          addr_str,
+          _block_size};
     }
 
 private:
@@ -1478,26 +1486,32 @@ private:
 };
 //------------------------------------------------------------------------------
 auto make_asio_tcp_ipv4_connection_factory(main_ctx_parent parent)
-  -> std::unique_ptr<connection_factory> {
-    return std::make_unique<asio_connection_factory<
-      connection_addr_kind::ipv4,
-      connection_protocol::stream>>(parent);
+  -> unique_holder<connection_factory> {
+    return {
+      hold<asio_connection_factory<
+        connection_addr_kind::ipv4,
+        connection_protocol::stream>>,
+      parent};
 }
 
 auto make_asio_udp_ipv4_connection_factory(main_ctx_parent parent)
-  -> std::unique_ptr<connection_factory> {
-    return std::make_unique<asio_connection_factory<
-      connection_addr_kind::ipv4,
-      connection_protocol::datagram>>(parent);
+  -> unique_holder<connection_factory> {
+    return {
+      hold<asio_connection_factory<
+        connection_addr_kind::ipv4,
+        connection_protocol::datagram>>,
+      parent};
 }
 
 auto make_asio_local_stream_connection_factory(
   [[maybe_unused]] main_ctx_parent parent)
-  -> std::unique_ptr<connection_factory> {
+  -> unique_holder<connection_factory> {
 #if defined(ASIO_HAS_LOCAL_SOCKETS)
-    return std::make_unique<asio_connection_factory<
-      connection_addr_kind::filepath,
-      connection_protocol::stream>>(parent);
+    return {
+      hold<asio_connection_factory<
+        connection_addr_kind::filepath,
+        connection_protocol::stream>>,
+      parent};
 #else
     return {};
 #endif

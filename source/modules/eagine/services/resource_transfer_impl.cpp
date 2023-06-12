@@ -206,7 +206,7 @@ public:
       const identifier_t endpoint_id,
       const message_priority priority)
       -> std::tuple<
-        std::unique_ptr<source_blob_io>,
+        unique_holder<source_blob_io>,
         std::chrono::seconds,
         message_priority>;
 
@@ -313,20 +313,21 @@ auto resource_server_impl::get_resource(
   const url& locator,
   const identifier_t endpoint_id,
   const message_priority priority) -> std::
-  tuple<std::unique_ptr<source_blob_io>, std::chrono::seconds, message_priority> {
+  tuple<unique_holder<source_blob_io>, std::chrono::seconds, message_priority> {
     auto read_io = driver.get_resource_io(endpoint_id, locator);
     if(not read_io) {
         if(locator.has_scheme("eagires")) {
             if(const auto count{locator.argument("count")}) {
                 if(const auto bytes{from_string<span_size_t>(*count)}) {
                     if(locator.has_path("/random")) {
-                        read_io = std::make_unique<random_byte_blob_io>(*bytes);
+                        read_io.emplace_derived(
+                          hold<random_byte_blob_io>, *bytes);
                     } else if(locator.has_path("/zeroes")) {
-                        read_io =
-                          std::make_unique<single_byte_blob_io>(*bytes, 0x0U);
+                        read_io.emplace_derived(
+                          hold<single_byte_blob_io>, *bytes, 0x0U);
                     } else if(locator.has_path("/ones")) {
-                        read_io =
-                          std::make_unique<single_byte_blob_io>(*bytes, 0x1U);
+                        read_io.emplace_derived(
+                          hold<single_byte_blob_io>, *bytes, 0x1U);
                     }
                 }
             }
@@ -339,7 +340,8 @@ auto resource_server_impl::get_resource(
                       .log_info("sending file ${filePath} to ${target}")
                       .arg("target", endpoint_id)
                       .arg("filePath", "FsPath", file_path);
-                    read_io = std::make_unique<file_blob_io>(
+                    read_io.emplace_derived(
+                      hold<file_blob_io>,
                       std::move(file),
                       from_string<span_size_t>(
                         locator.argument("offs").or_default()),
@@ -553,7 +555,7 @@ public:
     auto query_resource_content(
       identifier_t endpoint_id,
       const url& locator,
-      std::shared_ptr<target_blob_io> write_io,
+      shared_holder<target_blob_io> write_io,
       const message_priority priority,
       const std::chrono::seconds max_time)
       -> std::optional<message_sequence_t> final {

@@ -147,8 +147,7 @@ public:
     void add_ca_certificate_pem(const memory::const_block blk) noexcept;
 
     /// @brief Adds a connection for communication with a message bus router.
-    auto add_connection(std::unique_ptr<connection> conn) noexcept
-      -> bool final;
+    auto add_connection(unique_holder<connection> conn) noexcept -> bool final;
 
     /// @brief Tests if this has all prerequisites for sending and receiving messages.
     auto is_usable() const noexcept -> bool;
@@ -487,7 +486,7 @@ private:
         endpoint_alive_notify_period()),
       nothing};
 
-    std::unique_ptr<connection> _connection{};
+    unique_holder<connection> _connection{};
     bool _had_working_connection{false};
 
     message_storage _outgoing{};

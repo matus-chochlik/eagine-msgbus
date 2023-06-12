@@ -118,7 +118,7 @@ template <typename Lockable>
 class direct_connection_address : public main_ctx_object {
 public:
     /// @brief Alias for shared pointer to direct state type.
-    using shared_state = std::shared_ptr<direct_connection_state<Lockable>>;
+    using shared_state = shared_holder<direct_connection_state<Lockable>>;
 
     /// @brief Alias for shared state accept handler callable.
     /// @see process_all
@@ -184,8 +184,7 @@ class direct_client_connection final
   : public direct_connection_info<connection> {
 public:
     direct_client_connection(
-      const std::shared_ptr<direct_connection_address<Lockable>>&
-        address) noexcept
+      const shared_holder<direct_connection_address<Lockable>>& address) noexcept
       : _weak_address{address}
       , _state{address->connect()} {
         if(_state) [[likely]] {
@@ -236,14 +235,14 @@ public:
     void cleanup() noexcept final {}
 
 private:
-    const std::weak_ptr<direct_connection_address<Lockable>> _weak_address;
-    std::shared_ptr<direct_connection_state<Lockable>> _state;
+    const weak_holder<direct_connection_address<Lockable>> _weak_address;
+    shared_holder<direct_connection_state<Lockable>> _state;
 
     auto _checkup() -> work_done {
         some_true something_done;
         if(not _state) [[unlikely]] {
             if(const auto address{_weak_address.lock()}) {
-                _state = extract(address).connect();
+                _state = address->connect();
                 something_done();
             }
         }
@@ -261,7 +260,7 @@ class direct_server_connection final
   : public direct_connection_info<connection> {
 public:
     direct_server_connection(
-      std::shared_ptr<direct_connection_state<Lockable>>& state) noexcept
+      shared_holder<direct_connection_state<Lockable>>& state) noexcept
       : _state{state} {}
 
     direct_server_connection(direct_server_connection&&) = delete;
@@ -307,12 +306,12 @@ public:
     }
 
 private:
-    std::shared_ptr<direct_connection_state<Lockable>> _state;
+    shared_holder<direct_connection_state<Lockable>> _state;
     bool _is_usable{true};
 };
 //------------------------------------------------------------------------------
 export struct direct_acceptor_intf : direct_connection_info<acceptor> {
-    virtual auto make_connection() noexcept -> std::unique_ptr<connection> = 0;
+    virtual auto make_connection() noexcept -> unique_holder<connection> = 0;
 };
 //------------------------------------------------------------------------------
 //
@@ -323,13 +322,13 @@ export template <typename Lockable>
 class direct_acceptor
   : public direct_acceptor_intf
   , public main_ctx_object {
-    using shared_state = std::shared_ptr<direct_connection_state<Lockable>>;
+    using shared_state = shared_holder<direct_connection_state<Lockable>>;
 
 public:
     /// @brief Construction from a parent main context object and an address object.
     direct_acceptor(
       main_ctx_parent parent,
-      std::shared_ptr<direct_connection_address<Lockable>> address) noexcept
+      shared_holder<direct_connection_address<Lockable>> address) noexcept
       : main_ctx_object{"DrctAccptr", parent}
       , _address{std::move(address)} {}
 
@@ -354,16 +353,15 @@ public:
     }
 
     /// @brief Makes a new client-side direct connection.
-    auto make_connection() noexcept -> std::unique_ptr<connection> final {
+    auto make_connection() noexcept -> unique_holder<connection> final {
         if(_address) {
-            return std::unique_ptr<connection>{
-              std::make_unique<direct_client_connection<Lockable>>(_address)};
+            return {hold<direct_client_connection<Lockable>>, _address};
         }
         return {};
     }
 
 private:
-    const std::shared_ptr<direct_connection_address<Lockable>> _address{};
+    const shared_holder<direct_connection_address<Lockable>> _address{};
 };
 //------------------------------------------------------------------------------
 /// @brief Implementation of connection_factory for direct connections.
@@ -383,40 +381,36 @@ public:
       , _default_addr{_make_addr()} {}
 
     auto make_acceptor(const string_view addr_str) noexcept
-      -> std::unique_ptr<acceptor> final {
+      -> unique_holder<acceptor> final {
         if(addr_str) {
-            return std::make_unique<direct_acceptor<Lockable>>(
-              *this, _get(addr_str));
+            return {hold<direct_acceptor<Lockable>>, *this, _get(addr_str)};
         }
-        return std::make_unique<direct_acceptor<Lockable>>(
-          *this, _default_addr);
+        return {hold<direct_acceptor<Lockable>>, *this, _default_addr};
     }
 
     auto make_connector(const string_view addr_str) noexcept
-      -> std::unique_ptr<connection> final {
+      -> unique_holder<connection> final {
         if(addr_str) {
-            return std::make_unique<direct_client_connection<Lockable>>(
-              _get(addr_str));
+            return {hold<direct_client_connection<Lockable>>, _get(addr_str)};
         }
-        return std::make_unique<direct_client_connection<Lockable>>(
-          _default_addr);
+        return {hold<direct_client_connection<Lockable>>, _default_addr};
     }
 
 private:
-    std::shared_ptr<direct_connection_address<Lockable>> _default_addr;
+    shared_holder<direct_connection_address<Lockable>> _default_addr;
     std::map<
       std::string,
-      std::shared_ptr<direct_connection_address<Lockable>>,
+      shared_holder<direct_connection_address<Lockable>>,
       basic_str_view_less<std::string, string_view>>
       _addrs;
 
     auto _make_addr() noexcept
-      -> std::shared_ptr<direct_connection_address<Lockable>> {
-        return std::make_shared<direct_connection_address<Lockable>>(*this);
+      -> shared_holder<direct_connection_address<Lockable>> {
+        return {default_selector, *this};
     }
 
     auto _get(const string_view addr_str) noexcept
-      -> std::shared_ptr<direct_connection_address<Lockable>>& {
+      -> shared_holder<direct_connection_address<Lockable>>& {
         auto pos = _addrs.find(addr_str);
         if(pos == _addrs.end()) {
             pos = _addrs.emplace(to_string(addr_str), _make_addr()).first;
@@ -427,12 +421,13 @@ private:
 };
 //------------------------------------------------------------------------------
 export auto make_direct_acceptor(main_ctx_parent parent)
-  -> std::unique_ptr<direct_acceptor_intf> {
+  -> unique_holder<direct_acceptor_intf> {
     return std::make_unique<direct_acceptor<spinlock>>(parent);
 }
 //------------------------------------------------------------------------------
-export auto make_direct_connection_factory(main_ctx_parent parent) {
-    return std::make_unique<direct_connection_factory<spinlock>>(parent);
+export auto make_direct_connection_factory(main_ctx_parent parent)
+  -> unique_holder<direct_connection_factory<spinlock>> {
+    return {default_selector, parent};
 }
 //------------------------------------------------------------------------------
 } // namespace eagine::msgbus
