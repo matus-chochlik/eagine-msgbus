@@ -138,7 +138,7 @@ void blobs_roundtrip_zeroes_single_big(auto& s) {
       1234,
       2345,
       0,
-      std::make_unique<zeroes_source_blob_io>(16 * 1024 * 1024),
+      {eagine::hold<zeroes_source_blob_io>, 16 * 1024 * 1024},
       std::chrono::hours{1},
       eagine::msgbus::message_priority::normal);
 
@@ -148,8 +148,7 @@ void blobs_roundtrip_zeroes_single_big(auto& s) {
       test_msg_id,
       1234,
       eagine::msgbus::blob_id_t(0),
-      std::make_unique<zeroes_target_blob_io>(
-        test, trck, 16 * 1024 * 1024, done),
+      {eagine::hold<zeroes_target_blob_io>, test, trck, 16 * 1024 * 1024, done},
       std::chrono::hours{1});
 
     const eagine::span_size_t max_message_size{4096};
@@ -199,7 +198,7 @@ void blobs_roundtrip_zeroes_single(unsigned r, auto& s) {
       0,
       1,
       eagine::msgbus::blob_id_t(r),
-      std::make_unique<zeroes_source_blob_io>(1024 * 1024),
+      {eagine::hold<zeroes_source_blob_io>, 1024 * 1024},
       std::chrono::hours{1},
       eagine::msgbus::message_priority::normal);
 
@@ -209,7 +208,7 @@ void blobs_roundtrip_zeroes_single(unsigned r, auto& s) {
       test_msg_id,
       0,
       eagine::msgbus::blob_id_t(r),
-      std::make_unique<zeroes_target_blob_io>(test, trck, 1024 * 1024, done),
+      {eagine::hold<zeroes_target_blob_io>, test, trck, 1024 * 1024, done},
       std::chrono::hours{1});
 
     const eagine::span_size_t max_message_size{2048};
@@ -349,7 +348,7 @@ void blobs_roundtrip_bfs_single(auto& s) {
           1,
           0,
           eagine::msgbus::blob_id_t(r),
-          std::make_unique<bfs_source_blob_io>(1024 * 1024),
+          {eagine::hold<bfs_source_blob_io>, 1024 * 1024},
           std::chrono::hours{1},
           eagine::msgbus::message_priority::normal);
 
@@ -359,7 +358,7 @@ void blobs_roundtrip_bfs_single(auto& s) {
           test_msg_id,
           1,
           eagine::msgbus::blob_id_t(r),
-          std::make_unique<bfs_target_blob_io>(test, trck, 1024 * 1024, done),
+          {eagine::hold<bfs_target_blob_io>, test, trck, 1024 * 1024, done},
           std::chrono::hours{1});
 
         const eagine::span_size_t max_message_size{1024};
@@ -503,7 +502,7 @@ void blobs_roundtrip_ces_multiple(auto& s) {
           1,
           0,
           eagine::msgbus::blob_id_t(r),
-          std::make_unique<ces_source_blob_io>(128 * 1024),
+          {eagine::hold<ces_source_blob_io>, 128 * 1024},
           std::chrono::hours{1},
           eagine::msgbus::message_priority::normal);
 
@@ -511,7 +510,7 @@ void blobs_roundtrip_ces_multiple(auto& s) {
           test_msg_id,
           1,
           eagine::msgbus::blob_id_t(r),
-          std::make_unique<ces_target_blob_io>(test, trck, 128 * 1024, done),
+          {eagine::hold<ces_target_blob_io>, test, trck, 128 * 1024, done},
           std::chrono::hours{1});
     }
 
@@ -608,7 +607,7 @@ void blobs_roundtrip_chunk_signals_finished(auto& s) {
               1,
               0,
               blob_id,
-              std::make_unique<bfs_source_blob_io>(blob_size),
+              {eagine::hold<bfs_source_blob_io>, blob_size},
               std::chrono::hours{1},
               eagine::msgbus::message_priority::normal);
             blob_sizes[blob_id] = {blob_size, 0};
@@ -619,7 +618,7 @@ void blobs_roundtrip_chunk_signals_finished(auto& s) {
               1,
               0,
               blob_id,
-              std::make_unique<ces_source_blob_io>(blob_size),
+              {eagine::hold<ces_source_blob_io>, blob_size},
               std::chrono::hours{1},
               eagine::msgbus::message_priority::normal);
             blob_sizes[blob_id] = {blob_size, 0};
@@ -728,7 +727,7 @@ void blobs_roundtrip_stream_signals_finished(auto& s) {
               1,
               0,
               blob_id,
-              std::make_unique<bfs_source_blob_io>(blob_size),
+              {eagine::hold<bfs_source_blob_io>, blob_size},
               std::chrono::hours{1},
               eagine::msgbus::message_priority::normal);
             blob_sizes[blob_id] = {blob_size, 0};
@@ -739,7 +738,7 @@ void blobs_roundtrip_stream_signals_finished(auto& s) {
               1,
               0,
               blob_id,
-              std::make_unique<ces_source_blob_io>(blob_size),
+              {eagine::hold<ces_source_blob_io>, blob_size},
               std::chrono::hours{1},
               eagine::msgbus::message_priority::normal);
             blob_sizes[blob_id] = {blob_size, 0};
@@ -830,7 +829,7 @@ void blobs_roundtrip_chunk_signals_failed(auto& s) {
               1,
               0,
               blob_id,
-              std::make_unique<bfs_source_blob_io>(blob_size),
+              {eagine::hold<bfs_source_blob_io>, blob_size},
               std::chrono::seconds{1},
               eagine::msgbus::message_priority::normal);
         } else {
@@ -840,7 +839,7 @@ void blobs_roundtrip_chunk_signals_failed(auto& s) {
               1,
               0,
               blob_id,
-              std::make_unique<ces_source_blob_io>(blob_size),
+              {eagine::hold<ces_source_blob_io>, blob_size},
               std::chrono::seconds{1},
               eagine::msgbus::message_priority::normal);
         }
@@ -912,7 +911,7 @@ void blobs_roundtrip_resend_1(auto& s) {
           1,
           0,
           eagine::msgbus::blob_id_t(r),
-          std::make_unique<bfs_source_blob_io>(48 * 1024),
+          {eagine::hold<bfs_source_blob_io>, 48 * 1024},
           std::chrono::hours{1},
           eagine::msgbus::message_priority::normal);
 
@@ -922,7 +921,7 @@ void blobs_roundtrip_resend_1(auto& s) {
           test_msg_id,
           1,
           eagine::msgbus::blob_id_t(r),
-          std::make_unique<bfs_target_blob_io>(test, trck, 48 * 1024, done),
+          {eagine::hold<bfs_target_blob_io>, test, trck, 48 * 1024, done},
           std::chrono::hours{1});
 
         const eagine::span_size_t max_message_size{2048};
@@ -987,7 +986,7 @@ void blobs_roundtrip_resend_2(auto& s) {
           1,
           0,
           eagine::msgbus::blob_id_t(r),
-          std::make_unique<ces_source_blob_io>(32 * 1024),
+          {eagine::hold<ces_source_blob_io>, 32 * 1024},
           std::chrono::hours{1},
           eagine::msgbus::message_priority::normal);
 
@@ -995,7 +994,7 @@ void blobs_roundtrip_resend_2(auto& s) {
           test_msg_id,
           1,
           eagine::msgbus::blob_id_t(r),
-          std::make_unique<ces_target_blob_io>(test, trck, 32 * 1024, done),
+          {eagine::hold<ces_target_blob_io>, test, trck, 32 * 1024, done},
           std::chrono::hours{1});
     }
 

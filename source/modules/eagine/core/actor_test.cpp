@@ -18,7 +18,7 @@ public:
 
     test_pong(
       eagine::main_ctx_parent parent,
-      std::unique_ptr<eagine::msgbus::connection> conn,
+      eagine::unique_holder<eagine::msgbus::connection> conn,
       eagitest::track& trck)
       : base(
           {"TestPong", parent},
@@ -64,7 +64,7 @@ public:
 
     test_ping(
       eagine::main_ctx_parent parent,
-      std::unique_ptr<eagine::msgbus::connection> conn,
+      eagine::unique_holder<eagine::msgbus::connection> conn,
       eagitest::track& trck)
       : base(
           {"TestPing", parent},
@@ -128,9 +128,9 @@ void actor_ping_pong(auto& s) {
 
     auto fact{eagine::msgbus::make_direct_connection_factory(s.context())};
     test.ensure(bool(fact), "has factory");
-    auto cacc{std::dynamic_pointer_cast<eagine::msgbus::direct_acceptor_intf>(
-      shared_holder<eagine::msgbus::acceptor>(
-        fact->make_acceptor(eagine::identifier{"test"})))};
+    auto cacc{
+      fact->make_acceptor(eagine::identifier{"test"})
+        .as(std::type_identity<eagine::msgbus::direct_acceptor_intf>{})};
     test.ensure(bool(cacc), "has acceptor");
 
     auto ping_conn{cacc->make_connection()};
