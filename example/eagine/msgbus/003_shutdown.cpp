@@ -25,15 +25,12 @@ public:
     shutdown_trigger(endpoint& bus)
       : main_ctx_object{"ShtdwnTrgr", bus}
       , base{bus} {
-        subscribed.connect(make_callable_ref(
-          this,
-          member_function_constant_t<&shutdown_trigger::on_subscribed>{}));
-        unsubscribed.connect(make_callable_ref(
-          this,
-          member_function_constant_t<&shutdown_trigger::on_unsubscribed>{}));
-        not_subscribed.connect(make_callable_ref(
-          this,
-          member_function_constant_t<&shutdown_trigger::on_not_subscribed>{}));
+        subscribed.connect(
+          make_callable_ref<&shutdown_trigger::on_subscribed>(this));
+        unsubscribed.connect(
+          make_callable_ref<&shutdown_trigger::on_unsubscribed>(this));
+        not_subscribed.connect(
+          make_callable_ref<&shutdown_trigger::on_not_subscribed>(this));
     }
 
     void on_subscribed(
