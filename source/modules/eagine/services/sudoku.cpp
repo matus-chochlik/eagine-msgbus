@@ -496,12 +496,12 @@ public:
 
     /// @brief Get the board at the specified coordinate if it is solved.
     auto get_board(const Coord coord) const noexcept
-      -> const basic_sudoku_board<S>* {
+      -> optional_reference<const basic_sudoku_board<S>> {
         const auto pos = _boards.find(coord);
         if(pos != _boards.end()) {
             return &pos->second;
         }
-        return nullptr;
+        return {};
     }
 
     /// @brief Get the board at the specified coordinate if it is solved.

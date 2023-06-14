@@ -49,9 +49,12 @@ auto endpoint::_ensure_incoming(const message_id msg_id) noexcept
 }
 //------------------------------------------------------------------------------
 auto endpoint::_find_incoming(const message_id msg_id) const noexcept
-  -> incoming_state* {
+  -> optional_reference<incoming_state> {
     const auto pos = _incoming.find(msg_id);
-    return (pos != _incoming.end()) ? pos->second.get() : nullptr;
+    if(pos != _incoming.end()) {
+        return {pos->second};
+    }
+    return {};
 }
 //------------------------------------------------------------------------------
 auto endpoint::_get_incoming(const message_id msg_id) const noexcept
@@ -85,9 +88,8 @@ auto endpoint::_process_blobs() noexcept -> work_done {
     something_done(_blobs.handle_complete() > 0);
     const auto opt_max_size = max_data_size();
     if(opt_max_size) [[likely]] {
-        something_done(_blobs.update(post_handler, extract(opt_max_size)));
-        something_done(
-          _blobs.process_outgoing(post_handler, extract(opt_max_size), 2));
+        something_done(_blobs.update(post_handler, *opt_max_size));
+        something_done(_blobs.process_outgoing(post_handler, *opt_max_size, 2));
     }
     return something_done;
 }
@@ -293,7 +295,7 @@ auto endpoint::_handle_topology_query(const message_view& message) noexcept
     info.instance_id = _instance_id;
     auto temp{default_serialize_buffer_for(info)};
     if(const auto serialized{default_serialize(info, cover(temp))}) [[likely]] {
-        message_view response{extract(serialized)};
+        message_view response{*serialized};
         response.setup_response(message);
         if(post(msgbus_id{"topoEndpt"}, response)) [[likely]] {
             return was_handled;
@@ -313,7 +315,7 @@ auto endpoint::_handle_stats_query(const message_view& message) noexcept
     auto temp{default_serialize_buffer_for(_stats)};
     if(const auto serialized{default_serialize(_stats, cover(temp))})
       [[likely]] {
-        message_view response{extract(serialized)};
+        message_view response{*serialized};
         response.setup_response(message);
         if(post(msgbus_id{"statsEndpt"}, response)) [[likely]] {
             return was_handled;
@@ -406,7 +408,7 @@ auto endpoint::_store_message(
           not is_valid_id(message.target_id)) [[likely]] {
             if(auto found{_find_incoming(msg_id)}) [[likely]] {
                 log_trace("stored message ${message}").arg("message", msg_id);
-                extract(found).queue.push(message).add_age(msg_age);
+                found->queue.push(message).add_age(msg_age);
             } else {
                 auto& state = _ensure_incoming(msg_id);
                 assert(state.subscription_count == 0);
@@ -437,7 +439,7 @@ auto endpoint::_accept_message(
           (message.target_id == _endpoint_id) or
           not is_valid_id(message.target_id)) {
             log_trace("accepted message ${message}").arg("message", msg_id);
-            extract(found).queue.push(message);
+            found->queue.push(message);
         }
         return true;
     }
@@ -486,7 +488,7 @@ auto endpoint::max_data_size() const noexcept
     span_size_t result{0};
     if(is_usable()) [[likely]] {
         if(const auto opt_max_size{_connection->max_data_size()}) {
-            const auto max_size{extract(opt_max_size)};
+            const auto max_size{*opt_max_size};
             if(result > 0) {
                 if(result > max_size) {
                     result = max_size;
@@ -524,7 +526,7 @@ auto endpoint::post_signed(
   const message_id msg_id,
   const message_view msg_view) noexcept -> bool {
     if(const auto opt_size = max_data_size()) {
-        const auto max_size = extract(opt_size);
+        const auto max_size = *opt_size;
         return _outgoing.push_if(
           [this, msg_id, &msg_view, max_size](
             message_id& dst_msg_id,
@@ -692,7 +694,7 @@ void endpoint::post_meta_message(
     auto temp{default_serialize_buffer_for(msg_id)};
     if(const auto serialized{
          default_serialize_message_type(msg_id, cover(temp))}) [[likely]] {
-        message_view meta_msg{extract(serialized)};
+        message_view meta_msg{*serialized};
         meta_msg.set_sequence_no(_instance_id);
         post(meta_msg_id, meta_msg);
     } else {
@@ -709,7 +711,7 @@ void endpoint::post_meta_message_to(
     auto temp{default_serialize_buffer_for(msg_id)};
     if(const auto serialized{
          default_serialize_message_type(msg_id, cover(temp))}) [[likely]] {
-        message_view meta_msg{extract(serialized)};
+        message_view meta_msg{*serialized};
         meta_msg.set_target_id(target_id);
         meta_msg.set_sequence_no(_instance_id);
         post(meta_msg_id, meta_msg);
@@ -828,7 +830,7 @@ auto endpoint::process_one(
   const method_handler handler) noexcept -> bool {
     if(const auto found{_find_incoming(msg_id)}) [[likely]] {
         const message_context msg_ctx{*this, msg_id};
-        return extract(found).queue.process_one(msg_ctx, handler);
+        return found->queue.process_one(msg_ctx, handler);
     }
     return false;
 }
@@ -838,7 +840,7 @@ auto endpoint::process_all(
   const method_handler handler) noexcept -> span_size_t {
     if(const auto found{_find_incoming(msg_id)}) [[likely]] {
         const message_context msg_ctx{*this, msg_id};
-        return extract(found).queue.process_all(msg_ctx, handler);
+        return found->queue.process_all(msg_ctx, handler);
     }
     return 0;
 }

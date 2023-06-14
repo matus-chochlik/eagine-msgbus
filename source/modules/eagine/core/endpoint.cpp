@@ -503,7 +503,7 @@ private:
     auto _ensure_incoming(const message_id msg_id) noexcept -> incoming_state&;
 
     auto _find_incoming(const message_id msg_id) const noexcept
-      -> incoming_state*;
+      -> optional_reference<incoming_state>;
 
     auto _get_incoming(const message_id msg_id) const noexcept
       -> incoming_state&;
