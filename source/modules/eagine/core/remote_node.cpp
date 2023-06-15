@@ -249,7 +249,7 @@ public:
     remote_node_tracker(nothing_t) noexcept
       : _pimpl{} {}
 
-    remote_node_tracker(std::shared_ptr<remote_node_tracker_impl> pimpl) noexcept
+    remote_node_tracker(shared_holder<remote_node_tracker_impl> pimpl) noexcept
       : _pimpl{std::move(pimpl)} {}
 
     auto cached(const std::string&) noexcept -> string_view;
@@ -408,7 +408,7 @@ private:
     auto _get_connections() const noexcept
       -> const std::vector<node_connection_state>&;
 
-    std::shared_ptr<remote_node_tracker_impl> _pimpl{};
+    shared_holder<remote_node_tracker_impl> _pimpl{};
 };
 //------------------------------------------------------------------------------
 /// @brief Class providing information about a remote host of bus nodes.
@@ -576,12 +576,12 @@ public:
     auto power_supply() const noexcept -> power_supply_kind;
 
 protected:
-    auto _impl() const noexcept -> const remote_host_impl*;
-    auto _impl() noexcept -> remote_host_impl*;
+    auto _impl() const noexcept -> optional_reference<const remote_host_impl>;
+    auto _impl() noexcept -> optional_reference<remote_host_impl>;
 
 private:
     host_id_t _host_id{0U};
-    std::shared_ptr<remote_host_impl> _pimpl{};
+    shared_holder<remote_host_impl> _pimpl{};
 };
 //------------------------------------------------------------------------------
 /// @brief Class manipulating information about a remote host of bus nodes.
@@ -660,12 +660,13 @@ public:
 
 private:
     process_instance_id_t _inst_id{0U};
-    std::shared_ptr<remote_instance_impl> _pimpl{};
+    shared_holder<remote_instance_impl> _pimpl{};
 
 protected:
     remote_node_tracker _tracker{nothing};
-    auto _impl() const noexcept -> const remote_instance_impl*;
-    auto _impl() noexcept -> remote_instance_impl*;
+    auto _impl() const noexcept
+      -> optional_reference<const remote_instance_impl>;
+    auto _impl() noexcept -> optional_reference<remote_instance_impl>;
 };
 //------------------------------------------------------------------------------
 /// @brief Class manipulating information about a remote instance running bus nodes.
@@ -823,12 +824,12 @@ public:
 
 private:
     identifier_t _node_id{0U};
-    std::shared_ptr<remote_node_impl> _pimpl{};
+    shared_holder<remote_node_impl> _pimpl{};
 
 protected:
     remote_node_tracker _tracker{nothing};
-    auto _impl() const noexcept -> const remote_node_impl*;
-    auto _impl() noexcept -> remote_node_impl*;
+    auto _impl() const noexcept -> optional_reference<const remote_node_impl>;
+    auto _impl() noexcept -> optional_reference<remote_node_impl>;
 };
 //------------------------------------------------------------------------------
 /// @brief Class manipulating information about a remote bus node.
@@ -934,14 +935,15 @@ public:
     auto bytes_per_second() const noexcept -> valid_if_nonnegative<float>;
 
 private:
-    std::shared_ptr<node_connection_impl> _pimpl{};
+    shared_holder<node_connection_impl> _pimpl{};
 
 protected:
     identifier_t _id1{0U};
     identifier_t _id2{0U};
     remote_node_tracker _tracker{nothing};
-    auto _impl() const noexcept -> const node_connection_impl*;
-    auto _impl() noexcept -> node_connection_impl*;
+    auto _impl() const noexcept
+      -> optional_reference<const node_connection_impl>;
+    auto _impl() noexcept -> optional_reference<node_connection_impl>;
 };
 //------------------------------------------------------------------------------
 /// @brief Class manipulating information about connection between bus nodes.

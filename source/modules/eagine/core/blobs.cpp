@@ -109,7 +109,7 @@ export using blob_id_t = std::uint32_t;
 export auto make_target_blob_stream_io(
   blob_id_t blob_id,
   blob_stream_signals& sigs,
-  memory::buffer_pool& buffers) -> std::unique_ptr<target_blob_io>;
+  memory::buffer_pool& buffers) -> unique_holder<target_blob_io>;
 //------------------------------------------------------------------------------
 /// @brief Creates a data stream target I/O object.
 /// @ingroup msgbus
@@ -122,13 +122,13 @@ export auto make_target_blob_chunk_io(
   blob_id_t blob_id,
   span_size_t chunk_size,
   blob_stream_signals& sigs,
-  memory::buffer_pool& buffers) -> std::unique_ptr<target_blob_io>;
+  memory::buffer_pool& buffers) -> unique_holder<target_blob_io>;
 //------------------------------------------------------------------------------
 struct pending_blob {
     message_id msg_id{};
     blob_info info{};
-    std::shared_ptr<source_blob_io> source_io{};
-    std::shared_ptr<target_blob_io> target_io{};
+    shared_holder<source_blob_io> source_io{};
+    shared_holder<target_blob_io> target_io{};
     // TODO: recycle the done parts vectors?
     double_buffer<std::vector<std::tuple<span_size_t, span_size_t>>>
       fragment_parts{};
@@ -203,13 +203,13 @@ public:
         return {span_size(_max_blob_size)};
     }
 
-    using target_io_getter = callable_ref<std::unique_ptr<target_blob_io>(
+    using target_io_getter = callable_ref<unique_holder<target_blob_io>(
       const message_id,
       const span_size_t,
       blob_manipulator&) noexcept>;
 
     auto make_target_io(const span_size_t total_size) noexcept
-      -> std::unique_ptr<target_blob_io>;
+      -> unique_holder<target_blob_io>;
 
     using send_handler =
       callable_ref<bool(const message_id, const message_view&) noexcept>;
@@ -223,7 +223,7 @@ public:
       const identifier_t source_id,
       const identifier_t target_id,
       const blob_id_t target_blob_id,
-      std::shared_ptr<source_blob_io> io,
+      shared_holder<source_blob_io> io,
       const std::chrono::seconds max_time,
       const blob_options options,
       const message_priority priority) noexcept -> blob_id_t;
@@ -233,7 +233,7 @@ public:
       const identifier_t source_id,
       const identifier_t target_id,
       const blob_id_t target_blob_id,
-      std::shared_ptr<source_blob_io> io,
+      shared_holder<source_blob_io> io,
       const std::chrono::seconds max_time,
       const message_priority priority) noexcept -> blob_id_t {
         return push_outgoing(
@@ -280,7 +280,7 @@ public:
       const message_id msg_id,
       const identifier_t source_id,
       const blob_id_t target_blob_id,
-      std::shared_ptr<target_blob_io> io,
+      shared_holder<target_blob_io> io,
       const std::chrono::seconds max_time) noexcept -> bool;
 
     auto push_incoming_fragment(
@@ -333,7 +333,7 @@ private:
     auto _make_target_io(
       const message_id,
       const span_size_t total_size,
-      blob_manipulator&) noexcept -> std::unique_ptr<target_blob_io>;
+      blob_manipulator&) noexcept -> unique_holder<target_blob_io>;
 
     auto _scratch_block(const span_size_t size) noexcept -> memory::block;
 };

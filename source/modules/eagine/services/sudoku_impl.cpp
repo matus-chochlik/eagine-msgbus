@@ -266,7 +266,7 @@ auto sudoku_helper_rank_info<S>::do_send_board(
     assert(serialized);
 
     const unsigned_constant<S> rank{};
-    message_view response{extract(serialized)};
+    message_view response{*serialized};
     response.set_target_id(target_id);
     response.set_sequence_no(sequence_no);
     bus.post(sudoku_response_msg(rank, is_solved), response);
@@ -467,10 +467,9 @@ void sudoku_helper_impl::init() noexcept {
             base.bus_node()
               .log_info("setting maximum recursion to ${recursion}")
               .tag("sdkuMaxRec")
-              .arg("recursion", extract(max_recursion));
+              .arg("recursion", *max_recursion);
             for_each_sudoku_rank_unit(
-              [&](auto& info) { info.max_recursion = extract(max_recursion); },
-              _infos);
+              [&](auto& info) { info.max_recursion = *max_recursion; }, _infos);
         }
     }
 }
@@ -697,7 +696,7 @@ struct sudoku_solver_rank_info {
             assert(serialized);
 
             const auto sequence_no = query_sequence++;
-            message_view response{extract(serialized)};
+            message_view response{*serialized};
             response.set_target_id(helper_id);
             response.set_sequence_no(sequence_no);
             bus.post(sudoku_query_msg(unsigned_constant<S>{}), response);
@@ -1039,11 +1038,9 @@ void sudoku_solver_impl::init() noexcept {
         base.bus_node()
           .log_info("setting solution timeout to ${timeout}")
           .tag("sdkuSolTmt")
-          .arg("timeout", extract(solution_timeout));
+          .arg("timeout", *solution_timeout);
         for_each_sudoku_rank_unit(
-          [&](auto& info) {
-              info.solution_timeout.reset(extract(solution_timeout));
-          },
+          [&](auto& info) { info.solution_timeout.reset(*solution_timeout); },
           _infos);
     }
 }
@@ -1167,7 +1164,8 @@ struct sudoku_tiling_rank_info : sudoku_tiles<S> {
           .log_debug("enqueuing initial board (${x}, ${y})")
           .arg("x", x)
           .arg("y", y)
-          .arg("rank", S);
+          .arg("rank", S)
+          .arg("progress", "MainPrgrss", 0.F, 0.F, float(this->cell_count()));
         cells_done = 0;
     }
 
@@ -1176,98 +1174,86 @@ struct sudoku_tiling_rank_info : sudoku_tiles<S> {
         bool should_enqueue = false;
         if(y > 0) {
             if(x > 0) {
-                const auto left = this->get_board(x - 1, y);
-                const auto down = this->get_board(x, y - 1);
+                const auto left{this->get_board(x - 1, y)};
+                const auto down{this->get_board(x, y - 1)};
                 if(left and down) {
                     for(const auto by : integer_range(S - 1U)) {
-                        board.set_block(
-                          0U, by, extract(left).get_block(S - 1U, by));
+                        board.set_block(0U, by, left->get_block(S - 1U, by));
                     }
                     for(const auto bx : integer_range(1U, S)) {
-                        board.set_block(
-                          bx, S - 1U, extract(down).get_block(bx, 0U));
+                        board.set_block(bx, S - 1U, down->get_block(bx, 0U));
                     }
                     should_enqueue = true;
                 }
             } else if(x < 0) {
-                const auto right = this->get_board(x + 1, y);
-                const auto down = this->get_board(x, y - 1);
+                const auto right{this->get_board(x + 1, y)};
+                const auto down{this->get_board(x, y - 1)};
                 if(right and down) {
                     for(const auto by : integer_range(S - 1U)) {
-                        board.set_block(
-                          S - 1U, by, extract(right).get_block(0U, by));
+                        board.set_block(S - 1U, by, right->get_block(0U, by));
                     }
                     for(const auto bx : integer_range(S - 1U)) {
-                        board.set_block(
-                          bx, S - 1U, extract(down).get_block(bx, 0U));
+                        board.set_block(bx, S - 1U, down->get_block(bx, 0U));
                     }
                     should_enqueue = true;
                 }
             } else {
-                const auto down = this->get_board(x, y - 1);
+                const auto down{this->get_board(x, y - 1)};
                 if(down) {
                     for(const auto bx : integer_range(S)) {
-                        board.set_block(
-                          bx, S - 1U, extract(down).get_block(bx, 0U));
+                        board.set_block(bx, S - 1U, down->get_block(bx, 0U));
                     }
                     should_enqueue = true;
                 }
             }
         } else if(y < 0) {
             if(x > 0) {
-                const auto left = this->get_board(x - 1, y);
-                const auto up = this->get_board(x, y + 1);
+                const auto left{this->get_board(x - 1, y)};
+                const auto up{this->get_board(x, y + 1)};
                 if(left and up) {
                     for(const auto by : integer_range(1U, S)) {
-                        board.set_block(
-                          0U, by, extract(left).get_block(S - 1U, by));
+                        board.set_block(0U, by, left->get_block(S - 1U, by));
                     }
                     for(const auto bx : integer_range(1U, S)) {
-                        board.set_block(
-                          bx, 0U, extract(up).get_block(bx, S - 1U));
+                        board.set_block(bx, 0U, up->get_block(bx, S - 1U));
                     }
                     should_enqueue = true;
                 }
             } else if(x < 0) {
-                const auto right = this->get_board(x + 1, y);
-                const auto up = this->get_board(x, y + 1);
+                const auto right{this->get_board(x + 1, y)};
+                const auto up{this->get_board(x, y + 1)};
                 if(right and up) {
                     for(const auto by : integer_range(1U, S)) {
-                        board.set_block(
-                          S - 1U, by, extract(right).get_block(0U, by));
+                        board.set_block(S - 1U, by, right->get_block(0U, by));
                     }
                     for(const auto bx : integer_range(S - 1U)) {
-                        board.set_block(
-                          bx, 0U, extract(up).get_block(bx, S - 1U));
+                        board.set_block(bx, 0U, up->get_block(bx, S - 1U));
                     }
                     should_enqueue = true;
                 }
             } else {
-                const auto up = this->get_board(x, y + 1);
+                const auto up{this->get_board(x, y + 1)};
                 if(up) {
                     for(const auto bx : integer_range(S)) {
-                        board.set_block(
-                          bx, 0U, extract(up).get_block(bx, S - 1U));
+                        board.set_block(bx, 0U, up->get_block(bx, S - 1U));
                     }
                     should_enqueue = true;
                 }
             }
         } else {
             if(x > 0) {
-                const auto left = this->get_board(x - 1, y);
+                const auto left{this->get_board(x - 1, y)};
                 if(left) {
                     for(const auto by : integer_range(S)) {
-                        board.set_block(
-                          0U, by, extract(left).get_block(S - 1U, by));
+                        board.set_block(0U, by, left->get_block(S - 1U, by));
                     }
                     should_enqueue = true;
                 }
             } else if(x < 0) {
-                const auto right = this->get_board(x + 1, y);
+                const auto right{this->get_board(x + 1, y)};
                 if(right) {
                     for(const auto by : integer_range(S)) {
-                        board.set_block(
-                          S - 1U, by, extract(right).get_block(0U, by));
+                        board.set_block(S - 1U, by, right->get_block(0U, by));
                     }
                     should_enqueue = true;
                 }
@@ -1314,7 +1300,7 @@ struct sudoku_tiling_rank_info : sudoku_tiles<S> {
               .arg("helper", sol.helper_id)
               .arg(
                 "progress",
-                "mainPrgrss",
+                "MainPrgrss",
                 0.F,
                 float(cells_done),
                 float(this->cell_count()));
@@ -1411,7 +1397,7 @@ public:
     auto _is_already_done(
       const sudoku_solver_key& coord,
       const unsigned_constant<S> rank) const noexcept -> bool {
-        return _infos.get(rank).get_board(std::get<Coord>(coord));
+        return bool(_infos.get(rank).get_board(std::get<Coord>(coord)));
     }
 
     template <unsigned S>

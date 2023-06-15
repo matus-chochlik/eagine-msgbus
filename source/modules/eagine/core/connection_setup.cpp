@@ -19,26 +19,26 @@ import :interface;
 namespace eagine::msgbus {
 //------------------------------------------------------------------------------
 export auto make_posix_mqueue_connection_factory(main_ctx_parent parent)
-  -> std::unique_ptr<connection_factory>;
+  -> unique_holder<connection_factory>;
 
 export auto make_asio_tcp_ipv4_connection_factory(main_ctx_parent parent)
-  -> std::unique_ptr<connection_factory>;
+  -> unique_holder<connection_factory>;
 
 export auto make_asio_udp_ipv4_connection_factory(main_ctx_parent parent)
-  -> std::unique_ptr<connection_factory>;
+  -> unique_holder<connection_factory>;
 
 export auto make_asio_local_stream_connection_factory(main_ctx_parent parent)
-  -> std::unique_ptr<connection_factory>;
+  -> unique_holder<connection_factory>;
 //------------------------------------------------------------------------------
 export class connection_setup;
 export void connection_setup_configure(connection_setup&, application_config&);
 //------------------------------------------------------------------------------
 export auto adapt_entry_arg(
   const identifier name,
-  const std::unique_ptr<connection_factory>& value) noexcept {
+  const unique_holder<connection_factory>& value) noexcept {
     struct _adapter {
         const identifier name;
-        const std::unique_ptr<connection_factory>& value;
+        const unique_holder<connection_factory>& value;
 
         void operator()(logger_backend& backend) const noexcept {
             if(value) {
@@ -147,7 +147,7 @@ public:
     void setup_connectors(connection_user& target, const connection_kind kind);
 
     /// @brief Adds a new connection factory.
-    void add_factory(std::unique_ptr<connection_factory> factory);
+    void add_factory(unique_holder<connection_factory> factory);
 
     /// @brief Uses the configuration to do initialization of this setup.
     void configure(application_config& config) {
@@ -157,7 +157,7 @@ public:
 private:
     std::mutex _mutex{};
 
-    using _factory_list = std::vector<std::unique_ptr<connection_factory>>;
+    using _factory_list = std::vector<unique_holder<connection_factory>>;
 
     template <connection_kind Kind>
     using _enum_map_unit = _factory_list;

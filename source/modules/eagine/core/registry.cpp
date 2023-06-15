@@ -27,9 +27,12 @@ import :service;
 namespace eagine::msgbus {
 //------------------------------------------------------------------------------
 struct registered_entry {
-    std::unique_ptr<endpoint> _endpoint{};
-    std::unique_ptr<service_interface> _service{};
+    unique_holder<endpoint> _endpoint{};
+    unique_holder<service_interface> _service{};
 
+    auto endpoint() noexcept -> msgbus::endpoint& {
+        return *_endpoint;
+    }
     auto update_service() noexcept -> work_done;
     auto update_and_process_service() noexcept -> work_done;
 };
@@ -45,7 +48,7 @@ public:
     /// @see emplace
     [[nodiscard]] auto establish(const identifier log_id) noexcept
       -> endpoint& {
-        return extract(_add_entry(log_id)._endpoint);
+        return _add_entry(log_id).endpoint();
     }
 
     /// @brief Returns the id of the internal router.
@@ -61,10 +64,10 @@ public:
       -> Service& requires(std::is_base_of_v<service_interface, Service>) {
           auto& entry = _add_entry(log_id);
           auto temp{std::make_unique<Service>(
-            extract(entry._endpoint), std::forward<Args>(args)...)};
+            entry.endpoint(), std::forward<Args>(args)...)};
           assert(temp);
           entry._service = std::move(temp);
-          return *static_cast<Service*>(entry._service.get());
+          return *(entry._service.ref().as<Service>());
       }
 
     /// @brief Updates this registry until all registerd services have id or timeout.
@@ -122,7 +125,7 @@ public:
     }
 
 private:
-    std::shared_ptr<direct_acceptor_intf> _acceptor;
+    shared_holder<direct_acceptor_intf> _acceptor;
     router _router;
     std::vector<registered_entry> _entries;
 

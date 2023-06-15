@@ -197,7 +197,7 @@ void connection_setup::setup_connectors(
 //------------------------------------------------------------------------------
 // add_factory
 //------------------------------------------------------------------------------
-void connection_setup::add_factory(std::unique_ptr<connection_factory> factory) {
+void connection_setup::add_factory(unique_holder<connection_factory> factory) {
     const std::unique_lock lock{_mutex};
     if(factory) {
         const auto kind{factory->kind()};

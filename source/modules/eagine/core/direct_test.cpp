@@ -40,19 +40,19 @@ void direct_roundtrip(auto& s) {
 
     auto fact{eagine::msgbus::make_direct_connection_factory(s.context())};
     test.ensure(bool(fact), "has factory");
-    auto cacc{std::dynamic_pointer_cast<eagine::msgbus::direct_acceptor_intf>(
-      std::shared_ptr<eagine::msgbus::acceptor>(
-        fact->make_acceptor(eagine::identifier{"test"})))};
+    auto cacc{
+      fact->make_acceptor(eagine::identifier{"test"})
+        .as(std::type_identity<eagine::msgbus::direct_acceptor_intf>{})};
     test.ensure(bool(cacc), "has acceptor");
     auto read_conn{cacc->make_connection()};
     test.ensure(bool(read_conn), "has read connection");
 
-    std::unique_ptr<eagine::msgbus::connection> write_conn;
+    eagine::unique_holder<eagine::msgbus::connection> write_conn;
     test.check(not bool(write_conn), "has not write connection");
 
     cacc->process_accepted(
       {eagine::construct_from,
-       [&](std::unique_ptr<eagine::msgbus::connection> conn) {
+       [&](eagine::unique_holder<eagine::msgbus::connection> conn) {
            write_conn = std::move(conn);
        }});
     test.ensure(bool(write_conn), "has write connection");
@@ -109,19 +109,19 @@ void direct_roundtrip_thread(auto& s) {
 
     auto fact{eagine::msgbus::make_direct_connection_factory(s.context())};
     test.ensure(bool(fact), "has factory");
-    auto cacc{std::dynamic_pointer_cast<eagine::msgbus::direct_acceptor_intf>(
-      std::shared_ptr<eagine::msgbus::acceptor>(
-        fact->make_acceptor(eagine::identifier{"test"})))};
+    auto cacc{
+      fact->make_acceptor(eagine::identifier{"test"})
+        .as(std::type_identity<eagine::msgbus::direct_acceptor_intf>{})};
     test.ensure(bool(cacc), "has acceptor");
     auto read_conn{cacc->make_connection()};
     test.ensure(bool(read_conn), "has read connection");
 
-    std::unique_ptr<eagine::msgbus::connection> write_conn;
+    eagine::unique_holder<eagine::msgbus::connection> write_conn;
     test.check(not bool(write_conn), "has not write connection");
 
     cacc->process_accepted(
       {eagine::construct_from,
-       [&](std::unique_ptr<eagine::msgbus::connection> conn) {
+       [&](eagine::unique_holder<eagine::msgbus::connection> conn) {
            write_conn = std::move(conn);
        }});
     test.ensure(bool(write_conn), "has write connection");

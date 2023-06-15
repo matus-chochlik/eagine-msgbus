@@ -135,7 +135,7 @@ public:
     /// @see fetch_resource_chunks
     void query_resource(
       url locator,
-      std::shared_ptr<target_blob_io> io,
+      shared_holder<target_blob_io> io,
       const message_priority priority,
       const std::chrono::seconds max_time,
       const bool all_in_one) {
@@ -283,7 +283,7 @@ private:
     struct _streamed_resource_info {
         url locator{};
         identifier_t source_server_id{invalid_endpoint_id()};
-        std::shared_ptr<target_blob_io> resource_io{};
+        shared_holder<target_blob_io> resource_io{};
         timeout should_search{};
         timeout blob_timeout{};
         message_sequence_t blob_stream_id{0};
@@ -293,7 +293,7 @@ private:
     auto _query_resource(
       identifier_t res_id,
       url locator,
-      std::shared_ptr<target_blob_io> io,
+      shared_holder<target_blob_io> io,
       const message_priority priority,
       const std::chrono::seconds max_time,
       const bool all_in_one) -> std::pair<identifier_t, const url&>;

@@ -226,7 +226,7 @@ auto resource_data_consumer_node::get_request_id() noexcept -> identifier_t {
 auto resource_data_consumer_node::_query_resource(
   identifier_t request_id,
   url locator,
-  std::shared_ptr<target_blob_io> io,
+  shared_holder<target_blob_io> io,
   const message_priority priority,
   const std::chrono::seconds max_time,
   const bool all_in_one) -> std::pair<identifier_t, const url&> {

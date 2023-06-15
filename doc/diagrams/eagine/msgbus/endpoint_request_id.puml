@@ -1,4 +1,9 @@
 @startuml
 Endpoint -> Router: eagiMsgBus\nrequestId
 Router -> Endpoint: eagiMsgBus\nassignId
+group Router password required
+Router -> Endpoint: eagiMsgBus\nreqRutrPwd
+Endpoint -> Router: eagiMsgBus\nencRutrPwd
+end
+Router -> Endpoint: eagiMsgBus\nconfirmId
 @enduml

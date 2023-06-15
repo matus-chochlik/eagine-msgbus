@@ -56,8 +56,7 @@ public:
     }
 
     /// @brief Adds a connection to the associated endpoint.
-    auto add_connection(std::unique_ptr<connection> conn) noexcept
-      -> bool final {
+    auto add_connection(unique_holder<connection> conn) noexcept -> bool final {
         return _endpoint.add_connection(std::move(conn));
     }
 

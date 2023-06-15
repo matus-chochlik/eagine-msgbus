@@ -147,8 +147,7 @@ public:
     void add_ca_certificate_pem(const memory::const_block blk) noexcept;
 
     /// @brief Adds a connection for communication with a message bus router.
-    auto add_connection(std::unique_ptr<connection> conn) noexcept
-      -> bool final;
+    auto add_connection(unique_holder<connection> conn) noexcept -> bool final;
 
     /// @brief Tests if this has all prerequisites for sending and receiving messages.
     auto is_usable() const noexcept -> bool;
@@ -460,6 +459,7 @@ private:
 
     identifier_t _preconfd_id{invalid_id()};
     identifier_t _endpoint_id{invalid_id()};
+    identifier_t _router_id{invalid_id()};
     const process_instance_id_t _instance_id{process_instance_id()};
 
     std::chrono::steady_clock::time_point _startup_time{
@@ -486,7 +486,7 @@ private:
         endpoint_alive_notify_period()),
       nothing};
 
-    std::unique_ptr<connection> _connection{};
+    unique_holder<connection> _connection{};
     bool _had_working_connection{false};
 
     message_storage _outgoing{};
@@ -503,7 +503,7 @@ private:
     auto _ensure_incoming(const message_id msg_id) noexcept -> incoming_state&;
 
     auto _find_incoming(const message_id msg_id) const noexcept
-      -> incoming_state*;
+      -> optional_reference<incoming_state>;
 
     auto _get_incoming(const message_id msg_id) const noexcept
       -> incoming_state&;
@@ -535,6 +535,8 @@ private:
     auto _handle_assign_id(const message_view&) noexcept
       -> message_handling_result;
     auto _handle_confirm_id(const message_view&) noexcept
+      -> message_handling_result;
+    auto _handle_password_request(const message_view&) noexcept
       -> message_handling_result;
     auto _handle_blob_fragment(const message_view&) noexcept
       -> message_handling_result;

@@ -120,31 +120,25 @@ public:
 // remote_instance
 //------------------------------------------------------------------------------
 inline auto remote_instance::_impl() const noexcept
-  -> const remote_instance_impl* {
-    return _pimpl.get();
+  -> optional_reference<const remote_instance_impl> {
+    return _pimpl.ref();
 }
 //------------------------------------------------------------------------------
-inline auto remote_instance::_impl() noexcept -> remote_instance_impl* {
-    try {
-        if(not _pimpl) [[unlikely]] {
-            _pimpl = std::make_shared<remote_instance_impl>();
-        }
-        return _pimpl.get();
-    } catch(...) {
-    }
-    return nullptr;
+inline auto remote_instance::_impl() noexcept
+  -> optional_reference<remote_instance_impl> {
+    return _pimpl.ensure();
 }
 //------------------------------------------------------------------------------
 auto remote_instance::is_alive() const noexcept -> bool {
     if(auto impl{_impl()}) {
-        return not extract(impl).is_alive.is_expired();
+        return not impl->is_alive.is_expired();
     }
     return false;
 }
 //------------------------------------------------------------------------------
 auto remote_instance::host() const noexcept -> remote_host {
     if(auto impl{_impl()}) {
-        auto& i = extract(impl);
+        auto& i = *impl;
         if(i.host_id) {
             return _tracker.get_host(i.host_id);
         }
@@ -155,7 +149,7 @@ auto remote_instance::host() const noexcept -> remote_host {
 auto remote_instance::application_name() const noexcept
   -> valid_if_not_empty<string_view> {
     if(auto impl{_impl()}) {
-        auto& i = extract(impl);
+        auto& i = *impl;
         return {i.app_name};
     }
     return {};
@@ -164,9 +158,9 @@ auto remote_instance::application_name() const noexcept
 auto remote_instance::compiler() const noexcept
   -> optional_reference<const compiler_info> {
     if(auto impl{_impl()}) {
-        auto& i = extract(impl);
+        auto& i = *impl;
         if(i.cmplr_info) {
-            return {extract(i.cmplr_info)};
+            return {*i.cmplr_info};
         }
     }
     return {nothing};
@@ -175,9 +169,9 @@ auto remote_instance::compiler() const noexcept
 auto remote_instance::build_version() const noexcept
   -> optional_reference<const version_info> {
     if(auto impl{_impl()}) {
-        auto& i = extract(impl);
+        auto& i = *impl;
         if(i.ver_info) {
-            return {extract(i.ver_info)};
+            return {*i.ver_info};
         }
     }
     return {nothing};
@@ -187,7 +181,7 @@ auto remote_instance::build_version() const noexcept
 //------------------------------------------------------------------------------
 auto remote_instance_state::update() noexcept -> remote_instance_state& {
     if(auto impl{_impl()}) {
-        auto& i = extract(impl);
+        auto& i = *impl;
         const auto alive = i.is_alive.is_expired();
         if(i.was_alive != alive) {
             i.was_alive = alive;
@@ -200,7 +194,7 @@ auto remote_instance_state::update() noexcept -> remote_instance_state& {
 //------------------------------------------------------------------------------
 auto remote_instance_state::changes() noexcept -> remote_instance_changes {
     if(auto impl{_impl()}) {
-        auto& i = extract(impl);
+        auto& i = *impl;
         const auto result = i.changes;
         i.changes.clear();
         return result;
@@ -211,14 +205,14 @@ auto remote_instance_state::changes() noexcept -> remote_instance_changes {
 auto remote_instance_state::add_change(
   const remote_instance_change change) noexcept -> remote_instance_state& {
     if(auto impl{_impl()}) {
-        extract(impl).changes |= change;
+        impl->changes |= change;
     }
     return *this;
 }
 //------------------------------------------------------------------------------
 auto remote_instance_state::notice_alive() noexcept -> remote_instance_state& {
     if(auto impl{_impl()}) {
-        auto& i = extract(impl);
+        auto& i = *impl;
         if(not i.is_alive) {
             i.changes |= remote_instance_change::started_responding;
         }
@@ -230,7 +224,7 @@ auto remote_instance_state::notice_alive() noexcept -> remote_instance_state& {
 auto remote_instance_state::set_host_id(const host_id_t host_id) noexcept
   -> remote_instance_state& {
     if(auto impl{_impl()}) {
-        auto& i = extract(impl);
+        auto& i = *impl;
         if(i.host_id != host_id) {
             i.host_id = host_id;
             i.changes |= remote_instance_change::host_id;
@@ -242,7 +236,7 @@ auto remote_instance_state::set_host_id(const host_id_t host_id) noexcept
 auto remote_instance_state::set_app_name(
   const std::string& new_app_name) noexcept -> remote_instance_state& {
     if(auto impl{_impl()}) {
-        auto& i = extract(impl);
+        auto& i = *impl;
         auto app_name = _tracker.cached(new_app_name);
         if(not are_equal(app_name, i.app_name)) {
             i.app_name = app_name;
@@ -255,7 +249,7 @@ auto remote_instance_state::set_app_name(
 auto remote_instance_state::assign(compiler_info info) noexcept
   -> remote_instance_state& {
     if(auto impl{_impl()}) {
-        auto& i = extract(impl);
+        auto& i = *impl;
         if(not i.cmplr_info) {
             i.cmplr_info = {std::move(info), true};
             i.changes |= remote_instance_change::build_info;
@@ -267,7 +261,7 @@ auto remote_instance_state::assign(compiler_info info) noexcept
 auto remote_instance_state::assign(version_info info) noexcept
   -> remote_instance_state& {
     if(auto impl{_impl()}) {
-        auto& i = extract(impl);
+        auto& i = *impl;
         if(not i.ver_info) {
             i.ver_info = {std::move(info), true};
             i.changes |= remote_instance_change::build_info;
@@ -278,24 +272,19 @@ auto remote_instance_state::assign(version_info info) noexcept
 //------------------------------------------------------------------------------
 // remote_host
 //------------------------------------------------------------------------------
-inline auto remote_host::_impl() const noexcept -> const remote_host_impl* {
-    return _pimpl.get();
+inline auto remote_host::_impl() const noexcept
+  -> optional_reference<const remote_host_impl> {
+    return _pimpl.ref();
 }
 //------------------------------------------------------------------------------
-inline auto remote_host::_impl() noexcept -> remote_host_impl* {
-    try {
-        if(not _pimpl) [[unlikely]] {
-            _pimpl = std::make_shared<remote_host_impl>();
-        }
-        return _pimpl.get();
-    } catch(...) {
-    }
-    return nullptr;
+inline auto remote_host::_impl() noexcept
+  -> optional_reference<remote_host_impl> {
+    return _pimpl.ensure();
 }
 //------------------------------------------------------------------------------
 auto remote_host_state::update() noexcept -> remote_host_state& {
     if(auto impl{_impl()}) {
-        auto& i = extract(impl);
+        auto& i = *impl;
         const auto alive = i.is_alive.is_expired();
         if(i.was_alive != alive) {
             i.was_alive = alive;
@@ -308,7 +297,7 @@ auto remote_host_state::update() noexcept -> remote_host_state& {
 //------------------------------------------------------------------------------
 auto remote_host_state::changes() noexcept -> remote_host_changes {
     if(auto impl{_impl()}) {
-        auto& i = extract(impl);
+        auto& i = *impl;
         const auto result = i.changes;
         i.changes.clear();
         return result;
@@ -319,21 +308,21 @@ auto remote_host_state::changes() noexcept -> remote_host_changes {
 auto remote_host_state::add_change(const remote_host_change change) noexcept
   -> remote_host_state& {
     if(auto impl{_impl()}) {
-        extract(impl).changes |= change;
+        impl->changes |= change;
     }
     return *this;
 }
 //------------------------------------------------------------------------------
 auto remote_host::is_alive() const noexcept -> bool {
     if(auto impl{_impl()}) {
-        return not extract(impl).is_alive.is_expired();
+        return not impl->is_alive.is_expired();
     }
     return false;
 }
 //------------------------------------------------------------------------------
 auto remote_host::name() const noexcept -> valid_if_not_empty<string_view> {
     if(auto impl{_impl()}) {
-        return {extract(impl).hostname};
+        return {impl->hostname};
     }
     return {};
 }
@@ -341,7 +330,7 @@ auto remote_host::name() const noexcept -> valid_if_not_empty<string_view> {
 auto remote_host::cpu_concurrent_threads() const noexcept
   -> valid_if_positive<span_size_t> {
     if(auto impl{_impl()}) {
-        return {extract(impl).cpu_concurrent_threads};
+        return {impl->cpu_concurrent_threads};
     }
     return {};
 }
@@ -349,7 +338,7 @@ auto remote_host::cpu_concurrent_threads() const noexcept
 auto remote_host::short_average_load() const noexcept
   -> valid_if_nonnegative<float> {
     if(auto impl{_impl()}) {
-        return {extract(impl).short_average_load.value()};
+        return {impl->short_average_load.value()};
     }
     return {};
 }
@@ -357,7 +346,7 @@ auto remote_host::short_average_load() const noexcept
 auto remote_host::short_average_load_change() const noexcept
   -> optionally_valid<float> {
     if(auto impl{_impl()}) {
-        auto& i = extract(impl);
+        auto& i = *impl;
         return {
           i.short_average_load.delta(),
           i.short_average_load.old_value() >= 0.F};
@@ -368,7 +357,7 @@ auto remote_host::short_average_load_change() const noexcept
 auto remote_host::long_average_load() const noexcept
   -> valid_if_nonnegative<float> {
     if(auto impl{_impl()}) {
-        return {extract(impl).long_average_load.value()};
+        return {impl->long_average_load.value()};
     }
     return {};
 }
@@ -376,7 +365,7 @@ auto remote_host::long_average_load() const noexcept
 auto remote_host::long_average_load_change() const noexcept
   -> optionally_valid<float> {
     if(auto impl{_impl()}) {
-        auto& i = extract(impl);
+        auto& i = *impl;
         return {
           i.long_average_load.delta(), i.long_average_load.old_value() >= 0.F};
     }
@@ -386,7 +375,7 @@ auto remote_host::long_average_load_change() const noexcept
 auto remote_host::total_ram_size() const noexcept
   -> valid_if_positive<span_size_t> {
     if(auto impl{_impl()}) {
-        return {extract(impl).total_ram_size};
+        return {impl->total_ram_size};
     }
     return {-1};
 }
@@ -394,7 +383,7 @@ auto remote_host::total_ram_size() const noexcept
 auto remote_host::free_ram_size() const noexcept
   -> valid_if_positive<span_size_t> {
     if(auto impl{_impl()}) {
-        return {extract(impl).free_ram_size.value()};
+        return {impl->free_ram_size.value()};
     }
     return {-1};
 }
@@ -402,7 +391,7 @@ auto remote_host::free_ram_size() const noexcept
 auto remote_host::free_ram_size_change() const noexcept
   -> optionally_valid<span_size_t> {
     if(auto impl{_impl()}) {
-        auto& i = extract(impl);
+        auto& i = *impl;
         return {i.free_ram_size.delta(), i.free_ram_size.old_value() > 0};
     }
     return {};
@@ -411,7 +400,7 @@ auto remote_host::free_ram_size_change() const noexcept
 auto remote_host::total_swap_size() const noexcept
   -> valid_if_positive<span_size_t> {
     if(auto impl{_impl()}) {
-        return {extract(impl).total_swap_size};
+        return {impl->total_swap_size};
     }
     return {-1};
 }
@@ -419,7 +408,7 @@ auto remote_host::total_swap_size() const noexcept
 auto remote_host::free_swap_size() const noexcept
   -> valid_if_nonnegative<span_size_t> {
     if(auto impl{_impl()}) {
-        return {extract(impl).free_swap_size.value()};
+        return {impl->free_swap_size.value()};
     }
     return {-1};
 }
@@ -427,7 +416,7 @@ auto remote_host::free_swap_size() const noexcept
 auto remote_host::free_swap_size_change() const noexcept
   -> optionally_valid<span_size_t> {
     if(auto impl{_impl()}) {
-        auto& i = extract(impl);
+        auto& i = *impl;
         return {i.free_swap_size.delta(), i.free_swap_size.old_value() >= 0};
     }
     return {};
@@ -436,7 +425,7 @@ auto remote_host::free_swap_size_change() const noexcept
 auto remote_host::min_temperature() const noexcept
   -> valid_if_positive<kelvins_t<float>> {
     if(auto impl{_impl()}) {
-        return {kelvins_(extract(impl).min_temperature.value())};
+        return {kelvins_(impl->min_temperature.value())};
     }
     return {};
 }
@@ -444,7 +433,7 @@ auto remote_host::min_temperature() const noexcept
 auto remote_host::max_temperature() const noexcept
   -> valid_if_positive<kelvins_t<float>> {
     if(auto impl{_impl()}) {
-        return {kelvins_(extract(impl).max_temperature.value())};
+        return {kelvins_(impl->max_temperature.value())};
     }
     return {};
 }
@@ -453,8 +442,8 @@ auto remote_host::min_temperature_change() const noexcept
   -> optionally_valid<kelvins_t<float>> {
     if(auto impl{_impl()}) {
         return {
-          kelvins_(extract(impl).min_temperature.delta()),
-          extract(impl).min_temperature.old_value() > 0.F};
+          kelvins_(impl->min_temperature.delta()),
+          impl->min_temperature.old_value() > 0.F};
     }
     return {};
 }
@@ -463,15 +452,15 @@ auto remote_host::max_temperature_change() const noexcept
   -> optionally_valid<kelvins_t<float>> {
     if(auto impl{_impl()}) {
         return {
-          kelvins_(extract(impl).max_temperature.delta()),
-          extract(impl).max_temperature.old_value() > 0.F};
+          kelvins_(impl->max_temperature.delta()),
+          impl->max_temperature.old_value() > 0.F};
     }
     return {};
 }
 //------------------------------------------------------------------------------
 auto remote_host::power_supply() const noexcept -> power_supply_kind {
     if(auto impl{_impl()}) {
-        auto& i = extract(impl);
+        auto& i = *impl;
         return i.power_supply;
     }
     return {};
@@ -479,39 +468,34 @@ auto remote_host::power_supply() const noexcept -> power_supply_kind {
 //------------------------------------------------------------------------------
 // remote_node
 //------------------------------------------------------------------------------
-inline auto remote_node::_impl() const noexcept -> const remote_node_impl* {
-    return _pimpl.get();
+inline auto remote_node::_impl() const noexcept
+  -> optional_reference<const remote_node_impl> {
+    return _pimpl.ref();
 }
 //------------------------------------------------------------------------------
-inline auto remote_node::_impl() noexcept -> remote_node_impl* {
-    try {
-        if(not _pimpl) [[unlikely]] {
-            _pimpl = std::make_shared<remote_node_impl>();
-        }
-        return _pimpl.get();
-    } catch(...) {
-    }
-    return _pimpl.get();
+inline auto remote_node::_impl() noexcept
+  -> optional_reference<remote_node_impl> {
+    return _pimpl.ensure();
 }
 //------------------------------------------------------------------------------
 auto remote_node::instance_id() const noexcept
   -> valid_if_not_zero<process_instance_id_t> {
     if(auto impl{_impl()}) {
-        return {extract(impl).instance_id};
+        return {impl->instance_id};
     }
     return {0U};
 }
 //------------------------------------------------------------------------------
 auto remote_node::kind() const noexcept -> node_kind {
     if(auto impl{_impl()}) {
-        return extract(impl).kind;
+        return impl->kind;
     }
     return node_kind::unknown;
 }
 //------------------------------------------------------------------------------
 auto remote_node::has_endpoint_info() const noexcept -> bool {
     if(auto impl{_impl()}) {
-        auto& i = extract(impl);
+        auto& i = *impl;
         return not i.is_router_node.is(indeterminate) and
                not i.is_bridge_node.is(indeterminate) and
                not i.display_name.empty();
@@ -522,7 +506,7 @@ auto remote_node::has_endpoint_info() const noexcept -> bool {
 auto remote_node::display_name() const noexcept
   -> valid_if_not_empty<string_view> {
     if(auto impl{_impl()}) {
-        return extract(impl).display_name;
+        return impl->display_name;
     }
     return {};
 }
@@ -530,14 +514,14 @@ auto remote_node::display_name() const noexcept
 auto remote_node::description() const noexcept
   -> valid_if_not_empty<string_view> {
     if(auto impl{_impl()}) {
-        return extract(impl).description;
+        return impl->description;
     }
     return {};
 }
 //------------------------------------------------------------------------------
 auto remote_node::is_router_node() const noexcept -> tribool {
     if(auto impl{_impl()}) {
-        auto& i = extract(impl);
+        auto& i = *impl;
         const auto k = i.kind;
         if((k == node_kind::router) or (k == node_kind::bridge)) {
             return false;
@@ -549,7 +533,7 @@ auto remote_node::is_router_node() const noexcept -> tribool {
 //------------------------------------------------------------------------------
 auto remote_node::is_bridge_node() const noexcept -> tribool {
     if(auto impl{_impl()}) {
-        auto& i = extract(impl);
+        auto& i = *impl;
         const auto k = i.kind;
         if((k == node_kind::router) or (k == node_kind::bridge)) {
             return false;
@@ -561,14 +545,14 @@ auto remote_node::is_bridge_node() const noexcept -> tribool {
 //------------------------------------------------------------------------------
 auto remote_node::host_id() const noexcept -> valid_if_not_zero<host_id_t> {
     if(auto impl{_impl()}) {
-        return extract(impl).host_id;
+        return impl->host_id;
     }
     return {0U};
 }
 //------------------------------------------------------------------------------
 auto remote_node::host() const noexcept -> remote_host {
     if(auto impl{_impl()}) {
-        auto& i = extract(impl);
+        auto& i = *impl;
         if(i.host_id) {
             return _tracker.get_host(i.host_id);
         }
@@ -581,7 +565,7 @@ auto remote_node::host() const noexcept -> remote_host {
 //------------------------------------------------------------------------------
 auto remote_node::instance() const noexcept -> remote_instance {
     if(auto impl{_impl()}) {
-        return _tracker.get_instance(extract(impl).instance_id);
+        return _tracker.get_instance(impl->instance_id);
     }
     return {};
 }
@@ -589,7 +573,7 @@ auto remote_node::instance() const noexcept -> remote_instance {
 auto remote_node::sent_messages() const noexcept
   -> valid_if_nonnegative<std::int64_t> {
     if(auto impl{_impl()}) {
-        const auto& i = extract(impl);
+        const auto& i = *impl;
         return {i.sent_messages};
     }
     return {-1};
@@ -598,7 +582,7 @@ auto remote_node::sent_messages() const noexcept
 auto remote_node::received_messages() const noexcept
   -> valid_if_nonnegative<std::int64_t> {
     if(auto impl{_impl()}) {
-        const auto& i = extract(impl);
+        const auto& i = *impl;
         return {i.received_messages};
     }
     return {-1};
@@ -607,7 +591,7 @@ auto remote_node::received_messages() const noexcept
 auto remote_node::dropped_messages() const noexcept
   -> valid_if_nonnegative<std::int64_t> {
     if(auto impl{_impl()}) {
-        const auto& i = extract(impl);
+        const auto& i = *impl;
         return {i.dropped_messages};
     }
     return {-1};
@@ -616,7 +600,7 @@ auto remote_node::dropped_messages() const noexcept
 auto remote_node::messages_per_second() const noexcept
   -> valid_if_nonnegative<int> {
     if(auto impl{_impl()}) {
-        const auto& i = extract(impl);
+        const auto& i = *impl;
         return {eagine::limit_cast<int>(i.messages_per_second)};
     }
     return {-1};
@@ -625,7 +609,7 @@ auto remote_node::messages_per_second() const noexcept
 auto remote_node::average_message_age() const noexcept
   -> valid_if_not_zero<std::chrono::microseconds> {
     if(auto impl{_impl()}) {
-        const auto& i = extract(impl);
+        const auto& i = *impl;
         return {i.message_age};
     }
     return {};
@@ -634,7 +618,7 @@ auto remote_node::average_message_age() const noexcept
 auto remote_node::uptime() const noexcept
   -> valid_if_not_zero<std::chrono::seconds> {
     if(auto impl{_impl()}) {
-        const auto& i = extract(impl);
+        const auto& i = *impl;
         return {i.uptime};
     }
     return {};
@@ -644,7 +628,7 @@ auto remote_node::connections() const noexcept -> node_connections {
     std::vector<identifier_t> remote_ids;
     _tracker.for_each_connection([&](const auto& conn) {
         if(auto remote_id{conn.opposite_id(_node_id)}) {
-            remote_ids.push_back(extract(remote_id));
+            remote_ids.push_back(*remote_id);
         }
     });
     return {_node_id, std::move(remote_ids), _tracker};
@@ -653,7 +637,7 @@ auto remote_node::connections() const noexcept -> node_connections {
 auto remote_node::subscribes_to(const message_id msg_id) const noexcept
   -> tribool {
     if(auto impl{_impl()}) {
-        return extract(impl).get_sub(msg_id);
+        return impl->get_sub(msg_id);
     }
     return indeterminate;
 }
@@ -665,11 +649,11 @@ auto remote_node::can_query_system_info() const noexcept -> tribool {
 //------------------------------------------------------------------------------
 auto remote_node::is_pingable() const noexcept -> tribool {
     if(auto impl{_impl()}) {
-        auto& i = extract(impl);
+        auto& i = *impl;
         if(i.kind == node_kind::router or i.kind == node_kind::bridge) {
             return true;
         }
-        return extract(impl).get_sub(msgbus_id{"ping"});
+        return impl->get_sub(msgbus_id{"ping"});
     }
     return indeterminate;
 }
@@ -677,15 +661,15 @@ auto remote_node::is_pingable() const noexcept -> tribool {
 void remote_node::set_ping_interval(
   const std::chrono::milliseconds ms) noexcept {
     if(auto impl{_impl()}) {
-        extract(impl).should_ping.reset(ms, nothing);
+        impl->should_ping.reset(ms, nothing);
     }
 }
 //------------------------------------------------------------------------------
 auto remote_node::ping_roundtrip_time() const noexcept
   -> valid_if_not_zero<std::chrono::microseconds> {
     if(auto impl{_impl()}) {
-        if(extract(impl).pings_responded > 0) {
-            return {extract(impl).last_ping_time};
+        if(impl->pings_responded > 0) {
+            return {impl->last_ping_time};
         }
     }
     return {};
@@ -694,10 +678,8 @@ auto remote_node::ping_roundtrip_time() const noexcept
 auto remote_node::ping_success_rate() const noexcept
   -> valid_if_between_0_1<float> {
     if(auto impl{_impl()}) {
-        if(extract(impl).pings_sent > 0) {
-            return {
-              float(extract(impl).pings_responded) /
-              float(extract(impl).pings_sent)};
+        if(impl->pings_sent > 0) {
+            return {float(impl->pings_responded) / float(impl->pings_sent)};
         }
     }
     return {-1.F};
@@ -705,7 +687,7 @@ auto remote_node::ping_success_rate() const noexcept
 //------------------------------------------------------------------------------
 auto remote_node::is_responsive() const noexcept -> tribool {
     if(auto impl{_impl()}) {
-        return bool(extract(impl).ping_bits);
+        return bool(impl->ping_bits);
     }
     return indeterminate;
 }
@@ -714,14 +696,14 @@ auto remote_node::is_responsive() const noexcept -> tribool {
 //------------------------------------------------------------------------------
 auto remote_node_state::clear() noexcept -> remote_node_state& {
     if(auto impl{_impl()}) {
-        extract(impl).clear();
+        impl->clear();
     }
     return *this;
 }
 //------------------------------------------------------------------------------
 auto remote_node_state::host_state() const noexcept -> remote_host_state {
     if(auto impl{_impl()}) {
-        auto& i = extract(impl);
+        auto& i = *impl;
         if(i.host_id) {
             return _tracker.get_host(i.host_id);
         }
@@ -732,7 +714,7 @@ auto remote_node_state::host_state() const noexcept -> remote_host_state {
 auto remote_node_state::instance_state() const noexcept
   -> remote_instance_state {
     if(auto impl{_impl()}) {
-        auto& i = extract(impl);
+        auto& i = *impl;
         if(i.instance_id) {
             return _tracker.get_instance(i.instance_id);
         }
@@ -746,7 +728,7 @@ auto remote_node_state::update() noexcept -> remote_node_state& {
 //------------------------------------------------------------------------------
 auto remote_node_state::changes() noexcept -> remote_node_changes {
     if(auto impl{_impl()}) {
-        auto& i = extract(impl);
+        auto& i = *impl;
         const auto result = i.changes;
         i.changes.clear();
         return result;
@@ -757,7 +739,7 @@ auto remote_node_state::changes() noexcept -> remote_node_changes {
 auto remote_node_state::add_change(const remote_node_change change) noexcept
   -> remote_node_state& {
     if(auto impl{_impl()}) {
-        extract(impl).changes |= change;
+        impl->changes |= change;
     }
     return *this;
 }
@@ -765,7 +747,7 @@ auto remote_node_state::add_change(const remote_node_change change) noexcept
 auto remote_node_state::set_instance_id(
   const process_instance_id_t instance_id) noexcept -> remote_node_state& {
     if(auto impl{_impl()}) {
-        auto& i = extract(impl);
+        auto& i = *impl;
         if(i.instance_id != instance_id) {
             i.instance_id = instance_id;
             i.changes |= remote_node_change::instance_id;
@@ -777,7 +759,7 @@ auto remote_node_state::set_instance_id(
 auto remote_node_state::set_host_id(const host_id_t host_id) noexcept
   -> remote_node_state& {
     if(auto impl{_impl()}) {
-        auto& i = extract(impl);
+        auto& i = *impl;
         if(i.host_id != host_id) {
             i.host_id = host_id;
             i.changes |= remote_node_change::host_id;
@@ -792,7 +774,7 @@ auto remote_node_state::set_host_id(const host_id_t host_id) noexcept
 auto remote_node_state::assign(const node_kind kind) noexcept
   -> remote_node_state& {
     if(auto impl{_impl()}) {
-        auto& i = extract(impl);
+        auto& i = *impl;
         if(i.kind != kind) {
             i.kind = kind;
             i.changes |= remote_node_change::kind;
@@ -804,7 +786,7 @@ auto remote_node_state::assign(const node_kind kind) noexcept
 auto remote_node_state::assign(const endpoint_info& info) noexcept
   -> remote_node_state& {
     if(auto impl{_impl()}) {
-        auto& i = extract(impl);
+        auto& i = *impl;
         if(i.kind != node_kind::endpoint) {
             i.kind = node_kind::endpoint;
             i.changes |= remote_node_change::kind;
@@ -834,7 +816,7 @@ auto remote_node_state::assign(const endpoint_info& info) noexcept
 auto remote_node_state::assign(const router_statistics& stats) noexcept
   -> remote_node_state& {
     if(auto impl{_impl()}) {
-        auto& i = extract(impl);
+        auto& i = *impl;
         if(i.kind != node_kind::router) {
             i.kind = node_kind::router;
             i.changes |= remote_node_change::kind;
@@ -852,7 +834,7 @@ auto remote_node_state::assign(const router_statistics& stats) noexcept
 auto remote_node_state::assign(const bridge_statistics& stats) noexcept
   -> remote_node_state& {
     if(auto impl{_impl()}) {
-        auto& i = extract(impl);
+        auto& i = *impl;
         if(i.kind != node_kind::bridge) {
             i.kind = node_kind::bridge;
             i.changes |= remote_node_change::kind;
@@ -871,7 +853,7 @@ auto remote_node_state::assign(const bridge_statistics& stats) noexcept
 auto remote_node_state::assign(const endpoint_statistics& stats) noexcept
   -> remote_node_state& {
     if(auto impl{_impl()}) {
-        auto& i = extract(impl);
+        auto& i = *impl;
         if(i.kind != node_kind::endpoint) {
             i.kind = node_kind::endpoint;
             i.changes |= remote_node_change::kind;
@@ -888,7 +870,7 @@ auto remote_node_state::assign(const endpoint_statistics& stats) noexcept
 auto remote_node_state::add_subscription(const message_id msg_id) noexcept
   -> remote_node_state& {
     if(auto impl{_impl()}) {
-        auto& i = extract(impl);
+        auto& i = *impl;
         auto& s = i.get_sub(msg_id);
         if(not s.is(true)) {
             s = true;
@@ -901,7 +883,7 @@ auto remote_node_state::add_subscription(const message_id msg_id) noexcept
 auto remote_node_state::remove_subscription(const message_id msg_id) noexcept
   -> remote_node_state& {
     if(auto impl{_impl()}) {
-        auto& i = extract(impl);
+        auto& i = *impl;
         auto& s = i.get_sub(msg_id);
         if(not s.is(false)) {
             s = false;
@@ -914,7 +896,7 @@ auto remote_node_state::remove_subscription(const message_id msg_id) noexcept
 auto remote_node_state::should_ping() noexcept
   -> std::tuple<bool, std::chrono::milliseconds> {
     if(auto impl{_impl()}) {
-        auto& to = extract(impl).should_ping;
+        auto& to = impl->should_ping;
         return {
           to.is_expired(),
           std::chrono::duration_cast<std::chrono::milliseconds>(
@@ -925,7 +907,7 @@ auto remote_node_state::should_ping() noexcept
 //------------------------------------------------------------------------------
 auto remote_node_state::notice_alive() noexcept -> remote_node_state& {
     if(auto impl{_impl()}) {
-        auto& i = extract(impl);
+        auto& i = *impl;
         const auto was_responsive = bool(i.ping_bits);
         i.ping_bits <<= 1U;
         i.ping_bits |= 1U;
@@ -942,7 +924,7 @@ auto remote_node_state::notice_alive() noexcept -> remote_node_state& {
 //------------------------------------------------------------------------------
 auto remote_node_state::pinged() noexcept -> remote_node_state& {
     if(auto impl{_impl()}) {
-        auto& i = extract(impl);
+        auto& i = *impl;
         i.should_ping.reset();
     }
     return *this;
@@ -952,7 +934,7 @@ auto remote_node_state::ping_response(
   const message_sequence_t,
   const std::chrono::microseconds age) noexcept -> remote_node_state& {
     if(auto impl{_impl()}) {
-        auto& i = extract(impl);
+        auto& i = *impl;
         const auto was_responsive = bool(i.ping_bits);
         i.last_ping_time = age;
         i.ping_bits <<= 1U;
@@ -971,7 +953,7 @@ auto remote_node_state::ping_timeout(
   const message_sequence_t,
   const std::chrono::microseconds age) noexcept -> remote_node_state& {
     if(auto impl{_impl()}) {
-        auto& i = extract(impl);
+        auto& i = *impl;
         const auto was_responsive = bool(i.ping_bits);
         i.last_ping_timeout = age;
         i.ping_bits <<= 1U;
@@ -989,21 +971,21 @@ auto remote_node_state::ping_timeout(
 //------------------------------------------------------------------------------
 auto remote_host_state::should_query_sensors() const noexcept -> bool {
     if(const auto impl{_impl()}) {
-        return extract(impl).should_query_sensors.is_expired();
+        return impl->should_query_sensors.is_expired();
     }
     return false;
 }
 //------------------------------------------------------------------------------
 auto remote_host_state::sensors_queried() noexcept -> remote_host_state& {
     if(auto impl{_impl()}) {
-        extract(impl).should_query_sensors.reset();
+        impl->should_query_sensors.reset();
     }
     return *this;
 }
 //------------------------------------------------------------------------------
 auto remote_host_state::notice_alive() noexcept -> remote_host_state& {
     if(auto impl{_impl()}) {
-        extract(impl).is_alive.reset();
+        impl->is_alive.reset();
     }
     return *this;
 }
@@ -1011,7 +993,7 @@ auto remote_host_state::notice_alive() noexcept -> remote_host_state& {
 auto remote_host_state::set_hostname(std::string hn) noexcept
   -> remote_host_state& {
     if(auto impl{_impl()}) {
-        auto& i = extract(impl);
+        auto& i = *impl;
         i.hostname = std::move(hn);
         i.changes |= remote_host_change::hostname;
     }
@@ -1021,7 +1003,7 @@ auto remote_host_state::set_hostname(std::string hn) noexcept
 auto remote_host_state::set_cpu_concurrent_threads(
   const span_size_t value) noexcept -> remote_host_state& {
     if(auto impl{_impl()}) {
-        auto& i = extract(impl);
+        auto& i = *impl;
         i.cpu_concurrent_threads = value;
         i.changes |= remote_host_change::hardware_config;
     }
@@ -1031,7 +1013,7 @@ auto remote_host_state::set_cpu_concurrent_threads(
 auto remote_host_state::set_short_average_load(const float value) noexcept
   -> remote_host_state& {
     if(auto impl{_impl()}) {
-        auto& i = extract(impl);
+        auto& i = *impl;
         i.short_average_load = value;
         i.changes |= remote_host_change::sensor_values;
     }
@@ -1041,7 +1023,7 @@ auto remote_host_state::set_short_average_load(const float value) noexcept
 auto remote_host_state::set_long_average_load(const float value) noexcept
   -> remote_host_state& {
     if(auto impl{_impl()}) {
-        auto& i = extract(impl);
+        auto& i = *impl;
         i.long_average_load = value;
         i.changes |= remote_host_change::sensor_values;
     }
@@ -1051,7 +1033,7 @@ auto remote_host_state::set_long_average_load(const float value) noexcept
 auto remote_host_state::set_total_ram_size(const span_size_t value) noexcept
   -> remote_host_state& {
     if(auto impl{_impl()}) {
-        auto& i = extract(impl);
+        auto& i = *impl;
         i.total_ram_size = value;
         i.changes |= remote_host_change::hardware_config;
     }
@@ -1061,7 +1043,7 @@ auto remote_host_state::set_total_ram_size(const span_size_t value) noexcept
 auto remote_host_state::set_total_swap_size(const span_size_t value) noexcept
   -> remote_host_state& {
     if(auto impl{_impl()}) {
-        auto& i = extract(impl);
+        auto& i = *impl;
         i.total_swap_size = value;
         i.changes |= remote_host_change::hardware_config;
     }
@@ -1071,7 +1053,7 @@ auto remote_host_state::set_total_swap_size(const span_size_t value) noexcept
 auto remote_host_state::set_free_ram_size(const span_size_t value) noexcept
   -> remote_host_state& {
     if(auto impl{_impl()}) {
-        auto& i = extract(impl);
+        auto& i = *impl;
         i.free_ram_size = value;
         i.changes |= remote_host_change::sensor_values;
     }
@@ -1081,7 +1063,7 @@ auto remote_host_state::set_free_ram_size(const span_size_t value) noexcept
 auto remote_host_state::set_free_swap_size(const span_size_t value) noexcept
   -> remote_host_state& {
     if(auto impl{_impl()}) {
-        auto& i = extract(impl);
+        auto& i = *impl;
         i.free_swap_size = value;
         i.changes |= remote_host_change::sensor_values;
     }
@@ -1092,7 +1074,7 @@ auto remote_host_state::set_temperature_min_max(
   const kelvins_t<float> min,
   const kelvins_t<float> max) noexcept -> remote_host_state& {
     if(auto impl{_impl()}) {
-        auto& i = extract(impl);
+        auto& i = *impl;
         i.min_temperature = min.value();
         i.max_temperature = max.value();
         i.changes |= remote_host_change::sensor_values;
@@ -1103,7 +1085,7 @@ auto remote_host_state::set_temperature_min_max(
 auto remote_host_state::set_power_supply(const power_supply_kind value) noexcept
   -> remote_host_state& {
     if(auto impl{_impl()}) {
-        auto& i = extract(impl);
+        auto& i = *impl;
         i.power_supply = value;
         i.changes |= remote_host_change::sensor_values;
     }
@@ -1113,24 +1095,18 @@ auto remote_host_state::set_power_supply(const power_supply_kind value) noexcept
 // node_connection
 //------------------------------------------------------------------------------
 inline auto node_connection::_impl() const noexcept
-  -> const node_connection_impl* {
-    return _pimpl.get();
+  -> optional_reference<const node_connection_impl> {
+    return _pimpl.ref();
 }
 //------------------------------------------------------------------------------
-inline auto node_connection::_impl() noexcept -> node_connection_impl* {
-    try {
-        if(not _pimpl) [[unlikely]] {
-            _pimpl = std::make_shared<node_connection_impl>();
-        }
-        return _pimpl.get();
-    } catch(...) {
-    }
-    return nullptr;
+inline auto node_connection::_impl() noexcept
+  -> optional_reference<node_connection_impl> {
+    return _pimpl.ensure();
 }
 //------------------------------------------------------------------------------
 auto node_connection::kind() const noexcept -> connection_kind {
     if(auto impl{_impl()}) {
-        return extract(impl).kind;
+        return impl->kind;
     }
     return connection_kind::unknown;
 }
@@ -1138,7 +1114,7 @@ auto node_connection::kind() const noexcept -> connection_kind {
 auto node_connection::block_usage_ratio() const noexcept
   -> valid_if_nonnegative<float> {
     if(auto impl{_impl()}) {
-        return {extract(impl).block_usage_ratio};
+        return {impl->block_usage_ratio};
     }
     return {-1.F};
 }
@@ -1146,7 +1122,7 @@ auto node_connection::block_usage_ratio() const noexcept
 auto node_connection::bytes_per_second() const noexcept
   -> valid_if_nonnegative<float> {
     if(auto impl{_impl()}) {
-        return {extract(impl).bytes_per_second};
+        return {impl->bytes_per_second};
     }
     return {-1.F};
 }
@@ -1156,7 +1132,7 @@ auto node_connection::bytes_per_second() const noexcept
 auto node_connection_state::set_kind(const connection_kind kind) noexcept
   -> node_connection_state& {
     if(auto impl{_impl()}) {
-        auto& i = extract(impl);
+        auto& i = *impl;
         if(i.kind != kind) {
             i.kind = kind;
             _tracker.get_node(_id1).add_change(
@@ -1171,7 +1147,7 @@ auto node_connection_state::set_kind(const connection_kind kind) noexcept
 auto node_connection_state::assign(const connection_statistics& stats) noexcept
   -> node_connection_state& {
     if(auto impl{_impl()}) {
-        auto& i = extract(impl);
+        auto& i = *impl;
         i.block_usage_ratio = stats.block_usage_ratio;
         i.bytes_per_second = stats.bytes_per_second;
         _tracker.get_node(stats.local_id)
@@ -1338,7 +1314,7 @@ auto remote_node_tracker::notice_instance(
     auto& node = get_node(node_id);
     if(const auto node_inst{node.instance_id()}) {
         // if node instance changed
-        if(extract(node_inst) != instance_id) {
+        if(*node_inst != instance_id) {
             // clear the node state
             node.clear();
             // remove connection info
@@ -1350,9 +1326,7 @@ auto remote_node_tracker::notice_instance(
 
             node.set_instance_id(instance_id);
             if(auto host_id{node.host_id()}) {
-                get_instance(instance_id)
-                  .notice_alive()
-                  .set_host_id(extract(host_id));
+                get_instance(instance_id).notice_alive().set_host_id(*host_id);
             }
         } else {
             get_instance(instance_id).notice_alive();
@@ -1360,9 +1334,7 @@ auto remote_node_tracker::notice_instance(
     } else {
         node.set_instance_id(instance_id);
         if(auto host_id{node.host_id()}) {
-            get_instance(instance_id)
-              .notice_alive()
-              .set_host_id(extract(host_id));
+            get_instance(instance_id).notice_alive().set_host_id(*host_id);
         }
     }
     return node.notice_alive();

@@ -96,7 +96,7 @@ void asio_roundtrip_F(
     auto read_conn{fact->make_connector(addr)};
     test.ensure(bool(read_conn), "has read connection");
 
-    std::unique_ptr<eagine::msgbus::connection> write_conn;
+    eagine::unique_holder<eagine::msgbus::connection> write_conn;
     test.check(not bool(write_conn), "has not write connection");
 
     const eagine::timeout accept_time{std::chrono::seconds{5}};
@@ -105,7 +105,7 @@ void asio_roundtrip_F(
         cacc->update();
         cacc->process_accepted(
           {eagine::construct_from,
-           [&](std::unique_ptr<eagine::msgbus::connection> conn) {
+           [&](eagine::unique_holder<eagine::msgbus::connection> conn) {
                write_conn = std::move(conn);
            }});
         if(accept_time.is_expired()) {
