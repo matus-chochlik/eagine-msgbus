@@ -1329,6 +1329,7 @@ struct sudoku_tiling_rank_info : sudoku_tiles<S> {
         }
         tiling.solver.base.bus_node()
           .log_stat("solution contributions by helpers")
+          .tag("hlprContrb")
           .arg("rank", S)
           .arg_func([this, max_count](logger_backend& backend) {
               for(const auto& [helper_id, count] : helper_contrib) {
