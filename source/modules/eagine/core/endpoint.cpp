@@ -211,21 +211,21 @@ public:
       const message_id msg_id,
       T& value,
       const message_info& info = {}) noexcept -> bool {
-        if(const auto opt_size = max_data_size()) {
-            const auto max_size = extract(opt_size);
-            return _outgoing.push_if(
-              [this, msg_id, &info, &value, max_size](
-                message_id& dst_msg_id, stored_message& message) {
-                  if(message.store_value(value, max_size)) {
-                      message.assign(info);
-                      dst_msg_id = msg_id;
-                      return true;
-                  }
-                  return false;
-              },
-              max_size);
-        }
-        return false;
+        return max_data_size()
+          .transform([this, msg_id, &info, &value](const auto max_size) {
+              return _outgoing.push_if(
+                [this, msg_id, &info, &value, max_size](
+                  message_id& dst_msg_id, stored_message& message) {
+                    if(message.store_value(value, max_size)) {
+                        message.assign(info);
+                        dst_msg_id = msg_id;
+                        return true;
+                    }
+                    return false;
+                },
+                max_size);
+          })
+          .or_false();
     }
 
     /// @brief Enqueues a BLOB that is larger than max_data_size for sending.

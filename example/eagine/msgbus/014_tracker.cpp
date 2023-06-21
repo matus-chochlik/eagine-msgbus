@@ -34,7 +34,7 @@ public:
       const remote_node_changes changes) noexcept {
         log_info("node change ${nodeId}")
           .arg("changes", changes)
-          .arg("nodeId", extract(node.id()));
+          .arg("nodeId", node.id().value_or(0));
     }
 
     auto is_done() const noexcept -> bool {

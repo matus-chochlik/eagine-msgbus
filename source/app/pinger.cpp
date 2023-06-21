@@ -151,21 +151,16 @@ public:
     void on_host_id_received(
       const result_context& res_ctx,
       const valid_if_positive<host_id_t>& host_id) noexcept {
-        if(host_id) {
-            if(res_ctx.source_id() != this->bus_node().get_id()) {
-                auto& state = _targets[res_ctx.source_id()];
-                state.host_id = extract(host_id);
-            }
+        if(res_ctx.source_id() != this->bus_node().get_id()) {
+            host_id.and_then(
+              _1.assign_to(_targets[res_ctx.source_id()].host_id));
         }
     }
 
     void on_hostname_received(
       const result_context& res_ctx,
       const valid_if_not_empty<std::string>& hostname) noexcept {
-        if(hostname) {
-            auto& state = _targets[res_ctx.source_id()];
-            state.hostname = extract(hostname);
-        }
+        hostname.and_then(_1.assign_to(_targets[res_ctx.source_id()].hostname));
     }
 
     void on_ping_response(
@@ -341,7 +336,7 @@ auto main(main_ctx& ctx) -> int {
                   "longLoad", ctx.system().long_average_load());
                 if(const auto temp_k{ctx.system().cpu_temperature()}) {
                     the_pinger.log_chart_sample(
-                      "cpuTempC", extract(temp_k).to<units::degree_celsius>());
+                      "cpuTempC", temp_k->to<units::degree_celsius>());
                 }
             }
         }
