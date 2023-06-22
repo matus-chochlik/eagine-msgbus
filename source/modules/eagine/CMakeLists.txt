@@ -9,8 +9,8 @@ add_subdirectory(utility)
 eagine_add_module(
 	eagine.msgbus
 	SUBMODULES
-		eagine.msgbus.core
-		eagine.msgbus.services
-		eagine.msgbus.utility
+		core
+		services
+		utility
 )
 
