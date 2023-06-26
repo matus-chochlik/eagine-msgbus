@@ -240,11 +240,12 @@ void sudoku_helper_rank_info<S>::add_board(
   const identifier_t source_id,
   const message_sequence_t sequence_no,
   const basic_sudoku_board<S> board) noexcept {
-    if(boards.size() <= 8) [[likely]] {
+    if(boards.size() <= 10) [[likely]] {
         searches.insert(source_id);
         boards.emplace_back(source_id, sequence_no, std::move(board));
     } else {
-        bus.log_warning("too many boards in backlog")
+        bus.log_warning("too many boards (${count}) in backlog")
+          .tag("tooMnyBrds")
           .arg("rank", S)
           .arg("count", boards.size());
     }
@@ -589,7 +590,9 @@ struct sudoku_solver_rank_info {
         });
         if(count > 0) [[unlikely]] {
             base.bus_node()
-              .log_warning("replacing ${count} timeouted boards")
+              .log_warning(
+                "replacing ${count} timeouted boards, ${pending} pending")
+              .tag("rplcdBords")
               .arg("count", count)
               .arg("enqueued", key_boards.size())
               .arg("pending", pending.size())
@@ -1291,7 +1294,7 @@ struct sudoku_tiling_rank_info : sudoku_tiles<S> {
         if(this->set_board(coord, sol.board)) {
             cells_done += this->cells_per_tile(coord);
             tiling.solver.base.bus_node()
-              .log_info("solved board (${x}, ${y})")
+              .log_info("solved board [${x}, ${y}], ${progress} done")
               .tag("solvdBoard")
               .arg("rank", S)
               .arg("x", std::get<0>(coord))
@@ -1326,6 +1329,7 @@ struct sudoku_tiling_rank_info : sudoku_tiles<S> {
         }
         tiling.solver.base.bus_node()
           .log_stat("solution contributions by helpers")
+          .tag("hlprContrb")
           .arg("rank", S)
           .arg_func([this, max_count](logger_backend& backend) {
               for(const auto& [helper_id, count] : helper_contrib) {

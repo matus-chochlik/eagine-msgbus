@@ -486,23 +486,21 @@ public:
     /// @see total_ram_size
     /// @see free_ram_size
     auto ram_usage() const noexcept -> valid_if_nonnegative<float> {
-        if(const auto total{total_ram_size()}) {
-            if(const auto free{free_ram_size()}) {
-                return {1.F - float(extract(free)) / float(extract(total))};
-            }
-        }
-        return {-1.F};
+        return meld(free_ram_size(), total_ram_size())
+          .transform([](const auto free, const auto total) {
+              return 1.F - float(free) / float(total);
+          })
+          .value_or(-1.F);
     }
 
     /// @brief Returns the change in RAM usage on the remote host (-1.0, 1.0).
     /// @see ram_usage
     auto ram_usage_change() const noexcept -> optionally_valid<float> {
-        if(const auto total{total_ram_size()}) {
-            if(const auto change{free_ram_size_change()}) {
-                return {-float(extract(change)) / float(extract(total)), true};
-            }
-        }
-        return {};
+        return meld(free_ram_size_change(), total_ram_size())
+          .and_then(
+            [](const auto change, const auto total) -> optionally_valid<float> {
+                return {-float(total) / float(total), true};
+            });
     }
 
     /// @brief Returns the total swap size on the remote host.
@@ -531,23 +529,21 @@ public:
     /// @see total_swap_size
     /// @see free_swap_size
     auto swap_usage() const noexcept -> valid_if_nonnegative<float> {
-        if(const auto total{total_swap_size()}) {
-            if(const auto free{free_swap_size()}) {
-                return {1.F - float(extract(free)) / float(extract(total))};
-            }
-        }
-        return {-1.F};
+        return meld(free_swap_size(), total_swap_size())
+          .transform([](const auto free, const auto total) {
+              return 1.F - float(free) / float(total);
+          })
+          .value_or(-1.F);
     }
 
     /// @brief Returns the change in swap usage on the remote host (-1.0, 1.0).
     /// @see swap_usage
     auto swap_usage_change() const noexcept -> optionally_valid<float> {
-        if(const auto total{total_swap_size()}) {
-            if(const auto change{free_swap_size_change()}) {
-                return {-float(extract(change)) / float(extract(total)), true};
-            }
-        }
-        return {};
+        return meld(free_swap_size_change(), total_swap_size())
+          .and_then(
+            [](const auto change, const auto total) -> optionally_valid<float> {
+                return {-float(total) / float(total), true};
+            });
     }
 
     /// @brief Returns the minimum temperature recorded on the remote host.
@@ -1115,9 +1111,8 @@ export auto adapt_entry_arg(
         void operator()(logger_backend& backend) const noexcept {
             backend.add_unsigned(name, "uint64", value.id().value_or(0U));
 
-            if(const auto opt_id{value.instance_id()}) {
-                backend.add_unsigned("instanceId", "uint32", extract(opt_id));
-            }
+            value.instance_id().and_then(
+              backend.add_unsigned("instanceId", "uint32", _1));
 
             backend.add_string(
               "nodeKind", "enum", enumerator_name(value.kind()));
@@ -1131,20 +1126,17 @@ export auto adapt_entry_arg(
             backend.add_adapted(
               "isRespnsve", yes_no_maybe(value.is_responsive()));
 
-            if(const auto opt_rate{value.ping_success_rate()}) {
-                backend.add_float("pingSucces", "Ratio", extract(opt_rate));
-            }
-            if(const auto opt_bld{value.instance().build_version()}) {
-                backend.add_adapted("buildInfo", *opt_bld);
-            }
+            value.ping_success_rate().and_then(
+              backend.add_float("pingSucces", "Ratio", _1));
 
-            if(const auto opt_name{value.display_name()}) {
-                backend.add_string("dispName", "string", *opt_name);
-            }
+            value.instance().build_version().and_then(
+              backend.add_adapted("buildInfo", _1));
 
-            if(const auto opt_desc{value.description()}) {
-                backend.add_string("descrption", "string", *opt_desc);
-            }
+            value.display_name().and_then(
+              backend.add_string("dispName", "string", _1));
+
+            value.description().and_then(
+              backend.add_string("descrption", "string", _1));
         }
     };
     return _adapter{.name = name, .value = value};
@@ -1160,37 +1152,25 @@ export auto adapt_entry_arg(
         void operator()(logger_backend& backend) const noexcept {
             backend.add_unsigned(name, "uint64", value.id().value_or(0U));
 
-            if(const auto opt_name{value.name()}) {
-                backend.add_string("hostname", "string", extract(opt_name));
-            }
-
-            if(const auto opt_val{value.cpu_concurrent_threads()}) {
-                backend.add_integer("cpuThreads", "int64", extract(opt_val));
-            }
-            if(const auto opt_val{value.total_ram_size()}) {
-                backend.add_integer("totalRAM", "ByteSize", extract(opt_val));
-            }
-            if(const auto opt_val{value.free_ram_size()}) {
-                backend.add_integer("freeRAM", "ByteSize", extract(opt_val));
-            }
-            if(const auto opt_val{value.free_swap_size()}) {
-                backend.add_integer("freeSwap", "ByteSize", extract(opt_val));
-            }
-            if(const auto opt_val{value.total_swap_size()}) {
-                backend.add_integer("totalSwap", "ByteSize", extract(opt_val));
-            }
-            if(const auto opt_val{value.ram_usage()}) {
-                backend.add_float("ramUsage", "Ratio", extract(opt_val));
-            }
-            if(const auto opt_val{value.swap_usage()}) {
-                backend.add_float("swapUsage", "Ratio", extract(opt_val));
-            }
-            if(const auto opt_val{value.short_average_load()}) {
-                backend.add_float("shortLoad", "Ratio", extract(opt_val));
-            }
-            if(const auto opt_val{value.long_average_load()}) {
-                backend.add_float("longLoad", "Ratio", extract(opt_val));
-            }
+            value.name().and_then(backend.add_string("hostname", "string", _1));
+            value.cpu_concurrent_threads().and_then(
+              backend.add_integer("cpuThreads", "int64", _1));
+            value.total_ram_size().and_then(
+              backend.add_integer("totalRAM", "ByteSize", _1));
+            value.free_ram_size().and_then(
+              backend.add_integer("freeRAM", "ByteSize", _1));
+            value.free_swap_size().and_then(
+              backend.add_integer("freeSwap", "ByteSize", _1));
+            value.total_swap_size().and_then(
+              backend.add_integer("totalSwap", "ByteSize", _1));
+            value.ram_usage().and_then(
+              backend.add_float("ramUsage", "Ratio", _1));
+            value.swap_usage().and_then(
+              backend.add_float("swapUsage", "Ratio", _1));
+            value.short_average_load().and_then(
+              backend.add_float("shortLoad", "Ratio", _1));
+            value.long_average_load().and_then(
+              backend.add_float("longLoad", "Ratio", _1));
         }
     };
     return _adapter{.name = name, .value = value};

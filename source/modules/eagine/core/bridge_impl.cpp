@@ -112,8 +112,8 @@ public:
                       make_span_getter(i, message.data()),
                       [this](byte b) {
                           const auto encode{make_base64_encode_transform()};
-                          if(auto opt_c{encode(b)}) {
-                              this->_output << extract(opt_c);
+                          if(auto opt_c{encode(b)}) [[likely]] {
+                              this->_output << *opt_c;
                               return true;
                           }
                           return false;
@@ -152,7 +152,7 @@ public:
 
     void recv_input() noexcept {
         if(const auto pos{_source.scan_for('\n', _max_read)}) {
-            block_data_source source(_source.top(extract(pos)));
+            block_data_source source(_source.top(*pos));
             default_deserializer_backend backend(source);
             identifier class_id{};
             identifier method_id{};
@@ -176,7 +176,7 @@ public:
             } else {
                 ++_decode_errors;
             }
-            _source.pop(extract(pos) + 1);
+            _source.pop(*pos + 1);
         } else {
             std::this_thread::sleep_for(std::chrono::milliseconds(5));
         }
@@ -288,11 +288,11 @@ auto bridge::_handle_topo_bridge_conn(
   const bool to_connection) noexcept -> message_handling_result {
     if(to_connection) {
         bridge_topology_info info{};
-        if(default_deserialize(info, message.content())) {
+        if(default_deserialize(info, message.content())) [[likely]] {
             info.opposite_id = _id;
             auto temp{default_serialize_buffer_for(info)};
             if(auto serialized{default_serialize(info, cover(temp))}) {
-                message_view response{message, extract(serialized)};
+                message_view response{message, *serialized};
                 _send(msgbus_id{"topoBrdgCn"}, response);
                 return was_handled;
             }
@@ -308,8 +308,8 @@ auto bridge::_handle_topology_query(
     info.bridge_id = _id;
     info.instance_id = _instance_id;
     auto temp{default_serialize_buffer_for(info)};
-    if(const auto serialized{default_serialize(info, cover(temp))}) {
-        message_view response{extract(serialized)};
+    if(const auto serialized{default_serialize(info, cover(temp))}) [[likely]] {
+        message_view response{*serialized};
         response.setup_response(message);
         if(to_connection) {
             _do_push(msgbus_id{"topoBrdgCn"}, response);
@@ -340,7 +340,7 @@ auto bridge::_handle_stats_query(
 
     auto bs_buf{default_serialize_buffer_for(_stats)};
     if(const auto serialized{default_serialize(_stats, cover(bs_buf))}) {
-        message_view response{extract(serialized)};
+        message_view response{*serialized};
         response.setup_response(message);
         response.set_source_id(_id);
         if(to_connection) {
@@ -549,7 +549,7 @@ auto bridge::_check_state() noexcept -> work_done {
         if(_recoverable_state() and _connection) {
             if(const auto max_data_size{_connection->max_data_size()}) {
                 ++_state_count;
-                _state = std::make_shared<bridge_state>(extract(max_data_size));
+                _state = std::make_shared<bridge_state>(*max_data_size);
                 _state->start();
                 something_done();
             }

@@ -1202,7 +1202,7 @@ auto router::_send_flow_info(const message_flow_info& flow_info) noexcept
         auto buf{default_serialize_buffer_for(flow_info)};
         if(const auto serialized{default_serialize(flow_info, cover(buf))})
           [[likely]] {
-            message_view response{extract(serialized)};
+            message_view response{*serialized};
             response.set_source_id(get_id());
             response.set_target_id(remote_id);
             response.set_priority(message_priority::high);
@@ -1358,7 +1358,7 @@ auto router::_handle_subscriptions_query(const message_view& message) noexcept
         auto temp{default_serialize_buffer_for(sub_msg_id)};
         if(auto serialized{
              default_serialize_message_type(sub_msg_id, cover(temp))}) {
-            message_view response{extract(serialized)};
+            message_view response{*serialized};
             response.setup_response(message);
             response.set_source_id(message.target_id);
             response.sequence_no = inst_id;
@@ -1427,7 +1427,7 @@ auto router::_handle_topology_query(const message_view& message) noexcept
           info.connect_kind = conn_kind;
           if(const auto serialized{default_serialize(info, cover(temp))})
             [[likely]] {
-              message_view response{extract(serialized)};
+              message_view response{*serialized};
               response.setup_response(message);
               response.set_source_id(own_id);
               this->_route_message(msgbus_id{"topoRutrCn"}, own_id, response);
@@ -1461,7 +1461,7 @@ auto router::_handle_stats_query(const message_view& message) noexcept
     auto rs_buf{default_serialize_buffer_for(stats)};
     if(const auto serialized{default_serialize(stats, cover(rs_buf))})
       [[likely]] {
-        message_view response{extract(serialized)};
+        message_view response{*serialized};
         response.setup_response(message);
         response.set_source_id(own_id);
         this->_route_message(msgbus_id{"statsRutr"}, own_id, response);
@@ -1476,7 +1476,7 @@ auto router::_handle_stats_query(const message_view& message) noexcept
             auto cs_buf{default_serialize_buffer_for(conn_stats)};
             if(const auto serialized{
                  default_serialize(conn_stats, cover(cs_buf))}) [[likely]] {
-                message_view response{extract(serialized)};
+                message_view response{*serialized};
                 response.setup_response(message);
                 response.set_source_id(own_id);
                 this->_route_message(msgbus_id{"statsConn"}, own_id, response);

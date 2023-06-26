@@ -270,10 +270,10 @@ private:
         if(app_name) {
             auto& node = _get_node(ctx.source_id());
             if(const auto inst_id{node.instance_id()}) {
-                auto& inst = _get_instance(extract(inst_id));
-                inst.set_app_name(extract(app_name)).notice_alive();
+                auto& inst = _get_instance(*inst_id);
+                inst.set_app_name(*app_name).notice_alive();
                 _tracker.for_each_instance_node_state(
-                  extract(inst_id), [&](auto, auto& inst_node) {
+                  *inst_id, [&](auto, auto& inst_node) {
                       inst_node.add_change(
                         remote_node_change::application_info);
                   });
@@ -291,9 +291,7 @@ private:
       const result_context& ctx,
       const valid_if_positive<host_id_t>& host_id) noexcept {
         if(host_id) {
-            _get_node(ctx.source_id())
-              .set_host_id(extract(host_id))
-              .notice_alive();
+            _get_node(ctx.source_id()).set_host_id(*host_id).notice_alive();
         }
     }
 
@@ -303,10 +301,10 @@ private:
         if(hostname) {
             auto& node = _get_node(ctx.source_id());
             if(const auto host_id{node.host_id()}) {
-                auto& host = _get_host(extract(host_id));
-                host.set_hostname(extract(hostname)).notice_alive();
+                auto& host = _get_host(*host_id);
+                host.set_hostname(*hostname).notice_alive();
                 _tracker.for_each_host_node_state(
-                  extract(host_id), [&](auto, auto& host_node) {
+                  *host_id, [&](auto, auto& host_node) {
                       host_node.add_change(remote_node_change::host_info);
                   });
             }
@@ -318,10 +316,10 @@ private:
       const compiler_info& info) noexcept {
         auto& node = _get_node(ctx.source_id()).notice_alive();
         if(const auto inst_id{node.instance_id()}) {
-            auto& inst = _get_instance(extract(inst_id));
+            auto& inst = _get_instance(*inst_id);
             inst.assign(info);
             _tracker.for_each_instance_node_state(
-              extract(inst_id), [&](auto, auto& inst_node) {
+              *inst_id, [&](auto, auto& inst_node) {
                   inst_node.add_change(remote_node_change::build_info);
               });
         }
@@ -332,10 +330,10 @@ private:
       const version_info& info) noexcept {
         auto& node = _get_node(ctx.source_id()).notice_alive();
         if(const auto inst_id{node.instance_id()}) {
-            auto& inst = _get_instance(extract(inst_id));
+            auto& inst = _get_instance(*inst_id);
             inst.assign(info);
             _tracker.for_each_instance_node_state(
-              extract(inst_id), [&](auto, auto& inst_node) {
+              *inst_id, [&](auto, auto& inst_node) {
                   inst_node.add_change(remote_node_change::build_info);
               });
         }
@@ -347,10 +345,10 @@ private:
         if(opt_value) {
             auto& node = _get_node(ctx.source_id()).notice_alive();
             if(const auto host_id{node.host_id()}) {
-                auto& host = _get_host(extract(host_id)).notice_alive();
-                host.set_cpu_concurrent_threads(extract(opt_value));
+                auto& host = _get_host(*host_id).notice_alive();
+                host.set_cpu_concurrent_threads(*opt_value);
                 _tracker.for_each_host_node_state(
-                  extract(host_id), [&](auto, auto& host_node) {
+                  *host_id, [&](auto, auto& host_node) {
                       host_node.add_change(remote_node_change::hardware_config);
                   });
             }
@@ -363,10 +361,10 @@ private:
         if(opt_value) {
             auto& node = _get_node(ctx.source_id()).notice_alive();
             if(const auto host_id{node.host_id()}) {
-                auto& host = _get_host(extract(host_id)).notice_alive();
-                host.set_short_average_load(extract(opt_value));
+                auto& host = _get_host(*host_id).notice_alive();
+                host.set_short_average_load(*opt_value);
                 _tracker.for_each_host_node_state(
-                  extract(host_id), [&](auto, auto& host_node) {
+                  *host_id, [&](auto, auto& host_node) {
                       host_node.add_change(remote_node_change::sensor_values);
                   });
             }
@@ -379,10 +377,10 @@ private:
         if(opt_value) {
             auto& node = _get_node(ctx.source_id()).notice_alive();
             if(const auto host_id{node.host_id()}) {
-                auto& host = _get_host(extract(host_id)).notice_alive();
-                host.set_long_average_load(extract(opt_value));
+                auto& host = _get_host(*host_id).notice_alive();
+                host.set_long_average_load(*opt_value);
                 _tracker.for_each_host_node_state(
-                  extract(host_id), [&](auto, auto& host_node) {
+                  *host_id, [&](auto, auto& host_node) {
                       host_node.add_change(remote_node_change::sensor_values);
                   });
             }
@@ -395,10 +393,10 @@ private:
         if(opt_value) {
             auto& node = _get_node(ctx.source_id()).notice_alive();
             if(const auto host_id{node.host_id()}) {
-                auto& host = _get_host(extract(host_id)).notice_alive();
-                host.set_free_ram_size(extract(opt_value));
+                auto& host = _get_host(*host_id).notice_alive();
+                host.set_free_ram_size(*opt_value);
                 _tracker.for_each_host_node_state(
-                  extract(host_id), [&](auto, auto& host_node) {
+                  *host_id, [&](auto, auto& host_node) {
                       host_node.add_change(remote_node_change::sensor_values);
                   });
             }
@@ -411,10 +409,10 @@ private:
         if(opt_value) {
             auto& node = _get_node(ctx.source_id()).notice_alive();
             if(const auto host_id{node.host_id()}) {
-                auto& host = _get_host(extract(host_id)).notice_alive();
-                host.set_total_ram_size(extract(opt_value));
+                auto& host = _get_host(*host_id).notice_alive();
+                host.set_total_ram_size(*opt_value);
                 _tracker.for_each_host_node_state(
-                  extract(host_id), [&](auto, auto& host_node) {
+                  *host_id, [&](auto, auto& host_node) {
                       host_node.add_change(remote_node_change::hardware_config);
                   });
             }
@@ -427,10 +425,10 @@ private:
         if(opt_value) {
             auto& node = _get_node(ctx.source_id()).notice_alive();
             if(const auto host_id{node.host_id()}) {
-                auto& host = _get_host(extract(host_id)).notice_alive();
-                host.set_free_swap_size(extract(opt_value));
+                auto& host = _get_host(*host_id).notice_alive();
+                host.set_free_swap_size(*opt_value);
                 _tracker.for_each_host_node_state(
-                  extract(host_id), [&](auto, auto& host_node) {
+                  *host_id, [&](auto, auto& host_node) {
                       host_node.add_change(remote_node_change::sensor_values);
                   });
             }
@@ -443,10 +441,10 @@ private:
         if(opt_value) {
             auto& node = _get_node(ctx.source_id()).notice_alive();
             if(const auto host_id{node.host_id()}) {
-                auto& host = _get_host(extract(host_id)).notice_alive();
-                host.set_total_swap_size(extract(opt_value));
+                auto& host = _get_host(*host_id).notice_alive();
+                host.set_total_swap_size(*opt_value);
                 _tracker.for_each_host_node_state(
-                  extract(host_id), [&](auto, auto& host_node) {
+                  *host_id, [&](auto, auto& host_node) {
                       host_node.add_change(remote_node_change::hardware_config);
                   });
             }
@@ -462,10 +460,10 @@ private:
         if(min and max) {
             auto& node = _get_node(ctx.source_id()).notice_alive();
             if(const auto host_id{node.host_id()}) {
-                auto& host = _get_host(extract(host_id)).notice_alive();
-                host.set_temperature_min_max(extract(min), extract(max));
+                auto& host = _get_host(*host_id).notice_alive();
+                host.set_temperature_min_max(*min, *max);
                 _tracker.for_each_host_node_state(
-                  extract(host_id), [&](auto, auto& host_node) {
+                  *host_id, [&](auto, auto& host_node) {
                       host_node.add_change(remote_node_change::sensor_values);
                   });
             }
@@ -477,10 +475,10 @@ private:
       const power_supply_kind value) noexcept {
         auto& node = _get_node(ctx.source_id()).notice_alive();
         if(const auto host_id{node.host_id()}) {
-            auto& host = _get_host(extract(host_id)).notice_alive();
+            auto& host = _get_host(*host_id).notice_alive();
             host.set_power_supply(value);
             _tracker.for_each_host_node_state(
-              extract(host_id), [&](auto, auto& host_node) {
+              *host_id, [&](auto, auto& host_node) {
                   host_node.add_change(remote_node_change::sensor_values);
               });
         }

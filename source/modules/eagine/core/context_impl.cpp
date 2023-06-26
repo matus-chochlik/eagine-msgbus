@@ -346,8 +346,8 @@ auto context::verify_remote_signature(
     return false;
 }
 //------------------------------------------------------------------------------
-auto make_context(main_ctx_parent parent) -> std::shared_ptr<context> {
-    return std::make_shared<context>(parent);
+auto make_context(main_ctx_parent parent) -> shared_holder<context> {
+    return {default_selector, parent};
 }
 //------------------------------------------------------------------------------
 } // namespace eagine::msgbus
