@@ -186,10 +186,10 @@ private:
     std::map<identifier_t, context_remote_node> _remotes{};
 };
 //------------------------------------------------------------------------------
-export using shared_context = std::shared_ptr<context>;
+export using shared_context = shared_holder<context>;
 //------------------------------------------------------------------------------
 export [[nodiscard]] auto make_context(main_ctx_parent)
-  -> std::shared_ptr<context>;
+  -> shared_holder<context>;
 //------------------------------------------------------------------------------
 } // namespace eagine::msgbus
 
