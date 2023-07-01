@@ -573,7 +573,7 @@ struct sudoku_solver_rank_info {
 
     auto handle_timeouted(subscriber& base, auto& solver) noexcept
       -> work_done {
-        span_size_t count = 0;
+        std::size_t count = 0;
         std::erase_if(pending, [&](auto& entry) {
             if(entry.too_late) {
                 const unsigned_constant<S> rank{};
@@ -588,7 +588,7 @@ struct sudoku_solver_rank_info {
             }
             return false;
         });
-        if(count > 0) [[unlikely]] {
+        if(count > 0U) [[unlikely]] {
             base.bus_node()
               .log_warning(
                 "replacing ${count} timeouted boards, ${pending} pending")
@@ -598,6 +598,13 @@ struct sudoku_solver_rank_info {
               .arg("pending", pending.size())
               .arg("ready", ready_helpers.size())
               .arg("rank", S);
+            sudoku_board_timeout event;
+            event.rank = S;
+            event.replaced_board_count = count;
+            event.enqueued_board_count = key_boards.size();
+            event.pending_board_count = pending.size();
+            event.ready_helper_count = ready_helpers.size();
+            solver.signals.board_timeouted(event);
         }
         return count > 0;
     }
@@ -864,7 +871,7 @@ struct sudoku_solver_rank_info {
 class sudoku_solver_impl : public sudoku_solver_intf {
     using This = sudoku_solver_impl;
 
-    [[no_unique_address]] sudoku_solver_driver _default_driver;
+    sudoku_solver_driver _default_driver;
 
 public:
     sudoku_solver_impl(subscriber& sub, sudoku_solver_signals& sigs) noexcept
@@ -1055,8 +1062,10 @@ auto sudoku_solver_impl::update() noexcept -> work_done {
       [&](auto& info) {
           something_done(info.handle_timeouted(base, *this));
           if(_can_work) [[likely]] {
-              something_done(
-                info.send_boards(*this, base.bus_node(), compressor));
+              if(driver().should_send_boards()) [[likely]] {
+                  something_done(
+                    info.send_boards(*this, base.bus_node(), compressor));
+              }
               something_done(info.search_helpers(base.bus_node()));
           }
       },
@@ -1397,6 +1406,26 @@ public:
         return _is_already_done(coord, rank);
     }
 
+    auto should_send_boards() noexcept -> bool final {
+        const bool is_suspended{not _suspended.is_expired()};
+        if(is_suspended) {
+            if(not _was_suspended) {
+                solver.base.bus_node()
+                  .log_change("suspending sending of boards for ${interval}")
+                  .tag("suspndSend")
+                  .arg("interval", _suspended.period());
+            }
+        } else {
+            if(_was_suspended) {
+                solver.base.bus_node()
+                  .log_change("resuming sending of boards to helpers")
+                  .tag("rsumedSend");
+            }
+        }
+        _was_suspended = is_suspended;
+        return not is_suspended;
+    }
+
     template <unsigned S>
     auto _is_already_done(
       const sudoku_solver_key& coord,
@@ -1460,6 +1489,10 @@ public:
         do_initialize(min, max, coord, board);
     }
 
+    void suspend_send_for(std::chrono::milliseconds interval) noexcept final {
+        _suspended.reset(interval);
+    }
+
     void reset(unsigned rank) noexcept final {
         apply_to_sudoku_rank_unit(
           rank, [](auto& info) { info.reset(); }, _infos);
@@ -1506,6 +1539,8 @@ public:
 
 private:
     sudoku_rank_tuple<sudoku_tiling_rank_info> _infos;
+    timeout _suspended{std::chrono::seconds{0}, nothing};
+    bool _was_suspended{false};
 };
 //------------------------------------------------------------------------------
 auto make_sudoku_tiling_impl(

@@ -106,6 +106,11 @@ export struct sudoku_solver_driver : interface<sudoku_solver_driver> {
       const unsigned_constant<6>) noexcept -> bool {
         return false;
     }
+
+    /// @brief Indicates that the solver should send boards to helper.
+    virtual auto should_send_boards() noexcept -> bool {
+        return true;
+    }
 };
 //------------------------------------------------------------------------------
 /// @brief Type storing information about (partially) solved Sudoku board.
@@ -184,6 +189,22 @@ export struct sudoku_board_queue_change {
     /// @brief Number of boards in the queue.
     std::size_t board_count{0};
 };
+
+/// @brief Type containing information about a timeouted Sudoku board.
+/// @ingroup msgbus
+/// @see sudoku_solver_signals
+export struct sudoku_board_timeout {
+    /// @brief The rank of the boards in queue.
+    unsigned rank{0};
+    /// @brief Number of replaced, timeouted boards.
+    std::size_t replaced_board_count{0};
+    /// @brief Number of boards in the queue.
+    std::size_t enqueued_board_count{0};
+    /// @brief Number of pending boards sent to helpers.
+    std::size_t pending_board_count{0};
+    /// @brief Number of available helper instances.
+    std::size_t ready_helper_count{0};
+};
 //------------------------------------------------------------------------------
 /// @brief Collection of signals emitted by the sudoku_solver service
 /// @ingroup msgbus
@@ -233,6 +254,9 @@ export struct sudoku_solver_signals {
 
     /// @brief Triggered when the length of the queue of boards change.
     signal<void(const sudoku_board_queue_change&) noexcept> queue_length_changed;
+
+    /// @brief Triggered when a board sent to a helper has timeouted.
+    signal<void(const sudoku_board_timeout&) noexcept> board_timeouted;
 };
 //------------------------------------------------------------------------------
 export auto make_sudoku_solver_impl(subscriber& base, sudoku_solver_signals&)
@@ -730,6 +754,8 @@ public:
       const sudoku_solver_key coord,
       basic_sudoku_board<6> board) noexcept = 0;
 
+    virtual void suspend_send_for(std::chrono::milliseconds) noexcept = 0;
+
     virtual void reset(unsigned rank) noexcept = 0;
     virtual auto are_complete() const noexcept -> bool = 0;
     virtual auto are_complete(unsigned rank) const noexcept -> bool = 0;
@@ -829,6 +855,13 @@ public:
     auto initialize(const Coord max, basic_sudoku_board<S> board) noexcept
       -> auto& {
         return initialize({0, 0}, max, {0, 0}, std::move(board));
+    }
+
+    /// @brief Suspends sending of boards to helpers for the specified interval
+    auto suspend_send_for(std::chrono::milliseconds interval) noexcept
+      -> auto& {
+        _impl->suspend_send_for(interval);
+        return *this;
     }
 
     /// @brief Resets the tiling with the specified rank.
