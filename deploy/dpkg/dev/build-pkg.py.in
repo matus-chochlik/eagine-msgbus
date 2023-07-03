@@ -59,7 +59,7 @@ Architecture: %s
 Installed-Size: %d
 Depends: eagine-core-dev,eagine-sslplus-dev
 Maintainer: Matus Chochlik <chochlik@gmail.com>
-Description: C++ implementation of a inter-process message bus.
+Description: C++ implementation of an inter-process network message bus.
 """ % (
     "@PKG_VERSION@",
     "@PKG_ARCH@",
