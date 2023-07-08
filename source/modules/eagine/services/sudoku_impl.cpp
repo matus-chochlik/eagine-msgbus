@@ -240,7 +240,7 @@ void sudoku_helper_rank_info<S>::add_board(
   const identifier_t source_id,
   const message_sequence_t sequence_no,
   const basic_sudoku_board<S> board) noexcept {
-    if(boards.size() <= 10) [[likely]] {
+    if(boards.size() < 20) [[likely]] {
         searches.insert(source_id);
         boards.emplace_back(source_id, sequence_no, std::move(board));
     } else {
