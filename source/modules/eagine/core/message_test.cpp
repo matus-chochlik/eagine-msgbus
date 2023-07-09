@@ -258,7 +258,7 @@ void message_serialize_message_type_roundtrip(unsigned, auto& s) {
         eagine::message_id read_msg_id;
         if(const auto deserialized{
              eagine::msgbus::default_deserialize_message_type(
-               read_msg_id, eagine::extract(serialized))}) {
+               read_msg_id, *serialized)}) {
 
             trck.checkpoint(1);
         } else {

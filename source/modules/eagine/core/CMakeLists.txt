@@ -324,6 +324,7 @@ eagine_add_module(
 		eagine.core.units
 		eagine.core.c_api
 		eagine.core.main_ctx
+		eagine.core.resource
 		eagine.sslplus
 	PRIVATE_INCLUDE_DIRECTORIES
 		"${PROJECT_SOURCE_DIR}/submodules/asio/asio/include"

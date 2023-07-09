@@ -19,14 +19,20 @@ using sudoku_tiling_base =
 class sudoku_tiling_node : public service_node<sudoku_tiling_base> {
 public:
     sudoku_tiling_node(main_ctx_parent parent)
-      : service_node<sudoku_tiling_base>{"TilingNode", parent} {
+      : service_node<sudoku_tiling_base> {
+        "TilingNode", parent
+    }
+    {
         declare_state("running", "tlngStart", "tlngFinish");
+        declare_state("suspended", "suspndSend", "rsumedSend");
         connect<&sudoku_tiling_node::_handle_generated<3>>(
           this, tiles_generated_3);
         connect<&sudoku_tiling_node::_handle_generated<4>>(
           this, tiles_generated_4);
         connect<&sudoku_tiling_node::_handle_generated<5>>(
           this, tiles_generated_5);
+        connect<&sudoku_tiling_node::_handle_board_timeout>(
+          this, board_timeouted);
 
         auto& info = provided_endpoint_info();
         info.display_name = "sudoku tiling generator";
@@ -72,6 +78,16 @@ private:
             std::ofstream fout{file_path};
             tiles.print(fout) << std::endl;
         }
+    }
+
+    void _handle_board_timeout(const sudoku_board_timeout& info) noexcept {
+        this->suspend_send_for(
+          std::chrono::milliseconds{static_cast<std::int32_t>(
+            std::log(
+              float(info.replaced_board_count + info.pending_board_count) +
+              1.F) *
+              1000.F +
+            1000.F)});
     }
 
     bool _block_cells{cfg_init("msgbus.sudoku.solver.block_cells", false)};
