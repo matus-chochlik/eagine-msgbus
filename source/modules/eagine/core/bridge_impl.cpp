@@ -99,10 +99,10 @@ public:
     }
 
     void send_output() noexcept {
-        const auto handler = [this](
-                               const message_id msg_id,
-                               const message_age msg_age,
-                               message_view message) {
+        const auto handler{[this](
+                             const message_id msg_id,
+                             const message_age msg_age,
+                             message_view message) {
             if(not message.add_age(msg_age).too_old()) [[likely]] {
                 default_serializer_backend backend(_sink);
                 if(serialize_message_header(msg_id, message, backend))
@@ -129,24 +129,24 @@ public:
                 ++_dropped_messages;
             }
             return true;
-        };
-        auto& queue = [this]() -> message_storage& {
+        }};
+        auto& queue{[this]() -> message_storage& {
             std::unique_lock lock{_output_mutex};
             _output_ready.wait(lock);
             _outgoing.swap();
             return _outgoing.front();
-        }();
+        }()};
         queue.fetch_all({construct_from, handler});
     }
 
     using fetch_handler = message_storage::fetch_handler;
 
     auto fetch_messages(const fetch_handler handler) noexcept {
-        auto& queue = [this]() -> message_storage& {
+        auto& queue{[this]() -> message_storage& {
             const std::unique_lock lock{_input_mutex};
             _incoming.swap();
             return _incoming.front();
-        }();
+        }()};
         return queue.fetch_all(handler);
     }
 
@@ -488,7 +488,7 @@ void bridge::_log_bridge_stats_i2c() noexcept {
 auto bridge::_forward_messages() noexcept -> work_done {
     some_true something_done{};
 
-    const auto forward_conn_to_output =
+    const auto forward_conn_to_output{
       [this](
         const message_id msg_id, message_age msg_age, message_view message) {
           _message_age_sum_c2o += message.add_age(msg_age).age();
@@ -503,7 +503,7 @@ auto bridge::_forward_messages() noexcept -> work_done {
               return true;
           }
           return this->_do_push(msg_id, message);
-      };
+      }};
 
     if(_connection) [[likely]] {
         something_done(_connection->fetch_messages(
@@ -512,10 +512,10 @@ auto bridge::_forward_messages() noexcept -> work_done {
     _state->notify_output_ready();
 
     if(_state) [[likely]] {
-        const auto forward_input_to_conn = [this](
-                                             const message_id msg_id,
-                                             message_age msg_age,
-                                             message_view message) {
+        const auto forward_input_to_conn{[this](
+                                           const message_id msg_id,
+                                           message_age msg_age,
+                                           message_view message) {
             _message_age_sum_i2c += message.add_age(msg_age).age();
             if(message.too_old()) [[unlikely]] {
                 ++_dropped_messages_i2c;
@@ -529,7 +529,7 @@ auto bridge::_forward_messages() noexcept -> work_done {
             }
             this->_do_send(msg_id, message);
             return true;
-        };
+        }};
 
         something_done(
           _state->fetch_messages({construct_from, forward_input_to_conn}));
@@ -549,7 +549,7 @@ auto bridge::_check_state() noexcept -> work_done {
         if(_recoverable_state() and _connection) {
             if(const auto max_data_size{_connection->max_data_size()}) {
                 ++_state_count;
-                _state = std::make_shared<bridge_state>(*max_data_size);
+                _state.emplace(*max_data_size);
                 _state->start();
                 something_done();
             }

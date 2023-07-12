@@ -113,7 +113,7 @@ private:
     std::int64_t _dropped_messages_c2o{0};
     bridge_statistics _stats{};
 
-    std::shared_ptr<bridge_state> _state{};
+    shared_holder<bridge_state> _state{};
     timeout _no_connection_timeout{adjusted_duration(std::chrono::seconds{30})};
     unique_holder<connection> _connection{};
 };
