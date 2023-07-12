@@ -37,7 +37,7 @@ export struct sudoku_helper_intf : interface<sudoku_helper_intf> {
 };
 //------------------------------------------------------------------------------
 export auto make_sudoku_helper_impl(subscriber&)
-  -> std::unique_ptr<sudoku_helper_intf>;
+  -> unique_holder<sudoku_helper_intf>;
 //------------------------------------------------------------------------------
 /// @brief Service helping to partially solve sudoku boards sent by sudoku_solver.
 /// @ingroup msgbus
@@ -75,7 +75,7 @@ protected:
     }
 
 private:
-    const std::unique_ptr<sudoku_helper_intf> _impl{
+    const unique_holder<sudoku_helper_intf> _impl{
       make_sudoku_helper_impl(*this)};
 };
 //------------------------------------------------------------------------------
@@ -260,7 +260,7 @@ export struct sudoku_solver_signals {
 };
 //------------------------------------------------------------------------------
 export auto make_sudoku_solver_impl(subscriber& base, sudoku_solver_signals&)
-  -> std::unique_ptr<sudoku_solver_intf>;
+  -> unique_holder<sudoku_solver_intf>;
 //------------------------------------------------------------------------------
 /// @brief Service solving sudoku boards with the help of helper service on message bus.
 /// @ingroup msgbus
@@ -384,9 +384,7 @@ public:
     }
 
 protected:
-    sudoku_solver(
-      endpoint& bus,
-      std::unique_ptr<sudoku_solver_intf> impl) noexcept
+    sudoku_solver(endpoint& bus, unique_holder<sudoku_solver_intf> impl) noexcept
       : Base{bus}
       , _impl{std::move(impl)} {}
 
@@ -403,7 +401,7 @@ protected:
     }
 
 private:
-    const std::unique_ptr<sudoku_solver_intf> _impl;
+    const unique_holder<sudoku_solver_intf> _impl;
 };
 //------------------------------------------------------------------------------
 export template <unsigned S>
@@ -823,7 +821,7 @@ export struct sudoku_tiling_signals {
 };
 //------------------------------------------------------------------------------
 export auto make_sudoku_tiling_impl(sudoku_solver_intf&, sudoku_tiling_signals&)
-  -> std::unique_ptr<sudoku_tiling_intf>;
+  -> unique_holder<sudoku_tiling_intf>;
 //------------------------------------------------------------------------------
 /// @brief Service generating a sudoku tiling using helper message bus nodes.
 /// @ingroup msgbus
@@ -920,7 +918,7 @@ protected:
     }
 
 private:
-    const std::unique_ptr<sudoku_tiling_intf> _impl;
+    const unique_holder<sudoku_tiling_intf> _impl;
 };
 //------------------------------------------------------------------------------
 } // namespace eagine::msgbus

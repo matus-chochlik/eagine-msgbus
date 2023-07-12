@@ -174,8 +174,8 @@ private:
 };
 //------------------------------------------------------------------------------
 auto make_system_info_provider_impl(subscriber&)
-  -> std::unique_ptr<system_info_provider_intf> {
-    return std::make_unique<system_info_provider_impl>();
+  -> unique_holder<system_info_provider_intf> {
+    return {hold<system_info_provider_impl>};
 }
 //------------------------------------------------------------------------------
 class system_info_consumer_impl : public system_info_consumer_intf {
@@ -339,8 +339,8 @@ private:
 auto make_system_info_consumer_impl(
   subscriber& base,
   system_info_consumer_signals& sigs)
-  -> std::unique_ptr<system_info_consumer_intf> {
-    return std::make_unique<system_info_consumer_impl>(base, sigs);
+  -> unique_holder<system_info_consumer_intf> {
+    return {hold<system_info_consumer_impl>, base, sigs};
 }
 //------------------------------------------------------------------------------
 } // namespace eagine::msgbus

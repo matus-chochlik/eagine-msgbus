@@ -103,7 +103,7 @@ struct subscriber_discovery_intf : interface<subscriber_discovery_intf> {
 //------------------------------------------------------------------------------
 auto make_subscriber_discovery_impl(
   subscriber& base,
-  subscriber_discovery_signals&) -> std::unique_ptr<subscriber_discovery_intf>;
+  subscriber_discovery_signals&) -> unique_holder<subscriber_discovery_intf>;
 //------------------------------------------------------------------------------
 /// @brief Service discovering information about endpoint status and subscriptions.
 /// @ingroup msgbus
@@ -163,7 +163,7 @@ protected:
     }
 
 private:
-    const std::unique_ptr<subscriber_discovery_intf> _impl{
+    const unique_holder<subscriber_discovery_intf> _impl{
       make_subscriber_discovery_impl(*this, *this)};
 };
 //------------------------------------------------------------------------------

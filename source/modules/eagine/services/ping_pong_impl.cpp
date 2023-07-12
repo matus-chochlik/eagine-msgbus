@@ -124,8 +124,8 @@ private:
 };
 //------------------------------------------------------------------------------
 auto make_pinger_impl(subscriber& base, pinger_signals& sigs)
-  -> std::unique_ptr<pinger_intf> {
-    return std::make_unique<pinger_impl>(base, sigs);
+  -> unique_holder<pinger_intf> {
+    return {hold<pinger_impl>, base, sigs};
 }
 //------------------------------------------------------------------------------
 } // namespace eagine::msgbus

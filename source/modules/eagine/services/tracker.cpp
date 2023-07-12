@@ -79,7 +79,7 @@ struct node_tracker_intf : interface<node_tracker_intf> {
 };
 //------------------------------------------------------------------------------
 auto make_node_tracker_impl(subscriber& base, node_tracker_signals&)
-  -> std::unique_ptr<node_tracker_intf>;
+  -> unique_holder<node_tracker_intf>;
 //------------------------------------------------------------------------------
 /// @brief Service that consumes bus topology information and provides it via an API.
 /// @ingroup msgbus
@@ -212,7 +212,7 @@ protected:
     }
 
 private:
-    const std::unique_ptr<node_tracker_intf> _impl{
+    const unique_holder<node_tracker_intf> _impl{
       make_node_tracker_impl(*this, *this)};
 };
 //------------------------------------------------------------------------------

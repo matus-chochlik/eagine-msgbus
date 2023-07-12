@@ -79,7 +79,7 @@ struct statistics_consumer_intf : interface<statistics_consumer_intf> {
 };
 //------------------------------------------------------------------------------
 auto make_statistics_consumer_impl(subscriber&, statistics_consumer_signals&)
-  -> std::unique_ptr<statistics_consumer_intf>;
+  -> unique_holder<statistics_consumer_intf>;
 //------------------------------------------------------------------------------
 /// @brief Service observing message bus node network statistics.
 /// @ingroup msgbus
@@ -151,7 +151,7 @@ protected:
     }
 
 private:
-    const std::unique_ptr<statistics_consumer_intf> _impl{
+    const unique_holder<statistics_consumer_intf> _impl{
       make_statistics_consumer_impl(*this, *this)};
 };
 //------------------------------------------------------------------------------

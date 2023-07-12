@@ -76,8 +76,8 @@ private:
 };
 //------------------------------------------------------------------------------
 auto make_shutdown_target_impl(subscriber& base, shutdown_target_signals& sigs)
-  -> std::unique_ptr<shutdown_target_intf> {
-    return std::make_unique<shutdown_target_impl>(base, sigs);
+  -> unique_holder<shutdown_target_intf> {
+    return {hold<shutdown_target_impl>, base, sigs};
 }
 //------------------------------------------------------------------------------
 } // namespace eagine::msgbus

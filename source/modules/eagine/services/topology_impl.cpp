@@ -169,8 +169,8 @@ private:
 };
 //------------------------------------------------------------------------------
 auto make_network_topology_impl(subscriber& base, network_topology_signals& sigs)
-  -> std::unique_ptr<network_topology_intf> {
-    return std::make_unique<network_topology_impl>(base, sigs);
+  -> unique_holder<network_topology_intf> {
+    return {hold<network_topology_impl>, base, sigs};
 }
 //------------------------------------------------------------------------------
 } // namespace eagine::msgbus
