@@ -321,7 +321,7 @@ private:
     embedded_resource_loader _embedded_loader;
     std::map<identifier_t, _server_info> _current_servers;
     std::map<identifier_t, _streamed_resource_info> _streamed_resources;
-    std::vector<std::unique_ptr<_embedded_resource_info>> _embedded_resources;
+    std::vector<unique_holder<_embedded_resource_info>> _embedded_resources;
 };
 //------------------------------------------------------------------------------
 } // namespace eagine::msgbus
