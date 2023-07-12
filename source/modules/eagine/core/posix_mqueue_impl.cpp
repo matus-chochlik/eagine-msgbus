@@ -428,7 +428,7 @@ public:
     /// @brief Construction from parent main context object.
     posix_mqueue_connection(
       main_ctx_parent parent,
-      std::shared_ptr<posix_mqueue_shared_state> shared_state) noexcept;
+      shared_holder<posix_mqueue_shared_state> shared_state) noexcept;
 
     /// @brief Opens the connection.
     auto open(std::string name) noexcept -> bool {
@@ -488,12 +488,12 @@ protected:
     serialized_message_storage _outgoing;
     posix_mqueue _data_queue{*this};
     timeout _reconnect_timeout{std::chrono::seconds{2}, nothing};
-    std::shared_ptr<posix_mqueue_shared_state> _shared_state;
+    shared_holder<posix_mqueue_shared_state> _shared_state;
 };
 //------------------------------------------------------------------------------
 posix_mqueue_connection::posix_mqueue_connection(
   main_ctx_parent parent,
-  std::shared_ptr<posix_mqueue_shared_state> shared_state) noexcept
+  shared_holder<posix_mqueue_shared_state> shared_state) noexcept
   : main_ctx_object{"MQueConn", parent}
   , _shared_state{std::move(shared_state)} {
     const std::unique_lock lock_data_queue{_mutex_data_queue};
@@ -630,7 +630,7 @@ public:
     posix_mqueue_connector(
       main_ctx_parent parent,
       std::string name,
-      std::shared_ptr<posix_mqueue_shared_state> shared_state) noexcept
+      shared_holder<posix_mqueue_shared_state> shared_state) noexcept
       : base{parent, std::move(shared_state)}
       , _connect_queue{*this, std::move(name)} {}
 
@@ -638,7 +638,7 @@ public:
     posix_mqueue_connector(
       main_ctx_parent parent,
       const identifier id,
-      std::shared_ptr<posix_mqueue_shared_state> shared_state) noexcept
+      shared_holder<posix_mqueue_shared_state> shared_state) noexcept
       : base{parent, std::move(shared_state)}
       , _connect_queue{*this, posix_mqueue::name_from(id)} {}
 
@@ -696,7 +696,7 @@ public:
     posix_mqueue_acceptor(
       main_ctx_parent parent,
       std::string name,
-      std::shared_ptr<posix_mqueue_shared_state> shared_state) noexcept
+      shared_holder<posix_mqueue_shared_state> shared_state) noexcept
       : main_ctx_object{"MQueConnAc", parent}
       , _accept_queue{*this, std::move(name)}
       , _shared_state{std::move(shared_state)} {
@@ -707,7 +707,7 @@ public:
     posix_mqueue_acceptor(
       main_ctx_parent parent,
       const identifier id,
-      std::shared_ptr<posix_mqueue_shared_state> shared_state) noexcept
+      shared_holder<posix_mqueue_shared_state> shared_state) noexcept
       : posix_mqueue_acceptor{
           parent,
           posix_mqueue::name_from(id),
@@ -744,7 +744,7 @@ private:
     message_storage _requests;
     posix_mqueue _accept_queue;
     timeout _reconnect_timeout{std::chrono::seconds{2}, nothing};
-    std::shared_ptr<posix_mqueue_shared_state> _shared_state;
+    shared_holder<posix_mqueue_shared_state> _shared_state;
 };
 //------------------------------------------------------------------------------
 auto posix_mqueue_acceptor::process_accepted(
@@ -758,8 +758,8 @@ auto posix_mqueue_acceptor::process_accepted(
         log_debug("accepting connection from ${name}")
           .arg("name", message.text_content());
 
-        if(auto conn{
-             std::make_unique<posix_mqueue_connection>(*this, _shared_state)}) {
+        if(unique_holder<posix_mqueue_connection> conn{
+             default_selector, *this, _shared_state}) {
             if(conn->open(to_string(message.text_content()))) {
                 handler(std::move(conn));
             }
@@ -852,8 +852,7 @@ public:
     }
 
 private:
-    std::shared_ptr<posix_mqueue_shared_state> _shared_state{
-      std::make_shared<posix_mqueue_shared_state>()};
+    shared_holder<posix_mqueue_shared_state> _shared_state{default_selector};
 
     void _increase_res_limit() noexcept {
         struct rlimit rlim {};
