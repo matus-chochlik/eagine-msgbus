@@ -48,7 +48,8 @@ registry::registry(main_ctx_parent parent) noexcept
 //------------------------------------------------------------------------------
 auto registry::_add_entry(const identifier log_id) noexcept
   -> registered_entry& {
-    auto new_ept{std::make_unique<endpoint>(main_ctx_object{log_id, *this})};
+    unique_holder<endpoint> new_ept{
+      default_selector, main_ctx_object{log_id, *this}};
     new_ept->add_connection(_acceptor->make_connection());
 
     _entries.emplace_back();

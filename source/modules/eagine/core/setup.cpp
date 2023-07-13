@@ -58,7 +58,7 @@ private:
 export void enable(main_ctx& ctx) {
     assert(ctx.setters());
     ctx.setters().and_then([&](auto& setters) {
-        auto msg_bus{std::make_shared<message_bus_setup>(ctx)};
+        shared_holder<message_bus_setup> msg_bus{default_selector, ctx};
         msg_bus->configure(ctx.config());
         setters.inject(std::move(msg_bus));
     });

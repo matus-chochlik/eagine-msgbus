@@ -1181,7 +1181,7 @@ private:
 };
 //------------------------------------------------------------------------------
 remote_node_tracker::remote_node_tracker() noexcept
-  : _pimpl{std::make_shared<remote_node_tracker_impl>()} {}
+  : _pimpl{hold<remote_node_tracker_impl>} {}
 //------------------------------------------------------------------------------
 auto remote_node_tracker::cached(const std::string& s) noexcept -> string_view {
     assert(_pimpl);

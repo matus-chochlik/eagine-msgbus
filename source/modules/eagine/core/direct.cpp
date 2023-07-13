@@ -79,22 +79,22 @@ public:
     /// @brief Fetches received messages from the client counterpart.
     auto fetch_from_client(const connection::fetch_handler handler) noexcept
       -> std::tuple<bool, bool> {
-        auto& c2s = [this]() -> message_storage& {
+        auto& c2s{[this]() -> message_storage& {
             const std::unique_lock lock{_client_to_server_lock};
             _client_to_server.swap();
             return _client_to_server.front();
-        }();
+        }()};
         return {c2s.fetch_all(handler), _client_connected};
     }
 
     /// @brief Fetches received messages from the service counterpart.
     auto fetch_from_server(const connection::fetch_handler handler) noexcept
       -> bool {
-        auto& s2c = [this]() -> message_storage& {
+        auto& s2c{[this]() -> message_storage& {
             const std::unique_lock lock{_server_to_client_lock};
             _server_to_client.swap();
             return _server_to_client.front();
-        }();
+        }()};
         return s2c.fetch_all(handler);
     }
 
@@ -131,7 +131,7 @@ public:
     /// @brief Creates and returns the shared state for a new client connection.
     /// @see process_all
     auto connect() noexcept -> shared_state {
-        auto state{std::make_shared<direct_connection_state<Lockable>>(*this)};
+        shared_state state{default_selector, *this};
         _pending.push_back(state);
         return state;
     }
@@ -335,17 +335,15 @@ public:
     /// @brief Construction from a parent main context object with implicit address.
     direct_acceptor(main_ctx_parent parent) noexcept
       : main_ctx_object{"DrctAccptr", parent}
-      , _address{std::make_shared<direct_connection_address<Lockable>>(*this)} {
-    }
+      , _address{default_selector, *this} {}
 
     auto process_accepted(const accept_handler handler) noexcept
       -> work_done final {
         some_true something_done{};
         if(_address) {
-            auto wrapped_handler = [&handler](shared_state& state) {
-                handler(std::unique_ptr<connection>{
-                  std::make_unique<direct_server_connection<Lockable>>(state)});
-            };
+            auto wrapped_handler{[&handler](shared_state& state) {
+                handler[{hold<direct_server_connection<Lockable>>, state}];
+            }};
             something_done(
               _address->process_all({construct_from, wrapped_handler}));
         }
@@ -422,7 +420,7 @@ private:
 //------------------------------------------------------------------------------
 export auto make_direct_acceptor(main_ctx_parent parent)
   -> unique_holder<direct_acceptor_intf> {
-    return std::make_unique<direct_acceptor<spinlock>>(parent);
+    return {hold<direct_acceptor<spinlock>>, parent};
 }
 //------------------------------------------------------------------------------
 export auto make_direct_connection_factory(main_ctx_parent parent)

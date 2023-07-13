@@ -41,8 +41,7 @@ auto endpoint::_ensure_incoming(const message_id msg_id) noexcept
   -> incoming_state& {
     auto pos = _incoming.find(msg_id);
     if(pos == _incoming.end()) {
-        pos =
-          _incoming.emplace(msg_id, std::make_unique<incoming_state>()).first;
+        pos = _incoming.emplace(msg_id, default_selector).first;
     }
     assert(pos->second);
     return *pos->second;

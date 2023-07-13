@@ -772,12 +772,12 @@ public:
       -> work_done {
         some_true something_done;
         for(auto& p : _pending) {
-            handler(unique_holder<connection>{
+            handler[{
               hold<asio_datagram_client_connection<Kind>>,
               *this,
               this->_state,
               std::get<0>(std::get<1>(p)),
-              std::get<1>(std::get<1>(p))});
+              std::get<1>(std::get<1>(p))}];
             _current.insert(p);
             something_done();
         }
@@ -1013,11 +1013,14 @@ public:
       -> work_done final {
         some_true something_done{};
         for(auto& socket : _accepted) {
-            auto conn = std::make_unique<asio_connection<
-              connection_addr_kind::ipv4,
-              connection_protocol::stream>>(
-              *this, _asio_state, std::move(socket), _block_size);
-            handler(std::move(conn));
+            handler[{
+              hold<asio_connection<
+                connection_addr_kind::ipv4,
+                connection_protocol::stream>>,
+              *this,
+              _asio_state,
+              std::move(socket),
+              _block_size}];
             something_done();
         }
         _accepted.clear();
@@ -1352,14 +1355,14 @@ public:
       -> work_done final {
         some_true something_done{};
         for(auto& socket : _accepted) {
-            handler(unique_holder<connection>{
+            handler[{
               hold<asio_connection<
                 connection_addr_kind::filepath,
                 connection_protocol::stream>>,
               *this,
               _asio_state,
               std::move(socket),
-              _block_size});
+              _block_size}];
             something_done();
         }
         _accepted.clear();

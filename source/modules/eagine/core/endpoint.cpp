@@ -496,7 +496,7 @@ private:
         message_priority_queue queue{};
     };
 
-    flat_map<message_id, std::unique_ptr<incoming_state>> _incoming{};
+    flat_map<message_id, unique_holder<incoming_state>> _incoming{};
 
     auto _declare_states() noexcept;
 
