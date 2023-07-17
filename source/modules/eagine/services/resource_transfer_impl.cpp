@@ -231,8 +231,8 @@ private:
 };
 //------------------------------------------------------------------------------
 auto make_resource_server_impl(subscriber& sub, resource_server_driver& drvr)
-  -> std::unique_ptr<resource_server_intf> {
-    return std::make_unique<resource_server_impl>(sub, drvr);
+  -> unique_holder<resource_server_intf> {
+    return {hold<resource_server_impl>, sub, drvr};
 }
 //------------------------------------------------------------------------------
 resource_server_impl::resource_server_impl(
@@ -741,8 +741,8 @@ private:
 auto make_resource_manipulator_impl(
   subscriber& base,
   resource_manipulator_signals& sigs)
-  -> std::unique_ptr<resource_manipulator_intf> {
-    return std::make_unique<resource_manipulator_impl>(base, sigs);
+  -> unique_holder<resource_manipulator_intf> {
+    return {hold<resource_manipulator_impl>, base, sigs};
 }
 //------------------------------------------------------------------------------
 } // namespace eagine::msgbus

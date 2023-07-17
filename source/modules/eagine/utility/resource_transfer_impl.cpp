@@ -182,7 +182,7 @@ auto resource_data_consumer_node::update_and_process_all() noexcept
     }
 
     if(not _embedded_resources.empty()) {
-        std::vector<std::unique_ptr<_embedded_resource_info>> temp;
+        std::vector<unique_holder<_embedded_resource_info>> temp;
         std::swap(temp, _embedded_resources);
 
         for(auto& entry : temp) {
@@ -234,10 +234,10 @@ auto resource_data_consumer_node::_query_resource(
 
     if(const auto resource_id{locator.path_identifier()}) {
         if(const auto res{_embedded_loader.search(resource_id)}) {
-            _embedded_resources.emplace_back(
-              std::make_unique<_embedded_resource_info>(
-                *this, request_id, std::move(locator), res));
-            auto& info = *_embedded_resources.back();
+            _embedded_resources.emplace_back();
+            auto& info = *_embedded_resources.back().emplace(
+              *this, request_id, std::move(locator), res);
+
             info._is_all_in_one = all_in_one;
 
             log_info("fetching embedded resource ${locator}")

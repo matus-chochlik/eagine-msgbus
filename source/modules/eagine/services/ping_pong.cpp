@@ -121,7 +121,7 @@ export struct pinger_signals {
 };
 //------------------------------------------------------------------------------
 auto make_pinger_impl(subscriber&, pinger_signals&)
-  -> std::unique_ptr<pinger_intf>;
+  -> unique_holder<pinger_intf>;
 //------------------------------------------------------------------------------
 /// @brief Service sending to pings from the pingable counterparts.
 /// @ingroup msgbus
@@ -216,7 +216,7 @@ protected:
     }
 
 private:
-    const std::unique_ptr<pinger_intf> _impl{make_pinger_impl(*this, *this)};
+    const unique_holder<pinger_intf> _impl{make_pinger_impl(*this, *this)};
 };
 //------------------------------------------------------------------------------
 } // namespace eagine::msgbus

@@ -58,7 +58,7 @@ struct resource_server_intf : interface<resource_server_intf> {
 };
 //------------------------------------------------------------------------------
 auto make_resource_server_impl(subscriber&, resource_server_driver&)
-  -> std::unique_ptr<resource_server_intf>;
+  -> unique_holder<resource_server_intf>;
 //------------------------------------------------------------------------------
 /// @brief Service providing access to files and/or blobs over the message bus.
 /// @ingroup msgbus
@@ -103,7 +103,7 @@ protected:
     }
 
 private:
-    const std::unique_ptr<resource_server_intf> _impl;
+    const unique_holder<resource_server_intf> _impl;
 };
 //------------------------------------------------------------------------------
 /// @brief Collection of signals emitted by the resource manipulator service.
@@ -154,7 +154,7 @@ struct resource_manipulator_intf : interface<resource_manipulator_intf> {
 };
 //------------------------------------------------------------------------------
 auto make_resource_manipulator_impl(subscriber&, resource_manipulator_signals&)
-  -> std::unique_ptr<resource_manipulator_intf>;
+  -> unique_holder<resource_manipulator_intf>;
 //------------------------------------------------------------------------------
 /// @brief Service manipulating files over the message bus.
 /// @ingroup msgbus
@@ -256,7 +256,7 @@ protected:
     }
 
 private:
-    const std::unique_ptr<resource_manipulator_intf> _impl{
+    const unique_holder<resource_manipulator_intf> _impl{
       make_resource_manipulator_impl(*this, *this)};
 };
 //------------------------------------------------------------------------------

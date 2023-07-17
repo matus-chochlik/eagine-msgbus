@@ -396,8 +396,8 @@ private:
 };
 //------------------------------------------------------------------------------
 auto make_sudoku_helper_impl(subscriber& base)
-  -> std::unique_ptr<sudoku_helper_intf> {
-    return std::make_unique<sudoku_helper_impl>(base);
+  -> unique_holder<sudoku_helper_intf> {
+    return {hold<sudoku_helper_impl>, base};
 }
 //------------------------------------------------------------------------------
 template <unsigned S>
@@ -1015,8 +1015,8 @@ private:
 };
 //------------------------------------------------------------------------------
 auto make_sudoku_solver_impl(subscriber& base, sudoku_solver_signals& signals)
-  -> std::unique_ptr<sudoku_solver_intf> {
-    return std::make_unique<sudoku_solver_impl>(base, signals);
+  -> unique_holder<sudoku_solver_intf> {
+    return {hold<sudoku_solver_impl>, base, signals};
 }
 //------------------------------------------------------------------------------
 void sudoku_solver_impl::assign_driver(sudoku_solver_driver& drvr) noexcept {
@@ -1545,9 +1545,11 @@ private:
 //------------------------------------------------------------------------------
 auto make_sudoku_tiling_impl(
   sudoku_solver_intf& solver,
-  sudoku_tiling_signals& tsigs) -> std::unique_ptr<sudoku_tiling_intf> {
-    return std::make_unique<sudoku_tiling_impl>(
-      static_cast<sudoku_solver_impl&>(solver), tsigs);
+  sudoku_tiling_signals& tsigs) -> unique_holder<sudoku_tiling_intf> {
+    return {
+      hold<sudoku_tiling_impl>,
+      static_cast<sudoku_solver_impl&>(solver),
+      tsigs};
 }
 //------------------------------------------------------------------------------
 } // namespace eagine::msgbus

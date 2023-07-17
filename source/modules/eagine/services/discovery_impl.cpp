@@ -170,8 +170,8 @@ private:
 auto make_subscriber_discovery_impl(
   subscriber& base,
   subscriber_discovery_signals& sigs)
-  -> std::unique_ptr<subscriber_discovery_intf> {
-    return std::make_unique<subscriber_discovery_impl>(base, sigs);
+  -> unique_holder<subscriber_discovery_intf> {
+    return {hold<subscriber_discovery_impl>, base, sigs};
 }
 //------------------------------------------------------------------------------
 } // namespace eagine::msgbus

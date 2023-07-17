@@ -24,7 +24,7 @@ struct system_info_provider_intf : interface<system_info_provider_intf> {
 };
 //------------------------------------------------------------------------------
 auto make_system_info_provider_impl(subscriber&)
-  -> std::unique_ptr<system_info_provider_intf>;
+  -> unique_holder<system_info_provider_intf>;
 //------------------------------------------------------------------------------
 /// @brief Service providing basic information about endpoint's host system.
 /// @ingroup msgbus
@@ -43,7 +43,7 @@ protected:
     }
 
 private:
-    const std::unique_ptr<system_info_provider_intf> _impl{
+    const unique_holder<system_info_provider_intf> _impl{
       make_system_info_provider_impl(*this)};
 };
 //------------------------------------------------------------------------------
@@ -145,7 +145,7 @@ export struct system_info_consumer_signals {
 };
 //------------------------------------------------------------------------------
 auto make_system_info_consumer_impl(subscriber&, system_info_consumer_signals&)
-  -> std::unique_ptr<system_info_consumer_intf>;
+  -> unique_holder<system_info_consumer_intf>;
 //------------------------------------------------------------------------------
 /// @brief Service consuming basic information about endpoint's host system.
 /// @ingroup msgbus
@@ -254,7 +254,7 @@ protected:
     }
 
 private:
-    const std::unique_ptr<system_info_consumer_intf> _impl{
+    const unique_holder<system_info_consumer_intf> _impl{
       make_system_info_consumer_impl(*this, *this)};
 };
 //------------------------------------------------------------------------------

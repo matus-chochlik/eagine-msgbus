@@ -525,8 +525,8 @@ private:
 };
 //------------------------------------------------------------------------------
 auto make_node_tracker_impl(subscriber& base, node_tracker_signals& sigs)
-  -> std::unique_ptr<node_tracker_intf> {
-    return std::make_unique<node_tracker_impl>(base, sigs);
+  -> unique_holder<node_tracker_intf> {
+    return {hold<node_tracker_impl>, base, sigs};
 }
 //------------------------------------------------------------------------------
 } // namespace eagine::msgbus

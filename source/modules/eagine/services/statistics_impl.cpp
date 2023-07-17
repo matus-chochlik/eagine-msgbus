@@ -141,8 +141,8 @@ private:
 auto make_statistics_consumer_impl(
   subscriber& base,
   statistics_consumer_signals& sigs)
-  -> std::unique_ptr<statistics_consumer_intf> {
-    return std::make_unique<statistics_consumer_impl>(base, sigs);
+  -> unique_holder<statistics_consumer_intf> {
+    return {hold<statistics_consumer_impl>, base, sigs};
 }
 //------------------------------------------------------------------------------
 } // namespace eagine::msgbus

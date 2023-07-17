@@ -63,8 +63,8 @@ public:
     auto emplace(const identifier log_id, Args&&... args) noexcept
       -> Service& requires(std::is_base_of_v<service_interface, Service>) {
           auto& entry = _add_entry(log_id);
-          auto temp{std::make_unique<Service>(
-            entry.endpoint(), std::forward<Args>(args)...)};
+          unique_holder<service_interface> temp{
+            hold<Service>, entry.endpoint(), std::forward<Args>(args)...};
           assert(temp);
           entry._service = std::move(temp);
           return *(entry._service.ref().as<Service>());

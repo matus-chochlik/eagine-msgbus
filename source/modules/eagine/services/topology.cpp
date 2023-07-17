@@ -113,7 +113,7 @@ export struct network_topology_signals {
 };
 //------------------------------------------------------------------------------
 auto make_network_topology_impl(subscriber& base, network_topology_signals&)
-  -> std::unique_ptr<network_topology_intf>;
+  -> unique_holder<network_topology_intf>;
 //------------------------------------------------------------------------------
 /// @brief Service observing message bus node network topology.
 /// @ingroup msgbus
@@ -201,7 +201,7 @@ protected:
     }
 
 private:
-    const std::unique_ptr<network_topology_intf> _impl{
+    const unique_holder<network_topology_intf> _impl{
       make_network_topology_impl(*this, *this)};
 };
 //------------------------------------------------------------------------------

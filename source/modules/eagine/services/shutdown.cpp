@@ -57,7 +57,7 @@ struct shutdown_target_intf : interface<shutdown_target_intf> {
 };
 //------------------------------------------------------------------------------
 auto make_shutdown_target_impl(subscriber&, shutdown_target_signals&)
-  -> std::unique_ptr<shutdown_target_intf>;
+  -> unique_holder<shutdown_target_intf>;
 //------------------------------------------------------------------------------
 /// @brief Service allowing an endpoint to be shut down over the message bus.
 /// @ingroup msgbus
@@ -93,7 +93,7 @@ protected:
     }
 
 private:
-    const std::unique_ptr<shutdown_target_intf> _impl{
+    const unique_holder<shutdown_target_intf> _impl{
       make_shutdown_target_impl(*this, *this)};
 };
 //------------------------------------------------------------------------------

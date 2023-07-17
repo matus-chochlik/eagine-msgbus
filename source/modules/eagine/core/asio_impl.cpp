@@ -163,7 +163,7 @@ struct asio_connection_state_base
     using clock_type = std::chrono::steady_clock;
     using clock_time = typename clock_type::time_point;
 
-    const std::shared_ptr<asio_common_state> common;
+    const shared_holder<asio_common_state> common;
     const memory::buffer push_buffer{};
     const memory::buffer read_buffer{};
     const memory::buffer write_buffer{};
@@ -179,7 +179,7 @@ struct asio_connection_state_base
 
     asio_connection_state_base(
       main_ctx_parent parent,
-      std::shared_ptr<asio_common_state> asio_state,
+      shared_holder<asio_common_state> asio_state,
       const span_size_t block_size) noexcept
       : main_ctx_object{"AsioConnSt", parent}
       , common{std::move(asio_state)}
@@ -218,7 +218,7 @@ struct asio_connection_state : asio_connection_state_base {
 
     asio_connection_state(
       main_ctx_parent parent,
-      std::shared_ptr<asio_common_state> asio_state,
+      shared_holder<asio_common_state> asio_state,
       asio_socket_type<Kind, Proto> sock,
       const span_size_t block_size) noexcept
       : asio_connection_state_base{parent, std::move(asio_state), block_size}
@@ -226,7 +226,7 @@ struct asio_connection_state : asio_connection_state_base {
 
     asio_connection_state(
       main_ctx_parent parent,
-      const std::shared_ptr<asio_common_state>& asio_state,
+      const shared_holder<asio_common_state>& asio_state,
       const span_size_t block_size) noexcept
       : asio_connection_state{
           parent,
@@ -492,27 +492,29 @@ class asio_connection_base
 public:
     asio_connection_base(
       main_ctx_parent parent,
-      std::shared_ptr<asio_common_state> asio_state,
+      shared_holder<asio_common_state> asio_state,
       const span_size_t block_size) noexcept
       : main_ctx_object{"AsioConnBs", parent}
-      , _state{std::make_shared<asio_connection_state<Kind, Proto>>(
+      , _state{
+          hold<asio_connection_state<Kind, Proto>>,
           *this,
           std::move(asio_state),
-          block_size)} {
+          block_size} {
         assert(_state);
     }
 
     asio_connection_base(
       main_ctx_parent parent,
-      std::shared_ptr<asio_common_state> asio_state,
+      shared_holder<asio_common_state> asio_state,
       asio_socket_type<Kind, Proto> socket,
       const span_size_t block_size) noexcept
       : main_ctx_object{"AsioConnBs", parent}
-      , _state{std::make_shared<asio_connection_state<Kind, Proto>>(
+      , _state{
+          hold<asio_connection_state<Kind, Proto>>,
           *this,
           std::move(asio_state),
           std::move(socket),
-          block_size)} {
+          block_size} {
         assert(_state);
     }
 
@@ -530,11 +532,11 @@ public:
     }
 
 protected:
-    const std::shared_ptr<asio_connection_state<Kind, Proto>> _state;
+    const shared_holder<asio_connection_state<Kind, Proto>> _state;
 
     asio_connection_base(
       main_ctx_parent parent,
-      std::shared_ptr<asio_connection_state<Kind, Proto>> state)
+      shared_holder<asio_connection_state<Kind, Proto>> state)
       : main_ctx_object{"AsioConnBs", parent}
       , _state{std::move(state)} {}
 };
@@ -630,10 +632,10 @@ public:
 
     asio_datagram_client_connection(
       main_ctx_parent parent,
-      std::shared_ptr<asio_connection_state<Kind, connection_protocol::datagram>>
+      shared_holder<asio_connection_state<Kind, connection_protocol::datagram>>
         state,
-      std::shared_ptr<connection_outgoing_messages> outgoing,
-      std::shared_ptr<connection_incoming_messages> incoming) noexcept
+      shared_holder<connection_outgoing_messages> outgoing,
+      shared_holder<connection_incoming_messages> incoming) noexcept
       : base(parent, std::move(state))
       , _outgoing{std::move(outgoing)}
       , _incoming{std::move(incoming)} {}
@@ -685,8 +687,8 @@ public:
     }
 
 private:
-    std::shared_ptr<connection_outgoing_messages> _outgoing;
-    std::shared_ptr<connection_incoming_messages> _incoming;
+    shared_holder<connection_outgoing_messages> _outgoing;
+    shared_holder<connection_incoming_messages> _incoming;
 };
 //------------------------------------------------------------------------------
 template <connection_addr_kind Kind>
@@ -770,11 +772,12 @@ public:
       -> work_done {
         some_true something_done;
         for(auto& p : _pending) {
-            handler(std::make_unique<asio_datagram_client_connection<Kind>>(
+            handler[{
+              hold<asio_datagram_client_connection<Kind>>,
               *this,
               this->_state,
               std::get<0>(std::get<1>(p)),
-              std::get<1>(std::get<1>(p))));
+              std::get<1>(std::get<1>(p))}];
             _current.insert(p);
             something_done();
         }
@@ -809,12 +812,9 @@ private:
         if(pos == _current.end()) {
             pos = _pending.find(ep);
             if(pos == _pending.end()) {
-                pos = _pending
-                        .try_emplace(
-                          ep,
-                          std::make_shared<connection_outgoing_messages>(),
-                          std::make_shared<connection_incoming_messages>())
-                        .first;
+                pos =
+                  _pending.try_emplace(ep, default_selector, default_selector)
+                    .first;
                 this->log_debug("added pending datagram endpoint")
                   .arg("pending", _pending.size())
                   .arg("current", _current.size());
@@ -840,8 +840,8 @@ private:
     flat_map<
       endpoint_type,
       std::tuple<
-        std::shared_ptr<connection_outgoing_messages>,
-        std::shared_ptr<connection_incoming_messages>>>
+        shared_holder<connection_outgoing_messages>,
+        shared_holder<connection_incoming_messages>>>
       _current{}, _pending{};
     span_size_t _index{0};
 };
@@ -885,7 +885,7 @@ class asio_connector<connection_addr_kind::ipv4, connection_protocol::stream>
 public:
     asio_connector(
       main_ctx_parent parent,
-      const std::shared_ptr<asio_common_state>& asio_state,
+      const shared_holder<asio_common_state>& asio_state,
       const string_view addr_str,
       const span_size_t block_size) noexcept
       : base{parent, asio_state, block_size}
@@ -979,7 +979,7 @@ class asio_acceptor<connection_addr_kind::ipv4, connection_protocol::stream>
 public:
     asio_acceptor(
       main_ctx_parent parent,
-      std::shared_ptr<asio_common_state> asio_state,
+      shared_holder<asio_common_state> asio_state,
       const string_view addr_str,
       const span_size_t block_size) noexcept
       : main_ctx_object{"AsioAccptr", parent}
@@ -1013,11 +1013,14 @@ public:
       -> work_done final {
         some_true something_done{};
         for(auto& socket : _accepted) {
-            auto conn = std::make_unique<asio_connection<
-              connection_addr_kind::ipv4,
-              connection_protocol::stream>>(
-              *this, _asio_state, std::move(socket), _block_size);
-            handler(std::move(conn));
+            handler[{
+              hold<asio_connection<
+                connection_addr_kind::ipv4,
+                connection_protocol::stream>>,
+              *this,
+              _asio_state,
+              std::move(socket),
+              _block_size}];
             something_done();
         }
         _accepted.clear();
@@ -1025,7 +1028,7 @@ public:
     }
 
 private:
-    const std::shared_ptr<asio_common_state> _asio_state;
+    const shared_holder<asio_common_state> _asio_state;
     const std::tuple<std::string, ipv4_port> _addr;
     asio::ip::tcp::acceptor _acceptor;
     asio::ip::tcp::socket _socket;
@@ -1098,7 +1101,7 @@ class asio_connector<connection_addr_kind::ipv4, connection_protocol::datagram>
 public:
     asio_connector(
       main_ctx_parent parent,
-      const std::shared_ptr<asio_common_state>& asio_state,
+      const shared_holder<asio_common_state>& asio_state,
       const string_view addr_str,
       const span_size_t block_size) noexcept
       : base{parent, asio_state, block_size}
@@ -1169,7 +1172,7 @@ class asio_acceptor<connection_addr_kind::ipv4, connection_protocol::datagram>
 public:
     asio_acceptor(
       main_ctx_parent parent,
-      std::shared_ptr<asio_common_state> asio_state,
+      shared_holder<asio_common_state> asio_state,
       const string_view addr_str,
       const span_size_t block_size) noexcept
       : main_ctx_object{"AsioAccptr", parent}
@@ -1193,7 +1196,7 @@ public:
     }
 
 private:
-    const std::shared_ptr<asio_common_state> _asio_state;
+    const shared_holder<asio_common_state> _asio_state;
     const std::tuple<std::string, ipv4_port> _addr;
 
     asio_datagram_server_connection<connection_addr_kind::ipv4> _conn;
@@ -1238,7 +1241,7 @@ class asio_connector<connection_addr_kind::filepath, connection_protocol::stream
 public:
     asio_connector(
       main_ctx_parent parent,
-      const std::shared_ptr<asio_common_state>& asio_state,
+      const shared_holder<asio_common_state>& asio_state,
       const string_view addr_str,
       const span_size_t block_size) noexcept
       : base{parent, asio_state, block_size}
@@ -1304,7 +1307,7 @@ class asio_acceptor<connection_addr_kind::filepath, connection_protocol::stream>
 public:
     asio_acceptor(
       main_ctx_parent parent,
-      std::shared_ptr<asio_common_state> asio_state,
+      shared_holder<asio_common_state> asio_state,
       const string_view addr_str, const span_size_t block_size) noexcept
       : main_ctx_object{"AsioAccptr", parent}
       , _asio_state{_prepare(std::move(asio_state), _fix_addr(addr_str))}
@@ -1352,11 +1355,14 @@ public:
       -> work_done final {
         some_true something_done{};
         for(auto& socket : _accepted) {
-            auto conn = std::make_unique<asio_connection<
-              connection_addr_kind::filepath,
-              connection_protocol::stream>>(
-              *this, _asio_state, std::move(socket), _block_size);
-            handler(std::move(conn));
+            handler[{
+              hold<asio_connection<
+                connection_addr_kind::filepath,
+                connection_protocol::stream>>,
+              *this,
+              _asio_state,
+              std::move(socket),
+              _block_size}];
             something_done();
         }
         _accepted.clear();
@@ -1364,7 +1370,7 @@ public:
     }
 
 private:
-    const std::shared_ptr<asio_common_state> _asio_state;
+    const shared_holder<asio_common_state> _asio_state;
     std::string _addr_str;
     asio::local::stream_protocol::acceptor _acceptor;
     const span_size_t _block_size;
@@ -1402,8 +1408,8 @@ private:
     }
 
     static auto _prepare(
-      std::shared_ptr<asio_common_state> asio_state,
-      string_view addr_str) noexcept -> std::shared_ptr<asio_common_state> {
+      shared_holder<asio_common_state> asio_state,
+      string_view addr_str) noexcept -> shared_holder<asio_common_state> {
         [[maybe_unused]] const auto unused{std::remove(c_str(addr_str))};
         return asio_state;
     }
@@ -1428,7 +1434,7 @@ public:
 
     asio_connection_factory(
       main_ctx_parent parent,
-      std::shared_ptr<asio_common_state> asio_state,
+      shared_holder<asio_common_state> asio_state,
       const span_size_t block_size) noexcept
       : main_ctx_object{"AsioConnFc", parent}
       , _asio_state{std::move(asio_state)}
@@ -1437,10 +1443,7 @@ public:
     asio_connection_factory(
       main_ctx_parent parent,
       const span_size_t block_size) noexcept
-      : asio_connection_factory{
-          parent,
-          std::make_shared<asio_common_state>(),
-          block_size} {}
+      : asio_connection_factory{parent, default_selector, block_size} {}
 
     asio_connection_factory(main_ctx_parent parent) noexcept
       : asio_connection_factory{parent, default_block_size()} {}
@@ -1466,7 +1469,7 @@ public:
     }
 
 private:
-    const std::shared_ptr<asio_common_state> _asio_state;
+    const shared_holder<asio_common_state> _asio_state;
 
     template <connection_addr_kind K, connection_protocol P>
     static constexpr auto _default_block_size(

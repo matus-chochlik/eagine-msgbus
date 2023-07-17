@@ -81,11 +81,12 @@ private:
     }
 
     void _handle_board_timeout(const sudoku_board_timeout& info) noexcept {
+        ++_suspend_count;
         this->suspend_send_for(
           std::chrono::milliseconds{static_cast<std::int32_t>(
-            std::log(
-              float(info.replaced_board_count + info.pending_board_count) +
-              1.F) *
+            std::log(float(
+              1 + info.replaced_board_count + info.pending_board_count +
+              _suspend_count * 2)) *
               1000.F +
             1000.F)});
     }
@@ -95,6 +96,8 @@ private:
       cfg_init("msgbus.sudoku.solver.print_progress", false)};
     bool _print_incomplete{
       cfg_init("msgbus.sudoku.solver.print_incomplete", false)};
+
+    span_size_t _suspend_count{0};
 };
 //------------------------------------------------------------------------------
 } // namespace msgbus
