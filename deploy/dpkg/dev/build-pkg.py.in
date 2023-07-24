@@ -57,7 +57,7 @@ Package: eagine-msgbus-dev
 Version: %s
 Architecture: %s
 Installed-Size: %d
-Depends: eagine-core-dev,eagine-sslplus-dev
+Depends: eagine-core-dev (>= @EAGINE_VERSION@),eagine-sslplus-dev (>= @EAGINE_VERSION@)
 Maintainer: Matus Chochlik <chochlik@gmail.com>
 Description: C++ implementation of an inter-process network message bus.
 """ % (
