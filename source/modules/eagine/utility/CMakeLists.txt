@@ -5,6 +5,7 @@
 eagine_add_module(
 	eagine.msgbus.utility PARTITION resource_transfer
 	IMPORTS
+		std
 		eagine.core.types
 		eagine.core.memory
 		eagine.core.identifier
@@ -22,6 +23,7 @@ eagine_add_module(
 	SOURCES
 		resource_transfer
 	IMPORTS
+		std
 		eagine.core.logging
 		eagine.core.main_ctx
 		eagine.core.memory

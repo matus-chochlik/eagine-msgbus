@@ -7,6 +7,7 @@ configure_file(embedded.cpp.in embedded.cppm @ONLY)
 eagine_add_module(
 	eagine.msgbus.core PARTITION types
 	IMPORTS
+		std
 		eagine.core.types
 		eagine.core.memory
 		eagine.core.string
@@ -17,7 +18,7 @@ eagine_add_module(
 eagine_add_module(
 	eagine.msgbus.core PARTITION future
 	IMPORTS
-		types
+		std types
 		eagine.core.types
 		eagine.core.container
 		eagine.core.utility
@@ -26,6 +27,7 @@ eagine_add_module(
 eagine_add_module(
 	eagine.msgbus.core PARTITION handler_map
 	IMPORTS
+		std
 		eagine.core.types
 		eagine.core.memory
 		eagine.core.identifier
@@ -34,7 +36,7 @@ eagine_add_module(
 eagine_add_module(
 	eagine.msgbus.core PARTITION message
 	IMPORTS
-		types
+		std types
 		eagine.core.types
 		eagine.core.memory
 		eagine.core.identifier
@@ -49,7 +51,7 @@ eagine_add_module(
 eagine_add_module(
 	eagine.msgbus.core PARTITION context
 	IMPORTS
-		types message
+		std types message
 		eagine.core.types
 		eagine.core.memory
 		eagine.core.identifier
@@ -61,6 +63,7 @@ eagine_add_module(
 eagine_add_module(
 	eagine.msgbus.core PARTITION router_address
 	IMPORTS
+		std
 		eagine.core.types
 		eagine.core.memory
 		eagine.core.identifier
@@ -72,7 +75,7 @@ eagine_add_module(
 eagine_add_module(
 	eagine.msgbus.core PARTITION interface
 	IMPORTS
-		types message
+		std types message
 		eagine.core.types
 		eagine.core.memory
 		eagine.core.identifier
@@ -83,7 +86,7 @@ eagine_add_module(
 eagine_add_module(
 	eagine.msgbus.core PARTITION blobs
 	IMPORTS
-		types message
+		std types message
 		eagine.core.types
 		eagine.core.debug
 		eagine.core.memory
@@ -97,7 +100,7 @@ eagine_add_module(
 eagine_add_module(
 	eagine.msgbus.core PARTITION loopback
 	IMPORTS
-		types message interface
+		std types message interface
 		eagine.core.types
 		eagine.core.memory
 		eagine.core.identifier
@@ -108,7 +111,7 @@ eagine_add_module(
 eagine_add_module(
 	eagine.msgbus.core PARTITION direct
 	IMPORTS
-		types message interface
+		std types message interface
 		eagine.core.types
 		eagine.core.memory
 		eagine.core.identifier
@@ -120,8 +123,7 @@ eagine_add_module(
 eagine_add_module(
 	eagine.msgbus.core PARTITION connection_setup
 	IMPORTS
-		types
-		interface
+		std types interface
 		eagine.core.types
 		eagine.core.memory
 		eagine.core.identifier
@@ -132,7 +134,7 @@ eagine_add_module(
 eagine_add_module(
 	eagine.msgbus.core PARTITION endpoint
 	IMPORTS
-		types blobs message
+		std types blobs message
 		interface context
 		eagine.core.build_config
 		eagine.core.types
@@ -149,7 +151,7 @@ eagine_add_module(
 eagine_add_module(
 	eagine.msgbus.core PARTITION invoker
 	IMPORTS
-		types future handler_map
+		std types future handler_map
 		message endpoint
 		eagine.core.types
 		eagine.core.memory
@@ -161,8 +163,8 @@ eagine_add_module(
 eagine_add_module(
 	eagine.msgbus.core PARTITION skeleton
 	IMPORTS
-		types message handler_map
-		endpoint
+		std types message
+		handler_map endpoint
 		eagine.core.types
 		eagine.core.memory
 		eagine.core.identifier
@@ -175,8 +177,8 @@ eagine_add_module(
 eagine_add_module(
 	eagine.msgbus.core PARTITION subscriber
 	IMPORTS
-		types message handler_map
-		endpoint
+		std types message
+		handler_map endpoint
 		eagine.core.types
 		eagine.core.memory
 		eagine.core.identifier
@@ -187,7 +189,7 @@ eagine_add_module(
 eagine_add_module(
 	eagine.msgbus.core PARTITION actor
 	IMPORTS
-		types message handler_map
+		std types message handler_map
 		endpoint subscriber
 		eagine.core.types
 		eagine.core.memory
@@ -199,7 +201,7 @@ eagine_add_module(
 eagine_add_module(
 	eagine.msgbus.core PARTITION router
 	IMPORTS
-		types message blobs
+		std types message blobs
 		interface context
 		eagine.core.types
 		eagine.core.memory
@@ -214,7 +216,7 @@ eagine_add_module(
 eagine_add_module(
 	eagine.msgbus.core PARTITION bridge
 	IMPORTS
-		types message
+		std types message
 		interface context
 		eagine.core.types
 		eagine.core.memory
@@ -228,7 +230,7 @@ eagine_add_module(
 eagine_add_module(
 	eagine.msgbus.core PARTITION service
 	IMPORTS
-		types interface message
+		std types interface message
 		invoker skeleton
 		endpoint subscriber
 		handler_map
@@ -242,7 +244,7 @@ eagine_add_module(
 eagine_add_module(
 	eagine.msgbus.core PARTITION setup
 	IMPORTS
-		types interface
+		std types interface
 		router_address connection_setup
 		eagine.core.types
 		eagine.core.identifier
@@ -252,7 +254,7 @@ eagine_add_module(
 eagine_add_module(
 	eagine.msgbus.core PARTITION registry
 	IMPORTS
-		types interface setup direct
+		std types interface setup direct
 		service endpoint router
 		eagine.core.types
 		eagine.core.memory
@@ -264,7 +266,7 @@ eagine_add_module(
 eagine_add_module(
 	eagine.msgbus.core PARTITION remote_node
 	IMPORTS
-		types
+		std types
 		eagine.core.types
 		eagine.core.build_info
 		eagine.core.memory
@@ -282,13 +284,14 @@ eagine_add_module(
 eagine_add_module(
 	eagine.msgbus.core PARTITION resources
 	IMPORTS
+		std
 		eagine.core
 )
 
 eagine_add_module(
 	eagine.msgbus.core PARTITION embedded
 	IMPORTS
-		resources
+		std resources
 		eagine.core
 )
 eagine_embed_target_resources(TARGET eagine.msgbus.core)
@@ -308,6 +311,7 @@ eagine_add_module(
 		registry
 		remote_node
 	IMPORTS
+		std
 		eagine.core.build_config
 		eagine.core.build_info
 		eagine.core.types
