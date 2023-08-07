@@ -273,6 +273,7 @@ eagine_add_module_tests(
 		common_info
 		sudoku
 	IMPORTS
+		std
 		eagine.core
 		eagine.core.main_ctx
 		eagine.msgbus.core

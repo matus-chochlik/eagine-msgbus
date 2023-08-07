@@ -347,6 +347,7 @@ eagine_add_module_tests(
 		actor
 		registry
 	IMPORTS
+		std
 		eagine.core
 		eagine.core.main_ctx
 )
