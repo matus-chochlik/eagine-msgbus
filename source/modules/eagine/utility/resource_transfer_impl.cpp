@@ -202,8 +202,7 @@ auto resource_data_consumer_node::update_and_process_all() noexcept
 //------------------------------------------------------------------------------
 auto resource_data_consumer_node::has_pending_resource(
   identifier_t request_id) const noexcept -> bool {
-    return (_streamed_resources.find(request_id) !=
-            _streamed_resources.end()) or
+    return _streamed_resources.contains(request_id) or
            (std::find_if(
               _embedded_resources.begin(),
               _embedded_resources.end(),
@@ -381,38 +380,32 @@ void resource_data_consumer_node::_handle_stream_data(
   const span_size_t,
   const memory::span<const memory::const_block>,
   const blob_info& binfo) noexcept {
-    if(const auto spos{_current_servers.find(binfo.source_id)};
-       spos != _current_servers.end()) {
-        auto& sinfo = std::get<1>(*spos);
+    find(_current_servers, binfo.source_id).and_then([](auto& sinfo) {
         sinfo.not_responding.reset();
-    }
+    });
 }
 //------------------------------------------------------------------------------
 void resource_data_consumer_node::_handle_ping_response(
   const result_context&,
   const ping_response& pong) noexcept {
-    const auto pos{_current_servers.find(pong.pingable_id)};
-    if(pos != _current_servers.end()) {
+    find(_current_servers, pong.pingable_id).and_then([&, this](auto& info) {
         log_debug("resource server ${id} responded to ping")
           .arg("id", pong.pingable_id)
           .arg("age", pong.age);
-        auto& info = std::get<1>(*pos);
         info.not_responding.reset();
-    }
+    });
 }
 //------------------------------------------------------------------------------
 void resource_data_consumer_node::_handle_ping_timeout(
   const ping_timeout& fail) noexcept {
-    const auto pos{_current_servers.find(fail.pingable_id)};
-    if(pos != _current_servers.end()) {
-        auto& info = std::get<1>(*pos);
+    find(_current_servers, fail.pingable_id).and_then([&, this](auto& info) {
         if(info.not_responding) {
             log_info("ping to resource server ${id} timeouted")
               .arg("id", fail.pingable_id)
               .arg("age", fail.age);
             _handle_server_lost(fail.pingable_id);
         }
-    }
+    });
 }
 //------------------------------------------------------------------------------
 } // namespace eagine::msgbus

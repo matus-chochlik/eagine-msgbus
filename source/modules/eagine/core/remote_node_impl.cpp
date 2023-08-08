@@ -87,11 +87,7 @@ public:
     remote_node_changes changes{};
 
     auto get_sub(const message_id msg_id) const noexcept -> tribool {
-        auto pos = _subscriptions.find(msg_id);
-        if(pos != _subscriptions.end()) {
-            return pos->second;
-        }
-        return indeterminate;
+        return find(_subscriptions, msg_id).and_then(_1.to_tribool());
     }
 
     auto get_sub(const message_id msg_id) noexcept -> tribool& {

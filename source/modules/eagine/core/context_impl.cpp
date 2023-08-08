@@ -187,29 +187,26 @@ auto context::add_remote_certificate_pem(
 //------------------------------------------------------------------------------
 auto context::get_remote_certificate_pem(
   const identifier_t node_id) const noexcept -> memory::const_block {
-    auto pos = _remotes.find(node_id);
-    if(pos != _remotes.end()) {
-        return view(std::get<1>(*pos).cert_pem);
-    }
-    return {};
+    return find(_remotes, node_id)
+      .member(&context_remote_node::cert_pem)
+      .and_then(view(_1))
+      .or_default();
 }
 //------------------------------------------------------------------------------
 auto context::get_remote_nonce(const identifier_t node_id) const noexcept
   -> memory::const_block {
-    const auto pos = _remotes.find(node_id);
-    if(pos != _remotes.end()) {
-        return view(std::get<1>(*pos).nonce);
-    }
-    return {};
+    return find(_remotes, node_id)
+      .member(&context_remote_node::nonce)
+      .and_then(view(_1))
+      .or_default();
 }
 //------------------------------------------------------------------------------
 auto context::verified_remote_key(const identifier_t node_id) const noexcept
   -> bool {
-    const auto pos = _remotes.find(node_id);
-    if(pos != _remotes.end()) {
-        return std::get<1>(*pos).verified_key;
-    }
-    return false;
+    return find(_remotes, node_id)
+      .member(&context_remote_node::verified_key)
+      .and_then(_1.to_tribool())
+      .or_false();
 }
 //------------------------------------------------------------------------------
 auto context::default_message_digest() noexcept
@@ -232,12 +229,10 @@ auto context::message_digest_verify_init(
   const sslplus::message_digest_type mdt,
   const identifier_t node_id) noexcept
   -> decltype(_ssl.message_digest_verify_init.fail()) {
-    auto pos = _remotes.find(node_id);
-    if(pos != _remotes.end()) {
-        auto& info = std::get<1>(*pos);
-        if(info.pubkey) {
+    if(const auto info{find(_remotes, node_id)}) {
+        if(info->pubkey) {
             return _ssl.message_digest_verify_init(
-              mdc, mdt, _ssl_engine, info.pubkey);
+              mdc, mdt, _ssl_engine, info->pubkey);
         }
     } else {
         log_debug("could not find remote node ${endpoint} for verification")
@@ -333,13 +328,11 @@ auto context::verify_remote_signature(
 auto context::verify_remote_signature(
   const memory::const_block sig,
   const identifier_t node_id) noexcept -> bool {
-    const auto pos = _remotes.find(node_id);
-    if(pos != _remotes.end()) {
-        auto& remote{std::get<1>(*pos)};
+    if(const auto remote{find(_remotes, node_id)}) {
         const auto result{
-          verify_remote_signature(view(remote.nonce), sig, node_id, true)};
+          verify_remote_signature(view(remote->nonce), sig, node_id, true)};
         if(result.has(verification_bit::message_content)) {
-            remote.verified_key = true;
+            remote->verified_key = true;
             return true;
         }
     }

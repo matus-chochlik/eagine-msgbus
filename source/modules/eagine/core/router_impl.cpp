@@ -582,24 +582,18 @@ auto router_nodes::count() noexcept -> std::size_t {
 }
 //------------------------------------------------------------------------------
 auto router_nodes::has_id(const identifier_t id) noexcept -> bool {
-    return _nodes.find(id) != _nodes.end();
+    return _nodes.contains(id);
 }
 //------------------------------------------------------------------------------
 auto router_nodes::find(const identifier_t id) noexcept
   -> optional_reference<routed_node> {
-    if(const auto pos{_nodes.find(id)}; pos != _nodes.end()) {
-        return {pos->second};
-    }
-    return {nothing};
+    return eagine::find(_nodes, id);
 }
 //------------------------------------------------------------------------------
 auto router_nodes::find_outgoing(const identifier_t target_id)
   -> valid_endpoint_id {
-    if(const auto pos{_endpoint_idx.find(target_id)};
-       pos != _endpoint_idx.end()) {
-        return {pos->second};
-    }
-    return {invalid_endpoint_id()};
+    return eagine::find(_endpoint_idx, target_id)
+      .value_or(invalid_endpoint_id());
 }
 //------------------------------------------------------------------------------
 auto router_nodes::has_some() noexcept -> bool {
@@ -716,9 +710,9 @@ auto router_nodes::remove_timeouted(const main_ctx_object& user) noexcept
 //------------------------------------------------------------------------------
 auto router_nodes::is_disconnected(const identifier_t endpoint_id) const noexcept
   -> bool {
-    const auto pos{_recently_disconnected.find(endpoint_id)};
-    return (pos != _recently_disconnected.end()) and
-           not pos->second.is_expired();
+    return eagine::find(_recently_disconnected, endpoint_id)
+      .transform([](auto& node) { return not node.is_expired(); })
+      .or_false();
 }
 //------------------------------------------------------------------------------
 void router_nodes::mark_disconnected(const identifier_t endpoint_id) noexcept {
@@ -769,14 +763,12 @@ auto router_nodes::subscribes_to(
   const message_id sub_msg_id) noexcept
   -> std::tuple<tribool, tribool, process_instance_id_t> {
 
-    const auto pos{_endpoint_infos.find(target_id)};
-    if(pos != _endpoint_infos.end()) {
-        auto& info = pos->second;
-        if(info.has_instance_id()) {
+    if(const auto info{eagine::find(_endpoint_infos, target_id)}) {
+        if(info->has_instance_id()) {
             return {
-              info.is_subscribed_to(sub_msg_id),
-              info.is_not_subscribed_to(sub_msg_id),
-              info.instance_id()};
+              info->is_subscribed_to(sub_msg_id),
+              info->is_not_subscribed_to(sub_msg_id),
+              info->instance_id()};
         }
     }
     return {indeterminate, indeterminate, 0U};
@@ -784,9 +776,8 @@ auto router_nodes::subscribes_to(
 //------------------------------------------------------------------------------
 auto router_nodes::subscriptions_of(const identifier_t target_id) noexcept
   -> std::tuple<std::vector<message_id>, process_instance_id_t> {
-    const auto pos{_endpoint_infos.find(target_id)};
-    if(pos != _endpoint_infos.end()) {
-        return {pos->second.subscriptions(), pos->second.instance_id()};
+    if(const auto info{eagine::find(_endpoint_infos, target_id)}) {
+        return {info->subscriptions(), info->instance_id()};
     }
     return {{}, 0U};
 }
