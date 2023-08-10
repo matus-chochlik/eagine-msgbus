@@ -24,10 +24,12 @@ namespace eagine::msgbus {
 //------------------------------------------------------------------------------
 export class ability_query {
 public:
-    ability_query(message_id msg_id) noexcept
+    constexpr ability_query() noexcept = default;
+
+    constexpr ability_query(message_id msg_id) noexcept
       : _msg_id{msg_id} {}
 
-    auto queried_message_type() const noexcept -> message_id {
+    constexpr auto queried_message_type() const noexcept -> message_id {
         return _msg_id;
     }
 
@@ -103,17 +105,19 @@ private:
 //------------------------------------------------------------------------------
 export class ability_info {
 public:
-    ability_info(message_id msg_id, identifier_t endpoint_id) noexcept
+    constexpr ability_info() noexcept = default;
+
+    constexpr ability_info(message_id msg_id, identifier_t endpoint_id) noexcept
       : _msg_id{msg_id}
       , _endpoint_id{endpoint_id} {}
 
-    auto supported_message_type() const noexcept -> message_id {
+    constexpr auto supported_message_type() const noexcept -> message_id {
         return _msg_id;
     }
 
 private:
     message_id _msg_id;
-    identifier_t _endpoint_id;
+    identifier_t _endpoint_id{invalid_endpoint_id()};
 };
 //------------------------------------------------------------------------------
 /// @brief Service consuming information about message types handled by endpoint.
