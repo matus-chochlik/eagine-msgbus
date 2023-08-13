@@ -587,7 +587,7 @@ auto router_nodes::has_id(const identifier_t id) noexcept -> bool {
 //------------------------------------------------------------------------------
 auto router_nodes::find(const identifier_t id) noexcept
   -> optional_reference<routed_node> {
-    return eagine::find(_nodes, id);
+    return eagine::find(_nodes, id).ref();
 }
 //------------------------------------------------------------------------------
 auto router_nodes::find_outgoing(const identifier_t target_id)
