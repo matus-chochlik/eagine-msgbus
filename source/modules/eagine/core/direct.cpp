@@ -409,12 +409,11 @@ private:
 
     auto _get(const string_view addr_str) noexcept
       -> shared_holder<direct_connection_address<Lockable>>& {
-        auto pos = _addrs.find(addr_str);
-        if(pos == _addrs.end()) {
-            pos = _addrs.emplace(to_string(addr_str), _make_addr()).first;
+        auto found{find(_addrs, addr_str)};
+        if(not found) {
+            found.reset(_addrs.emplace(to_string(addr_str), _make_addr()));
         }
-        assert(pos != _addrs.end());
-        return pos->second;
+        return *found;
     }
 };
 //------------------------------------------------------------------------------

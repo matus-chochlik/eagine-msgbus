@@ -517,13 +517,8 @@ public:
     }
 
     /// @brief Get the board at the specified coordinate if it is solved.
-    auto get_board(const Coord coord) const noexcept
-      -> optional_reference<const basic_sudoku_board<S>> {
-        const auto pos = _boards.find(coord);
-        if(pos != _boards.end()) {
-            return &pos->second;
-        }
-        return {};
+    auto get_board(const Coord coord) const noexcept {
+        return eagine::find(_boards, coord);
     }
 
     /// @brief Get the board at the specified coordinate if it is solved.
