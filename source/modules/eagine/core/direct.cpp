@@ -411,7 +411,7 @@ private:
       -> shared_holder<direct_connection_address<Lockable>>& {
         auto found{find(_addrs, addr_str)};
         if(not found) {
-            found.reset(_addrs.emplace(to_string(addr_str), _make_addr()));
+            found.emplace(to_string(addr_str), _make_addr());
         }
         return *found;
     }

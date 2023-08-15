@@ -620,12 +620,12 @@ void router_nodes::_adopt_pending(
     confirmation.set_source_id(parent.get_id()).set_target_id(id);
     pending.send(msgbus_id{"confirmId"}, confirmation);
 
-    auto pos = _nodes.find(id);
-    if(pos == _nodes.end()) {
-        pos = _nodes.try_emplace(id).first;
+    auto node{eagine::find(_nodes, id)};
+    if(not node) {
+        node.try_emplace(id);
         parent._update_use_workers();
     }
-    pos->second.setup(pending.release_connection(), pending.maybe_router());
+    node->setup(pending.release_connection(), pending.maybe_router());
     _recently_disconnected.erase(id);
 }
 //------------------------------------------------------------------------------
@@ -716,14 +716,14 @@ auto router_nodes::is_disconnected(const identifier_t endpoint_id) const noexcep
 }
 //------------------------------------------------------------------------------
 void router_nodes::mark_disconnected(const identifier_t endpoint_id) noexcept {
-    const auto pos{_recently_disconnected.find(endpoint_id)};
-    if(pos != _recently_disconnected.end()) {
-        if(pos->second.is_expired()) {
-            _recently_disconnected.erase(pos);
+    const auto node{eagine::find(_recently_disconnected, endpoint_id)};
+    if(node) {
+        if(node->is_expired()) {
+            _recently_disconnected.erase(node.position());
         }
     }
     _recently_disconnected.erase_if(
-      [](auto& p) { return std::get<1>(p).is_expired(); });
+      [&](auto& p) { return node->is_expired(); });
     _recently_disconnected.emplace(endpoint_id, std::chrono::seconds{15});
 }
 //------------------------------------------------------------------------------

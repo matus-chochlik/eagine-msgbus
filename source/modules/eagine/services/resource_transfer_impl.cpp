@@ -344,9 +344,11 @@ auto resource_server_impl::get_resource(
                       hold<file_blob_io>,
                       std::move(file),
                       from_string<span_size_t>(
-                        locator.argument("offs").or_default()),
+                        locator.argument("offs").or_default())
+                        .to_optional(),
                       from_string<span_size_t>(
-                        locator.argument("size").or_default()));
+                        locator.argument("size").or_default())
+                        .to_optional());
                 }
             }
         }
@@ -514,18 +516,15 @@ public:
         if(locator.has_scheme("eagimbe")) {
             if(const auto opt_id{
                  from_string<identifier_t>(locator.host().or_default())}) {
-                const auto spos = _server_endpoints.find(*opt_id);
-                if(spos != _server_endpoints.end()) {
+                if(find(_server_endpoints, *opt_id)) {
                     return *opt_id;
                 }
             }
         } else if(locator.has_scheme("eagimbh")) {
             if(const auto hostname{locator.host()}) {
-                const auto hpos = _hostname_to_endpoint.find(*hostname);
-                if(hpos != _hostname_to_endpoint.end()) {
-                    for(const auto endpoint_id : std::get<1>(*hpos)) {
-                        const auto spos = _server_endpoints.find(endpoint_id);
-                        if(spos != _server_endpoints.end()) {
+                if(const auto hfound{find(_hostname_to_endpoint, *hostname)}) {
+                    for(const auto endpoint_id : *hfound) {
+                        if(find(_server_endpoints, endpoint_id)) {
                             return endpoint_id;
                         }
                     }

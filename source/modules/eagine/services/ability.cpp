@@ -57,7 +57,8 @@ public:
       const message_context& msg_ctx,
       const stored_message& message) -> std::optional<ability_query> {
         return default_deserialized_message_type(message.content())
-          .construct<ability_query>();
+          .construct<ability_query>()
+          .to_optional();
     }
 
     auto decode_ability_query(
@@ -144,7 +145,8 @@ public:
       const message_context& msg_ctx,
       const stored_message& message) -> std::optional<ability_info> {
         return default_deserialized_message_type(message.content())
-          .construct<ability_info>(message.source_id);
+          .construct<ability_info>(message.source_id)
+          .to_optional();
     }
 
     auto decode_ability_info(

@@ -51,8 +51,8 @@ public:
       const stored_message& message) noexcept
       -> std::optional<router_topology_info> final {
         if(msg_ctx.is_special_message("topoRutrCn")) {
-            return default_deserialized<router_topology_info>(
-              message.content());
+            return default_deserialized<router_topology_info>(message.content())
+              .to_optional();
         }
         return {};
     }
@@ -62,8 +62,8 @@ public:
       const stored_message& message) noexcept
       -> std::optional<bridge_topology_info> final {
         if(msg_ctx.is_special_message("topoBrdgCn")) {
-            return default_deserialized<bridge_topology_info>(
-              message.content());
+            return default_deserialized<bridge_topology_info>(message.content())
+              .to_optional();
         }
         return {};
     }
@@ -74,7 +74,8 @@ public:
       -> std::optional<endpoint_topology_info> final {
         if(msg_ctx.is_special_message("topoEndpt")) {
             return default_deserialized<endpoint_topology_info>(
-              message.content());
+                     message.content())
+              .to_optional();
         }
         return {};
     }

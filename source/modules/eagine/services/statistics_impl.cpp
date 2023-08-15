@@ -53,7 +53,8 @@ public:
       const stored_message& message) noexcept
       -> std::optional<router_statistics> final {
         if(msg_ctx.is_special_message("statsRutr")) {
-            return default_deserialized<router_statistics>(message.content());
+            return default_deserialized<router_statistics>(message.content())
+              .to_optional();
         }
         return {};
     }
@@ -63,7 +64,8 @@ public:
       const stored_message& message) noexcept
       -> std::optional<bridge_statistics> final {
         if(msg_ctx.is_special_message("statsBrdg")) {
-            return default_deserialized<bridge_statistics>(message.content());
+            return default_deserialized<bridge_statistics>(message.content())
+              .to_optional();
         }
         return {};
     }
@@ -73,7 +75,8 @@ public:
       const stored_message& message) noexcept
       -> std::optional<endpoint_statistics> final {
         if(msg_ctx.is_special_message("statsEndpt")) {
-            return default_deserialized<endpoint_statistics>(message.content());
+            return default_deserialized<endpoint_statistics>(message.content())
+              .to_optional();
         }
         return {};
     }
@@ -84,7 +87,8 @@ public:
       -> std::optional<connection_statistics> final {
         if(msg_ctx.is_special_message("statsConn")) {
             return default_deserialized<connection_statistics>(
-              message.content());
+                     message.content())
+              .to_optional();
         }
         return {};
     }

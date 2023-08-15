@@ -286,10 +286,9 @@ auto resource_data_consumer_node::fetch_resource_chunks(
 //------------------------------------------------------------------------------
 auto resource_data_consumer_node::cancel_resource_stream(
   identifier_t request_id) noexcept -> bool {
-    const auto spos{_streamed_resources.find(request_id)};
-    if(spos != _streamed_resources.end()) {
+    if(const auto found{find(_streamed_resources, request_id)}) {
         // TODO: cancel in base
-        _streamed_resources.erase(spos);
+        _streamed_resources.erase(found.position());
         return true;
     }
 

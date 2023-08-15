@@ -41,7 +41,7 @@ auto endpoint::_ensure_incoming(const message_id msg_id) noexcept
   -> incoming_state& {
     auto incoming{find(_incoming, msg_id)};
     if(not incoming) {
-        incoming.reset(_incoming.emplace(msg_id, default_selector));
+        incoming.emplace(msg_id, default_selector);
     }
     assert(incoming and *incoming);
     return **incoming;
