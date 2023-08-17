@@ -1,0 +1,8 @@
+{"router":"$<TARGET_FILE:eagine-msgbus-router>"
+,"bridge":"$<TARGET_FILE:eagine-msgbus-bridge>"
+,"pinger":"$<TARGET_FILE:eagine-msgbus-pinger>"
+,"pingable":"$<TARGET_FILE:eagine-msgbus-pingable>"
+,"file-server":"$<TARGET_FILE:eagine-msgbus-file_server>"
+,"sudoku-helper":"$<TARGET_FILE:eagine-msgbus-sudoku_helper>"
+,"sudoku-tiling":"$<TARGET_FILE:eagine-msgbus-sudoku_tiling>"
+}

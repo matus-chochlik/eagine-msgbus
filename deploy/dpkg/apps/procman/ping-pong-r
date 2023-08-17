@@ -1,0 +1,58 @@
+#!/usr/bin/eagine-procman
+# Copyright Matus Chochlik.
+# Distributed under the Boost Software License, Version 1.0.
+# See accompanying file LICENSE_1_0.txt or copy at
+#  http://www.boost.org/LICENSE_1_0.txt
+#
+{"variables":{
+	"min_log_severity": "stat",
+	"log_args": ["--min-log-severity", "${min_log_severity}"],
+	"conn_type": "local",
+	"ports": "$(range 34910 34919)",
+	"rutr_addr_args_posixmq": ["/$(uid posixmq)"],
+	"rutr_addr_args_local": ["$(in_work_dir router.socket)"],
+	"rutr_addr_args_tcpip4": ["localhost:$[ports[0]]"],
+	"rutr_addr_args_udpip4": ["localhost:$[ports[0]]"],
+	"rutr_addr_args": "$[rutr_addr_args_${conn_type}...]",
+	"conn_type_arg_posixmq": "posix-mqueue",
+	"conn_type_arg_local": "asio-local-stream",
+	"conn_type_arg_tcpip4": "asio-tcp-ipv4",
+	"conn_type_arg_udpip4": "asio-udp-ipv4",
+	"conn_type_arg": "--msgbus-${conn_type_arg_${conn_type}}",
+	"conn_args": ["${conn_type_arg}", "--msgbus-router-address", "$[rutr_addr_args...]"],
+	"ping_count": "1M",
+	"ping_batch": "10k",
+	"ping_repeat": 1
+},"pipelines":[{
+	"identity": "router",
+	"required_by": ["ping", "pong"],
+	"command": [
+		"$(eagiapp msgbus-router)", "$<identity router>",
+		"--log-active-state", "RouterNode", "running",
+		"--msgbus-router-shutdown-verify", "false",
+		"--msgbus-router-shutdown-delay", "15s",
+		"$[conn_args...]",
+		"$[log_args...]"]
+},{
+	"identity": "ping",
+	"required_by": ["pong"],
+	"command": [
+		"$(eagiapp msgbus-pinger)", "$<identity ping>",
+		"--log-active-state", "PingExe", "pinging",
+		"--ping-count", "${ping_count}",
+		"--ping-batch", "${ping_batch}",
+		"--ping-repeat", "${ping_repeat}",
+		"$[conn_args...]",
+		"$[log_args...]"]
+},{
+	"identity": "pong",
+	"instances": 2,
+	"parallel": true,
+	"command": [
+		"$(eagiapp msgbus-pingable)", "$<identity pong>",
+		"--log-active-state", "PongExe", "ponging",
+		"$[conn_args...]",
+		"$[log_args...]"]
+}],"expect":{
+	"clean_shutdown": ["router", "ping", "pong"]
+}}

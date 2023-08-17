@@ -1,0 +1,62 @@
+#!/usr/bin/env python3
+# coding=utf-8
+# Copyright Matus Chochlik.
+# Distributed under the Boost Software License, Version 1.0.
+# See accompanying file LICENSE_1_0.txt or copy at
+#  http://www.boost.org/LICENSE_1_0.txt
+#
+import os
+import json
+import math
+import shutil
+# ------------------------------------------------------------------------------
+src_dir = os.path.realpath("@SRC_DIR@")
+bin_dir = os.path.realpath("@BIN_DIR@")
+pkg_dir = os.path.realpath("@PKG_DIR@")
+deb_dir  = os.path.join(pkg_dir, "DEBIAN")
+pkg_prefix = os.path.join(pkg_dir, "usr")
+bin_prefix = os.path.join(pkg_prefix, "bin")
+
+for path in [bin_prefix, deb_dir]:
+    if not os.path.exists(path):
+        os.makedirs(path)
+# ------------------------------------------------------------------------------
+with open(os.path.join("@CMAKE_CURRENT_BINARY_DIR@", "build-pkg.json"), "rb") as build_pkg_json:
+    info = json.load(build_pkg_json)
+    for name, src_path in info.items():
+        if os.path.exists(src_path):
+            shutil.copy(
+                src_path,
+                os.path.join(bin_prefix, "eagine-msgbus-" + name))
+shutil.copy(
+    os.path.join(src_dir, "source", "app", "eagine-local-bridge.sh"),
+    os.path.join(bin_prefix, "eagine-local-bridge"))
+
+for filename in ["ping-pong-r"]:
+    shutil.copy(
+        os.path.join(src_dir, "deploy", "dpkg", "apps", "procman", filename), 
+        os.path.join(bin_prefix, "eagiproc-" + filename))
+# ------------------------------------------------------------------------------
+def dir_file_size(path):
+    total_size = 0
+    for dirpath, dirnames, filenames in os.walk(path):
+        for d in dirnames:
+            total_size += dir_file_size(os.path.join(dirpath, d))
+        for f in filenames:
+            total_size += os.path.getsize(os.path.join(dirpath, f))
+    return total_size
+# ------------------------------------------------------------------------------
+with open(os.path.join(deb_dir, "control"), "wt") as control:
+    control.write("""\
+Package: eagine-msgbus-apps
+Version: %s
+Architecture: %s
+Installed-Size: %d
+Depends: eagine-core-tools
+Maintainer: Matus Chochlik <chochlik@gmail.com>
+Description: Collection of EAGine msgbus applications.
+""" % (
+    "@PKG_VERSION@",
+    "@PKG_ARCH@",
+    int(math.ceil(dir_file_size(pkg_dir) / 1024))
+))
