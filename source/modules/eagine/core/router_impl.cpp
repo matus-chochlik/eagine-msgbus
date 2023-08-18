@@ -723,7 +723,7 @@ void router_nodes::mark_disconnected(const identifier_t endpoint_id) noexcept {
         }
     }
     _recently_disconnected.erase_if(
-      [&](auto& p) { return node->is_expired(); });
+      [&](auto& p) { return p.second.is_expired(); });
     _recently_disconnected.emplace(endpoint_id, std::chrono::seconds{15});
 }
 //------------------------------------------------------------------------------
