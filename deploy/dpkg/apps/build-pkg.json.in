@@ -3,6 +3,7 @@
 ,"pinger":"$<TARGET_FILE:eagine-msgbus-pinger>"
 ,"pingable":"$<TARGET_FILE:eagine-msgbus-pingable>"
 ,"file-server":"$<TARGET_FILE:eagine-msgbus-file_server>"
+,"resource-histogram":"$<TARGET_FILE:eagine-msgbus-resource_histogram>"
 ,"sudoku-helper":"$<TARGET_FILE:eagine-msgbus-sudoku_helper>"
 ,"sudoku-tiling":"$<TARGET_FILE:eagine-msgbus-sudoku_tiling>"
 }

@@ -58,6 +58,17 @@ eagine_target_modules(
 	eagine.msgbus
 )
 
+# resource client
+add_executable(eagine-msgbus-resource_histogram resource_histogram.cpp)
+eagine_add_exe_analysis(eagine-msgbus-resource_histogram)
+eagine_target_modules(
+	eagine-msgbus-resource_histogram
+	std
+	eagine.core
+	eagine.sslplus
+	eagine.msgbus
+)
+
 # sudoku solver helper
 add_executable(eagine-msgbus-sudoku_helper sudoku_helper.cpp)
 eagine_add_exe_analysis(eagine-msgbus-sudoku_helper)
