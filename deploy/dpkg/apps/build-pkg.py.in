@@ -32,7 +32,10 @@ shutil.copy(
     os.path.join(src_dir, "source", "app", "eagine-local-bridge.sh"),
     os.path.join(bin_prefix, "eagine-local-bridge"))
 
-for filename in ["ping-pong-r", "sudoku-tiling"]:
+for filename in [
+    "ping-pong-r",
+    "ping-pong-rlb",
+    "sudoku-tiling"]:
     shutil.copy(
         os.path.join(src_dir, "deploy", "dpkg", "apps", "procman", filename), 
         os.path.join(bin_prefix, "eagiproc-" + filename))
