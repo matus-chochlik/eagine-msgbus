@@ -67,10 +67,10 @@ auto main(main_ctx& ctx) -> int {
         enqueue(url(arg.get_string()), false);
     }
     if(not node.has_pending_resources()) {
-        enqueue(url("eagires:///ones?count=134217728"), false);
-        enqueue(url("eagires:///zeroes?count=134217728"), true);
-        enqueue(url("eagires:///random?count=1073741824"), false);
-        enqueue(url("eagires:///random?count=134217728"), true);
+        enqueue(url("eagires:///ones?count=134'217'728"), false);
+        enqueue(url("eagires:///zeroes?count=134'217'728"), true);
+        enqueue(url("eagires:///random?count=1'073'741'824"), false);
+        enqueue(url("eagires:///random?count=134'217'728"), true);
         enqueue(url("eagires:///ownSource"), true);
     }
 
