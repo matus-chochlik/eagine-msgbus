@@ -29,7 +29,10 @@ public:
         connect<&tracker_example::on_node_change>(this, this->node_changed);
 
         scheduler().schedule_repeated(
-          "checkup", std::chrono::seconds{5}, [this] { checkup(); });
+          "checkup", std::chrono::seconds{5}, [this] {
+              checkup();
+              return true;
+          });
     }
 
     void on_node_change(
