@@ -415,6 +415,7 @@ public:
 
     auto has_id(const identifier_t) noexcept -> bool;
     auto has_node_id(const identifier_t) noexcept -> bool;
+    auto node_count() noexcept -> span_size_t;
     auto password_is_required() const noexcept -> bool;
 
     void add_certificate_pem(const memory::const_block blk) noexcept;
@@ -456,8 +457,6 @@ private:
     auto _remove_disconnected() noexcept -> work_done;
 
     auto _get_next_id() noexcept -> identifier_t;
-
-    auto _current_nodes() noexcept;
 
     auto _process_blobs() noexcept -> work_done;
 
@@ -603,7 +602,7 @@ private:
     void _update_connections_by_workers(some_true_atomic&) noexcept;
     auto _update_connections_by_router() noexcept -> work_done;
 
-    std::shared_mutex _router_lock;
+    std::mutex _router_lock;
     router_context _context;
     router_ids _ids;
     router_stats _stats;
