@@ -275,6 +275,14 @@ auto router_endpoint_info::is_outdated() const noexcept -> bool {
     return _is_outdated.is_expired();
 }
 //------------------------------------------------------------------------------
+// route_node_messages_work_unit
+//------------------------------------------------------------------------------
+auto route_node_messages_work_unit::do_it() noexcept -> bool {
+    (*_something_done)(
+      _node->route_messages(*_parent, _incoming_id, _message_age_inc));
+    return true;
+}
+//------------------------------------------------------------------------------
 // connection_update_work_unit
 //------------------------------------------------------------------------------
 auto connection_update_work_unit::do_it() noexcept -> bool {
@@ -308,6 +316,25 @@ void routed_node::setup(
   bool maybe_router) noexcept {
     _connection = std::move(conn);
     _maybe_router = maybe_router;
+}
+//------------------------------------------------------------------------------
+void routed_node::enqueue_route_messages(
+  workshop& workers,
+  router& parent,
+  identifier_t incoming_id,
+  std::chrono::steady_clock::duration message_age_inc,
+  std::latch& completed,
+  some_true_atomic& something_done) noexcept {
+    if(_connection) [[likely]] {
+        _route_messages_work = {
+          parent,
+          *this,
+          incoming_id,
+          message_age_inc,
+          completed,
+          something_done};
+        workers.enqueue(_route_messages_work);
+    }
 }
 //------------------------------------------------------------------------------
 void routed_node::enqueue_update_connection(
@@ -809,10 +836,12 @@ auto router_stats::time_since_last_routing() noexcept -> auto {
 //------------------------------------------------------------------------------
 void router_stats::update_avg_msg_age(
   const std::chrono::steady_clock::duration message_age_inc) noexcept {
+    const std::unique_lock lk{_main_lock};
     _message_age_avg.add(message_age_inc);
 }
 //------------------------------------------------------------------------------
 auto router_stats::avg_msg_age() noexcept -> std::chrono::microseconds {
+    const std::shared_lock lk{_main_lock};
     return std::chrono::duration_cast<std::chrono::microseconds>(
       _message_age_avg.get());
 }
@@ -1748,6 +1777,8 @@ auto router::_handle_parent_message(
   message_view message) noexcept -> bool {
     _stats.update_avg_msg_age(message.add_age(msg_age).age() + message_age_inc);
 
+    const std::unique_lock lk{_router_lock};
+
     if(is_special_message(msg_id)) {
         return _handle_special_parent_message(msg_id, message);
     }
@@ -1766,6 +1797,8 @@ auto router::_handle_node_message(
   message_view message,
   routed_node& node) noexcept -> bool {
     _stats.update_avg_msg_age(message.add_age(msg_age).age() + message_age_inc);
+
+    const std::unique_lock lk{_router_lock};
 
     if(_handle_special(msg_id, incoming_id, node, message)) {
         return true;
@@ -1800,12 +1833,16 @@ auto router::_handle_special_parent_message(
 void router::_route_messages_by_workers(
   some_true_atomic& something_done) noexcept {
     const auto message_age_inc{_stats.time_since_last_routing()};
+    std::latch completed{limit_cast<std::ptrdiff_t>(_nodes.count())};
 
     for(auto& [node_id, node] : _current_nodes()) {
-        something_done(node.route_messages(*this, node_id, message_age_inc));
+        node.enqueue_route_messages(
+          workers(), *this, node_id, message_age_inc, completed, something_done);
     }
 
     something_done(_parent_router.route_messages(*this, message_age_inc));
+
+    completed.wait();
 }
 //------------------------------------------------------------------------------
 auto router::_route_messages_by_router() noexcept -> work_done {
