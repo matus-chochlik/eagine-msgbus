@@ -206,7 +206,7 @@ public:
       -> work_done;
 
 private:
-    unique_holder<std::shared_mutex> _list_lock{default_selector};
+    unique_holder<std::shared_mutex> _lock{default_selector};
     unique_holder<connection> _connection{};
     route_node_messages_work_unit _route_messages_work{};
     connection_update_work_unit _update_connection_work{};
@@ -313,7 +313,7 @@ public:
     void log_stats(const main_ctx_object&) noexcept;
 
 private:
-    std::shared_mutex _main_lock;
+    std::shared_mutex _lock;
     std::chrono::steady_clock::time_point _startup_time{
       std::chrono::steady_clock::now()};
     std::chrono::steady_clock::time_point _prev_route_time{
@@ -602,7 +602,7 @@ private:
     void _update_connections_by_workers(some_true_atomic&) noexcept;
     auto _update_connections_by_router() noexcept -> work_done;
 
-    std::mutex _router_lock;
+    spinlock _router_lock;
     router_context _context;
     router_ids _ids;
     router_stats _stats;

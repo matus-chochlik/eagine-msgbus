@@ -301,7 +301,7 @@ auto routed_node::is_allowed(const message_id msg_id) const noexcept -> bool {
     if(is_special_message(msg_id)) {
         return true;
     }
-    const std::shared_lock lk_list{*_list_lock};
+    const std::shared_lock lk_list{*_lock};
     if(not _message_allow_list.empty()) {
         return message_id_list_contains(_message_allow_list, msg_id);
     }
@@ -348,7 +348,7 @@ void routed_node::enqueue_update_connection(
 }
 //------------------------------------------------------------------------------
 void routed_node::mark_not_a_router() noexcept {
-    const std::unique_lock lk_list{*_list_lock};
+    const std::unique_lock lk_list{*_lock};
     _maybe_router = false;
 }
 //------------------------------------------------------------------------------
@@ -364,7 +364,7 @@ auto routed_node::update_connection() noexcept -> work_done {
 }
 //------------------------------------------------------------------------------
 void routed_node::handle_bye_bye() noexcept {
-    const std::unique_lock lk_list{*_list_lock};
+    const std::unique_lock lk_list{*_lock};
     if(not _maybe_router) {
         _do_disconnect = true;
     }
@@ -463,22 +463,22 @@ auto routed_node::process_blobs(
 }
 //------------------------------------------------------------------------------
 void routed_node::block_message(const message_id msg_id) noexcept {
-    const std::unique_lock lk_list{*_list_lock};
+    const std::unique_lock lk_list{*_lock};
     message_id_list_add(_message_block_list, msg_id);
 }
 //------------------------------------------------------------------------------
 void routed_node::allow_message(const message_id msg_id) noexcept {
-    const std::unique_lock lk_list{*_list_lock};
+    const std::unique_lock lk_list{*_lock};
     message_id_list_add(_message_allow_list, msg_id);
 }
 //------------------------------------------------------------------------------
 void routed_node::clear_block_list() noexcept {
-    const std::unique_lock lk_list{*_list_lock};
+    const std::unique_lock lk_list{*_lock};
     _message_block_list.clear();
 }
 //------------------------------------------------------------------------------
 void routed_node::clear_allow_list() noexcept {
-    const std::unique_lock lk_list{*_list_lock};
+    const std::unique_lock lk_list{*_lock};
     _message_allow_list.clear();
 }
 //------------------------------------------------------------------------------
@@ -836,12 +836,12 @@ auto router_stats::time_since_last_routing() noexcept -> auto {
 //------------------------------------------------------------------------------
 void router_stats::update_avg_msg_age(
   const std::chrono::steady_clock::duration message_age_inc) noexcept {
-    const std::unique_lock lk{_main_lock};
+    const std::unique_lock lk{_lock};
     _message_age_avg.add(message_age_inc);
 }
 //------------------------------------------------------------------------------
 auto router_stats::avg_msg_age() noexcept -> std::chrono::microseconds {
-    const std::shared_lock lk{_main_lock};
+    const std::shared_lock lk{_lock};
     return std::chrono::duration_cast<std::chrono::microseconds>(
       _message_age_avg.get());
 }
@@ -1709,14 +1709,15 @@ auto router::_route_targeted_message(
     bool has_routed = false;
 
     const auto own_id{get_id()};
-    const std::unique_lock lk{_router_lock};
     if(const auto outgoing_id{_nodes.find_outgoing(message.target_id)}) {
         // if the message should go through the parent router
         if(*outgoing_id == own_id) {
+            const std::unique_lock lk{_router_lock};
             has_routed |= _parent_router.send(*this, msg_id, message);
         } else {
             _nodes.find(*outgoing_id).and_then([&](auto& node_out) {
                 if(node_out.is_allowed(msg_id)) {
+                    const std::unique_lock lk{_router_lock};
                     has_routed = _forward_to(node_out, msg_id, message);
                 }
             });
@@ -1727,6 +1728,7 @@ auto router::_route_targeted_message(
         for(const auto& [outgoing_id, node_out] : _nodes.get()) {
             if(outgoing_id == message.target_id) {
                 if(node_out.is_allowed(msg_id)) {
+                    const std::unique_lock lk{_router_lock};
                     has_routed = _forward_to(node_out, msg_id, message);
                 }
             }
@@ -1735,6 +1737,7 @@ auto router::_route_targeted_message(
 
     if(not has_routed) {
         if(not _nodes.is_disconnected(message.target_id)) [[likely]] {
+            const std::unique_lock lk{_router_lock};
             for(const auto& [outgoing_id, node_out] : _nodes.get()) {
                 if(incoming_id != outgoing_id) {
                     has_routed |= node_out.try_route(*this, msg_id, message);
