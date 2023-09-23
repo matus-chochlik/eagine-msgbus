@@ -1293,10 +1293,10 @@ auto router::_handle_not_not_a_router(
   routed_node& node,
   const message_view& message) noexcept -> message_handling_result {
     if(incoming_id == message.source_id) {
-        const std::unique_lock lk{_router_lock};
-        node.mark_not_a_router();
         log_debug("node ${source} is not a router")
           .arg("source", message.source_id);
+        const std::unique_lock lk{_router_lock};
+        node.mark_not_a_router();
     }
     return was_handled;
 }
