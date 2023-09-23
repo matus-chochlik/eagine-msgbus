@@ -1691,7 +1691,13 @@ inline auto router::_handle_special(
 }
 //------------------------------------------------------------------------------
 void router::_update_use_workers() noexcept {
+    const bool used_workers{_use_worker_threads};
     _use_worker_threads = node_count() > 2;
+    if(used_workers and not _use_worker_threads) {
+        log_info("switching to single-threaded mode").tag("singleThrd");
+    } else if(not used_workers and _use_worker_threads) {
+        log_info("switching to multi-threaded mode").tag("multiThrd");
+    }
 }
 //------------------------------------------------------------------------------
 auto router::_forward_to(
