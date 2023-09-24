@@ -903,7 +903,7 @@ void router_stats::log_stats(const main_ctx_object& user) noexcept {
               .arg("dropped", _stats.dropped_messages)
               .arg("interval", interval)
               .arg("avgMsgAge", avg_msg_age())
-              .arg("msgsPerSec", "ratePerSec", msgs_per_sec);
+              .arg("msgsPerSec", "RatePerSec", msgs_per_sec);
         }
     }
 }

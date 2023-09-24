@@ -454,7 +454,7 @@ void bridge::_log_bridge_stats_c2o() noexcept {
           .arg("dropped", _dropped_messages_c2o)
           .arg("interval", interval)
           .arg("avgMsgAge", _avg_msg_age_c2o())
-          .arg("msgsPerSec", "ratePerSec", msgs_per_sec);
+          .arg("msgsPerSec", "RatePerSec", msgs_per_sec);
     }
 
     _forwarded_since_c2o = now;
@@ -479,7 +479,7 @@ void bridge::_log_bridge_stats_i2c() noexcept {
           .arg("dropped", _dropped_messages_i2c)
           .arg("interval", interval)
           .arg("avgMsgAge", _avg_msg_age_i2c())
-          .arg("msgsPerSec", "ratePerSec", msgs_per_sec);
+          .arg("msgsPerSec", "RatePerSec", msgs_per_sec);
     }
 
     _forwarded_since_i2c = now;
