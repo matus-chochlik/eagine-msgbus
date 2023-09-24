@@ -897,7 +897,7 @@ void router_stats::log_stats(const main_ctx_object& user) noexcept {
             const auto msgs_per_sec{1'000'000.F / interval.count()};
 
             user.log_chart_sample("msgsPerSec", msgs_per_sec);
-            user.log_stat("forwarded ${count} messages")
+            user.log_stat("forwarded ${count} messages (${msgsPerSec}/s)")
               .tag("msgStats")
               .arg("count", _stats.forwarded_messages)
               .arg("dropped", _stats.dropped_messages)

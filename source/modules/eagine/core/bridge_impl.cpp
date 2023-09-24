@@ -448,7 +448,7 @@ void bridge::_log_bridge_stats_c2o() noexcept {
         const auto msgs_per_sec{1'000'000.F / interval.count()};
 
         log_chart_sample("msgPerSecO", msgs_per_sec);
-        log_stat("forwarded ${count} messages to output queue")
+        log_stat("forwarded ${count} messages to output (${msgsPerSec}/s)")
           .tag("msgStats")
           .arg("count", _forwarded_messages_c2o)
           .arg("dropped", _dropped_messages_c2o)
@@ -473,7 +473,7 @@ void bridge::_log_bridge_stats_i2c() noexcept {
             .count();
 
         log_chart_sample("msgPerSecI", msgs_per_sec);
-        log_stat("forwarded ${count} messages from input")
+        log_stat("forwarded ${count} messages from input (${msgsPerSec}/s)")
           .tag("msgStats")
           .arg("count", _forwarded_messages_i2c)
           .arg("dropped", _dropped_messages_i2c)
