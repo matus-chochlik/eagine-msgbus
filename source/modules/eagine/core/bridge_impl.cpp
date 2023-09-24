@@ -448,13 +448,13 @@ void bridge::_log_bridge_stats_c2o() noexcept {
         const auto msgs_per_sec{1'000'000.F / interval.count()};
 
         log_chart_sample("msgPerSecO", msgs_per_sec);
-        log_stat("forwarded ${count} messages to output (${msgsPerSec}/s)")
+        log_stat("forwarded ${count} messages to output (${msgsPerSec})")
           .tag("msgStats")
           .arg("count", _forwarded_messages_c2o)
           .arg("dropped", _dropped_messages_c2o)
           .arg("interval", interval)
           .arg("avgMsgAge", _avg_msg_age_c2o())
-          .arg("msgsPerSec", msgs_per_sec);
+          .arg("msgsPerSec", "ratePerSec", msgs_per_sec);
     }
 
     _forwarded_since_c2o = now;
@@ -473,13 +473,13 @@ void bridge::_log_bridge_stats_i2c() noexcept {
             .count();
 
         log_chart_sample("msgPerSecI", msgs_per_sec);
-        log_stat("forwarded ${count} messages from input (${msgsPerSec}/s)")
+        log_stat("forwarded ${count} messages from input (${msgsPerSec})")
           .tag("msgStats")
           .arg("count", _forwarded_messages_i2c)
           .arg("dropped", _dropped_messages_i2c)
           .arg("interval", interval)
           .arg("avgMsgAge", _avg_msg_age_i2c())
-          .arg("msgsPerSec", msgs_per_sec);
+          .arg("msgsPerSec", "ratePerSec", msgs_per_sec);
     }
 
     _forwarded_since_i2c = now;

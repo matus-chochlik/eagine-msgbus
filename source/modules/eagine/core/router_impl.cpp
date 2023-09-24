@@ -897,13 +897,13 @@ void router_stats::log_stats(const main_ctx_object& user) noexcept {
             const auto msgs_per_sec{1'000'000.F / interval.count()};
 
             user.log_chart_sample("msgsPerSec", msgs_per_sec);
-            user.log_stat("forwarded ${count} messages (${msgsPerSec}/s)")
+            user.log_stat("forwarded ${count} messages (${msgsPerSec})")
               .tag("msgStats")
               .arg("count", _stats.forwarded_messages)
               .arg("dropped", _stats.dropped_messages)
               .arg("interval", interval)
               .arg("avgMsgAge", avg_msg_age())
-              .arg("msgsPerSec", msgs_per_sec);
+              .arg("msgsPerSec", "ratePerSec", msgs_per_sec);
         }
     }
 }
