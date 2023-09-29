@@ -45,14 +45,15 @@ void ping_pong_1(auto& s) {
     const auto pingable_ept_id{pong_ept.get_id()};
     eagine::timeout ping_time{std::chrono::milliseconds{100}};
     eagine::msgbus::message_sequence_t prev_seq_no{0};
-    int todo{100};
+
+    eagine::countdown todo{100};
 
     const auto handle_responded{[&](
                                   const eagine::msgbus::result_context&,
                                   const eagine::msgbus::ping_response& pong) {
         test.check_equal(pong.pingable_id, pingable_ept_id, "pingable id ok");
         if(pong.pingable_id == pingable_ept_id) {
-            --todo;
+            todo.tick();
             trck.checkpoint(1);
         }
         if(prev_seq_no > 0) {
@@ -71,7 +72,7 @@ void ping_pong_1(auto& s) {
     }};
     pinger.ping_timeouted.connect({eagine::construct_from, handle_timeouted});
 
-    while(todo > 0) {
+    while(todo) {
         router.update();
         pinger.update();
         pingable.update();
@@ -113,14 +114,14 @@ void ping_pong_2(auto& s) {
 
     const auto pingable_ept_id{pong_ept.get_id()};
     eagine::msgbus::message_sequence_t prev_seq_no{0};
-    int todo{100};
+    eagine::countdown todo{100};
 
     const auto handle_responded{[&](
                                   const eagine::msgbus::result_context&,
                                   const eagine::msgbus::ping_response& pong) {
         test.check_equal(pong.pingable_id, pingable_ept_id, "pingable id ok");
         if(pong.pingable_id == pingable_ept_id) {
-            --todo;
+            todo.tick();
             trck.checkpoint(1);
         }
         if(prev_seq_no > 0) {
@@ -138,7 +139,7 @@ void ping_pong_2(auto& s) {
     }};
     pinger.ping_timeouted.connect({eagine::construct_from, handle_timeouted});
 
-    while(todo > 0) {
+    while(todo) {
         router.update();
         pinger.update();
         pingable.update();
