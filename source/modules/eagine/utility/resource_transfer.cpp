@@ -54,6 +54,9 @@ public:
         _init();
     }
 
+    /// @brief Updates the server info about average message age from base node.
+    auto update_message_age() -> resource_data_server_node&;
+
     /// @brief Indicates if the server received a shutdown request.
     auto is_done() const noexcept -> bool {
         return _done;
@@ -115,14 +118,7 @@ public:
     /// @brief Returns a URL for embedded resource with the specified id.
     auto embedded_resource_locator(
       const string_view scheme,
-      identifier res_id) noexcept -> url {
-        std::string url_str;
-        url_str.reserve(std_size(scheme.size() + 4 + 10));
-        append_to(scheme, url_str);
-        append_to(string_view{":///"}, url_str);
-        append_to(res_id.name().view(), url_str);
-        return url{std::move(url_str)};
-    }
+      identifier res_id) noexcept -> url;
 
     /// @brief Returns a new unique id for a resource request.
     /// @see query_resource

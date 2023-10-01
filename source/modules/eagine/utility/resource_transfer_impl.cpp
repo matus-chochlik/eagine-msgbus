@@ -15,6 +15,7 @@ import std;
 import eagine.core.types;
 import eagine.core.memory;
 import eagine.core.valid_if;
+import eagine.core.identifier;
 import eagine.core.reflection;
 import eagine.core.utility;
 import eagine.core.runtime;
@@ -52,6 +53,12 @@ void resource_data_server_node::_handle_shutdown(
       .arg("verified", req.verified);
 
     _done = true;
+}
+//------------------------------------------------------------------------------
+auto resource_data_server_node::update_message_age()
+  -> resource_data_server_node& {
+    average_message_age(bus_node().flow_average_message_age());
+    return *this;
 }
 //------------------------------------------------------------------------------
 // resource_data_consumer_node_config
@@ -151,6 +158,17 @@ void resource_data_consumer_node::_init() {
       this, ping_responded);
     connect<&resource_data_consumer_node::_handle_ping_timeout>(
       this, ping_timeouted);
+}
+//------------------------------------------------------------------------------
+auto resource_data_consumer_node::embedded_resource_locator(
+  const string_view scheme,
+  identifier res_id) noexcept -> url {
+    std::string url_str;
+    url_str.reserve(std_size(scheme.size() + 4 + 10));
+    append_to(scheme, url_str);
+    append_to(string_view{":///"}, url_str);
+    append_to(res_id.name().view(), url_str);
+    return url{std::move(url_str)};
 }
 //------------------------------------------------------------------------------
 auto resource_data_consumer_node::update_and_process_all() noexcept
