@@ -29,9 +29,7 @@ auto main(main_ctx& ctx) -> int {
     wd.declare_initialized();
 
     while(not(the_file_server.is_done() or interrupted)) {
-        the_file_server.average_message_age(
-          the_file_server.bus_node().flow_average_message_age());
-        if(the_file_server.update_and_process_all()) {
+        if(the_file_server.update_message_age().update_and_process_all()) {
             std::this_thread::sleep_for(std::chrono::microseconds(125));
         } else {
             std::this_thread::sleep_for(std::chrono::milliseconds(10));

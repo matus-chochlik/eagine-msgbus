@@ -3,12 +3,11 @@
 # See accompanying file LICENSE_1_0.txt or copy at
 #  http://www.boost.org/LICENSE_1_0.txt
 #
-set(PKG_NAME "eagine-msgbus-dev_${EAGINE_VERSION}-${EAGINE_GIT_COMMITS_SINCE_VERSION}_${PKG_ARCH}")
+set(PKG_NAME "eagine-msgbus-apps_${EAGINE_VERSION}-${EAGINE_GIT_COMMITS_SINCE_VERSION}_${PKG_ARCH}")
 set(PKG_DIR "${CMAKE_CURRENT_BINARY_DIR}/${PKG_NAME}")
 set(PKG_PREFIX "${PKG_DIR}/usr")
 # ------------------------------------------------------------------------------
-eagine_generate_module_json(eagine.msgbus)
-# ------------------------------------------------------------------------------
+file(GENERATE OUTPUT build-pkg.json INPUT build-pkg.json.in)
 configure_file(build-pkg.py.in build-pkg.py @ONLY)
 # ------------------------------------------------------------------------------
 add_custom_command(
@@ -23,12 +22,20 @@ add_custom_command(
 	COMMAND ${DPKG_DEB_COMMAND}
 	ARGS --build --root-owner-group ${PKG_NAME}
 	WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
-	DEPENDS eagine.msgbus "${PKG_DIR}/DEBIAN/control"
+	DEPENDS 
+		eagine-msgbus-router
+		eagine-msgbus-bridge
+		eagine-msgbus-pinger
+		eagine-msgbus-pingable
+		eagine-msgbus-file_server
+		eagine-msgbus-sudoku_helper
+		eagine-msgbus-sudoku_tiling
+		"${PKG_DIR}/DEBIAN/control"
 	COMMENT "Building ${PKG_NAME}.deb package")
 # ------------------------------------------------------------------------------
 add_custom_target(
-	eagine-msgbus-dev-deb
+	eagine-msgbus-apps-deb
 	DEPENDS ${PKG_NAME}.deb)
 
-add_dependencies(eagine-msgbus-deb eagine-msgbus-dev-deb)
+add_dependencies(eagine-msgbus-deb eagine-msgbus-apps-deb)
 

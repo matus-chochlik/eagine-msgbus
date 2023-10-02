@@ -174,12 +174,11 @@ public:
         return {id, result};
     }
 
-    /// @brief Fulfills the promise/future pair idenified by id with the given value.
+    /// @brief Fulfills the promise/future pair identified by id with the given value.
     void fulfill(const message_sequence_t id, T value) noexcept {
-        const auto pos = _promises.find(id);
-        if(pos != _promises.end()) {
-            pos->second.fulfill(std::move(value));
-            _promises.erase(pos);
+        if(const auto found{find(_promises, id)}) {
+            found->fulfill(std::move(value));
+            _promises.erase(found.position());
         }
         update();
     }

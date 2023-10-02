@@ -87,19 +87,15 @@ public:
     remote_node_changes changes{};
 
     auto get_sub(const message_id msg_id) const noexcept -> tribool {
-        auto pos = _subscriptions.find(msg_id);
-        if(pos != _subscriptions.end()) {
-            return pos->second;
-        }
-        return indeterminate;
+        return find(_subscriptions, msg_id).and_then(_1.to_tribool());
     }
 
     auto get_sub(const message_id msg_id) noexcept -> tribool& {
-        auto pos = _subscriptions.find(msg_id);
-        if(pos == _subscriptions.end()) {
-            pos = _subscriptions.emplace(msg_id, indeterminate).first;
+        auto sub{find(_subscriptions, msg_id)};
+        if(not sub) {
+            sub.emplace(msg_id, indeterminate);
         }
-        return pos->second;
+        return *sub;
     }
 
     void clear() noexcept {
@@ -1169,11 +1165,11 @@ public:
     std::vector<node_connection_state> connections;
 
     auto cached(const std::string& s) noexcept -> string_view {
-        auto pos = _string_cache.find(s);
-        if(pos == _string_cache.end()) {
-            pos = _string_cache.insert(s).first;
+        auto cs{eagine::find(_string_cache, s)};
+        if(not cs) {
+            cs.insert(s);
         }
-        return {*pos};
+        return {*cs};
     }
 
 private:
@@ -1222,12 +1218,12 @@ auto remote_node_tracker::get_node(const identifier_t node_id) noexcept
   -> remote_node_state& {
     assert(_pimpl);
     assert(node_id != 0U);
-    auto pos = _pimpl->nodes.find(node_id);
-    if(pos == _pimpl->nodes.end()) {
-        pos = _pimpl->nodes.emplace(node_id, node_id, _pimpl).first;
+    auto node{find(_pimpl->nodes, node_id)};
+    if(not node) {
+        node.emplace(node_id, node_id, _pimpl);
     }
-    assert(pos->second.id() == node_id);
-    return pos->second;
+    assert(node->id() == node_id);
+    return *node;
 }
 //------------------------------------------------------------------------------
 auto remote_node_tracker::remove_node(const identifier_t node_id) noexcept
@@ -1239,20 +1235,19 @@ auto remote_node_tracker::remove_node(const identifier_t node_id) noexcept
 auto remote_node_tracker::get_host(const host_id_t host_id) noexcept
   -> remote_host_state& {
     assert(_pimpl);
-    auto pos = _pimpl->hosts.find(host_id);
-    if(pos == _pimpl->hosts.end()) {
-        pos = _pimpl->hosts.emplace(host_id, host_id).first;
+    auto host{find(_pimpl->hosts, host_id)};
+    if(not host) {
+        host.emplace(host_id, host_id);
     }
-    assert(pos->second.id() == host_id);
-    return pos->second;
+    assert(host->id() == host_id);
+    return *host;
 }
 //------------------------------------------------------------------------------
 auto remote_node_tracker::get_host(const host_id_t host_id) const noexcept
   -> remote_host_state {
     if(_pimpl) {
-        auto pos = _pimpl->hosts.find(host_id);
-        if(pos != _pimpl->hosts.end()) {
-            return pos->second;
+        if(const auto host{find(_pimpl->hosts, host_id)}) {
+            return *host;
         }
     }
     return {};
@@ -1261,20 +1256,19 @@ auto remote_node_tracker::get_host(const host_id_t host_id) const noexcept
 auto remote_node_tracker::get_instance(
   const process_instance_id_t instance_id) noexcept -> remote_instance_state& {
     assert(_pimpl);
-    auto pos = _pimpl->instances.find(instance_id);
-    if(pos == _pimpl->instances.end()) {
-        pos = _pimpl->instances.emplace(instance_id, instance_id, _pimpl).first;
+    auto inst{find(_pimpl->instances, instance_id)};
+    if(not inst) {
+        inst.emplace(instance_id, instance_id, _pimpl);
     }
-    assert(pos->second.id() == instance_id);
-    return pos->second;
+    assert(inst->id() == instance_id);
+    return *inst;
 }
 //------------------------------------------------------------------------------
 auto remote_node_tracker::get_instance(const process_instance_id_t instance_id)
   const noexcept -> remote_instance_state {
     if(_pimpl) {
-        auto pos = _pimpl->instances.find(instance_id);
-        if(pos != _pimpl->instances.end()) {
-            return pos->second;
+        if(const auto inst{find(_pimpl->instances, instance_id)}) {
+            return *inst;
         }
     }
     return {};

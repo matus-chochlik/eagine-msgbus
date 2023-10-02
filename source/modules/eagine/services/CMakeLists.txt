@@ -5,6 +5,7 @@
 eagine_add_module(
 	eagine.msgbus.services PARTITION ability
 	IMPORTS
+		std
 		eagine.core.types
 		eagine.core.memory
 		eagine.core.identifier
@@ -17,6 +18,7 @@ eagine_add_module(
 eagine_add_module(
 	eagine.msgbus.services PARTITION discovery
 	IMPORTS
+		std
 		eagine.core.types
 		eagine.core.memory
 		eagine.core.identifier
@@ -27,6 +29,7 @@ eagine_add_module(
 eagine_add_module(
 	eagine.msgbus.services PARTITION shutdown
 	IMPORTS
+		std
 		eagine.core.types
 		eagine.core.memory
 		eagine.core.identifier
@@ -37,6 +40,7 @@ eagine_add_module(
 eagine_add_module(
 	eagine.msgbus.services PARTITION topology
 	IMPORTS
+		std
 		eagine.core.types
 		eagine.core.memory
 		eagine.core.identifier
@@ -47,6 +51,7 @@ eagine_add_module(
 eagine_add_module(
 	eagine.msgbus.services PARTITION ping_pong
 	IMPORTS
+		std
 		eagine.core.types
 		eagine.core.debug
 		eagine.core.memory
@@ -58,6 +63,7 @@ eagine_add_module(
 eagine_add_module(
 	eagine.msgbus.services PARTITION statistics
 	IMPORTS
+		std
 		eagine.core.types
 		eagine.core.memory
 		eagine.core.identifier
@@ -68,6 +74,7 @@ eagine_add_module(
 eagine_add_module(
 	eagine.msgbus.services PARTITION application_info
 	IMPORTS
+		std
 		eagine.core.types
 		eagine.core.memory
 		eagine.core.identifier
@@ -80,6 +87,7 @@ eagine_add_module(
 eagine_add_module(
 	eagine.msgbus.services PARTITION endpoint_info
 	IMPORTS
+		std
 		eagine.core.types
 		eagine.core.memory
 		eagine.core.identifier
@@ -91,6 +99,7 @@ eagine_add_module(
 eagine_add_module(
 	eagine.msgbus.services PARTITION host_info
 	IMPORTS
+		std
 		eagine.core.types
 		eagine.core.memory
 		eagine.core.identifier
@@ -103,6 +112,7 @@ eagine_add_module(
 eagine_add_module(
 	eagine.msgbus.services PARTITION system_info
 	IMPORTS
+		std
 		eagine.core.types
 		eagine.core.memory
 		eagine.core.identifier
@@ -116,6 +126,7 @@ eagine_add_module(
 eagine_add_module(
 	eagine.msgbus.services PARTITION compiler_info
 	IMPORTS
+		std
 		eagine.core.types
 		eagine.core.memory
 		eagine.core.build_info
@@ -129,6 +140,7 @@ eagine_add_module(
 eagine_add_module(
 	eagine.msgbus.services PARTITION build_info
 	IMPORTS
+		std
 		eagine.core.types
 		eagine.core.memory
 		eagine.core.build_info
@@ -142,8 +154,8 @@ eagine_add_module(
 eagine_add_module(
 	eagine.msgbus.services PARTITION common_info
 	IMPORTS
-		application_info build_info compiler_info
-		host_info endpoint_info
+		std application_info build_info
+		compiler_info host_info endpoint_info
 		eagine.core.types
 		eagine.msgbus.core
 )
@@ -151,7 +163,7 @@ eagine_add_module(
 eagine_add_module(
 	eagine.msgbus.services PARTITION stream
 	IMPORTS
-		discovery ping_pong
+		std discovery ping_pong
 		eagine.core.types
 		eagine.core.memory
 		eagine.core.identifier
@@ -165,7 +177,7 @@ eagine_add_module(
 eagine_add_module(
 	eagine.msgbus.services PARTITION resource_transfer
 	IMPORTS
-		discovery host_info
+		std discovery host_info
 		eagine.core.types
 		eagine.core.memory
 		eagine.core.string
@@ -183,6 +195,7 @@ eagine_add_module(
 eagine_add_module(
 	eagine.msgbus.services PARTITION sudoku
 	IMPORTS
+		std
 		eagine.core.types
 		eagine.core.memory
 		eagine.core.math
@@ -199,8 +212,8 @@ eagine_add_module(
 eagine_add_module(
 	eagine.msgbus.services PARTITION tracker
 	IMPORTS
-		common_info discovery host_info ping_pong
-		statistics system_info topology
+		std common_info discovery host_info
+		ping_pong statistics system_info topology
 		eagine.core.types
 		eagine.core.memory
 		eagine.core.build_info
@@ -226,6 +239,7 @@ eagine_add_module(
 		tracker
 		sudoku
 	IMPORTS
+		std
 		eagine.core.build_info
 		eagine.core.container
 		eagine.core.identifier
@@ -259,6 +273,7 @@ eagine_add_module_tests(
 		common_info
 		sudoku
 	IMPORTS
+		std
 		eagine.core
 		eagine.core.main_ctx
 		eagine.msgbus.core

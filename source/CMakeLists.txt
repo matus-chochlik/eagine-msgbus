@@ -5,6 +5,7 @@
 add_subdirectory(modules)
 add_subdirectory(config)
 add_subdirectory(app)
+add_subdirectory(benchmark)
 
 set(
 	EAGINE_MSGBUS_EXPORT_TARGETS

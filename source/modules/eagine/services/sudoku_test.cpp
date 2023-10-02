@@ -99,7 +99,7 @@ void sudoku_rank_4_1(auto& s) {
 // test 2
 //------------------------------------------------------------------------------
 template <unsigned S>
-void sudoku_rank_S_2(auto& s, auto& test, int todo) {
+void sudoku_rank_S_2(auto& s, auto& test, eagine::countdown<> todo) {
     eagitest::track trck{test, 0, 4};
     auto& ctx{s.context()};
     eagine::msgbus::registry the_reg{ctx};
@@ -117,7 +117,7 @@ void sudoku_rank_S_2(auto& s, auto& test, int todo) {
             solver.assign_track(trck);
 
             eagine::timeout test_timeout{std::chrono::minutes{4}};
-            while(not(todo == 0 or test_timeout.is_expired())) {
+            while(todo and not test_timeout.is_expired()) {
                 solver.enqueue(
                   0,
                   eagine::default_sudoku_board_traits<S>()
@@ -133,10 +133,10 @@ void sudoku_rank_S_2(auto& s, auto& test, int todo) {
                     trck.checkpoint(2);
                 }
                 if(solver.is_done()) {
-                    --todo;
+                    todo.tick();
                 }
             }
-            if(todo > 0) {
+            if(todo) {
                 test.fail("solution timeout");
             }
             trck.checkpoint(3);
@@ -165,7 +165,7 @@ void sudoku_rank_4_2(auto& s) {
 // test 3
 //------------------------------------------------------------------------------
 template <unsigned S>
-void sudoku_rank_S_3(auto& s, auto& test, int todo) {
+void sudoku_rank_S_3(auto& s, auto& test, eagine::countdown<> todo) {
     eagitest::track trck{test, 0, 4};
     auto& ctx{s.context()};
     eagine::msgbus::registry the_reg{ctx};
@@ -190,7 +190,7 @@ void sudoku_rank_S_3(auto& s, auto& test, int todo) {
             solver.assign_track(trck);
 
             eagine::timeout test_timeout{std::chrono::minutes{4}};
-            while(not(todo == 0 or test_timeout.is_expired())) {
+            while(todo and not test_timeout.is_expired()) {
                 solver.enqueue(
                   0,
                   eagine::default_sudoku_board_traits<S>()
@@ -206,10 +206,10 @@ void sudoku_rank_S_3(auto& s, auto& test, int todo) {
                     trck.checkpoint(2);
                 }
                 if(solver.is_done()) {
-                    --todo;
+                    todo.tick();
                 }
             }
-            if(todo > 0) {
+            if(todo) {
                 test.fail("solution timeout");
             }
             trck.checkpoint(3);

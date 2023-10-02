@@ -8,6 +8,7 @@ add_executable(eagine-msgbus-router router.cpp)
 eagine_add_exe_analysis(eagine-msgbus-router)
 eagine_target_modules(
 	eagine-msgbus-router
+	std
 	eagine.core
 	eagine.sslplus
 	eagine.msgbus
@@ -18,6 +19,7 @@ add_executable(eagine-msgbus-bridge bridge.cpp)
 eagine_add_exe_analysis(eagine-msgbus-bridge)
 eagine_target_modules(
 	eagine-msgbus-bridge
+	std
 	eagine.core
 	eagine.sslplus
 	eagine.msgbus
@@ -28,6 +30,7 @@ add_executable(eagine-msgbus-pingable pingable.cpp)
 eagine_add_exe_analysis(eagine-msgbus-pingable)
 eagine_target_modules(
 	eagine-msgbus-pingable
+	std
 	eagine.core
 	eagine.sslplus
 	eagine.msgbus
@@ -38,6 +41,7 @@ add_executable(eagine-msgbus-pinger pinger.cpp)
 eagine_add_exe_analysis(eagine-msgbus-pinger)
 eagine_target_modules(
 	eagine-msgbus-pinger
+	std
 	eagine.core
 	eagine.sslplus
 	eagine.msgbus
@@ -48,6 +52,18 @@ add_executable(eagine-msgbus-file_server file_server.cpp)
 eagine_add_exe_analysis(eagine-msgbus-file_server)
 eagine_target_modules(
 	eagine-msgbus-file_server
+	std
+	eagine.core
+	eagine.sslplus
+	eagine.msgbus
+)
+
+# resource client
+add_executable(eagine-msgbus-resource_histogram resource_histogram.cpp)
+eagine_add_exe_analysis(eagine-msgbus-resource_histogram)
+eagine_target_modules(
+	eagine-msgbus-resource_histogram
+	std
 	eagine.core
 	eagine.sslplus
 	eagine.msgbus
@@ -58,6 +74,7 @@ add_executable(eagine-msgbus-sudoku_helper sudoku_helper.cpp)
 eagine_add_exe_analysis(eagine-msgbus-sudoku_helper)
 eagine_target_modules(
 	eagine-msgbus-sudoku_helper
+	std
 	eagine.core
 	eagine.sslplus
 	eagine.msgbus
@@ -68,6 +85,7 @@ add_executable(eagine-msgbus-sudoku_tiling sudoku_tiling.cpp)
 eagine_add_exe_analysis(eagine-msgbus-sudoku_tiling)
 eagine_target_modules(
 	eagine-msgbus-sudoku_tiling
+	std
 	eagine.core
 	eagine.sslplus
 	eagine.msgbus

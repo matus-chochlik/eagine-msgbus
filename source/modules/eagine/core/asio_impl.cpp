@@ -808,19 +808,18 @@ public:
 
 private:
     auto _get(const endpoint_type& ep) noexcept -> auto& {
-        auto pos = _current.find(ep);
-        if(pos == _current.end()) {
-            pos = _pending.find(ep);
-            if(pos == _pending.end()) {
-                pos =
-                  _pending.try_emplace(ep, default_selector, default_selector)
-                    .first;
+        auto current{eagine::find(_current, ep)};
+        if(not current) {
+            auto pending{eagine::find(_pending, ep)};
+            if(not pending) {
+                pending.try_emplace(ep, default_selector, default_selector);
                 this->log_debug("added pending datagram endpoint")
                   .arg("pending", _pending.size())
                   .arg("current", _current.size());
             }
+            return *pending;
         }
-        return std::get<1>(*pos);
+        return *current;
     }
 
     auto _outgoing(const endpoint_type& ep) noexcept

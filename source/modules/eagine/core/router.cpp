@@ -104,6 +104,33 @@ private:
     bool _maybe_router{true};
 };
 //------------------------------------------------------------------------------
+class route_node_messages_work_unit : public latched_work_unit {
+public:
+    route_node_messages_work_unit() noexcept = default;
+    route_node_messages_work_unit(
+      router& parent,
+      routed_node& node,
+      identifier_t incoming_id,
+      std::chrono::steady_clock::duration message_age_inc,
+      std::latch& completed,
+      some_true_atomic& something_done) noexcept
+      : latched_work_unit{completed}
+      , _parent{&parent}
+      , _node{&node}
+      , _something_done{&something_done}
+      , _incoming_id{incoming_id}
+      , _message_age_inc{message_age_inc} {}
+
+    auto do_it() noexcept -> bool final;
+
+private:
+    router* _parent{nullptr};
+    routed_node* _node{nullptr};
+    some_true_atomic* _something_done{nullptr};
+    identifier_t _incoming_id{};
+    std::chrono::steady_clock::duration _message_age_inc{};
+};
+//------------------------------------------------------------------------------
 class connection_update_work_unit : public latched_work_unit {
 public:
     connection_update_work_unit() noexcept = default;
@@ -140,6 +167,13 @@ public:
 
     void setup(unique_holder<connection>, bool maybe_router) noexcept;
 
+    void enqueue_route_messages(
+      workshop&,
+      router&,
+      identifier_t,
+      std::chrono::steady_clock::duration,
+      std::latch&,
+      some_true_atomic&) noexcept;
     void enqueue_update_connection(
       workshop&,
       std::latch&,
@@ -172,8 +206,9 @@ public:
       -> work_done;
 
 private:
-    unique_holder<std::shared_mutex> _list_lock{default_selector};
+    unique_holder<std::shared_mutex> _lock{default_selector};
     unique_holder<connection> _connection{};
+    route_node_messages_work_unit _route_messages_work{};
     connection_update_work_unit _update_connection_work{};
     std::vector<message_id> _message_block_list{};
     std::vector<message_id> _message_allow_list{};
@@ -278,9 +313,7 @@ public:
     void log_stats(const main_ctx_object&) noexcept;
 
 private:
-    using lockable = std::mutex;
-
-    lockable _main_lock;
+    std::shared_mutex _lock;
     std::chrono::steady_clock::time_point _startup_time{
       std::chrono::steady_clock::now()};
     std::chrono::steady_clock::time_point _prev_route_time{
@@ -325,9 +358,7 @@ public:
       -> memory::const_block;
 
 private:
-    using lockable = std::mutex;
-
-    lockable _context_lock;
+    std::mutex _context_lock;
     shared_context _context{};
 };
 //------------------------------------------------------------------------------
@@ -384,6 +415,7 @@ public:
 
     auto has_id(const identifier_t) noexcept -> bool;
     auto has_node_id(const identifier_t) noexcept -> bool;
+    auto node_count() noexcept -> span_size_t;
     auto password_is_required() const noexcept -> bool;
 
     void add_certificate_pem(const memory::const_block blk) noexcept;
@@ -425,8 +457,6 @@ private:
     auto _remove_disconnected() noexcept -> work_done;
 
     auto _get_next_id() noexcept -> identifier_t;
-
-    auto _current_nodes() noexcept;
 
     auto _process_blobs() noexcept -> work_done;
 
@@ -572,8 +602,7 @@ private:
     void _update_connections_by_workers(some_true_atomic&) noexcept;
     auto _update_connections_by_router() noexcept -> work_done;
 
-    using lockable = std::mutex;
-
+    spinlock _router_lock;
     router_context _context;
     router_ids _ids;
     router_stats _stats;

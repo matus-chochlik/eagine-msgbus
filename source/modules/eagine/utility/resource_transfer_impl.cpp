@@ -15,6 +15,7 @@ import std;
 import eagine.core.types;
 import eagine.core.memory;
 import eagine.core.valid_if;
+import eagine.core.identifier;
 import eagine.core.reflection;
 import eagine.core.utility;
 import eagine.core.runtime;
@@ -52,6 +53,12 @@ void resource_data_server_node::_handle_shutdown(
       .arg("verified", req.verified);
 
     _done = true;
+}
+//------------------------------------------------------------------------------
+auto resource_data_server_node::update_message_age()
+  -> resource_data_server_node& {
+    average_message_age(bus_node().flow_average_message_age());
+    return *this;
 }
 //------------------------------------------------------------------------------
 // resource_data_consumer_node_config
@@ -153,6 +160,17 @@ void resource_data_consumer_node::_init() {
       this, ping_timeouted);
 }
 //------------------------------------------------------------------------------
+auto resource_data_consumer_node::embedded_resource_locator(
+  const string_view scheme,
+  identifier res_id) noexcept -> url {
+    std::string url_str;
+    url_str.reserve(std_size(scheme.size() + 4 + 10));
+    append_to(scheme, url_str);
+    append_to(string_view{":///"}, url_str);
+    append_to(res_id.name().view(), url_str);
+    return url{std::move(url_str)};
+}
+//------------------------------------------------------------------------------
 auto resource_data_consumer_node::update_and_process_all() noexcept
   -> work_done {
     some_true something_done;
@@ -202,8 +220,7 @@ auto resource_data_consumer_node::update_and_process_all() noexcept
 //------------------------------------------------------------------------------
 auto resource_data_consumer_node::has_pending_resource(
   identifier_t request_id) const noexcept -> bool {
-    return (_streamed_resources.find(request_id) !=
-            _streamed_resources.end()) or
+    return _streamed_resources.contains(request_id) or
            (std::find_if(
               _embedded_resources.begin(),
               _embedded_resources.end(),
@@ -287,10 +304,9 @@ auto resource_data_consumer_node::fetch_resource_chunks(
 //------------------------------------------------------------------------------
 auto resource_data_consumer_node::cancel_resource_stream(
   identifier_t request_id) noexcept -> bool {
-    const auto spos{_streamed_resources.find(request_id)};
-    if(spos != _streamed_resources.end()) {
+    if(const auto found{find(_streamed_resources, request_id)}) {
         // TODO: cancel in base
-        _streamed_resources.erase(spos);
+        _streamed_resources.erase(found.position());
         return true;
     }
 
@@ -381,38 +397,32 @@ void resource_data_consumer_node::_handle_stream_data(
   const span_size_t,
   const memory::span<const memory::const_block>,
   const blob_info& binfo) noexcept {
-    if(const auto spos{_current_servers.find(binfo.source_id)};
-       spos != _current_servers.end()) {
-        auto& sinfo = std::get<1>(*spos);
+    find(_current_servers, binfo.source_id).and_then([](auto& sinfo) {
         sinfo.not_responding.reset();
-    }
+    });
 }
 //------------------------------------------------------------------------------
 void resource_data_consumer_node::_handle_ping_response(
   const result_context&,
   const ping_response& pong) noexcept {
-    const auto pos{_current_servers.find(pong.pingable_id)};
-    if(pos != _current_servers.end()) {
+    find(_current_servers, pong.pingable_id).and_then([&, this](auto& info) {
         log_debug("resource server ${id} responded to ping")
           .arg("id", pong.pingable_id)
           .arg("age", pong.age);
-        auto& info = std::get<1>(*pos);
         info.not_responding.reset();
-    }
+    });
 }
 //------------------------------------------------------------------------------
 void resource_data_consumer_node::_handle_ping_timeout(
   const ping_timeout& fail) noexcept {
-    const auto pos{_current_servers.find(fail.pingable_id)};
-    if(pos != _current_servers.end()) {
-        auto& info = std::get<1>(*pos);
+    find(_current_servers, fail.pingable_id).and_then([&, this](auto& info) {
         if(info.not_responding) {
             log_info("ping to resource server ${id} timeouted")
               .arg("id", fail.pingable_id)
               .arg("age", fail.age);
             _handle_server_lost(fail.pingable_id);
         }
-    }
+    });
 }
 //------------------------------------------------------------------------------
 } // namespace eagine::msgbus

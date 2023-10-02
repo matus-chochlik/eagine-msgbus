@@ -275,6 +275,14 @@ auto router_endpoint_info::is_outdated() const noexcept -> bool {
     return _is_outdated.is_expired();
 }
 //------------------------------------------------------------------------------
+// route_node_messages_work_unit
+//------------------------------------------------------------------------------
+auto route_node_messages_work_unit::do_it() noexcept -> bool {
+    (*_something_done)(
+      _node->route_messages(*_parent, _incoming_id, _message_age_inc));
+    return true;
+}
+//------------------------------------------------------------------------------
 // connection_update_work_unit
 //------------------------------------------------------------------------------
 auto connection_update_work_unit::do_it() noexcept -> bool {
@@ -293,7 +301,7 @@ auto routed_node::is_allowed(const message_id msg_id) const noexcept -> bool {
     if(is_special_message(msg_id)) {
         return true;
     }
-    const std::shared_lock lk_list{*_list_lock};
+    const std::shared_lock lk_list{*_lock};
     if(not _message_allow_list.empty()) {
         return message_id_list_contains(_message_allow_list, msg_id);
     }
@@ -310,6 +318,25 @@ void routed_node::setup(
     _maybe_router = maybe_router;
 }
 //------------------------------------------------------------------------------
+void routed_node::enqueue_route_messages(
+  workshop& workers,
+  router& parent,
+  identifier_t incoming_id,
+  std::chrono::steady_clock::duration message_age_inc,
+  std::latch& completed,
+  some_true_atomic& something_done) noexcept {
+    if(_connection) [[likely]] {
+        _route_messages_work = {
+          parent,
+          *this,
+          incoming_id,
+          message_age_inc,
+          completed,
+          something_done};
+        workers.enqueue(_route_messages_work);
+    }
+}
+//------------------------------------------------------------------------------
 void routed_node::enqueue_update_connection(
   workshop& workers,
   std::latch& completed,
@@ -321,7 +348,7 @@ void routed_node::enqueue_update_connection(
 }
 //------------------------------------------------------------------------------
 void routed_node::mark_not_a_router() noexcept {
-    const std::unique_lock lk_list{*_list_lock};
+    const std::unique_lock lk_list{*_lock};
     _maybe_router = false;
 }
 //------------------------------------------------------------------------------
@@ -337,7 +364,7 @@ auto routed_node::update_connection() noexcept -> work_done {
 }
 //------------------------------------------------------------------------------
 void routed_node::handle_bye_bye() noexcept {
-    const std::unique_lock lk_list{*_list_lock};
+    const std::unique_lock lk_list{*_lock};
     if(not _maybe_router) {
         _do_disconnect = true;
     }
@@ -436,22 +463,22 @@ auto routed_node::process_blobs(
 }
 //------------------------------------------------------------------------------
 void routed_node::block_message(const message_id msg_id) noexcept {
-    const std::unique_lock lk_list{*_list_lock};
+    const std::unique_lock lk_list{*_lock};
     message_id_list_add(_message_block_list, msg_id);
 }
 //------------------------------------------------------------------------------
 void routed_node::allow_message(const message_id msg_id) noexcept {
-    const std::unique_lock lk_list{*_list_lock};
+    const std::unique_lock lk_list{*_lock};
     message_id_list_add(_message_allow_list, msg_id);
 }
 //------------------------------------------------------------------------------
 void routed_node::clear_block_list() noexcept {
-    const std::unique_lock lk_list{*_list_lock};
+    const std::unique_lock lk_list{*_lock};
     _message_block_list.clear();
 }
 //------------------------------------------------------------------------------
 void routed_node::clear_allow_list() noexcept {
-    const std::unique_lock lk_list{*_list_lock};
+    const std::unique_lock lk_list{*_lock};
     _message_allow_list.clear();
 }
 //------------------------------------------------------------------------------
@@ -582,24 +609,18 @@ auto router_nodes::count() noexcept -> std::size_t {
 }
 //------------------------------------------------------------------------------
 auto router_nodes::has_id(const identifier_t id) noexcept -> bool {
-    return _nodes.find(id) != _nodes.end();
+    return _nodes.contains(id);
 }
 //------------------------------------------------------------------------------
 auto router_nodes::find(const identifier_t id) noexcept
   -> optional_reference<routed_node> {
-    if(const auto pos{_nodes.find(id)}; pos != _nodes.end()) {
-        return {pos->second};
-    }
-    return {nothing};
+    return eagine::find(_nodes, id).ref();
 }
 //------------------------------------------------------------------------------
 auto router_nodes::find_outgoing(const identifier_t target_id)
   -> valid_endpoint_id {
-    if(const auto pos{_endpoint_idx.find(target_id)};
-       pos != _endpoint_idx.end()) {
-        return {pos->second};
-    }
-    return {invalid_endpoint_id()};
+    return eagine::find(_endpoint_idx, target_id)
+      .value_or(invalid_endpoint_id());
 }
 //------------------------------------------------------------------------------
 auto router_nodes::has_some() noexcept -> bool {
@@ -626,12 +647,12 @@ void router_nodes::_adopt_pending(
     confirmation.set_source_id(parent.get_id()).set_target_id(id);
     pending.send(msgbus_id{"confirmId"}, confirmation);
 
-    auto pos = _nodes.find(id);
-    if(pos == _nodes.end()) {
-        pos = _nodes.try_emplace(id).first;
+    auto node{eagine::find(_nodes, id)};
+    if(not node) {
+        node.try_emplace(id);
         parent._update_use_workers();
     }
-    pos->second.setup(pending.release_connection(), pending.maybe_router());
+    node->setup(pending.release_connection(), pending.maybe_router());
     _recently_disconnected.erase(id);
 }
 //------------------------------------------------------------------------------
@@ -716,20 +737,20 @@ auto router_nodes::remove_timeouted(const main_ctx_object& user) noexcept
 //------------------------------------------------------------------------------
 auto router_nodes::is_disconnected(const identifier_t endpoint_id) const noexcept
   -> bool {
-    const auto pos{_recently_disconnected.find(endpoint_id)};
-    return (pos != _recently_disconnected.end()) and
-           not pos->second.is_expired();
+    return eagine::find(_recently_disconnected, endpoint_id)
+      .transform([](auto& node) { return not node.is_expired(); })
+      .or_false();
 }
 //------------------------------------------------------------------------------
 void router_nodes::mark_disconnected(const identifier_t endpoint_id) noexcept {
-    const auto pos{_recently_disconnected.find(endpoint_id)};
-    if(pos != _recently_disconnected.end()) {
-        if(pos->second.is_expired()) {
-            _recently_disconnected.erase(pos);
+    const auto node{eagine::find(_recently_disconnected, endpoint_id)};
+    if(node) {
+        if(node->is_expired()) {
+            _recently_disconnected.erase(node.position());
         }
     }
     _recently_disconnected.erase_if(
-      [](auto& p) { return std::get<1>(p).is_expired(); });
+      [&](auto& p) { return p.second.is_expired(); });
     _recently_disconnected.emplace(endpoint_id, std::chrono::seconds{15});
 }
 //------------------------------------------------------------------------------
@@ -769,14 +790,12 @@ auto router_nodes::subscribes_to(
   const message_id sub_msg_id) noexcept
   -> std::tuple<tribool, tribool, process_instance_id_t> {
 
-    const auto pos{_endpoint_infos.find(target_id)};
-    if(pos != _endpoint_infos.end()) {
-        auto& info = pos->second;
-        if(info.has_instance_id()) {
+    if(const auto info{eagine::find(_endpoint_infos, target_id)}) {
+        if(info->has_instance_id()) {
             return {
-              info.is_subscribed_to(sub_msg_id),
-              info.is_not_subscribed_to(sub_msg_id),
-              info.instance_id()};
+              info->is_subscribed_to(sub_msg_id),
+              info->is_not_subscribed_to(sub_msg_id),
+              info->instance_id()};
         }
     }
     return {indeterminate, indeterminate, 0U};
@@ -784,9 +803,8 @@ auto router_nodes::subscribes_to(
 //------------------------------------------------------------------------------
 auto router_nodes::subscriptions_of(const identifier_t target_id) noexcept
   -> std::tuple<std::vector<message_id>, process_instance_id_t> {
-    const auto pos{_endpoint_infos.find(target_id)};
-    if(pos != _endpoint_infos.end()) {
-        return {pos->second.subscriptions(), pos->second.instance_id()};
+    if(const auto info{eagine::find(_endpoint_infos, target_id)}) {
+        return {info->subscriptions(), info->instance_id()};
     }
     return {{}, 0U};
 }
@@ -818,10 +836,12 @@ auto router_stats::time_since_last_routing() noexcept -> auto {
 //------------------------------------------------------------------------------
 void router_stats::update_avg_msg_age(
   const std::chrono::steady_clock::duration message_age_inc) noexcept {
+    const std::unique_lock lk{_lock};
     _message_age_avg.add(message_age_inc);
 }
 //------------------------------------------------------------------------------
 auto router_stats::avg_msg_age() noexcept -> std::chrono::microseconds {
+    const std::shared_lock lk{_lock};
     return std::chrono::duration_cast<std::chrono::microseconds>(
       _message_age_avg.get());
 }
@@ -877,13 +897,13 @@ void router_stats::log_stats(const main_ctx_object& user) noexcept {
             const auto msgs_per_sec{1'000'000.F / interval.count()};
 
             user.log_chart_sample("msgsPerSec", msgs_per_sec);
-            user.log_stat("forwarded ${count} messages")
+            user.log_stat("forwarded ${count} messages (${msgsPerSec})")
               .tag("msgStats")
               .arg("count", _stats.forwarded_messages)
               .arg("dropped", _stats.dropped_messages)
               .arg("interval", interval)
               .arg("avgMsgAge", avg_msg_age())
-              .arg("msgsPerSec", msgs_per_sec);
+              .arg("msgsPerSec", "RatePerSec", msgs_per_sec);
         }
     }
 }
@@ -1093,6 +1113,10 @@ auto router::has_node_id(const identifier_t id) noexcept -> bool {
     return _nodes.has_id(id);
 }
 //------------------------------------------------------------------------------
+auto router::node_count() noexcept -> span_size_t {
+    return _nodes.count();
+}
+//------------------------------------------------------------------------------
 auto router::password_is_required() const noexcept -> bool {
     return _password_is_required;
 }
@@ -1143,15 +1167,11 @@ auto router::_get_next_id() noexcept -> identifier_t {
     return _ids.get_next_id(*this);
 }
 //------------------------------------------------------------------------------
-auto router::_current_nodes() noexcept {
-    return _nodes.get();
-}
-//------------------------------------------------------------------------------
 auto router::_process_blobs() noexcept -> work_done {
     some_true something_done{_blobs.process_blobs(get_id(), *this)};
 
     if(_blobs.has_outgoing()) {
-        for(auto& [node_id, node] : _current_nodes()) {
+        for(auto& [node_id, node] : _nodes.get()) {
             something_done(node.process_blobs(node_id, _blobs));
         }
     }
@@ -1168,7 +1188,7 @@ auto router::_handle_blob(
             log_trace("received endpoint certificate")
               .arg("source", message.source_id)
               .arg("pem", message.content());
-            if(_nodes.has_id(message.source_id)) {
+            if(has_node_id(message.source_id)) {
                 if(_context.add_remote_certificate_pem(
                      message.source_id, message.content())) {
                     log_debug("verified and stored endpoint certificate")
@@ -1193,6 +1213,7 @@ auto router::_handle_blob(
 auto router::_update_endpoint_info(
   const identifier_t incoming_id,
   const message_view& message) noexcept -> router_endpoint_info& {
+    const std::unique_lock lk{_router_lock};
     return _nodes.update_endpoint_info(incoming_id, message);
 }
 //------------------------------------------------------------------------------
@@ -1210,7 +1231,7 @@ auto router::_send_flow_info(const message_flow_info& flow_info) noexcept
         }
     }};
 
-    for(const auto& [node_id, node] : _current_nodes()) {
+    for(const auto& [node_id, node] : _nodes.get()) {
         send_info(node_id, node);
     }
     return _nodes.count() > 0;
@@ -1240,6 +1261,7 @@ auto router::_handle_subscribed(
           .arg("message", sub_msg_id);
 
         auto& info = _update_endpoint_info(incoming_id, message);
+        const std::unique_lock lk{_router_lock};
         info.add_subscription(sub_msg_id);
     }
     return should_be_forwarded;
@@ -1271,9 +1293,10 @@ auto router::_handle_not_not_a_router(
   routed_node& node,
   const message_view& message) noexcept -> message_handling_result {
     if(incoming_id == message.source_id) {
-        node.mark_not_a_router();
         log_debug("node ${source} is not a router")
           .arg("source", message.source_id);
+        const std::unique_lock lk{_router_lock};
+        node.mark_not_a_router();
     }
     return was_handled;
 }
@@ -1289,6 +1312,7 @@ auto router::_handle_not_subscribed(
           .arg("message", sub_msg_id);
 
         auto& info = _update_endpoint_info(incoming_id, message);
+        const std::unique_lock lk{_router_lock};
         info.remove_subscription(sub_msg_id);
     }
     return should_be_forwarded;
@@ -1304,6 +1328,7 @@ auto router::_handle_msg_allow(
           .arg("message", alw_msg_id)
           .arg("source", message.source_id);
         node.allow_message(alw_msg_id);
+
         _update_endpoint_info(incoming_id, message);
         return was_handled;
     }
@@ -1321,6 +1346,7 @@ auto router::_handle_msg_block(
               .arg("message", blk_msg_id)
               .arg("source", message.source_id);
             node.block_message(blk_msg_id);
+
             _update_endpoint_info(incoming_id, message);
             return was_handled;
         }
@@ -1332,8 +1358,10 @@ auto router::_handle_subscribers_query(const message_view& message) noexcept
   -> message_handling_result {
     message_id sub_msg_id{};
     if(default_deserialize_message_type(sub_msg_id, message.content())) {
-        const auto [is_sub, is_not_sub, inst_id] =
-          _nodes.subscribes_to(message.target_id, sub_msg_id);
+        const auto [is_sub, is_not_sub, inst_id] = [&, this] {
+            const std::unique_lock lk{_router_lock};
+            return _nodes.subscribes_to(message.target_id, sub_msg_id);
+        }();
         if(is_sub or is_not_sub) {
             const auto own_id{get_id()};
             message_view response{message.data()};
@@ -1353,7 +1381,10 @@ auto router::_handle_subscribers_query(const message_view& message) noexcept
 //------------------------------------------------------------------------------
 auto router::_handle_subscriptions_query(const message_view& message) noexcept
   -> message_handling_result {
-    const auto [subs, inst_id] = _nodes.subscriptions_of(message.target_id);
+    const auto [subs, inst_id] = [&, this] {
+        const std::unique_lock lk{_router_lock};
+        return _nodes.subscriptions_of(message.target_id);
+    }();
     for(const auto& sub_msg_id : subs) {
         auto temp{default_serialize_buffer_for(sub_msg_id)};
         if(auto serialized{
@@ -1371,6 +1402,7 @@ auto router::_handle_subscriptions_query(const message_view& message) noexcept
 //------------------------------------------------------------------------------
 auto router::_handle_password_request(const message_view& message) noexcept
   -> message_handling_result {
+    const std::unique_lock lk{_router_lock};
     if(has_id(message.target_id)) {
         memory::buffer encrypted;
         if(main_context().encrypt_shared_password(
@@ -1385,6 +1417,7 @@ auto router::_handle_password_request(const message_view& message) noexcept
 //------------------------------------------------------------------------------
 auto router::_handle_router_certificate_query(
   const message_view& message) noexcept -> message_handling_result {
+    const std::unique_lock lk{_router_lock};
     _blobs.push_outgoing(
       msgbus_id{"rtrCertPem"},
       0U,
@@ -1398,6 +1431,7 @@ auto router::_handle_router_certificate_query(
 //------------------------------------------------------------------------------
 auto router::_handle_endpoint_certificate_query(
   const message_view& message) noexcept -> message_handling_result {
+    const std::unique_lock lk{_router_lock};
     if(const auto cert_pem{
          _context.get_remote_certificate_pem(message.target_id)}) {
         _blobs.push_outgoing(
@@ -1434,7 +1468,7 @@ auto router::_handle_topology_query(const message_view& message) noexcept
           }
       }};
 
-    for(auto& [nd_id, nd] : _current_nodes()) {
+    for(auto& [nd_id, nd] : _nodes.get()) {
         respond(nd_id, nd.kind_of_connection());
     }
     if(_parent_router) {
@@ -1454,7 +1488,6 @@ auto router::_update_stats() noexcept -> work_done {
 //------------------------------------------------------------------------------
 auto router::_handle_stats_query(const message_view& message) noexcept
   -> message_handling_result {
-    _update_stats();
 
     const auto own_id{get_id()};
     const auto stats{_stats.statistics()};
@@ -1484,7 +1517,7 @@ auto router::_handle_stats_query(const message_view& message) noexcept
         }
     }};
 
-    for(auto& [node_id, node] : _current_nodes()) {
+    for(auto& [node_id, node] : _nodes.get()) {
         respond(node_id, node);
     }
     if(_parent_router) [[likely]] {
@@ -1502,6 +1535,8 @@ auto router::_handle_bye_bye(
       .arg("source", message.source_id);
 
     node.handle_bye_bye();
+
+    const std::unique_lock lk{_router_lock};
     _nodes.erase(message.source_id);
 
     return should_be_forwarded;
@@ -1509,6 +1544,8 @@ auto router::_handle_bye_bye(
 //------------------------------------------------------------------------------
 auto router::_handle_blob_fragment(const message_view& message) noexcept
   -> message_handling_result {
+
+    const std::unique_lock lk{_router_lock};
     _blobs.handle_fragment(
       message, make_callable_ref<&router::_handle_blob>(this));
     return has_id(message.target_id) ? was_handled : should_be_forwarded;
@@ -1517,6 +1554,7 @@ auto router::_handle_blob_fragment(const message_view& message) noexcept
 auto router::_handle_blob_resend(const message_view& message) noexcept
   -> message_handling_result {
     if(has_id(message.target_id)) {
+        const std::unique_lock lk{_router_lock};
         _blobs.handle_resend(message);
         return was_handled;
     }
@@ -1653,7 +1691,13 @@ inline auto router::_handle_special(
 }
 //------------------------------------------------------------------------------
 void router::_update_use_workers() noexcept {
-    _use_worker_threads = _nodes.count() > 2;
+    const bool used_workers{_use_worker_threads};
+    _use_worker_threads = node_count() > 2;
+    if(used_workers and not _use_worker_threads) {
+        log_info("switching to single-threaded mode").tag("singleThrd");
+    } else if(not used_workers and _use_worker_threads) {
+        log_info("switching to multi-threaded mode").tag("multiThrd");
+    }
 }
 //------------------------------------------------------------------------------
 auto router::_forward_to(
@@ -1669,14 +1713,17 @@ auto router::_route_targeted_message(
   const identifier_t incoming_id,
   message_view& message) noexcept -> bool {
     bool has_routed = false;
+
     const auto own_id{get_id()};
     if(const auto outgoing_id{_nodes.find_outgoing(message.target_id)}) {
         // if the message should go through the parent router
         if(*outgoing_id == own_id) {
+            const std::unique_lock lk{_router_lock};
             has_routed |= _parent_router.send(*this, msg_id, message);
         } else {
             _nodes.find(*outgoing_id).and_then([&](auto& node_out) {
                 if(node_out.is_allowed(msg_id)) {
+                    const std::unique_lock lk{_router_lock};
                     has_routed = _forward_to(node_out, msg_id, message);
                 }
             });
@@ -1684,9 +1731,10 @@ auto router::_route_targeted_message(
     }
 
     if(not has_routed) {
-        for(const auto& [outgoing_id, node_out] : _current_nodes()) {
+        for(const auto& [outgoing_id, node_out] : _nodes.get()) {
             if(outgoing_id == message.target_id) {
                 if(node_out.is_allowed(msg_id)) {
+                    const std::unique_lock lk{_router_lock};
                     has_routed = _forward_to(node_out, msg_id, message);
                 }
             }
@@ -1695,7 +1743,8 @@ auto router::_route_targeted_message(
 
     if(not has_routed) {
         if(not _nodes.is_disconnected(message.target_id)) [[likely]] {
-            for(const auto& [outgoing_id, node_out] : _current_nodes()) {
+            const std::unique_lock lk{_router_lock};
+            for(const auto& [outgoing_id, node_out] : _nodes.get()) {
                 if(incoming_id != outgoing_id) {
                     has_routed |= node_out.try_route(*this, msg_id, message);
                 }
@@ -1713,7 +1762,9 @@ auto router::_route_broadcast_message(
   const message_id msg_id,
   const identifier_t incoming_id,
   message_view& message) noexcept -> bool {
-    for(const auto& [outgoing_id, node_out] : _current_nodes()) {
+
+    const std::unique_lock lk{_router_lock};
+    for(const auto& [outgoing_id, node_out] : _nodes.get()) {
         if(incoming_id != outgoing_id) {
             if(node_out.is_allowed(msg_id)) {
                 _forward_to(node_out, msg_id, message);
@@ -1809,19 +1860,23 @@ auto router::_handle_special_parent_message(
 void router::_route_messages_by_workers(
   some_true_atomic& something_done) noexcept {
     const auto message_age_inc{_stats.time_since_last_routing()};
+    std::latch completed{limit_cast<std::ptrdiff_t>(node_count())};
 
-    for(auto& [node_id, node] : _current_nodes()) {
-        something_done(node.route_messages(*this, node_id, message_age_inc));
+    for(auto& [node_id, node] : _nodes.get()) {
+        node.enqueue_route_messages(
+          workers(), *this, node_id, message_age_inc, completed, something_done);
     }
 
     something_done(_parent_router.route_messages(*this, message_age_inc));
+
+    completed.wait();
 }
 //------------------------------------------------------------------------------
 auto router::_route_messages_by_router() noexcept -> work_done {
     some_true something_done{};
     const auto message_age_inc{_stats.time_since_last_routing()};
 
-    for(auto& [node_id, node] : _current_nodes()) {
+    for(auto& [node_id, node] : _nodes.get()) {
         something_done(node.route_messages(*this, node_id, message_age_inc));
     }
 
@@ -1832,9 +1887,9 @@ auto router::_route_messages_by_router() noexcept -> work_done {
 //------------------------------------------------------------------------------
 void router::_update_connections_by_workers(
   some_true_atomic& something_done) noexcept {
-    std::latch completed{limit_cast<std::ptrdiff_t>(_nodes.count())};
+    std::latch completed{limit_cast<std::ptrdiff_t>(node_count())};
 
-    for(auto& entry : _current_nodes()) {
+    for(auto& entry : _nodes.get()) {
         std::get<1>(entry).enqueue_update_connection(
           workers(), completed, something_done);
     }
@@ -1850,7 +1905,7 @@ void router::_update_connections_by_workers(
 auto router::_update_connections_by_router() noexcept -> work_done {
     some_true something_done{};
 
-    for(auto& entry : _current_nodes()) {
+    for(auto& entry : _nodes.get()) {
         std::get<1>(entry).update_connection();
     }
     something_done(_parent_router.update(*this, get_id()));
@@ -1924,7 +1979,7 @@ void router::say_bye() noexcept {
     const auto msgid{msgbus_id{"byeByeRutr"}};
     message_view msg{};
     msg.set_source_id(get_id());
-    for(auto& entry : _current_nodes()) {
+    for(auto& entry : _nodes.get()) {
         auto& node{std::get<1>(entry)};
         node.send(*this, msgid, msg);
         node.update_connection();

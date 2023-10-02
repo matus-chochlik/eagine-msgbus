@@ -625,11 +625,11 @@ struct sudoku_solver_rank_info {
             });
             queue_length_changed(solver);
 
-            auto spos = solved_by_helper.find(done.used_helper);
-            if(spos == solved_by_helper.end()) {
-                spos = solved_by_helper.emplace(done.used_helper, 0L).first;
+            auto helper{eagine::find(solved_by_helper, done.used_helper)};
+            if(not helper) {
+                helper.reset(solved_by_helper.emplace(done.used_helper, 0L));
             }
-            spos->second++;
+            ++(*helper);
             const auto duration{
               std::chrono::steady_clock::now() - key_starts[done.key]};
             key_starts.erase(done.key);
@@ -643,11 +643,11 @@ struct sudoku_solver_rank_info {
             solution_timeout.reset();
         } else {
             add_board(solver, done.key, std::move(board));
-            auto upos = updated_by_helper.find(done.used_helper);
-            if(upos == updated_by_helper.end()) {
-                upos = updated_by_helper.emplace(done.used_helper, 0L).first;
+            auto helper{eagine::find(updated_by_helper, done.used_helper)};
+            if(not helper) {
+                helper.reset(updated_by_helper.emplace(done.used_helper, 0L));
             }
-            upos->second++;
+            ++(*helper);
         }
         done.too_late.reset();
         return is_solved;
@@ -737,9 +737,8 @@ struct sudoku_solver_rank_info {
         span_size_t done = 0;
         for(const auto helper_id : ready_helpers) {
             if(done < dst.size()) {
-                const auto upos = used_helpers.find(helper_id);
-                const auto is_usable =
-                  upos != used_helpers.end() ? upos->second.is_expired() : true;
+                const auto helper{eagine::find(used_helpers, helper_id)};
+                const auto is_usable = helper ? helper->is_expired() : true;
                 if(is_usable) {
                     dst[done++] = helper_id;
                 }
@@ -833,11 +832,7 @@ struct sudoku_solver_rank_info {
 
     auto updated_by_helper_count(const identifier_t helper_id) const noexcept
       -> std::intmax_t {
-        const auto pos = updated_by_helper.find(helper_id);
-        if(pos != updated_by_helper.end()) [[likely]] {
-            return pos->second;
-        }
-        return 0;
+        return eagine::find(updated_by_helper, helper_id).value_or(0);
     }
 
     auto updated_count() const noexcept -> std::intmax_t {
@@ -850,11 +845,7 @@ struct sudoku_solver_rank_info {
 
     auto solved_by_helper_count(const identifier_t helper_id) const noexcept
       -> std::intmax_t {
-        const auto pos = solved_by_helper.find(helper_id);
-        if(pos != solved_by_helper.end()) [[likely]] {
-            return pos->second;
-        }
-        return 0;
+        return eagine::find(solved_by_helper, helper_id).value_or(0);
     }
 
     auto solved_count() const noexcept -> std::intmax_t {
@@ -1317,11 +1308,11 @@ struct sudoku_tiling_rank_info : sudoku_tiles<S> {
                 float(cells_done),
                 float(this->cell_count()));
 
-            auto helper_pos = helper_contrib.find(sol.helper_id);
-            if(helper_pos == helper_contrib.end()) {
-                helper_pos = helper_contrib.emplace(sol.helper_id, 0).first;
+            auto helper{eagine::find(helper_contrib, sol.helper_id)};
+            if(not helper) {
+                helper.reset(helper_contrib.emplace(sol.helper_id, 0));
             }
-            ++helper_pos->second;
+            ++(*helper);
 
             const unsigned_constant<S> rank{};
             tiling.signals.tiles_generated_signal(rank)(

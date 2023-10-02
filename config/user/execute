@@ -24,6 +24,10 @@ then
 		echo "'${prefix}' is not a directory" >&2
 		exit 2
 	fi
+elif [ -f "$(which ${cmd})" -a -x "$(which ${cmd})" ]
+then
+	shift
+	exec "$(which ${cmd})" "${@}"
 else
 	echo "'${prefix_file}' is not a readable file" >&2
 	exit 1

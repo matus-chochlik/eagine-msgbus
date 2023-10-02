@@ -26,6 +26,7 @@ function(eagine_example_common EXAMPLE_NAME)
 	add_dependencies(eagine-msgbus-examples eagine-${EXAMPLE_NAME})
 	eagine_target_modules(
 		eagine-${EXAMPLE_NAME}
+		std
 		eagine.core
 		eagine.sslplus
 		eagine.msgbus

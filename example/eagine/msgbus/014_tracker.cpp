@@ -27,6 +27,12 @@ public:
       , base{bus} {
         object_description("Node tracker", "Node tracker example");
         connect<&tracker_example::on_node_change>(this, this->node_changed);
+
+        scheduler().schedule_repeated(
+          "checkup", std::chrono::seconds{5}, [this] {
+              checkup();
+              return true;
+          });
     }
 
     void on_node_change(
@@ -41,18 +47,12 @@ public:
         return true;
     }
 
-    auto update() -> work_done {
-        some_true something_done{base::update()};
-
-        if(_checkup_needed) {
-            this->for_each_node([&](auto, auto& node) {
-                this->log_info("node ${nodeId} status")
-                  .arg("nodeId", node)
-                  .arg("host", node.host());
-            });
-        }
-
-        return something_done;
+    void checkup() {
+        this->for_each_node([&](auto, auto& node) {
+            this->log_info("node ${nodeId} status")
+              .arg("nodeId", node)
+              .arg("host", node.host());
+        });
     }
 
     void shutdown() {
@@ -60,9 +60,6 @@ public:
           [&](auto node_id, auto&) { this->shutdown_one(node_id); });
         base::update();
     }
-
-private:
-    resetting_timeout _checkup_needed{std::chrono::seconds(5)};
 };
 //------------------------------------------------------------------------------
 } // namespace msgbus
@@ -81,6 +78,7 @@ auto main(main_ctx& ctx) -> int {
     timeout keep_going{std::chrono::minutes(5)};
 
     while(not keep_going) {
+        ctx.update();
         the_tracker.process_all();
         the_tracker.update().or_sleep_for(std::chrono::milliseconds(1));
     }

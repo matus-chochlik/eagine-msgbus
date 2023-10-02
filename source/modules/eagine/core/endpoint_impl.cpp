@@ -39,29 +39,28 @@ auto endpoint::_declare_states() noexcept {
 //------------------------------------------------------------------------------
 auto endpoint::_ensure_incoming(const message_id msg_id) noexcept
   -> incoming_state& {
-    auto pos = _incoming.find(msg_id);
-    if(pos == _incoming.end()) {
-        pos = _incoming.emplace(msg_id, default_selector).first;
+    auto incoming{find(_incoming, msg_id)};
+    if(not incoming) {
+        incoming.emplace(msg_id, default_selector);
     }
-    assert(pos->second);
-    return *pos->second;
+    assert(incoming and *incoming);
+    return **incoming;
 }
 //------------------------------------------------------------------------------
 auto endpoint::_find_incoming(const message_id msg_id) const noexcept
   -> optional_reference<incoming_state> {
-    const auto pos = _incoming.find(msg_id);
-    if(pos != _incoming.end()) {
-        return {pos->second};
+    if(const auto incoming{find(_incoming, msg_id)}) {
+        assert(*incoming);
+        return incoming->ref();
     }
     return {};
 }
 //------------------------------------------------------------------------------
 auto endpoint::_get_incoming(const message_id msg_id) const noexcept
   -> incoming_state& {
-    const auto pos = _incoming.find(msg_id);
-    assert(pos != _incoming.end());
-    assert(pos->second);
-    return *pos->second;
+    auto incoming{find(_incoming, msg_id)};
+    assert(incoming and *incoming);
+    return **incoming;
 }
 //------------------------------------------------------------------------------
 endpoint::endpoint(main_ctx_object obj) noexcept
@@ -658,12 +657,11 @@ void endpoint::subscribe(const message_id msg_id) noexcept {
 }
 //------------------------------------------------------------------------------
 void endpoint::unsubscribe(const message_id msg_id) noexcept {
-    auto pos = _incoming.find(msg_id);
-    if(pos != _incoming.end()) {
-        assert(pos->second);
-        auto& state = *pos->second;
+    if(const auto found{find(_incoming, msg_id)}) {
+        assert(*found);
+        auto& state = **found;
         if(--state.subscription_count <= 0) {
-            _incoming.erase(pos);
+            _incoming.erase(found.position());
             log_debug("unsubscribing from message ${message}")
               .arg("message", msg_id);
         }
