@@ -126,9 +126,10 @@ auto endpoint::_handle_assign_id(const message_view& message) noexcept
         _router_id = message.source_id;
         _endpoint_id = message.target_id;
         id_assigned(_endpoint_id);
-        log_debug("assigned endpoint id ${id} by router ${router_id}")
-          .arg("router_id", _router_id)
-          .arg("id", get_id());
+        log_info("assigned endpoint id ${eptId} by router ${routerId}")
+          .tag("asignEptId")
+          .arg("routerId", _router_id)
+          .arg("eptId", get_id());
     }
     return was_handled;
 }
@@ -140,9 +141,10 @@ auto endpoint::_handle_confirm_id(const message_view& message) noexcept
         _endpoint_id = message.target_id;
         if(get_id() == get_preconfigured_id()) [[likely]] {
             id_assigned(_endpoint_id);
-            log_debug("confirmed endpoint id ${id} by router ${router_id}")
-              .arg("router_id", _router_id)
-              .arg("id", get_id());
+            log_info("confirmed endpoint id ${eptId} by router ${routerId}")
+              .tag("cnfrmEptId")
+              .arg("routerId", _router_id)
+              .arg("eptId", get_id());
             // send request for router certificate
             post(msgbus_id{"rtrCertQry"}, {});
         } else {
