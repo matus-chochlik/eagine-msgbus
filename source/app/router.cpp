@@ -29,7 +29,6 @@ public:
       : main_ctx_object{"RouterNode", bus}
       , base{bus} {
         declare_state("running", "rutrStart", "rutrFinish");
-        declare_state("multiThred", "multiThrd", "singleThrd");
 
         if(_shutdown_ignore) {
             log_info("shutdown requests are ignored due to configuration");

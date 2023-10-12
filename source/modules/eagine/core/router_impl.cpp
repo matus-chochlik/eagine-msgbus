@@ -1093,6 +1093,7 @@ router::router(main_ctx_parent parent) noexcept
   , _password_is_required{app_config()
                             .get<bool>("msgbus.router.requires_password")
                             .value_or(false)} {
+    declare_state("multiThred", "multiThrd", "singleThrd");
     _ids.setup_from_config(*this);
     _ids.set_description(*this);
 }
