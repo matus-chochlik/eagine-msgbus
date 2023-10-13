@@ -25,12 +25,8 @@ auto main(main_ctx& ctx) -> int {
     std::array<span_size_t, 256> byte_counts{};
     zero(cover(byte_counts));
 
-    const auto consume{[&](
-                         identifier_t,
-                         const span_size_t,
-                         const memory::span<const memory::const_block> data,
-                         const msgbus::blob_info&) {
-        for(const auto& blk : data) {
+    const auto consume{[&](const msgbus::blob_stream_chunk& chunk) {
+        for(const auto& blk : chunk.data) {
             for(auto b : blk) {
                 max_count =
                   math::maximum(max_count, ++byte_counts[std_size(b)]);

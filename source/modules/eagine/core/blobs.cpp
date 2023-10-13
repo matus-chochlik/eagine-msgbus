@@ -76,6 +76,20 @@ export struct target_blob_io : interface<target_blob_io> {
 //------------------------------------------------------------------------------
 export class buffer_blob_io;
 //------------------------------------------------------------------------------
+/// @brief Chunk info object passed to blob_stream_data_appended signal.
+/// @ingroup msgbus
+/// @see blob_stream_signals
+export struct blob_stream_chunk {
+    /// @brief Id of the blob request.
+    identifier_t request_id;
+    /// @brief Offset from the blob start.
+    const span_size_t offset;
+    /// @brief Data blocks.
+    const memory::span<const memory::const_block> data;
+    /// @brief Additional blob information.
+    const blob_info& info;
+};
+//------------------------------------------------------------------------------
 /// @brief Collection of signals emitted by the resource_data_loader_node.
 /// @ingroup msgbus
 /// @see resource_data_loader_node
@@ -83,12 +97,7 @@ export class buffer_blob_io;
 /// @see make_target_blob_chunk_io
 export struct blob_stream_signals {
     /// @brief Emitted repeatedly when a new consecutive chunk of data is streamed.
-    signal<void(
-      identifier_t blob_id,
-      const span_size_t offset,
-      const memory::span<const memory::const_block>,
-      const blob_info& info) noexcept>
-      blob_stream_data_appended;
+    signal<void(const blob_stream_chunk&) noexcept> blob_stream_data_appended;
 
     /// @brief Emitted once when a blob stream is completed.
     signal<void(identifier_t blob_id) noexcept> blob_stream_finished;

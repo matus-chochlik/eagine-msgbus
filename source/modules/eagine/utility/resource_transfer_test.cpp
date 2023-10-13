@@ -29,28 +29,23 @@ void resource_transfer_1(auto& s) {
         eagine::span_size_t todo_ones{16777216};
         eagine::span_size_t todo_all{5 * 16777216};
 
-        const auto consume{
-          [&](
-            const eagine::identifier_t,
-            const eagine::span_size_t,
-            const eagine::memory::span<const eagine::memory::const_block> data,
-            const eagine::msgbus::blob_info&) {
-              for(const auto& blk : data) {
-                  for(auto b : blk) {
-                      if(b == 0x00U) {
-                          if(todo_zeroes > 0) {
-                              --todo_zeroes;
-                          }
-                      } else if(b == 0x01U) {
-                          if(todo_ones > 0) {
-                              --todo_ones;
-                          }
-                      }
-                      --todo_all;
-                      trck.checkpoint(1);
-                  }
-              }
-          }};
+        const auto consume{[&](const eagine::blob_chunk& chunk) {
+            for(const auto& blk : chunk.data) {
+                for(auto b : blk) {
+                    if(b == 0x00U) {
+                        if(todo_zeroes > 0) {
+                            --todo_zeroes;
+                        }
+                    } else if(b == 0x01U) {
+                        if(todo_ones > 0) {
+                            --todo_ones;
+                        }
+                    }
+                    --todo_all;
+                    trck.checkpoint(1);
+                }
+            }
+        }};
 
         consumer.blob_stream_data_appended.connect(
           {eagine::construct_from, consume});
