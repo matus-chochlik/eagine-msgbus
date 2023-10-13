@@ -58,7 +58,17 @@ eagine_target_modules(
 	eagine.msgbus
 )
 
-# resource client
+# resource clients
+add_executable(eagine-msgbus-resource_hexdump resource_hexdump.cpp)
+eagine_add_exe_analysis(eagine-msgbus-resource_hexdump)
+eagine_target_modules(
+	eagine-msgbus-resource_hexdump
+	std
+	eagine.core
+	eagine.sslplus
+	eagine.msgbus
+)
+
 add_executable(eagine-msgbus-resource_histogram resource_histogram.cpp)
 eagine_add_exe_analysis(eagine-msgbus-resource_histogram)
 eagine_target_modules(
