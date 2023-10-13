@@ -116,7 +116,11 @@ private:
       span_size_t offset,
       const memory::span<const memory::const_block> data,
       const blob_info& info) const noexcept {
-        _signals.blob_stream_data_appended(_blob_id, offset, data, info);
+        _signals.blob_stream_data_appended(
+          {.request_id = _blob_id,
+           .offset = offset,
+           .data = data,
+           .info = info});
     }
 
     void _append_one(
@@ -296,7 +300,8 @@ void blob_chunk_io::handle_finished(
         data.push_back(view(chunk));
         prev_size = span_size(chunk.size());
     }
-    _signals.blob_stream_data_appended(_blob_id, 0, view(data), info);
+    _signals.blob_stream_data_appended(
+      {.request_id = _blob_id, .offset = 0, .data = view(data), .info = info});
     _signals.blob_stream_finished(_blob_id);
     _recycle_chunks();
 }

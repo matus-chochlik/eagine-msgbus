@@ -28,6 +28,8 @@ add_custom_command(
 		eagine-msgbus-pinger
 		eagine-msgbus-pingable
 		eagine-msgbus-file_server
+		eagine-msgbus-resource_hexdump
+		eagine-msgbus-resource_histogram
 		eagine-msgbus-sudoku_helper
 		eagine-msgbus-sudoku_tiling
 		"${PKG_DIR}/DEBIAN/control"

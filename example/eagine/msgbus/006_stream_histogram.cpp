@@ -26,12 +26,8 @@ auto main(main_ctx& ctx) -> int {
     std::array<span_size_t, 256> byte_counts{};
     zero(cover(byte_counts));
 
-    auto consume = [&](
-                     identifier_t,
-                     const span_size_t,
-                     const memory::span<const memory::const_block> data,
-                     const msgbus::blob_info&) {
-        for(const auto& blk : data) {
+    auto consume = [&](const msgbus::blob_stream_chunk& chunk) {
+        for(const auto& blk : chunk.data) {
             for(auto b : blk) {
                 max_count =
                   math::maximum(max_count, ++byte_counts[std_size(b)]);
@@ -52,7 +48,7 @@ auto main(main_ctx& ctx) -> int {
             if(chunks) {
                 node.fetch_resource_chunks(
                   std::move(locator),
-                  4 * 1024,
+                  ctx.default_chunk_size(),
                   msgbus::message_priority::high,
                   std::chrono::hours{1});
             } else {

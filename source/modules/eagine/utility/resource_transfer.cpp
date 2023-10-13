@@ -299,11 +299,7 @@ private:
     void _handle_resource_found(identifier_t, const url&) noexcept;
     void _handle_missing(identifier_t, const url&) noexcept;
     void _handle_stream_done(identifier_t) noexcept;
-    void _handle_stream_data(
-      identifier_t blob_id,
-      const span_size_t,
-      const memory::span<const memory::const_block>,
-      const blob_info&) noexcept;
+    void _handle_stream_data(const blob_stream_chunk&) noexcept;
     void _handle_ping_response(
       const result_context&,
       const ping_response&) noexcept;

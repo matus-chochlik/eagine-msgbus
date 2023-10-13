@@ -93,7 +93,10 @@ auto resource_data_consumer_node::_embedded_resource_info::_unpack_data(
     if(_is_all_in_one) {
         if(not _unpacker.is_working() and _unpacker.has_succeeded()) {
             _parent.blob_stream_data_appended(
-              _request_id, _unpack_offset, view_one(data), _binfo);
+              {.request_id = _request_id,
+               .offset = _unpack_offset,
+               .data = view_one(data),
+               .info = _binfo});
         } else {
             auto chunk = _parent.buffers().get(data.size());
             memory::copy_into(data, chunk);
@@ -101,7 +104,10 @@ auto resource_data_consumer_node::_embedded_resource_info::_unpack_data(
         }
     } else {
         _parent.blob_stream_data_appended(
-          _request_id, _unpack_offset, view_one(data), _binfo);
+          {.request_id = _request_id,
+           .offset = _unpack_offset,
+           .data = view_one(data),
+           .info = _binfo});
         _unpack_offset += data.size();
     }
     return true;
@@ -114,7 +120,10 @@ auto resource_data_consumer_node::_embedded_resource_info::unpack_next() noexcep
             if(_chunks.size() == 1U) {
                 const auto data{view(_chunks.back())};
                 _parent.blob_stream_data_appended(
-                  _request_id, 0, view_one(data), _binfo);
+                  {.request_id = _request_id,
+                   .offset = 0,
+                   .data = view_one(data),
+                   .info = _binfo});
                 _parent.buffers().eat(std::move(_chunks.back()));
                 _chunks.clear();
             } else if(not _chunks.empty()) {
@@ -124,7 +133,10 @@ auto resource_data_consumer_node::_embedded_resource_info::unpack_next() noexcep
                     data.emplace_back(view(chunk));
                 }
                 _parent.blob_stream_data_appended(
-                  _request_id, 0, view(data), _binfo);
+                  {.request_id = _request_id,
+                   .offset = 0,
+                   .data = view(data),
+                   .info = _binfo});
                 for(auto& chunk : _chunks) {
                     _parent.buffers().eat(std::move(chunk));
                 }
@@ -393,11 +405,8 @@ void resource_data_consumer_node::_handle_stream_done(
 }
 //------------------------------------------------------------------------------
 void resource_data_consumer_node::_handle_stream_data(
-  identifier_t,
-  const span_size_t,
-  const memory::span<const memory::const_block>,
-  const blob_info& binfo) noexcept {
-    find(_current_servers, binfo.source_id).and_then([](auto& sinfo) {
+  const blob_stream_chunk& chunk) noexcept {
+    find(_current_servers, chunk.info.source_id).and_then([](auto& sinfo) {
         sinfo.not_responding.reset();
     });
 }
