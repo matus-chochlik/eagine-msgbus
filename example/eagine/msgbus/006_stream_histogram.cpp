@@ -48,7 +48,7 @@ auto main(main_ctx& ctx) -> int {
             if(chunks) {
                 node.fetch_resource_chunks(
                   std::move(locator),
-                  4 * 1024,
+                  ctx.default_chunk_size(),
                   msgbus::message_priority::high,
                   std::chrono::hours{1});
             } else {
