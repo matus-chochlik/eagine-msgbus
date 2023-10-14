@@ -35,6 +35,7 @@ shutil.copy(
 for filename in [
     "ping-pong-r",
     "ping-pong-rlb",
+    "resource-hexdump",
     "resource-histogram",
     "sudoku-tiling"]:
     shutil.copy(

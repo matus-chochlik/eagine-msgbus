@@ -27,11 +27,11 @@ add_custom_command(
 		eagine-msgbus-bridge
 		eagine-msgbus-pinger
 		eagine-msgbus-pingable
-		eagine-msgbus-file_server
-		eagine-msgbus-resource_hexdump
-		eagine-msgbus-resource_histogram
-		eagine-msgbus-sudoku_helper
-		eagine-msgbus-sudoku_tiling
+		eagine-msgbus-file-server
+		eagine-msgbus-resource-hexdump
+		eagine-msgbus-resource-histogram
+		eagine-msgbus-sudoku-helper
+		eagine-msgbus-sudoku-tiling
 		"${PKG_DIR}/DEBIAN/control"
 	COMMENT "Building ${PKG_NAME}.deb package")
 # ------------------------------------------------------------------------------

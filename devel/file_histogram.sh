@@ -16,7 +16,7 @@ ${install_prefix}/bin/eagine-msgbus-router \
 	${conn_type} \
 	& termpids+=($!)
 sleep 2
-${install_prefix}/bin/eagine-msgbus-file_server \
+${install_prefix}/bin/eagine-msgbus-file-server \
 	"${log_args[@]}" \
 	${conn_type} \
 	& termpids+=($!)

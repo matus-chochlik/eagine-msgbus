@@ -27,7 +27,7 @@ ${install_prefix}/bin/eagine-msgbus-router \
 	--msgbus-router-id-count 999 \
 	& termpids+=($!)
 sleep 1
-${install_prefix}/bin/eagine-msgbus-sudoku_helper \
+${install_prefix}/bin/eagine-msgbus-sudoku-helper \
 	"${log_args[@]}" \
 	"${conn_args[@]}" \
 	--msgbus-router-id-major 1000 \

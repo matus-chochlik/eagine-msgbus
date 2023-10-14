@@ -53,7 +53,7 @@ pids=()
 	--msgbus-router-shutdown-delay 10s \
 	& termpids+=($!)
 sleep 1
-"$(dirname ${0})/eagine-msgbus-sudoku_helper" \
+"$(dirname ${0})/eagine-msgbus-sudoku-helper" \
 	"${log_args[@]}" \
 	"${conn_args[@]}" \
 	--msgbus-router-id-count 250 \
@@ -71,7 +71,7 @@ then
 		--msgbus-sudoku-solver-gui-tile-size $((tile_size)) \
 		& pids+=($!)
 else
-	"$(dirname ${0})/eagine-msgbus-sudoku_tiling" \
+	"$(dirname ${0})/eagine-msgbus-sudoku-tiling" \
 		"${log_args[@]}" \
 		"${conn_args[@]}" \
 		--msgbus-sudoku-solver-block-cells false \
