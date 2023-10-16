@@ -65,7 +65,7 @@ class sequence_blob_io final : public source_blob_io {
                 r = r << 8U;
                 s = s >> 8U;
             }
-            return r;
+            return r | (0xFFU & s);
         }
 
         auto operator()() noexcept -> byte {
