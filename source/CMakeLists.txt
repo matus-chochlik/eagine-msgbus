@@ -14,6 +14,8 @@ set(
 	eagine-msgbus-pingable
 	eagine-msgbus-pinger
 	eagine-msgbus-file-server
+	eagine-msgbus-resource-hexdump
+	eagine-msgbus-resource-histogram
 	eagine-msgbus-sudoku-helper
 	eagine-msgbus-sudoku-tiling
 )
