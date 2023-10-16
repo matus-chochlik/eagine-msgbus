@@ -58,6 +58,16 @@ class sequence_blob_io final : public source_blob_io {
             return span_size_of<seq_t>();
         }
 
+        static auto reverse_bytes(seq_t s) noexcept {
+            seq_t r{0U};
+            for(span_size_t i = 1; i < sequence_bytes(); ++i) {
+                r = r | (0xFFU & s);
+                r = r << 8U;
+                s = s >> 8U;
+            }
+            return r;
+        }
+
         auto operator()() noexcept -> byte {
             while(_mod > 0U) {
                 --_mod;
@@ -68,7 +78,7 @@ class sequence_blob_io final : public source_blob_io {
             if(++_ofs < sequence_bytes()) {
                 _cur = _cur >> 8U;
             } else {
-                _cur = ++_seq;
+                _cur = reverse_bytes(++_seq);
                 _ofs = 0;
             }
             return result;
@@ -77,7 +87,7 @@ class sequence_blob_io final : public source_blob_io {
         _generator(const span_size_t offs) noexcept
           : _mod{limit_cast<seq_t>(offs % sequence_bytes())}
           , _seq{limit_cast<seq_t>(offs / sequence_bytes())}
-          , _cur{_seq} {}
+          , _cur{reverse_bytes(_seq)} {}
 
         seq_t _mod;
         seq_t _seq;
@@ -95,8 +105,7 @@ public:
 
     auto fetch_fragment(const span_size_t offs, memory::block dst) noexcept
       -> span_size_t final {
-        return fill(head(dst, _size - offs), 0xFAU).size();
-        // return generate(head(dst, _size - offs), _generator(offs)).size();
+        return generate(head(dst, _size - offs), _generator(offs)).size();
     }
 
 private:

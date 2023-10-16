@@ -43,6 +43,7 @@
 		"$(eagiapp msgbus-resource-hexdump)", "$<identity client>",
 		"$[conn_args...]",
 		"$[log_args...]",
+		"--url", "eagires:///sequence?count=134217728",
 		"--url", "eagires:///zeroes?count=134217728",
 		"--url", "eagires:///random?count=134217728"]
 }],"expect":{
