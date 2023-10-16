@@ -16,6 +16,7 @@ import eagine.core.types;
 import eagine.core.debug;
 import eagine.core.memory;
 import eagine.core.utility;
+import eagine.core.container;
 import eagine.core.identifier;
 import eagine.core.serialization;
 import eagine.core.valid_if;
@@ -132,7 +133,7 @@ private:
 
     memory::buffer_pool& _buffers;
     span_size_t _offs_done{0};
-    std::vector<std::tuple<span_size_t, memory::buffer>> _unmerged;
+    flat_map<span_size_t, memory::buffer> _unmerged;
     std::vector<memory::buffer> _merged;
     std::vector<memory::const_block> _consecutive;
 };
@@ -147,28 +148,30 @@ auto blob_stream_io::store_fragment(
     if(offset == _offs_done) {
         if(_unmerged.empty()) {
             _append_one(offset, data, info);
-            _offs_done = safe_add(offset + data.size());
+            _offs_done = safe_add(offset, data.size());
         } else {
-            assert(_merged.empty());
-            _merged.reserve(_unmerged.size());
             assert(_consecutive.empty());
+            assert(_merged.empty());
+            _merged.reserve(_unmerged.size() + 1U);
             _consecutive.push_back(data);
 
             auto data_end{safe_add(offset, data.size())};
-            while(not _unmerged.empty()) {
-                auto& [merge_offs, merge_buf] = _unmerged.back();
+            auto bgn = _unmerged.begin();
+            auto end = _unmerged.end();
+            auto pos = bgn;
 
-                assert(data_end <= merge_offs);
-                if(data_end == merge_offs) {
-                    _merged.emplace_back(std::move(merge_buf));
-                    auto& merge_data = _merged.back();
-                    _unmerged.pop_back();
-                    data_end = safe_add(merge_offs, merge_data.size());
-                    _consecutive.push_back(view(merge_data));
-                } else {
+            while(pos != end) {
+                auto& [merge_offs, merge_buf] = *pos;
+                if(merge_offs != data_end) {
                     break;
                 }
+                _merged.emplace_back(std::move(merge_buf));
+                auto& merge_data = _merged.back();
+                data_end = safe_add(merge_offs, merge_data.size());
+                _consecutive.push_back(view(merge_data));
+                ++pos;
             }
+            _unmerged.erase(bgn, pos);
 
             _offs_done = data_end;
             _append(offset, view(_consecutive), info);
@@ -181,16 +184,9 @@ auto blob_stream_io::store_fragment(
     } else {
         auto buf{_buffers.get(data.size())};
         memory::copy(data, buf);
-        if(_unmerged.empty()) {
-            _unmerged.emplace_back(offset, std::move(buf));
-        } else {
-            const auto rpos{std::find_if(
-              _unmerged.rbegin(), _unmerged.rend(), [=](const auto& entry) {
-                  return std::get<0>(entry) >= offset;
-              })};
-            _unmerged.emplace(rpos.base(), offset, std::move(buf));
-        }
+        _unmerged[offset] = std::move(buf);
     }
+
     return true;
 }
 //------------------------------------------------------------------------------
@@ -254,7 +250,7 @@ auto blob_chunk_io::store_fragment(
     assert(not data.empty());
 
     span_size_t chunk_idx{offset / _chunk_size};
-    const span_size_t last_chunk{(offset + data.size()) / _chunk_size};
+    const span_size_t last_chunk{safe_add(offset, data.size()) / _chunk_size};
 
     span_size_t copy_srco{0};
     auto copy_dsto{offset - (chunk_idx * _chunk_size)};
