@@ -420,13 +420,14 @@ auto resource_server_impl::get_resource(
     }
 
     const auto max_time =
-      read_io ? driver.get_blob_timeout(endpoint_id, read_io->total_size())
-              : std::chrono::seconds{};
+      read_io
+        ? driver.get_blob_timeout(endpoint_id, locator, read_io->total_size())
+        : std::chrono::seconds{};
 
     return {
       std::move(read_io),
       max_time,
-      driver.get_blob_priority(endpoint_id, priority)};
+      driver.get_blob_priority(endpoint_id, locator, priority)};
 }
 //------------------------------------------------------------------------------
 auto resource_server_impl::_handle_has_resource_query(

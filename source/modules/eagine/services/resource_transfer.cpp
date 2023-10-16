@@ -32,12 +32,14 @@ export struct resource_server_driver : interface<resource_server_driver> {
 
     virtual auto get_blob_timeout(
       const identifier_t,
+      const url&,
       const span_size_t size) noexcept -> std::chrono::seconds {
         return std::chrono::seconds{size / 1024};
     }
 
     virtual auto get_blob_priority(
       const identifier_t,
+      const url&,
       const message_priority priority) noexcept -> message_priority {
         return priority;
     }
