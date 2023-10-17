@@ -34,7 +34,7 @@ auto main(main_ctx& ctx) -> int {
         if(locator) {
             node.stream_resource(
               std::move(locator),
-              msgbus::message_priority::normal,
+              msgbus::message_priority::critical,
               std::chrono::hours{1});
         }
     }};
