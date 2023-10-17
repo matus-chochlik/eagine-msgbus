@@ -345,6 +345,7 @@ private:
       blob_manipulator&) noexcept -> unique_holder<target_blob_io>;
 
     auto _scratch_block(const span_size_t size) noexcept -> memory::block;
+    auto _next_blob_id() noexcept -> blob_id_t;
 };
 //------------------------------------------------------------------------------
 } // namespace eagine::msgbus

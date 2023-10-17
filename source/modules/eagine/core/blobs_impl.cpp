@@ -854,6 +854,14 @@ inline auto blob_manipulator::_scratch_block(const span_size_t size) noexcept
     return cover(_scratch_buffer.resize(size));
 }
 //------------------------------------------------------------------------------
+auto blob_manipulator::_next_blob_id() noexcept -> blob_id_t {
+    if(_blob_id_sequence == std::numeric_limits<blob_id_t>::max())
+      [[unlikely]] {
+        _blob_id_sequence = 0;
+    }
+    return ++_blob_id_sequence;
+}
+//------------------------------------------------------------------------------
 auto blob_manipulator::push_outgoing(
   const message_id msg_id,
   const identifier_t source_id,
@@ -864,21 +872,24 @@ auto blob_manipulator::push_outgoing(
   const blob_options options,
   const message_priority priority) noexcept -> blob_id_t {
     assert(io);
-    _outgoing.emplace_back();
-    auto& pending = _outgoing.back();
-    pending.msg_id = msg_id;
-    pending.info.source_id = source_id;
-    pending.info.target_id = target_id;
-    pending.info.total_size = io->total_size();
-    pending.info.priority = priority;
-    pending.info.options = options;
-    pending.source_blob_id = ++_blob_id_sequence;
-    pending.target_blob_id = target_blob_id;
-    pending.source_io = std::move(io);
-    pending.linger_time.reset();
-    pending.max_time = timeout{max_time};
-    pending.todo_parts().emplace_back(0, pending.info.total_size);
-    return pending.source_blob_id;
+    if(io->total_size() > 0) {
+        _outgoing.emplace_back();
+        auto& pending = _outgoing.back();
+        pending.msg_id = msg_id;
+        pending.info.source_id = source_id;
+        pending.info.target_id = target_id;
+        pending.info.total_size = io->total_size();
+        pending.info.priority = priority;
+        pending.info.options = options;
+        pending.source_blob_id = _next_blob_id();
+        pending.target_blob_id = target_blob_id;
+        pending.source_io = std::move(io);
+        pending.linger_time.reset();
+        pending.max_time = timeout{max_time};
+        pending.todo_parts().emplace_back(0, pending.info.total_size);
+        return pending.source_blob_id;
+    }
+    return 0;
 }
 //------------------------------------------------------------------------------
 auto blob_manipulator::push_outgoing(
