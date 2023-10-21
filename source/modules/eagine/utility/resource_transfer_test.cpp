@@ -29,7 +29,7 @@ void resource_transfer_1(auto& s) {
         eagine::span_size_t todo_ones{16777216};
         eagine::span_size_t todo_all{5 * 16777216};
 
-        const auto consume{[&](const eagine::blob_chunk& chunk) {
+        const auto consume{[&](const eagine::msgbus::blob_stream_chunk& chunk) {
             for(const auto& blk : chunk.data) {
                 for(auto b : blk) {
                     if(b == 0x00U) {

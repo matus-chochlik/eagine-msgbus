@@ -542,34 +542,34 @@ void blobs_roundtrip_chunk_signals_finished(auto& s) {
     std::map<eagine::identifier_t, std::array<eagine::span_size_t, 2>>
       blob_sizes;
     const auto check_stream_data =
-      [&](
-        eagine::identifier_t blob_id,
-        const eagine::span_size_t offset,
-        const eagine::memory::span<const eagine::memory::const_block> data,
-        const eagine::msgbus::blob_info&) {
-          test.check(offset >= 0, "offset ok 1");
-          test.check(offset <= blob_sizes[blob_id][1], "offset ok 2");
-          for(const auto blk : data) {
+      [&](const eagine::msgbus::blob_stream_chunk& chunk) {
+          test.check(chunk.offset >= 0, "offset ok 1");
+          test.check(
+            chunk.offset <= blob_sizes[chunk.request_id][1], "offset ok 2");
+          for(const auto blk : chunk.data) {
               for(const auto b : blk) {
                   test.check(
                     b == eagine::byte{0xBF} or b == eagine::byte{0xCE},
                     "content is ok");
                   trck.checkpoint(2);
               }
-              blob_sizes[blob_id][1] += blk.size();
+              blob_sizes[chunk.request_id][1] += blk.size();
           }
       };
     signals.blob_stream_data_appended.connect(
       {eagine::construct_from, check_stream_data});
 
     unsigned done{0};
-    const auto check_stream_finished = [&](const eagine::identifier_t blob_id) {
-        test.check_equal(
-          blob_sizes[blob_id][0], blob_sizes[blob_id][1], "blob data complete");
-        blob_sizes.erase(blob_id);
-        ++done;
-        trck.checkpoint(3);
-    };
+    const auto check_stream_finished =
+      [&](const eagine::identifier_t request_id) {
+          test.check_equal(
+            blob_sizes[request_id][0],
+            blob_sizes[request_id][1],
+            "blob data complete");
+          blob_sizes.erase(request_id);
+          ++done;
+          trck.checkpoint(3);
+      };
     signals.blob_stream_finished.connect(
       {eagine::construct_from, check_stream_finished});
 
@@ -599,29 +599,29 @@ void blobs_roundtrip_chunk_signals_finished(auto& s) {
     eagine::memory::buffer_pool buffers;
 
     for(unsigned r = 0; r < todo; ++r) {
-        const auto blob_id{eagine::msgbus::blob_id_t(r)};
+        const auto request_id{eagine::msgbus::blob_id_t(r)};
         if(rg.get_bool()) {
             const auto blob_size{rg.get_between(4, 48) * 1024};
             sender.push_outgoing(
               test_msg_id,
               1,
               0,
-              blob_id,
+              request_id,
               {eagine::hold<bfs_source_blob_io>, blob_size},
               std::chrono::hours{1},
               eagine::msgbus::message_priority::normal);
-            blob_sizes[blob_id] = {blob_size, 0};
+            blob_sizes[request_id] = {blob_size, 0};
         } else {
             const auto blob_size{rg.get_between(48, 96) * 1024};
             sender.push_outgoing(
               test_msg_id,
               1,
               0,
-              blob_id,
+              request_id,
               {eagine::hold<ces_source_blob_io>, blob_size},
               std::chrono::hours{1},
               eagine::msgbus::message_priority::normal);
-            blob_sizes[blob_id] = {blob_size, 0};
+            blob_sizes[request_id] = {blob_size, 0};
         }
 
         receiver.expect_incoming(
@@ -663,33 +663,33 @@ void blobs_roundtrip_stream_signals_finished(auto& s) {
     std::map<eagine::identifier_t, std::array<eagine::span_size_t, 2>>
       blob_sizes;
     const auto check_stream_data =
-      [&](
-        eagine::identifier_t blob_id,
-        const eagine::span_size_t offset,
-        const eagine::memory::span<const eagine::memory::const_block> data,
-        const eagine::msgbus::blob_info&) {
-          for(const auto blk : data) {
+      [&](const eagine::msgbus::blob_stream_chunk& chunk) {
+          for(const auto blk : chunk.data) {
               for(const auto b : blk) {
                   test.check(
                     b == eagine::byte{0xBF} or b == eagine::byte{0xCE},
                     "content is ok");
                   trck.checkpoint(2);
               }
-              test.check_equal(blob_sizes[blob_id][1], offset, "offset ok");
-              blob_sizes[blob_id][1] += blk.size();
+              test.check_equal(
+                blob_sizes[chunk.request_id][1], chunk.offset, "offset ok");
+              blob_sizes[chunk.request_id][1] += blk.size();
           }
       };
     signals.blob_stream_data_appended.connect(
       {eagine::construct_from, check_stream_data});
 
     unsigned done{0};
-    const auto check_stream_finished = [&](const eagine::identifier_t blob_id) {
-        test.check_equal(
-          blob_sizes[blob_id][0], blob_sizes[blob_id][1], "blob data complete");
-        blob_sizes.erase(blob_id);
-        ++done;
-        trck.checkpoint(3);
-    };
+    const auto check_stream_finished =
+      [&](const eagine::identifier_t request_id) {
+          test.check_equal(
+            blob_sizes[request_id][0],
+            blob_sizes[request_id][1],
+            "blob data complete");
+          blob_sizes.erase(request_id);
+          ++done;
+          trck.checkpoint(3);
+      };
     signals.blob_stream_finished.connect(
       {eagine::construct_from, check_stream_finished});
 
@@ -719,29 +719,29 @@ void blobs_roundtrip_stream_signals_finished(auto& s) {
     eagine::memory::buffer_pool buffers;
 
     for(unsigned r = 0; r < todo; ++r) {
-        const auto blob_id{eagine::msgbus::blob_id_t(r)};
+        const auto request_id{eagine::msgbus::blob_id_t(r)};
         if(rg.get_bool()) {
             const auto blob_size{rg.get_between(4, 64) * 1024};
             sender.push_outgoing(
               test_msg_id,
               1,
               0,
-              blob_id,
+              request_id,
               {eagine::hold<bfs_source_blob_io>, blob_size},
               std::chrono::hours{1},
               eagine::msgbus::message_priority::normal);
-            blob_sizes[blob_id] = {blob_size, 0};
+            blob_sizes[request_id] = {blob_size, 0};
         } else {
             const auto blob_size{rg.get_between(64, 128) * 1024};
             sender.push_outgoing(
               test_msg_id,
               1,
               0,
-              blob_id,
+              request_id,
               {eagine::hold<ces_source_blob_io>, blob_size},
               std::chrono::hours{1},
               eagine::msgbus::message_priority::normal);
-            blob_sizes[blob_id] = {blob_size, 0};
+            blob_sizes[request_id] = {blob_size, 0};
         }
 
         receiver.expect_incoming(
@@ -821,14 +821,14 @@ void blobs_roundtrip_chunk_signals_failed(auto& s) {
     eagine::memory::buffer_pool buffers;
 
     for(unsigned r = 0; r < todo; ++r) {
-        const auto blob_id{eagine::msgbus::blob_id_t(r)};
+        const auto request_id{eagine::msgbus::blob_id_t(r)};
         if(rg.get_bool()) {
             const auto blob_size{rg.get_between(4, 48) * 1024};
             sender.push_outgoing(
               test_msg_id,
               1,
               0,
-              blob_id,
+              request_id,
               {eagine::hold<bfs_source_blob_io>, blob_size},
               std::chrono::seconds{1},
               eagine::msgbus::message_priority::normal);
@@ -838,7 +838,7 @@ void blobs_roundtrip_chunk_signals_failed(auto& s) {
               test_msg_id,
               1,
               0,
-              blob_id,
+              request_id,
               {eagine::hold<ces_source_blob_io>, blob_size},
               std::chrono::seconds{1},
               eagine::msgbus::message_priority::normal);
