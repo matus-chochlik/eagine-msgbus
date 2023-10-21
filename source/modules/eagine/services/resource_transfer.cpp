@@ -127,7 +127,7 @@ export struct resource_manipulator_signals {
     /// @brief Triggered when a resource server appears on the bus.
     signal<void(const identifier_t) noexcept> resource_server_appeared;
 
-    /// @brief Triggered when a resource server dissapears from the bus.
+    /// @brief Triggered when a resource server disappears from the bus.
     signal<void(const identifier_t) noexcept> resource_server_lost;
 };
 //------------------------------------------------------------------------------
