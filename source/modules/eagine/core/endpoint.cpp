@@ -452,6 +452,11 @@ public:
         return _flow_info.average_message_age() >= _flow_age_warning;
     }
 
+    /// @brief Indicates if this endpoint has pending outgoing blobs.
+    auto has_outgoing_blobs() const noexcept -> bool {
+        return _blobs.has_outgoing();
+    }
+
 private:
     friend class friend_of_endpoint;
 
