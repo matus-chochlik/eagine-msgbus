@@ -49,6 +49,8 @@ struct resource_server_intf : interface<resource_server_intf> {
     virtual void add_methods() noexcept = 0;
     virtual auto update() noexcept -> work_done = 0;
 
+    virtual auto has_pending_blobs() noexcept -> bool = 0;
+
     virtual void average_message_age(
       const std::chrono::microseconds) noexcept = 0;
 
@@ -73,6 +75,10 @@ class resource_server : public Base {
     resource_server_driver _default_driver;
 
 public:
+    auto has_pending_blobs() noexcept -> bool {
+        return _impl->has_pending_blobs();
+    }
+
     void average_message_age(const std::chrono::microseconds age) noexcept {
         _impl->average_message_age(age);
     }

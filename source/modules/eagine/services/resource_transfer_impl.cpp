@@ -241,6 +241,10 @@ public:
         return something_done;
     }
 
+    auto has_pending_blobs() noexcept -> bool final {
+        return _blobs.has_outgoing() or base.bus_node().has_outgoing_blobs();
+    }
+
     void average_message_age(
       const std::chrono::microseconds age) noexcept final {
         _should_send_outgoing.set_duration(std::min(
