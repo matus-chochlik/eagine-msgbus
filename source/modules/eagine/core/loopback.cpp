@@ -53,6 +53,10 @@ public:
         return true;
     }
 
+    auto routing_weight() noexcept -> float final {
+        return 0.4F;
+    }
+
 private:
     std::mutex _mutex;
     message_storage _messages;

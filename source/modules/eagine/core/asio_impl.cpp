@@ -601,6 +601,10 @@ public:
         return true;
     }
 
+    auto routing_weight() noexcept -> float final {
+        return 1.1F;
+    }
+
     void cleanup() noexcept final {
         const timeout too_long{std::chrono::seconds{5}};
         while(not _outgoing.empty() and not too_long) {
@@ -673,6 +677,10 @@ public:
         stats.block_usage_ratio = state.usage_ratio;
         stats.bytes_per_second = state.used_per_sec;
         return true;
+    }
+
+    auto routing_weight() noexcept -> float final {
+        return 1.0F;
     }
 
     auto update() noexcept -> work_done final {
@@ -766,6 +774,10 @@ public:
 
     auto query_statistics(connection_statistics&) noexcept -> bool final {
         return false;
+    }
+
+    auto routing_weight() noexcept -> float final {
+        return 1.0F;
     }
 
     auto process_accepted(const acceptor::accept_handler handler) noexcept

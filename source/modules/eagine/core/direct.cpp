@@ -232,6 +232,10 @@ public:
         return true;
     }
 
+    auto routing_weight() noexcept -> float final {
+        return 0.5F;
+    }
+
     void cleanup() noexcept final {}
 
 private:
@@ -303,6 +307,10 @@ public:
 
     auto query_statistics(connection_statistics&) noexcept -> bool final {
         return false;
+    }
+
+    auto routing_weight() noexcept -> float final {
+        return 0.5F;
     }
 
 private:

@@ -77,6 +77,8 @@ export struct connection : connection_info {
 
     /// @brief Fill in the available statistics information for this connection.
     virtual auto query_statistics(connection_statistics&) noexcept -> bool = 0;
+
+    virtual auto routing_weight() noexcept -> float = 0;
 };
 //------------------------------------------------------------------------------
 /// @brief Interface for classes that can use message bus connections.
