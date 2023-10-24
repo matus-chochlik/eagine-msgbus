@@ -290,14 +290,14 @@ auto connection_update_work_unit::do_it() noexcept -> bool {
     return true;
 }
 //------------------------------------------------------------------------------
-// routed_node
+// adjacent_node
 //------------------------------------------------------------------------------
-routed_node::routed_node() noexcept {
+adjacent_node::adjacent_node() noexcept {
     _message_block_list.reserve(8);
     _message_allow_list.reserve(8);
 }
 //------------------------------------------------------------------------------
-auto routed_node::is_allowed(const message_id msg_id) const noexcept -> bool {
+auto adjacent_node::is_allowed(const message_id msg_id) const noexcept -> bool {
     if(is_special_message(msg_id)) {
         return true;
     }
@@ -311,14 +311,14 @@ auto routed_node::is_allowed(const message_id msg_id) const noexcept -> bool {
     return true;
 }
 //------------------------------------------------------------------------------
-void routed_node::setup(
+void adjacent_node::setup(
   unique_holder<connection> conn,
   bool maybe_router) noexcept {
     _connection = std::move(conn);
     _maybe_router = maybe_router;
 }
 //------------------------------------------------------------------------------
-void routed_node::enqueue_route_messages(
+void adjacent_node::enqueue_route_messages(
   workshop& workers,
   router& parent,
   identifier_t incoming_id,
@@ -337,7 +337,7 @@ void routed_node::enqueue_route_messages(
     }
 }
 //------------------------------------------------------------------------------
-void routed_node::enqueue_update_connection(
+void adjacent_node::enqueue_update_connection(
   workshop& workers,
   std::latch& completed,
   some_true_atomic& something_done) noexcept {
@@ -347,34 +347,34 @@ void routed_node::enqueue_update_connection(
     }
 }
 //------------------------------------------------------------------------------
-void routed_node::mark_not_a_router() noexcept {
+void adjacent_node::mark_not_a_router() noexcept {
     const std::unique_lock lk_list{*_lock};
     _maybe_router = false;
 }
 //------------------------------------------------------------------------------
-auto routed_node::do_update_connection() noexcept -> work_done {
+auto adjacent_node::do_update_connection() noexcept -> work_done {
     return _connection->update();
 }
 //------------------------------------------------------------------------------
-auto routed_node::update_connection() noexcept -> work_done {
+auto adjacent_node::update_connection() noexcept -> work_done {
     if(_connection) [[likely]] {
         return _connection->update();
     }
     return false;
 }
 //------------------------------------------------------------------------------
-void routed_node::handle_bye_bye() noexcept {
+void adjacent_node::handle_bye_bye() noexcept {
     const std::unique_lock lk_list{*_lock};
     if(not _maybe_router) {
         _do_disconnect = true;
     }
 }
 //------------------------------------------------------------------------------
-auto routed_node::should_disconnect() const noexcept -> bool {
+auto adjacent_node::should_disconnect() const noexcept -> bool {
     return not _connection or _do_disconnect;
 }
 //------------------------------------------------------------------------------
-void routed_node::cleanup_connection() noexcept {
+void adjacent_node::cleanup_connection() noexcept {
     if(_connection) [[likely]] {
         _connection->cleanup();
         _connection.reset();
@@ -382,14 +382,14 @@ void routed_node::cleanup_connection() noexcept {
     }
 }
 //------------------------------------------------------------------------------
-auto routed_node::kind_of_connection() const noexcept -> connection_kind {
+auto adjacent_node::kind_of_connection() const noexcept -> connection_kind {
     if(_connection) {
         return _connection->kind();
     }
     return connection_kind::unknown;
 }
 //------------------------------------------------------------------------------
-auto routed_node::query_statistics(connection_statistics& stats) const noexcept
+auto adjacent_node::query_statistics(connection_statistics& stats) const noexcept
   -> bool {
     if(_connection) {
         return _connection->query_statistics(stats);
@@ -397,7 +397,7 @@ auto routed_node::query_statistics(connection_statistics& stats) const noexcept
     return false;
 }
 //------------------------------------------------------------------------------
-auto routed_node::send(
+auto adjacent_node::send(
   const main_ctx_object& user,
   const message_id msg_id,
   const message_view& message) const noexcept -> bool {
@@ -413,7 +413,7 @@ auto routed_node::send(
     return true;
 }
 //------------------------------------------------------------------------------
-auto routed_node::route_messages(
+auto adjacent_node::route_messages(
   router& parent,
   const identifier_t incoming_id,
   const std::chrono::steady_clock::duration message_age_inc) noexcept
@@ -432,7 +432,7 @@ auto routed_node::route_messages(
     return false;
 }
 //------------------------------------------------------------------------------
-auto routed_node::try_route(
+auto adjacent_node::try_route(
   const main_ctx_object& user,
   const message_id msg_id,
   const message_view& message) const noexcept -> bool {
@@ -442,7 +442,7 @@ auto routed_node::try_route(
     return false;
 }
 //------------------------------------------------------------------------------
-auto routed_node::process_blobs(
+auto adjacent_node::process_blobs(
   const identifier_t node_id,
   router_blobs& blobs) noexcept -> work_done {
     some_true something_done;
@@ -462,22 +462,22 @@ auto routed_node::process_blobs(
     return something_done;
 }
 //------------------------------------------------------------------------------
-void routed_node::block_message(const message_id msg_id) noexcept {
+void adjacent_node::block_message(const message_id msg_id) noexcept {
     const std::unique_lock lk_list{*_lock};
     message_id_list_add(_message_block_list, msg_id);
 }
 //------------------------------------------------------------------------------
-void routed_node::allow_message(const message_id msg_id) noexcept {
+void adjacent_node::allow_message(const message_id msg_id) noexcept {
     const std::unique_lock lk_list{*_lock};
     message_id_list_add(_message_allow_list, msg_id);
 }
 //------------------------------------------------------------------------------
-void routed_node::clear_block_list() noexcept {
+void adjacent_node::clear_block_list() noexcept {
     const std::unique_lock lk_list{*_lock};
     _message_block_list.clear();
 }
 //------------------------------------------------------------------------------
-void routed_node::clear_allow_list() noexcept {
+void adjacent_node::clear_allow_list() noexcept {
     const std::unique_lock lk_list{*_lock};
     _message_allow_list.clear();
 }
@@ -613,7 +613,7 @@ auto router_nodes::has_id(const identifier_t id) noexcept -> bool {
 }
 //------------------------------------------------------------------------------
 auto router_nodes::find(const identifier_t id) noexcept
-  -> optional_reference<routed_node> {
+  -> optional_reference<adjacent_node> {
     return eagine::find(_nodes, id).ref();
 }
 //------------------------------------------------------------------------------
@@ -1268,14 +1268,14 @@ auto router::_handle_subscribed(
     return should_be_forwarded;
 }
 //------------------------------------------------------------------------------
-auto router::_handle_clear_block_list(routed_node& node) noexcept
+auto router::_handle_clear_block_list(adjacent_node& node) noexcept
   -> message_handling_result {
     log_info("clearing router block_list").tag("clrBlkList");
     node.clear_block_list();
     return was_handled;
 }
 //------------------------------------------------------------------------------
-auto router::_handle_clear_allow_list(routed_node& node) noexcept
+auto router::_handle_clear_allow_list(adjacent_node& node) noexcept
   -> message_handling_result {
     log_info("clearing router allow_list").tag("clrAlwList");
     node.clear_allow_list();
@@ -1291,7 +1291,7 @@ auto router::_handle_still_alive(
 //------------------------------------------------------------------------------
 auto router::_handle_not_not_a_router(
   const identifier_t incoming_id,
-  routed_node& node,
+  adjacent_node& node,
   const message_view& message) noexcept -> message_handling_result {
     if(incoming_id == message.source_id) {
         log_debug("node ${source} is not a router")
@@ -1321,7 +1321,7 @@ auto router::_handle_not_subscribed(
 //------------------------------------------------------------------------------
 auto router::_handle_msg_allow(
   const identifier_t incoming_id,
-  routed_node& node,
+  adjacent_node& node,
   const message_view& message) noexcept -> message_handling_result {
     message_id alw_msg_id{};
     if(default_deserialize_message_type(alw_msg_id, message.content())) {
@@ -1338,7 +1338,7 @@ auto router::_handle_msg_allow(
 //------------------------------------------------------------------------------
 auto router::_handle_msg_block(
   const identifier_t incoming_id,
-  routed_node& node,
+  adjacent_node& node,
   const message_view& message) noexcept -> message_handling_result {
     message_id blk_msg_id{};
     if(default_deserialize_message_type(blk_msg_id, message.content())) {
@@ -1529,7 +1529,7 @@ auto router::_handle_stats_query(const message_view& message) noexcept
 //------------------------------------------------------------------------------
 auto router::_handle_bye_bye(
   const message_id msg_id,
-  routed_node& node,
+  adjacent_node& node,
   const message_view& message) noexcept -> message_handling_result {
     log_debug("received bye-bye (${method}) from node ${source}")
       .arg("method", msg_id.method())
@@ -1650,7 +1650,7 @@ inline auto router::_handle_special(
 auto router::_do_handle_special(
   const message_id msg_id,
   const identifier_t incoming_id,
-  routed_node& node,
+  adjacent_node& node,
   const message_view& message) noexcept -> message_handling_result {
     log_debug("router handling special message ${message} from node")
       .arg("router", get_id())
@@ -1683,7 +1683,7 @@ auto router::_do_handle_special(
 inline auto router::_handle_special(
   const message_id msg_id,
   const identifier_t incoming_id,
-  routed_node& node,
+  adjacent_node& node,
   const message_view& message) noexcept -> message_handling_result {
     if(is_special_message(msg_id)) {
         return _do_handle_special(msg_id, incoming_id, node, message);
@@ -1702,7 +1702,7 @@ void router::_update_use_workers() noexcept {
 }
 //------------------------------------------------------------------------------
 auto router::_forward_to(
-  const routed_node& node_out,
+  const adjacent_node& node_out,
   const message_id msg_id,
   message_view& message) noexcept -> bool {
     _stats.log_stats(*this);
@@ -1825,7 +1825,7 @@ auto router::_handle_node_message(
   const message_id msg_id,
   const message_age msg_age,
   message_view message,
-  routed_node& node) noexcept -> bool {
+  adjacent_node& node) noexcept -> bool {
     _stats.update_avg_msg_age(message.add_age(msg_age).age() + message_age_inc);
 
     if(_handle_special(msg_id, incoming_id, node, message)) {

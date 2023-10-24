@@ -24,7 +24,7 @@ import :context;
 
 namespace eagine::msgbus {
 export class router;
-struct routed_node;
+struct adjacent_node;
 struct router_blobs;
 //------------------------------------------------------------------------------
 enum message_handling_result : bool {
@@ -109,7 +109,7 @@ public:
     route_node_messages_work_unit() noexcept = default;
     route_node_messages_work_unit(
       router& parent,
-      routed_node& node,
+      adjacent_node& node,
       identifier_t incoming_id,
       std::chrono::steady_clock::duration message_age_inc,
       std::latch& completed,
@@ -125,7 +125,7 @@ public:
 
 private:
     router* _parent{nullptr};
-    routed_node* _node{nullptr};
+    adjacent_node* _node{nullptr};
     some_true_atomic* _something_done{nullptr};
     identifier_t _incoming_id{};
     std::chrono::steady_clock::duration _message_age_inc{};
@@ -135,7 +135,7 @@ class connection_update_work_unit : public latched_work_unit {
 public:
     connection_update_work_unit() noexcept = default;
     connection_update_work_unit(
-      routed_node& node,
+      adjacent_node& node,
       std::latch& completed,
       some_true_atomic& something_done) noexcept
       : latched_work_unit{completed}
@@ -145,18 +145,18 @@ public:
     auto do_it() noexcept -> bool final;
 
 private:
-    routed_node* _node{nullptr};
+    adjacent_node* _node{nullptr};
     some_true_atomic* _something_done{nullptr};
 };
 //------------------------------------------------------------------------------
-class routed_node {
+class adjacent_node {
 public:
-    routed_node() noexcept;
-    routed_node(routed_node&&) noexcept = default;
-    routed_node(const routed_node&) = delete;
-    auto operator=(routed_node&&) noexcept -> routed_node& = default;
-    auto operator=(const routed_node&) -> routed_node& = delete;
-    ~routed_node() noexcept = default;
+    adjacent_node() noexcept;
+    adjacent_node(adjacent_node&&) noexcept = default;
+    adjacent_node(const adjacent_node&) = delete;
+    auto operator=(adjacent_node&&) noexcept -> adjacent_node& = default;
+    auto operator=(const adjacent_node&) -> adjacent_node& = delete;
+    ~adjacent_node() noexcept = default;
 
     void block_message(const message_id) noexcept;
     void allow_message(const message_id) noexcept;
@@ -265,7 +265,7 @@ public:
     auto count() noexcept -> std::size_t;
     auto has_id(const identifier_t id) noexcept -> bool;
     auto find(const identifier_t id) noexcept
-      -> optional_reference<routed_node>;
+      -> optional_reference<adjacent_node>;
     auto find_outgoing(const identifier_t target_id) -> valid_endpoint_id;
     auto has_some() noexcept -> bool;
     void add_acceptor(shared_holder<acceptor> an_acceptor) noexcept;
@@ -292,7 +292,7 @@ private:
 
     small_vector<shared_holder<acceptor>, 2> _acceptors;
     std::vector<router_pending> _pending;
-    flat_map<identifier_t, routed_node> _nodes;
+    flat_map<identifier_t, adjacent_node> _nodes;
     flat_map<identifier_t, identifier_t> _endpoint_idx;
     flat_map<identifier_t, router_endpoint_info> _endpoint_infos;
     flat_map<identifier_t, timeout> _recently_disconnected;
@@ -448,7 +448,7 @@ public:
 
 private:
     friend class parent_router;
-    friend class routed_node;
+    friend class adjacent_node;
     friend class router_pending;
     friend class router_nodes;
     friend class router_blobs;
@@ -477,27 +477,27 @@ private:
       const identifier_t incoming_id,
       const message_view&) noexcept -> message_handling_result;
 
-    auto _handle_clear_block_list(routed_node& node) noexcept
+    auto _handle_clear_block_list(adjacent_node& node) noexcept
       -> message_handling_result;
-    auto _handle_clear_allow_list(routed_node& node) noexcept
+    auto _handle_clear_allow_list(adjacent_node& node) noexcept
       -> message_handling_result;
     auto _handle_still_alive(
       const identifier_t incoming_id,
       const message_view&) noexcept -> message_handling_result;
     auto _handle_not_not_a_router(
       const identifier_t incoming_id,
-      routed_node& node,
+      adjacent_node& node,
       const message_view&) noexcept -> message_handling_result;
     auto _handle_not_subscribed(
       const identifier_t incoming_id,
       const message_view&) noexcept -> message_handling_result;
     auto _handle_msg_allow(
       const identifier_t incoming_id,
-      routed_node& node,
+      adjacent_node& node,
       const message_view&) noexcept -> message_handling_result;
     auto _handle_msg_block(
       const identifier_t incoming_id,
-      routed_node& node,
+      adjacent_node& node,
       const message_view&) noexcept -> message_handling_result;
 
     auto _handle_subscribers_query(const message_view&) noexcept
@@ -524,7 +524,7 @@ private:
 
     auto _handle_bye_bye(
       const message_id,
-      routed_node& node,
+      adjacent_node& node,
       const message_view&) noexcept -> message_handling_result;
 
     auto _handle_blob_fragment(const message_view&) noexcept
@@ -545,7 +545,7 @@ private:
     auto _do_handle_special(
       const message_id msg_id,
       const identifier_t incoming_id,
-      routed_node&,
+      adjacent_node&,
       const message_view&) noexcept -> message_handling_result;
 
     auto _handle_special(
@@ -556,7 +556,7 @@ private:
     auto _handle_special(
       const message_id msg_id,
       const identifier_t incoming_id,
-      routed_node&,
+      adjacent_node&,
       const message_view&) noexcept -> message_handling_result;
 
     auto _use_workers() const noexcept -> bool {
@@ -565,7 +565,7 @@ private:
     void _update_use_workers() noexcept;
 
     auto _forward_to(
-      const routed_node& node_out,
+      const adjacent_node& node_out,
       const message_id msg_id,
       message_view& message) noexcept -> bool;
     auto _route_targeted_message(
@@ -592,7 +592,7 @@ private:
       const message_id msg_id,
       const message_age msg_age,
       message_view message,
-      routed_node&) noexcept -> bool;
+      adjacent_node&) noexcept -> bool;
 
     auto _handle_special_parent_message(
       const message_id msg_id,
