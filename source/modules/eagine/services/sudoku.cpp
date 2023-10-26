@@ -898,11 +898,16 @@ public:
     }
 
     /// @brief Logs the contributions of the helpers to the solution.
+    auto log_contribution_histogram(const unsigned s) noexcept -> auto& {
+        _impl->log_contribution_histogram(s);
+        return *this;
+    }
+
+    /// @brief Logs the contributions of the helpers to the solution.
     template <unsigned S>
     auto log_contribution_histogram(const unsigned_constant<S>) noexcept
       -> auto& {
-        _impl->log_contribution_histogram(S);
-        return *this;
+        return log_contribution_histogram(S);
     }
 
 protected:

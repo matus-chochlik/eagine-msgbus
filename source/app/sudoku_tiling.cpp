@@ -148,29 +148,10 @@ auto main(main_ctx& ctx) -> int {
 
     int idle_streak = 0;
 
-    const auto try_enqueue{[&](auto r) {
-        if(rank == r and tiling_generator.solution_timeouted(r)) [[unlikely]] {
-            enqueue(default_sudoku_board_traits<3>());
+    const auto try_enqueue{[&]<unsigned R>(unsigned_constant<R> r) {
+        if(rank == R and tiling_generator.solution_timeouted(r)) [[unlikely]] {
+            enqueue(default_sudoku_board_traits<R>());
             tiling_generator.reset_solution_timeout(r);
-        }
-    }};
-
-    const auto log_contribution_histogram{[&] {
-        const auto do_log{[&](auto r) {
-            tiling_generator.log_contribution_histogram(r);
-        }};
-        switch(rank) {
-            case 3:;
-                do_log(unsigned_constant<3>{});
-                break;
-            case 4:
-                do_log(unsigned_constant<4>{});
-                break;
-            case 5:
-                do_log(unsigned_constant<5>{});
-                break;
-            default:
-                break;
         }
     }};
 
@@ -199,7 +180,7 @@ auto main(main_ctx& ctx) -> int {
         }
 
         if(log_contribution_timeout) {
-            log_contribution_histogram();
+            tiling_generator.log_contribution_histogram(rank);
         }
 
         wd.notify_alive();
@@ -207,7 +188,7 @@ auto main(main_ctx& ctx) -> int {
     tiling_generator.log_finish();
     wd.announce_shutdown();
 
-    log_contribution_histogram();
+    tiling_generator.log_contribution_histogram(rank);
 
     return 0;
 }
