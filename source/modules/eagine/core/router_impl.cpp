@@ -12,6 +12,7 @@ module;
 module eagine.msgbus.core;
 
 import std;
+import eagine.core.build_config;
 import eagine.core.types;
 import eagine.core.memory;
 import eagine.core.identifier;
@@ -887,14 +888,19 @@ void router_stats::message_dropped() noexcept {
     ++_stats.dropped_messages;
 }
 //------------------------------------------------------------------------------
+constexpr auto router_log_stat_msg_count() noexcept {
+    return debug_build ? 100'000 : 1'000'000;
+}
+//------------------------------------------------------------------------------
 void router_stats::log_stats(const main_ctx_object& user) noexcept {
-    if(++_stats.forwarded_messages % 1'000'000 == 0) {
+    if(++_stats.forwarded_messages % router_log_stat_msg_count() == 0) {
         const auto now{std::chrono::steady_clock::now()};
         const std::chrono::duration<float> interval{now - _forwarded_since_log};
         _forwarded_since_log = now;
 
         if(interval > interval.zero()) [[likely]] {
-            const auto msgs_per_sec{1'000'000.F / interval.count()};
+            const auto msgs_per_sec{
+              float(router_log_stat_msg_count()) / interval.count()};
 
             user.log_chart_sample("msgsPerSec", msgs_per_sec);
             user.log_stat("forwarded ${count} messages (${msgsPerSec})")

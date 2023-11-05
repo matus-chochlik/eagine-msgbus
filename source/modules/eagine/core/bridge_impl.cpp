@@ -12,6 +12,7 @@ module;
 module eagine.msgbus.core;
 
 import std;
+import eagine.core.build_config;
 import eagine.core.types;
 import eagine.core.memory;
 import eagine.core.string;
@@ -432,12 +433,16 @@ auto bridge::_avg_msg_age_i2c() const noexcept -> std::chrono::microseconds {
       (_forwarded_messages_i2c + _dropped_messages_i2c + 1));
 }
 //------------------------------------------------------------------------------
+constexpr auto bridge_log_stat_msg_count() noexcept {
+    return debug_build ? 100'000 : 1'000'000;
+}
+//------------------------------------------------------------------------------
 auto bridge::_should_log_bridge_stats_c2o() noexcept -> bool {
-    return ++_forwarded_messages_c2o % 1'000'000 == 0;
+    return ++_forwarded_messages_c2o % bridge_log_stat_msg_count() == 0;
 }
 //------------------------------------------------------------------------------
 auto bridge::_should_log_bridge_stats_i2c() noexcept -> bool {
-    return ++_forwarded_messages_i2c % 1'000'000 == 0;
+    return ++_forwarded_messages_i2c % bridge_log_stat_msg_count() == 0;
 }
 //------------------------------------------------------------------------------
 void bridge::_log_bridge_stats_c2o() noexcept {
@@ -445,7 +450,8 @@ void bridge::_log_bridge_stats_c2o() noexcept {
     const std::chrono::duration<float> interval{now - _forwarded_since_c2o};
 
     if(interval > decltype(interval)::zero()) [[likely]] {
-        const auto msgs_per_sec{1'000'000.F / interval.count()};
+        const auto msgs_per_sec{
+          float(bridge_log_stat_msg_count()) / interval.count()};
 
         log_chart_sample("msgPerSecO", msgs_per_sec);
         log_stat("forwarded ${count} messages to output (${msgsPerSec})")
@@ -465,7 +471,8 @@ void bridge::_log_bridge_stats_i2c() noexcept {
     const std::chrono::duration<float> interval{now - _forwarded_since_i2c};
 
     if(interval > decltype(interval)::zero()) [[likely]] {
-        const auto msgs_per_sec{1'000'000.F / interval.count()};
+        const auto msgs_per_sec{
+          float(bridge_log_stat_msg_count()) / interval.count()};
 
         _stats.message_age_milliseconds =
           std::chrono::duration_cast<std::chrono::milliseconds>(
