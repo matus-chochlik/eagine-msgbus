@@ -209,16 +209,61 @@ auto router_app::step(msgbus::router_node& node) -> work_done {
     return something_done;
 }
 //------------------------------------------------------------------------------
+struct router_run_stats {
+    std::uintmax_t cycles_work{0};
+    std::uintmax_t cycles_idle{0};
+    resetting_timeout should_log{std::chrono::minutes{debug_build ? 5 : 15}};
+
+    auto work_rate() const noexcept {
+        return float(cycles_work) / (float(cycles_idle) + float(cycles_work));
+    }
+
+    auto reset() noexcept {
+        cycles_work = 0;
+        cycles_idle = 0;
+    }
+
+    auto log_stats(const logger& log) noexcept;
+
+    auto update(const logger& log, work_done something_done) noexcept;
+};
+//------------------------------------------------------------------------------
+auto router_run_stats::log_stats(const logger& log) noexcept {
+    log.stat("message bus router work rate: ${workRate}")
+      .tag("rutrWrkRte")
+      .arg("working", cycles_work)
+      .arg("idling", cycles_idle)
+      .arg("workRate", "Ratio", work_rate());
+}
+//------------------------------------------------------------------------------
+auto router_run_stats::update(
+  const logger& log,
+  work_done something_done) noexcept {
+    if(something_done) {
+        ++cycles_work;
+    } else {
+        ++cycles_idle;
+    }
+
+    if(should_log) [[unlikely]] {
+        log_stats(log);
+        reset();
+    }
+}
+//------------------------------------------------------------------------------
 void router_app::run() {
     signal_switch interrupted;
     msgbus::router_node node{node_endpoint};
 
+    auto& log = ctx.log();
     auto& wd = ctx.watchdog();
     wd.declare_initialized();
     node.log_start();
 
+    router_run_stats run_stats;
+
     while(not(interrupted or node.is_shut_down())) [[likely]] {
-        step(node);
+        run_stats.update(log, step(node));
         wd.notify_alive();
     }
     node.log_finish();
