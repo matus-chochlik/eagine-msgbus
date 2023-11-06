@@ -1,7 +1,8 @@
-msgbus@service:
+msgbus:
   asio_local_stream: true
   router:
-    address: /var/run/eagine/msgbus-service.socket 
+    address:
+      - /var/run/eagine/msgbus-service.socket
   sudoku:
     helper@debug:
       count: 4
@@ -9,3 +10,4 @@ msgbus@service:
     helper:
       count: 8
       max_recursion: 2
+
