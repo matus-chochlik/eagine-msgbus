@@ -14,10 +14,12 @@ src_dir = os.path.realpath("@SRC_DIR@")
 bin_dir = os.path.realpath("@BIN_DIR@")
 pkg_dir = os.path.realpath("@PKG_DIR@")
 deb_dir  = os.path.join(pkg_dir, "DEBIAN")
+syd_prefix = os.path.join(pkg_dir, "etc", "systemd", "system")
+cfg_prefix = os.path.join(pkg_dir, "var", "lib", "eagine", ".config")
 pkg_prefix = os.path.join(pkg_dir, "usr")
 bin_prefix = os.path.join(pkg_prefix, "bin")
 
-for path in [bin_prefix, deb_dir]:
+for path in [syd_prefix, bin_prefix, deb_dir]:
     if not os.path.exists(path):
         os.makedirs(path)
 # ------------------------------------------------------------------------------
@@ -41,6 +43,15 @@ for filename in [
     shutil.copy(
         os.path.join(src_dir, "deploy", "dpkg", "apps", "procman", filename), 
         os.path.join(bin_prefix, "eagiproc-" + filename))
+
+for unit in os.listdir(os.path.join(src_dir, "deploy", "dpkg", "apps", "systemd")):
+    shutil.copy(
+        os.path.join(src_dir, "deploy", "dpkg", "apps", "systemd", unit),
+        syd_prefix)
+
+shutil.copytree(
+    os.path.join(src_dir, "deploy", "dpkg", "apps", "_config"),
+    cfg_prefix)
 # ------------------------------------------------------------------------------
 def dir_file_size(path):
     total_size = 0
@@ -57,7 +68,7 @@ Package: eagine-msgbus-apps
 Version: %s
 Architecture: %s
 Installed-Size: %d
-Depends: eagine-core-tools
+Depends: eagine-core-tools,eagine-core-user
 Maintainer: Matus Chochlik <matus.chochlik@proton.me>
 Description: Collection of EAGine msgbus applications.
 """ % (
