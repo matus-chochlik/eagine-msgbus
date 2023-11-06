@@ -3,6 +3,8 @@ msgbus:
   router:
     address:
       - /var/run/eagine/msgbus-service.socket
+    id_major: 1000
+    id_count: 100
   sudoku:
     helper@debug:
       count: 4

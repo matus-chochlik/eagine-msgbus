@@ -1,0 +1,5 @@
+msgbus:
+  asio_local_stream: true
+  router:
+    address:
+      - /var/run/eagine/msgbus-service.socket
