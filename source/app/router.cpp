@@ -191,24 +191,6 @@ router_app::~router_app() noexcept {
       .arg("maxIdlStrk", stats.max_idle_streak);
 }
 //------------------------------------------------------------------------------
-auto router_app::step(msgbus::router_node& node) -> work_done {
-    some_true something_done{};
-    something_done(router.update(8));
-    something_done(node.update());
-
-    if(something_done) {
-        ++stats.cycles_work;
-        stats.idle_streak = 0;
-    } else {
-        ++stats.cycles_idle;
-        stats.max_idle_streak =
-          math::maximum(stats.max_idle_streak, ++stats.idle_streak);
-        std::this_thread::sleep_for(
-          std::chrono::microseconds(math::minimum(stats.idle_streak, 8000)));
-    }
-    return something_done;
-}
-//------------------------------------------------------------------------------
 struct router_run_stats {
     std::uintmax_t cycles_work{0};
     std::uintmax_t cycles_idle{0};
@@ -249,6 +231,24 @@ auto router_run_stats::update(
         log_stats(log);
         reset();
     }
+}
+//------------------------------------------------------------------------------
+auto router_app::step(msgbus::router_node& node) -> work_done {
+    some_true something_done{};
+    something_done(router.update(8));
+    something_done(node.update());
+
+    if(something_done) {
+        ++stats.cycles_work;
+        stats.idle_streak = 0;
+    } else {
+        ++stats.cycles_idle;
+        stats.max_idle_streak =
+          math::maximum(stats.max_idle_streak, ++stats.idle_streak);
+        std::this_thread::sleep_for(
+          std::chrono::microseconds(math::minimum(stats.idle_streak, 5000)));
+    }
+    return something_done;
 }
 //------------------------------------------------------------------------------
 void router_app::run() {
