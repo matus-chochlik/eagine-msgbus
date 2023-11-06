@@ -303,6 +303,7 @@ eagine_add_module(
 		context
 		blobs
 		connection_setup
+		router_address
 		posix_mqueue
 		asio
 		endpoint
