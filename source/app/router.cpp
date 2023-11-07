@@ -256,18 +256,16 @@ void router_app::run() {
     msgbus::router_node node{node_endpoint};
 
     auto& log = ctx.log();
-    auto& wd = ctx.watchdog();
-    wd.declare_initialized();
+    auto alive{ctx.watchdog().start_watch()};
     node.log_start();
 
     router_run_stats run_stats;
 
     while(not(interrupted or node.is_shut_down())) [[likely]] {
         run_stats.update(log, step(node));
-        wd.notify_alive();
+        alive.notify();
     }
     node.log_finish();
-    wd.announce_shutdown();
 }
 //------------------------------------------------------------------------------
 } // namespace msgbus
