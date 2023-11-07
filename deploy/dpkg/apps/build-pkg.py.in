@@ -19,7 +19,7 @@ cfg_prefix = os.path.join(pkg_dir, "var", "lib", "eagine", ".config")
 pkg_prefix = os.path.join(pkg_dir, "usr")
 bin_prefix = os.path.join(pkg_prefix, "bin")
 
-for path in [syd_prefix, bin_prefix, deb_dir]:
+for path in [cfg_prefix, syd_prefix, bin_prefix, deb_dir]:
     if not os.path.exists(path):
         os.makedirs(path)
 # ------------------------------------------------------------------------------
@@ -51,7 +51,8 @@ for unit in os.listdir(os.path.join(src_dir, "deploy", "dpkg", "apps", "systemd"
 
 shutil.copytree(
     os.path.join(src_dir, "deploy", "dpkg", "apps", "_config"),
-    cfg_prefix)
+    cfg_prefix,
+    dirs_exist_ok=True)
 # ------------------------------------------------------------------------------
 def dir_file_size(path):
     total_size = 0
