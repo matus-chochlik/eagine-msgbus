@@ -6,6 +6,5 @@
 install(
 	FILES
 		service-msgbus.txt
-		service.yaml
 	DESTINATION etc/eagine
 )

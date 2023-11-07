@@ -219,9 +219,8 @@ void serialized_message_storage::cleanup(
         ++i;
         to_be_removed >>= 1U;
     }
-    std::erase_if(_messages, [](auto& entry) mutable {
-        return std::get<0>(entry).empty();
-    });
+    std::erase_if(
+      _messages, [](const auto& entry) { return std::get<0>(entry).empty(); });
 }
 //------------------------------------------------------------------------------
 void serialized_message_storage::log_stats(main_ctx_object& user) {
