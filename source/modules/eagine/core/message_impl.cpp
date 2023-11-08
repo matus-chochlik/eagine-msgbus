@@ -5,6 +5,10 @@
 /// See accompanying file LICENSE_1_0.txt or copy at
 ///  http://www.boost.org/LICENSE_1_0.txt
 ///
+module;
+
+#include <cassert>
+
 module eagine.msgbus.core;
 
 import std;
@@ -19,6 +23,35 @@ import eagine.core.main_ctx;
 import eagine.core.c_api;
 
 namespace eagine::msgbus {
+//------------------------------------------------------------------------------
+// message_info
+//------------------------------------------------------------------------------
+auto message_info::too_old() const noexcept -> bool {
+    switch(priority) {
+        case message_priority::idle:
+            return age_quarter_seconds > 10 * 4;
+        case message_priority::low:
+            return age_quarter_seconds > 20 * 4;
+        [[likely]] case message_priority::normal:
+            return age_quarter_seconds > 30 * 4;
+        case message_priority::high:
+            return age_quarter_seconds == std::numeric_limits<age_t>::max();
+        case message_priority::critical:
+            break;
+    }
+    return false;
+}
+//------------------------------------------------------------------------------
+auto message_info::add_age(const message_age age) noexcept -> message_info& {
+    const auto added_quarter_seconds = (age.count() + 20) / 25;
+    if(const auto new_age{convert_if_fits<age_t>(
+         int(age_quarter_seconds) + int(added_quarter_seconds))}) [[likely]] {
+        age_quarter_seconds = *new_age;
+    } else {
+        age_quarter_seconds = std::numeric_limits<age_t>::max();
+    }
+    return *this;
+}
 //------------------------------------------------------------------------------
 // stored message
 //------------------------------------------------------------------------------
@@ -141,8 +174,9 @@ auto serialized_message_storage::fetch_all(const fetch_handler handler) noexcept
     if(clear_all) [[likely]] {
         _messages.clear();
     } else {
-        std::erase_if(
-          _messages, [](auto& entry) { return std::get<0>(entry).empty(); });
+        std::erase_if(_messages, [](const auto& entry) {
+            return std::get<0>(entry).empty();
+        });
     }
     return fetched_some;
 }
@@ -185,6 +219,15 @@ private:
     memory::block _blk;
     message_pack_info _info;
 };
+//------------------------------------------------------------------------------
+void serialized_message_storage::push(
+  const memory::const_block message,
+  const message_priority priority) noexcept {
+    assert(not message.empty());
+    auto buf = _buffers.get(message.size());
+    memory::copy_into(message, buf);
+    _messages.emplace_back(std::move(buf), _clock_t::now(), priority);
+}
 //------------------------------------------------------------------------------
 auto serialized_message_storage::pack_into(memory::block dest) noexcept
   -> message_pack_info {

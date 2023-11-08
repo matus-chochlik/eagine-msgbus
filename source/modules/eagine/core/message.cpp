@@ -202,36 +202,12 @@ export struct message_info {
     /// @brief Indicates that the message is too old.
     /// @see age
     /// @see add_age
-    [[nodiscard]] auto too_old() const noexcept -> bool {
-        switch(priority) {
-            case message_priority::idle:
-                return age_quarter_seconds > 10 * 4;
-            case message_priority::low:
-                return age_quarter_seconds > 20 * 4;
-            [[likely]] case message_priority::normal:
-                return age_quarter_seconds > 30 * 4;
-            case message_priority::high:
-                return age_quarter_seconds == std::numeric_limits<age_t>::max();
-            case message_priority::critical:
-                break;
-        }
-        return false;
-    }
+    [[nodiscard]] auto too_old() const noexcept -> bool;
 
     /// @brief Adds to the age seconds counter.
     /// @see age
     /// @see too_old
-    auto add_age(const message_age age) noexcept -> auto& {
-        const auto added_quarter_seconds = (age.count() + 20) / 25;
-        if(const auto new_age{convert_if_fits<age_t>(
-             int(age_quarter_seconds) + int(added_quarter_seconds))})
-          [[likely]] {
-            age_quarter_seconds = *new_age;
-        } else {
-            age_quarter_seconds = std::numeric_limits<age_t>::max();
-        }
-        return *this;
-    }
+    auto add_age(const message_age age) noexcept -> message_info&;
 
     /// @brief Returns the message age
     /// @see too_old
@@ -984,27 +960,9 @@ public:
         return span_size(_messages.size());
     }
 
-    [[nodiscard]] auto top() const noexcept -> memory::const_block {
-        if(not _messages.empty()) {
-            return view(std::get<0>(_messages.front()));
-        }
-        return {};
-    }
-
-    void pop() noexcept {
-        assert(not _messages.empty());
-        _buffers.eat(std::move(std::get<0>(_messages.front())));
-        _messages.erase(_messages.begin());
-    }
-
     void push(
       const memory::const_block message,
-      const message_priority priority) noexcept {
-        assert(not message.empty());
-        auto buf = _buffers.get(message.size());
-        memory::copy_into(message, buf);
-        _messages.emplace_back(std::move(buf), _clock_t::now(), priority);
-    }
+      const message_priority priority) noexcept;
 
     auto fetch_all(const fetch_handler handler) noexcept -> bool;
 
@@ -1202,7 +1160,6 @@ public:
     }
 
     void push(const memory::const_block data) noexcept {
-        assert(not data.empty());
         _packed.push(data, message_priority::normal);
     }
 
