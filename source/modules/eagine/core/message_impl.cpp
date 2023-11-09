@@ -131,8 +131,9 @@ auto message_storage::fetch_all(const fetch_handler handler) noexcept -> bool {
     if(clear_all) {
         _messages.clear();
     } else {
-        std::erase_if(
-          _messages, [](auto& t) { return std::get<1>(t).too_many_hops(); });
+        std::erase_if(_messages, [](const auto& t) {
+            return std::get<1>(t).too_many_hops();
+        });
     }
     return fetched_some;
 }
@@ -235,7 +236,7 @@ auto serialized_message_storage::pack_into(memory::block dest) noexcept
 
     for(const auto& [message, timestamp, priority] : _messages) {
         (void)(timestamp);
-        if(packing.is_full()) [[unlikely]] {
+        if(packing.is_full()) {
             break;
         }
         if(const auto packed{
@@ -251,19 +252,22 @@ auto serialized_message_storage::pack_into(memory::block dest) noexcept
 //------------------------------------------------------------------------------
 void serialized_message_storage::cleanup(
   const message_pack_info& packed) noexcept {
-    auto to_be_removed = packed.bits();
-    span_size_t i = 0;
+    auto to_be_removed{packed.bits()};
 
-    // don't try to "optimize" this into the remove_if predicate
-    while(to_be_removed) {
-        if((to_be_removed & 1U) == 1U) {
-            _buffers.eat(std::move(std::get<0>(_messages[i])));
+    if(to_be_removed) {
+        span_size_t i = 0;
+        // don't try to "optimize" this into the erase_if predicate
+        while(to_be_removed) {
+            if((to_be_removed & 1U) == 1U) {
+                _buffers.eat(std::move(std::get<0>(_messages[i])));
+            }
+            ++i;
+            to_be_removed >>= 1U;
         }
-        ++i;
-        to_be_removed >>= 1U;
+        std::erase_if(_messages, [](const auto& entry) {
+            return std::get<0>(entry).empty();
+        });
     }
-    std::erase_if(
-      _messages, [](const auto& entry) { return std::get<0>(entry).empty(); });
 }
 //------------------------------------------------------------------------------
 void serialized_message_storage::log_stats(main_ctx_object& user) {
@@ -296,8 +300,9 @@ auto message_priority_queue::process_all(
     if(clear_all) {
         _messages.clear();
     } else {
-        result = std::erase_if(
-          _messages, [](auto& message) { return message.too_many_hops(); });
+        result = std::erase_if(_messages, [](const auto& message) {
+            return message.too_many_hops();
+        });
     }
     return span_size(result);
 }
