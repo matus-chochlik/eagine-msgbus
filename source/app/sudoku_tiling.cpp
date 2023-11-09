@@ -143,8 +143,7 @@ auto main(main_ctx& ctx) -> int {
         return not(interrupted or tiling_generator.tiling_complete());
     }};
 
-    auto& wd = ctx.watchdog();
-    wd.declare_initialized();
+    auto alive{ctx.watchdog().start_watch()};
 
     int idle_streak = 0;
 
@@ -183,11 +182,9 @@ auto main(main_ctx& ctx) -> int {
             tiling_generator.log_contribution_histogram(rank);
         }
 
-        wd.notify_alive();
+        alive.notify();
     }
     tiling_generator.log_finish();
-    wd.announce_shutdown();
-
     tiling_generator.log_contribution_histogram(rank);
 
     return 0;

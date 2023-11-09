@@ -25,8 +25,7 @@ auto main(main_ctx& ctx) -> int {
     msgbus::resource_data_server_node the_file_server{bus};
     conn_setup.setup_connectors(the_file_server, address);
 
-    auto& wd = ctx.watchdog();
-    wd.declare_initialized();
+    auto alive{ctx.watchdog().start_watch()};
 
     while(not(the_file_server.is_done() or interrupted)) {
         if(the_file_server.update_message_age().update_and_process_all()) {
@@ -34,9 +33,8 @@ auto main(main_ctx& ctx) -> int {
         } else {
             std::this_thread::sleep_for(std::chrono::milliseconds(10));
         }
-        wd.notify_alive();
+        alive.notify();
     }
-    wd.announce_shutdown();
 
     return 0;
 }
