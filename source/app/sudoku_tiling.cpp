@@ -110,9 +110,9 @@ void sudoku_tiling_node::_handle_board_timeout(
 }
 //------------------------------------------------------------------------------
 } // namespace msgbus
-
+//------------------------------------------------------------------------------
 auto main(main_ctx& ctx) -> int {
-    const signal_switch interrupted;
+    signal_switch interrupted;
     msgbus::sudoku_tiling_node::active_state(ctx.log());
 
     enable_message_bus(ctx);
@@ -198,7 +198,7 @@ auto main(main_ctx& ctx) -> int {
 
     return 0;
 }
-
+//------------------------------------------------------------------------------
 } // namespace eagine
 //------------------------------------------------------------------------------
 auto main(int argc, const char** argv) -> int {
@@ -206,3 +206,4 @@ auto main(int argc, const char** argv) -> int {
     options.app_id = "SudokuTlng";
     return eagine::main_impl(argc, argv, options, &eagine::main);
 }
+//------------------------------------------------------------------------------
