@@ -13,6 +13,8 @@ import std;
 namespace eagine {
 namespace msgbus {
 //------------------------------------------------------------------------------
+// helper node
+//------------------------------------------------------------------------------
 using sudoku_helper_base = service_composition<require_services<
   subscriber,
   shutdown_target,
@@ -24,16 +26,7 @@ class sudoku_helper_node
   : public main_ctx_object
   , public sudoku_helper_base {
 public:
-    sudoku_helper_node(endpoint& bus)
-      : main_ctx_object{"SudokuNode", bus}
-      , sudoku_helper_base{bus} {
-        shutdown_requested.connect(
-          make_callable_ref<&sudoku_helper_node::on_shutdown>(this));
-
-        auto& info = provided_endpoint_info();
-        info.display_name = "sudoku helper";
-        info.description = "helper node for the sudoku solver service";
-    }
+    sudoku_helper_node(endpoint& bus);
 
     auto is_shut_down() const noexcept -> bool {
         return _do_shutdown;
@@ -42,17 +35,34 @@ public:
 private:
     void on_shutdown(
       const result_context&,
-      const shutdown_request& req) noexcept {
-        log_info("received shutdown request from ${source}")
-          .arg("age", req.age)
-          .arg("source", req.source_id)
-          .arg("verified", req.verified);
-
-        _do_shutdown = true;
-    }
+      const shutdown_request& req) noexcept;
 
     bool _do_shutdown{false};
 };
+//------------------------------------------------------------------------------
+sudoku_helper_node::sudoku_helper_node(endpoint& bus)
+  : main_ctx_object{"SudokuNode", bus}
+  , sudoku_helper_base{bus} {
+    shutdown_requested.connect(
+      make_callable_ref<&sudoku_helper_node::on_shutdown>(this));
+
+    auto& info = provided_endpoint_info();
+    info.display_name = "sudoku helper";
+    info.description = "helper node for the sudoku solver service";
+}
+//------------------------------------------------------------------------------
+void sudoku_helper_node::on_shutdown(
+  const result_context&,
+  const shutdown_request& req) noexcept {
+    log_info("received shutdown request from ${source}")
+      .arg("age", req.age)
+      .arg("source", req.source_id)
+      .arg("verified", req.verified);
+
+    _do_shutdown = true;
+}
+//------------------------------------------------------------------------------
+// helpers manager
 //------------------------------------------------------------------------------
 class sudoku_helpers : public main_ctx_object {
 public:
@@ -63,6 +73,8 @@ public:
     auto update() -> work_done;
 
 private:
+    auto _make_node() -> auto&;
+    void _wait_until_workers_ready() noexcept;
     void _helper_main() noexcept;
 
     signal_switch _interrupted;
@@ -80,8 +92,7 @@ private:
       "msgbus.sudoku.helper.count",
       main_context().system().cpu_concurrent_threads().value_or(4)};
 
-    std::atomic<span_size_t> _starting{_helper_count + 1};
-    std::atomic<span_size_t> _running{_helper_count + 1};
+    span_size_t _starting{_helper_count};
 
     std::mutex _helper_mutex;
     std::condition_variable _helper_cond;
@@ -93,25 +104,10 @@ sudoku_helpers::sudoku_helpers(main_ctx_parent parent)
     _helpers.reserve(_helper_count);
 
     for(span_size_t i = 0; i < _helper_count; ++i) {
-        _helpers.emplace_back([this]() {
-            _helper_main();
-            std::unique_lock finish_lock{_helper_mutex};
-            _starting--;
-            _helper_cond.notify_one();
-        });
+        _helpers.emplace_back([this]() { _helper_main(); });
     }
 
-    if(std::unique_lock latch_lock{_helper_mutex}) {
-        while(_starting > 1) {
-            _helper_cond.wait(latch_lock);
-        }
-    }
-
-    std::unique_lock init_lock{_helper_mutex};
-    _registry.update_self();
-    _starting--;
-    _helper_cond.notify_all();
-    init_lock.unlock();
+    _wait_until_workers_ready();
 }
 //------------------------------------------------------------------------------
 sudoku_helpers::~sudoku_helpers() noexcept {
@@ -131,23 +127,29 @@ auto sudoku_helpers::update() -> work_done {
     return _registry.update_self();
 }
 //------------------------------------------------------------------------------
-void sudoku_helpers::_helper_main() noexcept {
-    std::unique_lock init_lock{_helper_mutex};
-    auto& helper_node =
-      _registry.emplace<msgbus::sudoku_helper_node>("SdkHlpEndp");
+auto sudoku_helpers::_make_node() -> auto& {
+    const std::lock_guard init_lock{_helper_mutex};
+    auto& node = _registry.emplace<msgbus::sudoku_helper_node>("SdkHlpEndp");
     _starting--;
     _helper_cond.notify_all();
-    init_lock.unlock();
-
+    return node;
+}
+//------------------------------------------------------------------------------
+void sudoku_helpers::_wait_until_workers_ready() noexcept {
     if(std::unique_lock latch_lock{_helper_mutex}) {
         while(_starting > 0) {
             _helper_cond.wait(latch_lock);
         }
     }
+}
+//------------------------------------------------------------------------------
+void sudoku_helpers::_helper_main() noexcept {
+    auto& helper_node = _make_node();
+    _wait_until_workers_ready();
 
     int idle_streak = 0;
 
-    auto keep_running{[&, this]() {
+    const auto keep_running{[&, this]() {
         if(idle_streak > 5) {
             std::unique_lock check_lock{_helper_mutex};
             if(_interrupted) {
