@@ -20,6 +20,7 @@ import eagine.core.container;
 import eagine.core.identifier;
 import eagine.core.serialization;
 import eagine.core.valid_if;
+import eagine.core.main_ctx;
 
 namespace eagine::msgbus {
 //------------------------------------------------------------------------------
@@ -341,6 +342,11 @@ auto pending_blob::total_size_mismatch(const span_size_t size) const noexcept
     return (info.total_size != 0) and (info.total_size != size);
 }
 //------------------------------------------------------------------------------
+auto pending_blob::prepare() const noexcept -> bool {
+    assert(source_io);
+    return source_io->prepare();
+}
+//------------------------------------------------------------------------------
 auto pending_blob::sent_everything() const noexcept -> bool {
     if(not todo_parts().empty()) {
         assert(source_io);
@@ -357,6 +363,29 @@ auto pending_blob::received_everything() const noexcept -> bool {
                (end >= info.total_size);
     }
     return (info.total_size != 0) and done.empty();
+}
+//------------------------------------------------------------------------------
+auto pending_blob::fetch(const span_size_t offs, memory::block dst) noexcept {
+    assert(source_io);
+    return source_io->fetch_fragment(offs, dst);
+}
+//------------------------------------------------------------------------------
+auto pending_blob::store(
+  const span_size_t offs,
+  const memory::const_block src) noexcept {
+    assert(target_io);
+    return target_io->store_fragment(offs, src, info);
+}
+//------------------------------------------------------------------------------
+auto pending_blob::check(
+  const span_size_t offs,
+  const memory::const_block blk) noexcept {
+    assert(target_io);
+    return target_io->check_stored(offs, blk);
+}
+//------------------------------------------------------------------------------
+auto pending_blob::age() const noexcept -> message_age {
+    return std::chrono::duration_cast<message_age>(max_time.elapsed_time());
 }
 //------------------------------------------------------------------------------
 auto pending_blob::merge_fragment(
@@ -478,6 +507,14 @@ void pending_blob::merge_resend_request(
 }
 //------------------------------------------------------------------------------
 // blob manipulator
+//------------------------------------------------------------------------------
+blob_manipulator::blob_manipulator(
+  main_ctx_parent parent,
+  message_id fragment_msg_id,
+  message_id resend_msg_id) noexcept
+  : main_ctx_object{"BlobManipl", parent}
+  , _fragment_msg_id{std::move(fragment_msg_id)}
+  , _resend_msg_id{std::move(resend_msg_id)} {}
 //------------------------------------------------------------------------------
 auto blob_manipulator::update(
   const blob_manipulator::send_handler do_send,
@@ -921,18 +958,20 @@ auto blob_manipulator::process_outgoing(
     max_messages = std::min(max_messages, span_size(_outgoing.size()));
     while(max_messages-- > 0) {
         auto& pending = _outgoing[_outgoing_index++ % _outgoing.size()];
-        if(not pending.sent_everything()) {
+        if(pending.prepare()) {
+            pending.linger_time.reset();
+        } else if(not pending.sent_everything()) {
             auto& [bgn, end] = pending.todo_parts().back();
             assert(end != 0);
 
-            const auto header = std::make_tuple(
+            const auto header{std::make_tuple(
               pending.msg_id.class_(),
               pending.msg_id.method(),
               pending.source_blob_id,
               pending.target_blob_id,
               limit_cast<std::int64_t>(bgn),
               limit_cast<std::int64_t>(pending.info.total_size),
-              static_cast<blob_options_t>(pending.info.options));
+              static_cast<blob_options_t>(pending.info.options))};
 
             block_data_sink sink(
               _scratch_block(_message_size(pending, max_message_size)));
