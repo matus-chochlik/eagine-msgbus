@@ -481,6 +481,30 @@ export [[nodiscard]] auto operator<(
     return U(l) < U(r);
 }
 //------------------------------------------------------------------------------
+/// @brief Returns message priority increased by one step.
+/// @ingroup msgbus
+/// @relates message_priority
+export constexpr auto increased(message_priority priority) noexcept
+  -> message_priority {
+    using U = std::underlying_type_t<message_priority>;
+    if(priority < message_priority::critical) {
+        priority = message_priority(U(priority) + U(1));
+    }
+    return priority;
+}
+//------------------------------------------------------------------------------
+/// @brief Returns message priority decreased by one step.
+/// @ingroup msgbus
+/// @relates message_priority
+export constexpr auto decreased(message_priority priority) noexcept
+  -> message_priority {
+    using U = std::underlying_type_t<message_priority>;
+    if(message_priority::idle < priority) {
+        priority = message_priority(U(priority) - U(1));
+    }
+    return priority;
+}
+//------------------------------------------------------------------------------
 /// @brief Message cryptography-related flag bits enumeration.
 /// @ingroup msgbus
 /// @see message_crypto_flags

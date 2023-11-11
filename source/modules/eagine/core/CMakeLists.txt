@@ -338,6 +338,7 @@ eagine_add_module(
 eagine_add_module_tests(
 	eagine.msgbus.core
 	UNITS
+		types
 		message
 		loopback
 		direct
