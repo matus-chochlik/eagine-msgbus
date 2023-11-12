@@ -41,7 +41,7 @@ auto main(main_ctx& ctx) -> int {
 
     const auto enqueue_next{[&] {
         if(const auto arg{next_arg()}) {
-            enqueue(url{arg.get_string()});
+            enqueue(url{arg});
         }
     }};
 

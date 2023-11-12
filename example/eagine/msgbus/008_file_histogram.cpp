@@ -93,7 +93,7 @@ auto main(main_ctx& ctx) -> int {
     std::vector<std::shared_ptr<msgbus::example_blob_io>> blobs;
 
     for(auto& arg : ctx.args()) {
-        if(url locator{arg.get_string()}) {
+        if(url locator{arg}) {
             blobs.emplace_back(std::make_unique<msgbus::example_blob_io>(
               ctx.log(), std::move(locator)));
         }
