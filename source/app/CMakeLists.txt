@@ -48,10 +48,10 @@ eagine_target_modules(
 )
 
 # file server
-add_executable(eagine-msgbus-file_server file_server.cpp)
-eagine_add_exe_analysis(eagine-msgbus-file_server)
+add_executable(eagine-msgbus-file-server file_server.cpp)
+eagine_add_exe_analysis(eagine-msgbus-file-server)
 eagine_target_modules(
-	eagine-msgbus-file_server
+	eagine-msgbus-file-server
 	std
 	eagine.core
 	eagine.sslplus
@@ -59,20 +59,20 @@ eagine_target_modules(
 )
 
 # resource clients
-add_executable(eagine-msgbus-resource_hexdump resource_hexdump.cpp)
-eagine_add_exe_analysis(eagine-msgbus-resource_hexdump)
+add_executable(eagine-msgbus-resource-hexdump resource_hexdump.cpp)
+eagine_add_exe_analysis(eagine-msgbus-resource-hexdump)
 eagine_target_modules(
-	eagine-msgbus-resource_hexdump
+	eagine-msgbus-resource-hexdump
 	std
 	eagine.core
 	eagine.sslplus
 	eagine.msgbus
 )
 
-add_executable(eagine-msgbus-resource_histogram resource_histogram.cpp)
-eagine_add_exe_analysis(eagine-msgbus-resource_histogram)
+add_executable(eagine-msgbus-resource-histogram resource_histogram.cpp)
+eagine_add_exe_analysis(eagine-msgbus-resource-histogram)
 eagine_target_modules(
-	eagine-msgbus-resource_histogram
+	eagine-msgbus-resource-histogram
 	std
 	eagine.core
 	eagine.sslplus
@@ -80,10 +80,10 @@ eagine_target_modules(
 )
 
 # sudoku solver helper
-add_executable(eagine-msgbus-sudoku_helper sudoku_helper.cpp)
-eagine_add_exe_analysis(eagine-msgbus-sudoku_helper)
+add_executable(eagine-msgbus-sudoku-helper sudoku_helper.cpp)
+eagine_add_exe_analysis(eagine-msgbus-sudoku-helper)
 eagine_target_modules(
-	eagine-msgbus-sudoku_helper
+	eagine-msgbus-sudoku-helper
 	std
 	eagine.core
 	eagine.sslplus
@@ -91,10 +91,10 @@ eagine_target_modules(
 )
 
 # sudoku tiling generator
-add_executable(eagine-msgbus-sudoku_tiling sudoku_tiling.cpp)
-eagine_add_exe_analysis(eagine-msgbus-sudoku_tiling)
+add_executable(eagine-msgbus-sudoku-tiling sudoku_tiling.cpp)
+eagine_add_exe_analysis(eagine-msgbus-sudoku-tiling)
 eagine_target_modules(
-	eagine-msgbus-sudoku_tiling
+	eagine-msgbus-sudoku-tiling
 	std
 	eagine.core
 	eagine.sslplus

@@ -32,12 +32,14 @@ export struct resource_server_driver : interface<resource_server_driver> {
 
     virtual auto get_blob_timeout(
       const identifier_t,
+      const url&,
       const span_size_t size) noexcept -> std::chrono::seconds {
         return std::chrono::seconds{size / 1024};
     }
 
     virtual auto get_blob_priority(
       const identifier_t,
+      const url&,
       const message_priority priority) noexcept -> message_priority {
         return priority;
     }
@@ -46,6 +48,8 @@ export struct resource_server_driver : interface<resource_server_driver> {
 struct resource_server_intf : interface<resource_server_intf> {
     virtual void add_methods() noexcept = 0;
     virtual auto update() noexcept -> work_done = 0;
+
+    virtual auto has_pending_blobs() noexcept -> bool = 0;
 
     virtual void average_message_age(
       const std::chrono::microseconds) noexcept = 0;
@@ -71,6 +75,10 @@ class resource_server : public Base {
     resource_server_driver _default_driver;
 
 public:
+    auto has_pending_blobs() noexcept -> bool {
+        return _impl->has_pending_blobs();
+    }
+
     void average_message_age(const std::chrono::microseconds age) noexcept {
         _impl->average_message_age(age);
     }
@@ -125,7 +133,7 @@ export struct resource_manipulator_signals {
     /// @brief Triggered when a resource server appears on the bus.
     signal<void(const identifier_t) noexcept> resource_server_appeared;
 
-    /// @brief Triggered when a resource server dissapears from the bus.
+    /// @brief Triggered when a resource server disappears from the bus.
     signal<void(const identifier_t) noexcept> resource_server_lost;
 };
 //------------------------------------------------------------------------------

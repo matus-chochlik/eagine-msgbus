@@ -459,58 +459,10 @@ void serialized_message_storage_push_cleanup(unsigned, auto& s) {
     test.check_equal(storage.count(), 0U, "count is zero");
 }
 //------------------------------------------------------------------------------
-// serialized message storage push top pop
-//------------------------------------------------------------------------------
-void serialized_message_storage_push_top_pop(unsigned, auto& s) {
-    eagitest::case_ test{s, 11, "serialized message storage push top pop"};
-    eagitest::track trck{test, 0, 1};
-
-    eagine::msgbus::serialized_message_storage storage;
-    test.check(storage.empty(), "is empty");
-    test.check_equal(storage.count(), 0U, "count is zero");
-
-    std::array<eagine::byte, 1024> temp{};
-    const auto rc{test.random().get_between(1U, 200U)};
-    for(unsigned r = 0; r < rc; ++r) {
-        const eagine::message_id msg_id{
-          eagine::random_identifier(), eagine::random_identifier()};
-
-        eagine::block_data_sink sink{eagine::cover(temp)};
-        eagine::msgbus::default_serializer_backend backend(sink);
-        eagine::msgbus::message_view msg{
-          eagine::memory::as_bytes(msg_id.method().name().view())};
-        if(eagine::msgbus::serialize_message(msg_id, msg, backend)) {
-            storage.push(sink.done(), eagine::msgbus::message_priority::normal);
-            test.check(not storage.empty(), "is not empty");
-            test.check_equal(storage.count(), r + 1, "count");
-        } else {
-            test.fail("serialize message");
-        }
-    }
-
-    while(not storage.empty()) {
-        eagine::block_data_source source{storage.top()};
-        eagine::msgbus::default_deserializer_backend read_backend{source};
-        eagine::message_id msg_id;
-        eagine::msgbus::stored_message msg;
-
-        const auto deserialized{
-          eagine::msgbus::deserialize_message(msg_id, msg, read_backend)};
-        test.ensure(bool(deserialized), "deserialized");
-        test.check(
-          eagine::are_equal(
-            msg.content(),
-            eagine::memory::as_bytes(msg_id.method().name().view())),
-          "content");
-        storage.pop();
-        trck.checkpoint(1);
-    }
-}
-//------------------------------------------------------------------------------
 // serialized message storage push fetch
 //------------------------------------------------------------------------------
 void serialized_message_storage_push_fetch(unsigned, auto& s) {
-    eagitest::case_ test{s, 12, "serialized message storage push fetch"};
+    eagitest::case_ test{s, 11, "serialized message storage push fetch"};
     eagitest::track trck{test, 0, 2};
 
     eagine::msgbus::serialized_message_storage storage;
@@ -595,7 +547,7 @@ void serialized_message_storage_push_fetch(unsigned, auto& s) {
 // serialized message storage push-if fetch
 //------------------------------------------------------------------------------
 void serialized_message_storage_push_if_fetch(unsigned, auto& s) {
-    eagitest::case_ test{s, 13, "serialized message storage push-if fetch"};
+    eagitest::case_ test{s, 12, "serialized message storage push-if fetch"};
     eagitest::track trck{test, 0, 2};
 
     eagine::msgbus::message_storage storage;
@@ -645,7 +597,7 @@ void serialized_message_storage_push_if_fetch(unsigned, auto& s) {
 // connection incoming/outgoing messages
 //------------------------------------------------------------------------------
 void connection_in_out_messages_push_fetch(unsigned, auto& s) {
-    eagitest::case_ test{s, 14, "connection in/out messages push fetch"};
+    eagitest::case_ test{s, 13, "connection in/out messages push fetch"};
     eagitest::track trck{test, 0, 2};
     auto& rg{test.random()};
 
@@ -717,7 +669,7 @@ void connection_in_out_messages_push_fetch(unsigned, auto& s) {
 // main
 //------------------------------------------------------------------------------
 auto test_main(eagine::test_ctx& ctx) -> int {
-    eagitest::ctx_suite test{ctx, "message", 14};
+    eagitest::ctx_suite test{ctx, "message", 13};
     test.once(message_valid_endpoint_id);
     test.once(message_is_special);
     test.once(message_serialize_header_roundtrip);
@@ -728,7 +680,6 @@ auto test_main(eagine::test_ctx& ctx) -> int {
     test.repeat(10, message_storage_push_fetch);
     test.repeat(10, message_storage_push_if_fetch);
     test.repeat(10, serialized_message_storage_push_cleanup);
-    test.repeat(10, serialized_message_storage_push_top_pop);
     test.repeat(10, serialized_message_storage_push_fetch);
     test.repeat(10, serialized_message_storage_push_if_fetch);
     test.repeat(10, connection_in_out_messages_push_fetch);

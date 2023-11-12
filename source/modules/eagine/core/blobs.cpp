@@ -35,6 +35,10 @@ export struct blob_info {
 //------------------------------------------------------------------------------
 export struct source_blob_io : interface<source_blob_io> {
 
+    virtual auto prepare() noexcept -> bool {
+        return false;
+    }
+
     virtual auto is_at_eod(const span_size_t offs) noexcept -> bool {
         return offs >= total_size();
     }
@@ -170,27 +174,15 @@ struct pending_blob {
     auto received_size() const noexcept -> span_size_t;
     auto total_size_mismatch(const span_size_t size) const noexcept -> bool;
 
+    auto prepare() const noexcept -> bool;
     auto sent_everything() const noexcept -> bool;
     auto received_everything() const noexcept -> bool;
 
-    auto fetch(const span_size_t offs, memory::block dst) noexcept {
-        assert(source_io);
-        return source_io->fetch_fragment(offs, dst);
-    }
+    auto fetch(const span_size_t offs, memory::block dst) noexcept;
+    auto store(const span_size_t offs, const memory::const_block src) noexcept;
+    auto check(const span_size_t offs, const memory::const_block blk) noexcept;
 
-    auto store(const span_size_t offs, const memory::const_block src) noexcept {
-        assert(target_io);
-        return target_io->store_fragment(offs, src, info);
-    }
-
-    auto check(const span_size_t offs, const memory::const_block blk) noexcept {
-        assert(target_io);
-        return target_io->check_stored(offs, blk);
-    }
-
-    auto age() const noexcept -> message_age {
-        return std::chrono::duration_cast<message_age>(max_time.elapsed_time());
-    }
+    auto age() const noexcept -> message_age;
 
     auto merge_fragment(
       const span_size_t bgn,
@@ -203,10 +195,7 @@ public:
     blob_manipulator(
       main_ctx_parent parent,
       message_id fragment_msg_id,
-      message_id resend_msg_id) noexcept
-      : main_ctx_object{"BlobManipl", parent}
-      , _fragment_msg_id{std::move(fragment_msg_id)}
-      , _resend_msg_id{std::move(resend_msg_id)} {}
+      message_id resend_msg_id) noexcept;
 
     auto max_blob_size() const noexcept -> valid_if_positive<span_size_t> {
         return {span_size(_max_blob_size)};
@@ -345,6 +334,7 @@ private:
       blob_manipulator&) noexcept -> unique_holder<target_blob_io>;
 
     auto _scratch_block(const span_size_t size) noexcept -> memory::block;
+    auto _next_blob_id() noexcept -> blob_id_t;
 };
 //------------------------------------------------------------------------------
 } // namespace eagine::msgbus

@@ -1,0 +1,9 @@
+msgbus:
+  asio_local_stream: true
+  router:
+    address:
+      - /var/run/eagine/msgbus-service.socket
+    id_count: 1000
+    shutdown_verify: true
+    shutdown_delay: 15s
+

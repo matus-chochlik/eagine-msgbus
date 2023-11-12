@@ -16,9 +16,11 @@ import eagine.core.types;
 import eagine.core.debug;
 import eagine.core.memory;
 import eagine.core.utility;
+import eagine.core.container;
 import eagine.core.identifier;
 import eagine.core.serialization;
 import eagine.core.valid_if;
+import eagine.core.main_ctx;
 
 namespace eagine::msgbus {
 //------------------------------------------------------------------------------
@@ -132,7 +134,7 @@ private:
 
     memory::buffer_pool& _buffers;
     span_size_t _offs_done{0};
-    std::vector<std::tuple<span_size_t, memory::buffer>> _unmerged;
+    flat_map<span_size_t, memory::buffer> _unmerged;
     std::vector<memory::buffer> _merged;
     std::vector<memory::const_block> _consecutive;
 };
@@ -147,28 +149,30 @@ auto blob_stream_io::store_fragment(
     if(offset == _offs_done) {
         if(_unmerged.empty()) {
             _append_one(offset, data, info);
-            _offs_done = safe_add(offset + data.size());
+            _offs_done = safe_add(offset, data.size());
         } else {
-            assert(_merged.empty());
-            _merged.reserve(_unmerged.size());
             assert(_consecutive.empty());
+            assert(_merged.empty());
+            _merged.reserve(_unmerged.size() + 1U);
             _consecutive.push_back(data);
 
             auto data_end{safe_add(offset, data.size())};
-            while(not _unmerged.empty()) {
-                auto& [merge_offs, merge_buf] = _unmerged.back();
+            auto bgn = _unmerged.begin();
+            auto end = _unmerged.end();
+            auto pos = bgn;
 
-                assert(data_end <= merge_offs);
-                if(data_end == merge_offs) {
-                    _merged.emplace_back(std::move(merge_buf));
-                    auto& merge_data = _merged.back();
-                    _unmerged.pop_back();
-                    data_end = safe_add(merge_offs, merge_data.size());
-                    _consecutive.push_back(view(merge_data));
-                } else {
+            while(pos != end) {
+                auto& [merge_offs, merge_buf] = *pos;
+                if(merge_offs != data_end) {
                     break;
                 }
+                _merged.emplace_back(std::move(merge_buf));
+                auto& merge_data = _merged.back();
+                data_end = safe_add(merge_offs, merge_data.size());
+                _consecutive.push_back(view(merge_data));
+                ++pos;
             }
+            _unmerged.erase(bgn, pos);
 
             _offs_done = data_end;
             _append(offset, view(_consecutive), info);
@@ -181,16 +185,9 @@ auto blob_stream_io::store_fragment(
     } else {
         auto buf{_buffers.get(data.size())};
         memory::copy(data, buf);
-        if(_unmerged.empty()) {
-            _unmerged.emplace_back(offset, std::move(buf));
-        } else {
-            const auto rpos{std::find_if(
-              _unmerged.rbegin(), _unmerged.rend(), [=](const auto& entry) {
-                  return std::get<0>(entry) >= offset;
-              })};
-            _unmerged.emplace(rpos.base(), offset, std::move(buf));
-        }
+        _unmerged[offset] = std::move(buf);
     }
+
     return true;
 }
 //------------------------------------------------------------------------------
@@ -254,7 +251,7 @@ auto blob_chunk_io::store_fragment(
     assert(not data.empty());
 
     span_size_t chunk_idx{offset / _chunk_size};
-    const span_size_t last_chunk{(offset + data.size()) / _chunk_size};
+    const span_size_t last_chunk{safe_add(offset, data.size()) / _chunk_size};
 
     span_size_t copy_srco{0};
     auto copy_dsto{offset - (chunk_idx * _chunk_size)};
@@ -345,6 +342,11 @@ auto pending_blob::total_size_mismatch(const span_size_t size) const noexcept
     return (info.total_size != 0) and (info.total_size != size);
 }
 //------------------------------------------------------------------------------
+auto pending_blob::prepare() const noexcept -> bool {
+    assert(source_io);
+    return source_io->prepare();
+}
+//------------------------------------------------------------------------------
 auto pending_blob::sent_everything() const noexcept -> bool {
     if(not todo_parts().empty()) {
         assert(source_io);
@@ -361,6 +363,29 @@ auto pending_blob::received_everything() const noexcept -> bool {
                (end >= info.total_size);
     }
     return (info.total_size != 0) and done.empty();
+}
+//------------------------------------------------------------------------------
+auto pending_blob::fetch(const span_size_t offs, memory::block dst) noexcept {
+    assert(source_io);
+    return source_io->fetch_fragment(offs, dst);
+}
+//------------------------------------------------------------------------------
+auto pending_blob::store(
+  const span_size_t offs,
+  const memory::const_block src) noexcept {
+    assert(target_io);
+    return target_io->store_fragment(offs, src, info);
+}
+//------------------------------------------------------------------------------
+auto pending_blob::check(
+  const span_size_t offs,
+  const memory::const_block blk) noexcept {
+    assert(target_io);
+    return target_io->check_stored(offs, blk);
+}
+//------------------------------------------------------------------------------
+auto pending_blob::age() const noexcept -> message_age {
+    return std::chrono::duration_cast<message_age>(max_time.elapsed_time());
 }
 //------------------------------------------------------------------------------
 auto pending_blob::merge_fragment(
@@ -482,6 +507,14 @@ void pending_blob::merge_resend_request(
 }
 //------------------------------------------------------------------------------
 // blob manipulator
+//------------------------------------------------------------------------------
+blob_manipulator::blob_manipulator(
+  main_ctx_parent parent,
+  message_id fragment_msg_id,
+  message_id resend_msg_id) noexcept
+  : main_ctx_object{"BlobManipl", parent}
+  , _fragment_msg_id{std::move(fragment_msg_id)}
+  , _resend_msg_id{std::move(resend_msg_id)} {}
 //------------------------------------------------------------------------------
 auto blob_manipulator::update(
   const blob_manipulator::send_handler do_send,
@@ -858,6 +891,14 @@ inline auto blob_manipulator::_scratch_block(const span_size_t size) noexcept
     return cover(_scratch_buffer.resize(size));
 }
 //------------------------------------------------------------------------------
+auto blob_manipulator::_next_blob_id() noexcept -> blob_id_t {
+    if(_blob_id_sequence == std::numeric_limits<blob_id_t>::max())
+      [[unlikely]] {
+        _blob_id_sequence = 0;
+    }
+    return ++_blob_id_sequence;
+}
+//------------------------------------------------------------------------------
 auto blob_manipulator::push_outgoing(
   const message_id msg_id,
   const identifier_t source_id,
@@ -868,21 +909,24 @@ auto blob_manipulator::push_outgoing(
   const blob_options options,
   const message_priority priority) noexcept -> blob_id_t {
     assert(io);
-    _outgoing.emplace_back();
-    auto& pending = _outgoing.back();
-    pending.msg_id = msg_id;
-    pending.info.source_id = source_id;
-    pending.info.target_id = target_id;
-    pending.info.total_size = io->total_size();
-    pending.info.priority = priority;
-    pending.info.options = options;
-    pending.source_blob_id = ++_blob_id_sequence;
-    pending.target_blob_id = target_blob_id;
-    pending.source_io = std::move(io);
-    pending.linger_time.reset();
-    pending.max_time = timeout{max_time};
-    pending.todo_parts().emplace_back(0, pending.info.total_size);
-    return pending.source_blob_id;
+    if(io->total_size() > 0) {
+        _outgoing.emplace_back();
+        auto& pending = _outgoing.back();
+        pending.msg_id = msg_id;
+        pending.info.source_id = source_id;
+        pending.info.target_id = target_id;
+        pending.info.total_size = io->total_size();
+        pending.info.priority = priority;
+        pending.info.options = options;
+        pending.source_blob_id = _next_blob_id();
+        pending.target_blob_id = target_blob_id;
+        pending.source_io = std::move(io);
+        pending.linger_time.reset();
+        pending.max_time = timeout{max_time};
+        pending.todo_parts().emplace_back(0, pending.info.total_size);
+        return pending.source_blob_id;
+    }
+    return 0;
 }
 //------------------------------------------------------------------------------
 auto blob_manipulator::push_outgoing(
@@ -914,18 +958,20 @@ auto blob_manipulator::process_outgoing(
     max_messages = std::min(max_messages, span_size(_outgoing.size()));
     while(max_messages-- > 0) {
         auto& pending = _outgoing[_outgoing_index++ % _outgoing.size()];
-        if(not pending.sent_everything()) {
+        if(pending.prepare()) {
+            pending.linger_time.reset();
+        } else if(not pending.sent_everything()) {
             auto& [bgn, end] = pending.todo_parts().back();
             assert(end != 0);
 
-            const auto header = std::make_tuple(
+            const auto header{std::make_tuple(
               pending.msg_id.class_(),
               pending.msg_id.method(),
               pending.source_blob_id,
               pending.target_blob_id,
               limit_cast<std::int64_t>(bgn),
               limit_cast<std::int64_t>(pending.info.total_size),
-              static_cast<blob_options_t>(pending.info.options));
+              static_cast<blob_options_t>(pending.info.options))};
 
             block_data_sink sink(
               _scratch_block(_message_size(pending, max_message_size)));

@@ -140,8 +140,7 @@ auto main(main_ctx& ctx) -> int {
     {
         msgbus::bridge_node node{node_endpoint};
 
-        auto& wd = ctx.watchdog();
-        wd.declare_initialized();
+        auto alive{ctx.watchdog().start_watch()};
         node.log_start();
 
         while(not(interrupted or node.is_shut_down() or bridge.is_done()))
@@ -159,10 +158,9 @@ auto main(main_ctx& ctx) -> int {
                 std::this_thread::sleep_for(
                   std::chrono::microseconds(math::minimum(idle_streak, 8000)));
             }
-            wd.notify_alive();
+            alive.notify();
         }
         node.log_finish();
-        wd.announce_shutdown();
     }
     bridge.finish();
 

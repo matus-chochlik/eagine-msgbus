@@ -49,6 +49,69 @@ private:
     byte _value;
 };
 //------------------------------------------------------------------------------
+// sequence_blob_io
+//------------------------------------------------------------------------------
+class sequence_blob_io final : public source_blob_io {
+    struct _generator {
+        using seq_t = std::uint64_t;
+        static constexpr auto sequence_bytes() noexcept -> span_size_t {
+            return span_size_of<seq_t>();
+        }
+
+        static auto reverse_bytes(seq_t s) noexcept {
+            seq_t r{0U};
+            for(span_size_t i = 1; i < sequence_bytes(); ++i) {
+                r = r | (0xFFU & s);
+                r = r << 8U;
+                s = s >> 8U;
+            }
+            return r | (0xFFU & s);
+        }
+
+        auto operator()() noexcept -> byte {
+            while(_mod > 0U) {
+                --_mod;
+                ++_ofs;
+                _cur = _cur >> 8U;
+            }
+            const auto result{byte(0xFFU & _cur)};
+            if(++_ofs < sequence_bytes()) {
+                _cur = _cur >> 8U;
+            } else {
+                _cur = reverse_bytes(++_seq);
+                _ofs = 0;
+            }
+            return result;
+        }
+
+        _generator(const span_size_t offs) noexcept
+          : _mod{limit_cast<seq_t>(offs % sequence_bytes())}
+          , _seq{limit_cast<seq_t>(offs / sequence_bytes())}
+          , _cur{reverse_bytes(_seq)} {}
+
+        seq_t _mod;
+        seq_t _seq;
+        seq_t _cur;
+        span_size_t _ofs{0};
+    };
+
+public:
+    sequence_blob_io(const span_size_t size) noexcept
+      : _size{size} {}
+
+    auto total_size() noexcept -> span_size_t final {
+        return _size;
+    }
+
+    auto fetch_fragment(const span_size_t offs, memory::block dst) noexcept
+      -> span_size_t final {
+        return generate(head(dst, _size - offs), _generator(offs)).size();
+    }
+
+private:
+    span_size_t _size;
+};
+//------------------------------------------------------------------------------
 // random_byte_blob_io
 //------------------------------------------------------------------------------
 class random_byte_blob_io final : public source_blob_io {
@@ -178,6 +241,10 @@ public:
         return something_done;
     }
 
+    auto has_pending_blobs() noexcept -> bool final {
+        return _blobs.has_outgoing() or base.bus_node().has_outgoing_blobs();
+    }
+
     void average_message_age(
       const std::chrono::microseconds age) noexcept final {
         _should_send_outgoing.set_duration(std::min(
@@ -293,7 +360,7 @@ auto resource_server_impl::has_resource(
     } else if(has_res.is(indeterminate)) {
         if(locator.has_scheme("eagires")) {
             return locator.has_path("/zeroes") or locator.has_path("/ones") or
-                   locator.has_path("/random");
+                   locator.has_path("/sequence") or locator.has_path("/random");
         } else if(locator.has_scheme("file")) {
             const auto file_path = get_file_path(locator);
             if(is_contained(file_path)) {
@@ -328,6 +395,8 @@ auto resource_server_impl::get_resource(
                     } else if(locator.has_path("/ones")) {
                         read_io.emplace_derived(
                           hold<single_byte_blob_io>, *bytes, 0x1U);
+                    } else if(locator.has_path("/sequence")) {
+                        read_io.emplace_derived(hold<sequence_blob_io>, *bytes);
                     }
                 }
             }
@@ -355,13 +424,14 @@ auto resource_server_impl::get_resource(
     }
 
     const auto max_time =
-      read_io ? driver.get_blob_timeout(endpoint_id, read_io->total_size())
-              : std::chrono::seconds{};
+      read_io
+        ? driver.get_blob_timeout(endpoint_id, locator, read_io->total_size())
+        : std::chrono::seconds{};
 
     return {
       std::move(read_io),
       max_time,
-      driver.get_blob_priority(endpoint_id, priority)};
+      driver.get_blob_priority(endpoint_id, locator, priority)};
 }
 //------------------------------------------------------------------------------
 auto resource_server_impl::_handle_has_resource_query(

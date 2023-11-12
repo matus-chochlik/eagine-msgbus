@@ -21,17 +21,20 @@ auto main(main_ctx& ctx) -> int {
     msgbus::setup_connectors(ctx, node);
 
     auto next_arg{[arg{ctx.args().first()}] mutable {
-        auto result{arg};
-        arg = arg.next();
-        return result;
+        while(arg) {
+            arg = arg.next();
+            if(arg.prev().is_long_tag("url")) {
+                break;
+            }
+        }
+        return arg;
     }};
 
     const auto enqueue{[&](url locator) {
         if(locator) {
-            node.fetch_resource_chunks(
+            node.stream_resource(
               std::move(locator),
-              ctx.default_chunk_size(),
-              msgbus::message_priority::normal,
+              msgbus::message_priority::critical,
               std::chrono::hours{1});
         }
     }};
@@ -44,12 +47,13 @@ auto main(main_ctx& ctx) -> int {
 
     const auto consume{[&](const msgbus::blob_stream_chunk& chunk) {
         for(const auto blk : chunk.data) {
-            std::cout << hexdump(blk) << std::endl;
+            std::cout << hexdump(blk);
         }
     }};
     node.blob_stream_data_appended.connect({construct_from, consume});
 
     const auto blob_done{[&](identifier_t) {
+        std::cout << std::endl;
         enqueue_next();
     }};
     node.blob_stream_finished.connect({construct_from, blob_done});

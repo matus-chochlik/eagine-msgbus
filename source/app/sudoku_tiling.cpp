@@ -18,78 +18,20 @@ using sudoku_tiling_base =
 
 class sudoku_tiling_node : public service_node<sudoku_tiling_base> {
 public:
-    sudoku_tiling_node(main_ctx_parent parent)
-      : service_node<sudoku_tiling_base> {
-        "TilingNode", parent
-    }
-    {
-        declare_state("running", "tlngStart", "tlngFinish");
-        declare_state("suspended", "suspndSend", "rsumedSend");
-        connect<&sudoku_tiling_node::_handle_generated<3>>(
-          this, tiles_generated_3);
-        connect<&sudoku_tiling_node::_handle_generated<4>>(
-          this, tiles_generated_4);
-        connect<&sudoku_tiling_node::_handle_generated<5>>(
-          this, tiles_generated_5);
-        connect<&sudoku_tiling_node::_handle_board_timeout>(
-          this, board_timeouted);
+    sudoku_tiling_node(main_ctx_parent parent);
 
-        auto& info = provided_endpoint_info();
-        info.display_name = "sudoku tiling generator";
-        info.description = "sudoku solver tiling generator application";
-
-        setup_connectors(main_context(), *this);
-    }
-
-    static void active_state(const logger& log) noexcept {
-        log.active_state("TilingNode", "running");
-    }
-
-    void log_start() noexcept {
-        log_change("starting").tag("tlngStart");
-    }
-
-    void log_finish() noexcept {
-        log_change("finishing").tag("tlngFinish");
-    }
+    static void active_state(const logger& log) noexcept;
+    void log_start() noexcept;
+    void log_finish() noexcept;
 
 private:
     template <unsigned S>
     void _handle_generated(
       const eagine::identifier_t,
       const sudoku_tiles<S>& tiles,
-      const sudoku_solver_key&) noexcept {
-        if(_print_progress) {
-            tiles.print_progress(std::cerr) << std::flush;
-        }
-        if(_print_incomplete or tiles.are_complete()) {
-            if(_block_cells) {
-                tiles.print(std::cout, block_sudoku_board_traits<S>{})
-                  << std::endl;
-            } else {
-                tiles.print(std::cout) << std::endl;
-            }
-        }
-        std::string file_path;
-        if(
-          tiles.are_complete() and
-          main_context().config().fetch(
-            "msgbus.sudoku.solver.output_path", file_path)) {
-            std::ofstream fout{file_path};
-            tiles.print(fout) << std::endl;
-        }
-    }
+      const sudoku_solver_key&) noexcept;
 
-    void _handle_board_timeout(const sudoku_board_timeout& info) noexcept {
-        ++_suspend_count;
-        this->suspend_send_for(
-          std::chrono::milliseconds{static_cast<std::int32_t>(
-            std::log(float(
-              1 + info.replaced_board_count + info.pending_board_count +
-              _suspend_count * 2)) *
-              1000.F +
-            1000.F)});
-    }
+    void _handle_board_timeout(const sudoku_board_timeout& info) noexcept;
 
     bool _block_cells{cfg_init("msgbus.sudoku.solver.block_cells", false)};
     bool _print_progress{
@@ -100,10 +42,77 @@ private:
     span_size_t _suspend_count{0};
 };
 //------------------------------------------------------------------------------
-} // namespace msgbus
+sudoku_tiling_node::sudoku_tiling_node(main_ctx_parent parent)
+  : service_node<sudoku_tiling_base> {
+    "TilingNode", parent
+}
+{
+    declare_state("running", "tlngStart", "tlngFinish");
+    declare_state("suspended", "suspndSend", "rsumedSend");
+    connect<&sudoku_tiling_node::_handle_generated<3>>(this, tiles_generated_3);
+    connect<&sudoku_tiling_node::_handle_generated<4>>(this, tiles_generated_4);
+    connect<&sudoku_tiling_node::_handle_generated<5>>(this, tiles_generated_5);
+    connect<&sudoku_tiling_node::_handle_board_timeout>(this, board_timeouted);
 
+    auto& info = provided_endpoint_info();
+    info.display_name = "sudoku tiling generator";
+    info.description = "sudoku solver tiling generator application";
+
+    setup_connectors(main_context(), *this);
+}
+//------------------------------------------------------------------------------
+void sudoku_tiling_node::active_state(const logger& log) noexcept {
+    log.active_state("TilingNode", "running");
+}
+//------------------------------------------------------------------------------
+void sudoku_tiling_node::log_start() noexcept {
+    log_change("starting").tag("tlngStart");
+}
+//------------------------------------------------------------------------------
+void sudoku_tiling_node::log_finish() noexcept {
+    log_change("finishing").tag("tlngFinish");
+}
+//------------------------------------------------------------------------------
+template <unsigned S>
+void sudoku_tiling_node::_handle_generated(
+  const eagine::identifier_t,
+  const sudoku_tiles<S>& tiles,
+  const sudoku_solver_key&) noexcept {
+    if(_print_progress) {
+        tiles.print_progress(std::cerr) << std::flush;
+    }
+    if(_print_incomplete or tiles.are_complete()) {
+        if(_block_cells) {
+            tiles.print(std::cout, block_sudoku_board_traits<S>{}) << std::endl;
+        } else {
+            tiles.print(std::cout) << std::endl;
+        }
+    }
+    std::string file_path;
+    if(
+      tiles.are_complete() and
+      main_context().config().fetch(
+        "msgbus.sudoku.solver.output_path", file_path)) {
+        std::ofstream fout{file_path};
+        tiles.print(fout) << std::endl;
+    }
+}
+//------------------------------------------------------------------------------
+void sudoku_tiling_node::_handle_board_timeout(
+  const sudoku_board_timeout& info) noexcept {
+    ++_suspend_count;
+    this->suspend_send_for(std::chrono::milliseconds{static_cast<std::int32_t>(
+      std::log(float(
+        1 + info.replaced_board_count + info.pending_board_count +
+        _suspend_count * 2)) *
+        1000.F +
+      1000.F)});
+}
+//------------------------------------------------------------------------------
+} // namespace msgbus
+//------------------------------------------------------------------------------
 auto main(main_ctx& ctx) -> int {
-    const signal_switch interrupted;
+    signal_switch interrupted;
     msgbus::sudoku_tiling_node::active_state(ctx.log());
 
     enable_message_bus(ctx);
@@ -143,34 +152,14 @@ auto main(main_ctx& ctx) -> int {
         return not(interrupted or tiling_generator.tiling_complete());
     }};
 
-    auto& wd = ctx.watchdog();
-    wd.declare_initialized();
+    auto alive{ctx.watchdog().start_watch()};
 
     int idle_streak = 0;
 
-    const auto try_enqueue{[&](auto r) {
-        if(rank == r and tiling_generator.solution_timeouted(r)) [[unlikely]] {
-            enqueue(default_sudoku_board_traits<3>());
+    const auto try_enqueue{[&]<unsigned R>(unsigned_constant<R> r) {
+        if(rank == R and tiling_generator.solution_timeouted(r)) [[unlikely]] {
+            enqueue(default_sudoku_board_traits<R>());
             tiling_generator.reset_solution_timeout(r);
-        }
-    }};
-
-    const auto log_contribution_histogram{[&] {
-        const auto do_log{[&](auto r) {
-            tiling_generator.log_contribution_histogram(r);
-        }};
-        switch(rank) {
-            case 3:;
-                do_log(unsigned_constant<3>{});
-                break;
-            case 4:
-                do_log(unsigned_constant<4>{});
-                break;
-            case 5:
-                do_log(unsigned_constant<5>{});
-                break;
-            default:
-                break;
         }
     }};
 
@@ -199,19 +188,17 @@ auto main(main_ctx& ctx) -> int {
         }
 
         if(log_contribution_timeout) {
-            log_contribution_histogram();
+            tiling_generator.log_contribution_histogram(rank);
         }
 
-        wd.notify_alive();
+        alive.notify();
     }
     tiling_generator.log_finish();
-    wd.announce_shutdown();
-
-    log_contribution_histogram();
+    tiling_generator.log_contribution_histogram(rank);
 
     return 0;
 }
-
+//------------------------------------------------------------------------------
 } // namespace eagine
 //------------------------------------------------------------------------------
 auto main(int argc, const char** argv) -> int {
@@ -219,3 +206,4 @@ auto main(int argc, const char** argv) -> int {
     options.app_id = "SudokuTlng";
     return eagine::main_impl(argc, argv, options, &eagine::main);
 }
+//------------------------------------------------------------------------------

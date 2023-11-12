@@ -13,9 +13,11 @@ set(
 	eagine-msgbus-bridge
 	eagine-msgbus-pingable
 	eagine-msgbus-pinger
-	eagine-msgbus-file_server
-	eagine-msgbus-sudoku_helper
-	eagine-msgbus-sudoku_tiling
+	eagine-msgbus-file-server
+	eagine-msgbus-resource-hexdump
+	eagine-msgbus-resource-histogram
+	eagine-msgbus-sudoku-helper
+	eagine-msgbus-sudoku-tiling
 )
 
 if(TARGET eagine-msgbus-monitor)

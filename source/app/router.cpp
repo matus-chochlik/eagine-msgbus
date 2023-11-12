@@ -19,36 +19,15 @@ using router_node_base = service_composition<require_services<
   system_info_provider,
   common_info_providers>>;
 //------------------------------------------------------------------------------
+// router node
+//------------------------------------------------------------------------------
 class router_node
   : public main_ctx_object
   , public router_node_base {
     using base = router_node_base;
 
 public:
-    router_node(endpoint& bus)
-      : main_ctx_object{"RouterNode", bus}
-      , base{bus} {
-        declare_state("running", "rutrStart", "rutrFinish");
-
-        if(_shutdown_ignore) {
-            log_info("shutdown requests are ignored due to configuration");
-        } else {
-            if(_shutdown_verify) {
-                log_info("shutdown verification is enabled");
-            } else {
-                log_info("shutdown verification is disabled");
-            }
-            log_info("shutdown delay is set to ${delay}")
-              .arg("delay", _shutdown_timeout.period());
-
-            connect<&router_node::on_shutdown>(this, shutdown_requested);
-        }
-        auto& info = provided_endpoint_info();
-        info.display_name = "router control node";
-        info.description =
-          "endpoint monitoring and controlling a message bus router";
-        info.is_router_node = true;
-    }
+    router_node(endpoint& bus);
 
     static void active_state(const logger& log) noexcept {
         log.active_state("RouterNode", "running");
@@ -81,119 +60,231 @@ private:
       cfg_init("msgbus.router.shutdown.verify", true)};
     bool _do_shutdown{false};
 
-    auto _shutdown_verified(const verification_bits v) const noexcept -> bool {
-        return v.has_all(
-          verification_bit::source_id,
-          verification_bit::source_certificate,
-          verification_bit::source_private_key,
-          verification_bit::message_id);
+    auto _shutdown_verified(const verification_bits v) const noexcept -> bool;
+
+    void on_shutdown(const result_context&, const shutdown_request&) noexcept;
+};
+//------------------------------------------------------------------------------
+router_node::router_node(endpoint& bus)
+  : main_ctx_object{"RouterNode", bus}
+  , base{bus} {
+    declare_state("running", "rutrStart", "rutrFinish");
+
+    if(_shutdown_ignore) {
+        log_info("shutdown requests are ignored due to configuration");
+    } else {
+        if(_shutdown_verify) {
+            log_info("shutdown verification is enabled");
+        } else {
+            log_info("shutdown verification is disabled");
+        }
+        log_info("shutdown delay is set to ${delay}")
+          .arg("delay", _shutdown_timeout.period());
+
+        connect<&router_node::on_shutdown>(this, shutdown_requested);
     }
+    auto& info = provided_endpoint_info();
+    info.display_name = "router control node";
+    info.description =
+      "endpoint monitoring and controlling a message bus router";
+    info.is_router_node = true;
+}
+//------------------------------------------------------------------------------
+auto router_node::_shutdown_verified(const verification_bits v) const noexcept
+  -> bool {
+    return v.has_all(
+      verification_bit::source_id,
+      verification_bit::source_certificate,
+      verification_bit::source_private_key,
+      verification_bit::message_id);
+}
+//------------------------------------------------------------------------------
+void router_node::on_shutdown(
+  const result_context&,
+  const shutdown_request& req) noexcept {
+    log_info("received ${age} old shutdown request from ${source}")
+      .arg("age", req.age)
+      .arg("source", req.source_id)
+      .arg("verified", req.verified);
 
-    void on_shutdown(
-      const result_context&,
-      const shutdown_request& req) noexcept {
-        log_info("received ${age} old shutdown request from ${source}")
-          .arg("age", req.age)
-          .arg("source", req.source_id)
-          .arg("verified", req.verified);
-
-        if(not _shutdown_ignore) {
-            if(req.age <= _shutdown_max_age) {
-                if(not _shutdown_verify or _shutdown_verified(req.verified)) {
-                    log_info("request is valid, shutting down");
-                    _do_shutdown = true;
-                    _shutdown_timeout.reset();
-                } else {
-                    log_warning("shutdown verification failed");
-                }
+    if(not _shutdown_ignore) {
+        if(req.age <= _shutdown_max_age) {
+            if(not _shutdown_verify or _shutdown_verified(req.verified)) {
+                log_info("request is valid, shutting down");
+                _do_shutdown = true;
+                _shutdown_timeout.reset();
             } else {
-                log_warning("shutdown request is too old");
+                log_warning("shutdown verification failed");
             }
         } else {
-            log_warning("ignoring shutdown request due to configuration");
+            log_warning("shutdown request is too old");
         }
+    } else {
+        log_warning("ignoring shutdown request due to configuration");
+    }
+}
+//------------------------------------------------------------------------------
+// router application statistics
+//------------------------------------------------------------------------------
+struct router_app_stats {
+    std::uintmax_t cycles_work{0};
+    std::uintmax_t cycles_idle{0};
+    int idle_streak{0};
+    int max_idle_streak{0};
+
+    auto work_rate() const noexcept {
+        return float(cycles_work) / (float(cycles_idle) + float(cycles_work));
+    }
+
+    auto idle_rate() const noexcept {
+        return float(cycles_idle) / (float(cycles_idle) + float(cycles_work));
     }
 };
-} // namespace msgbus
 //------------------------------------------------------------------------------
-auto main(main_ctx& ctx) -> int {
-    const signal_switch interrupted;
-    const auto& log = ctx.log();
-    msgbus::router_node::active_state(log);
+// router application
+//------------------------------------------------------------------------------
+struct router_app {
+    main_ctx& ctx;
+    msgbus::router router{ctx};
+    msgbus::endpoint node_endpoint{"RutrNodeEp", ctx};
+
+    router_app_stats stats{};
+
+    router_app(main_ctx& ctx);
+
+    void run();
+    auto step(msgbus::router_node&) -> work_done;
+
+    ~router_app() noexcept;
+};
+//------------------------------------------------------------------------------
+router_app::router_app(main_ctx& c)
+  : ctx{c} {
+    ctx.log().info("message bus router starting up");
 
     enable_message_bus(ctx);
-
-    log.info("message bus router starting up");
 
     ctx.system().preinitialize();
 
     auto local_acceptor{msgbus::make_direct_acceptor(ctx)};
     auto node_connection{local_acceptor->make_connection()};
 
-    msgbus::router router(ctx);
     router.add_ca_certificate_pem(ca_certificate_pem(ctx));
     router.add_certificate_pem(msgbus::router_certificate_pem(ctx));
     msgbus::setup_acceptors(ctx, router);
     router.add_acceptor(std::move(local_acceptor));
 
-    std::uintmax_t cycles_work{0};
-    std::uintmax_t cycles_idle{0};
-    int idle_streak{0};
-    int max_idle_streak{0};
-
-    msgbus::endpoint node_endpoint{"RutrNodeEp", ctx};
     node_endpoint.add_certificate_pem(msgbus::endpoint_certificate_pem(ctx));
     node_endpoint.add_connection(std::move(node_connection));
-    {
-        msgbus::router_node node{node_endpoint};
-
-        auto& wd = ctx.watchdog();
-        wd.declare_initialized();
-        node.log_start();
-
-        while(not(interrupted or node.is_shut_down())) [[likely]] {
-            some_true something_done{};
-            something_done(router.update(8));
-            something_done(node.update());
-
-            if(something_done) {
-                ++cycles_work;
-                idle_streak = 0;
-            } else {
-                ++cycles_idle;
-                max_idle_streak = math::maximum(max_idle_streak, ++idle_streak);
-                std::this_thread::sleep_for(
-                  std::chrono::microseconds(math::minimum(idle_streak, 8000)));
-            }
-            wd.notify_alive();
-        }
-        node.log_finish();
-        wd.announce_shutdown();
-    }
-
+}
+//------------------------------------------------------------------------------
+router_app::~router_app() noexcept {
     router.finish();
 
-    log.stat("message bus router stats")
+    ctx.log()
+      .stat("message bus router stats")
       .tag("routrStats")
+      .arg("working", stats.cycles_work)
+      .arg("idling", stats.cycles_idle)
+      .arg("workRate", "Ratio", stats.work_rate())
+      .arg("idleRate", "Ratio", stats.idle_rate())
+      .arg("maxIdlStrk", stats.max_idle_streak);
+}
+//------------------------------------------------------------------------------
+struct router_run_stats {
+    std::uintmax_t cycles_work{0};
+    std::uintmax_t cycles_idle{0};
+    resetting_timeout should_log{std::chrono::minutes{debug_build ? 5 : 15}};
+
+    auto work_rate() const noexcept {
+        return float(cycles_work) / (float(cycles_idle) + float(cycles_work));
+    }
+
+    auto reset() noexcept {
+        cycles_work = 0;
+        cycles_idle = 0;
+    }
+
+    auto log_stats(const logger& log) noexcept;
+
+    auto update(const logger& log, work_done something_done) noexcept;
+};
+//------------------------------------------------------------------------------
+auto router_run_stats::log_stats(const logger& log) noexcept {
+    log.stat("message bus router work rate: ${workRate}")
+      .tag("rutrWrkRte")
       .arg("working", cycles_work)
       .arg("idling", cycles_idle)
-      .arg(
-        "workRate",
-        "Ratio",
-        float(cycles_work) / (float(cycles_idle) + float(cycles_work)))
-      .arg(
-        "idleRate",
-        "Ratio",
-        float(cycles_idle) / (float(cycles_idle) + float(cycles_work)))
-      .arg("maxIdlStrk", max_idle_streak);
+      .arg("workRate", "Ratio", work_rate());
+}
+//------------------------------------------------------------------------------
+auto router_run_stats::update(
+  const logger& log,
+  work_done something_done) noexcept {
+    if(something_done) {
+        ++cycles_work;
+    } else {
+        ++cycles_idle;
+    }
+
+    if(should_log) [[unlikely]] {
+        log_stats(log);
+        reset();
+    }
+}
+//------------------------------------------------------------------------------
+auto router_app::step(msgbus::router_node& node) -> work_done {
+    some_true something_done{};
+    something_done(router.update(8));
+    something_done(node.update());
+
+    if(something_done) {
+        ++stats.cycles_work;
+        stats.idle_streak = 0;
+    } else {
+        ++stats.cycles_idle;
+        stats.max_idle_streak =
+          math::maximum(stats.max_idle_streak, ++stats.idle_streak);
+        std::this_thread::sleep_for(
+          std::chrono::microseconds(math::minimum(stats.idle_streak, 5000)));
+    }
+    return something_done;
+}
+//------------------------------------------------------------------------------
+void router_app::run() {
+    signal_switch interrupted;
+    msgbus::router_node node{node_endpoint};
+
+    auto& log = ctx.log();
+    auto alive{ctx.watchdog().start_watch()};
+    node.log_start();
+
+    router_run_stats run_stats;
+
+    while(not(interrupted or node.is_shut_down())) [[likely]] {
+        run_stats.update(log, step(node));
+        alive.notify();
+    }
+    node.log_finish();
+}
+//------------------------------------------------------------------------------
+} // namespace msgbus
+//------------------------------------------------------------------------------
+// main function
+//------------------------------------------------------------------------------
+auto main(main_ctx& ctx) -> int {
+
+    msgbus::router_node::active_state(ctx.log());
+    msgbus::router_app{ctx}.run();
 
     return 0;
 }
 //------------------------------------------------------------------------------
 } // namespace eagine
-
+//------------------------------------------------------------------------------
 auto main(int argc, const char** argv) -> int {
     eagine::main_ctx_options options;
     options.app_id = "RouterExe";
     return eagine::main_impl(argc, argv, options, &eagine::main);
 }
+//------------------------------------------------------------------------------

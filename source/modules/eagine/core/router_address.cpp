@@ -21,25 +21,12 @@ namespace eagine::msgbus {
 /// @ingroup msgbus
 export class router_address : public main_ctx_object {
 public:
-    router_address(main_ctx_parent parent, const nothing_t) noexcept
-      : main_ctx_object{"RouterAddr", parent} {}
+    router_address(main_ctx_parent parent, const nothing_t) noexcept;
 
     /// @brief Construction from parent main context object.
-    router_address(main_ctx_parent parent) noexcept
-      : router_address{parent, nothing} {
-        configure(app_config());
-    }
+    router_address(main_ctx_parent parent) noexcept;
 
-    void configure(application_config& config) {
-        if(config.fetch("msgbus.router.address", _addrs)) {
-            log_debug("configured router address(es) ${addr}")
-              .arg_func([&](logger_backend& backend) {
-                  for(auto& addr : _addrs) {
-                      backend.add_string("address", "string", addr);
-                  }
-              });
-        }
-    }
+    void configure(application_config& config);
 
     /// @brief Indicates if this instance contains at least one address.
     explicit operator bool() const noexcept {

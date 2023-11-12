@@ -465,6 +465,10 @@ public:
         return false;
     }
 
+    auto routing_weight() noexcept -> float final {
+        return 1.0F;
+    }
+
 protected:
     auto _reconnect(posix_mqueue& connect_queue) noexcept -> work_done;
     auto _checkup(posix_mqueue& connect_queue) noexcept -> work_done;
