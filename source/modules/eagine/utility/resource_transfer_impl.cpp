@@ -212,14 +212,9 @@ auto resource_data_consumer_node::update_and_process_all() noexcept
     }
 
     if(not _embedded_resources.empty()) {
-        std::vector<unique_holder<_embedded_resource_info>> temp;
-        std::swap(temp, _embedded_resources);
-
-        for(auto& entry : temp) {
-            assert(entry);
-            if(entry->unpack_next()) {
-                _embedded_resources.emplace_back(std::move(entry));
-            }
+        assert(_embedded_resources.front());
+        if(not _embedded_resources.front()->unpack_next()) {
+            _embedded_resources.erase(_embedded_resources.begin());
         }
 
         something_done();
