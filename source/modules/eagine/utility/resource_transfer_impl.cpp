@@ -312,12 +312,12 @@ auto resource_data_consumer_node::fetch_resource_chunks(
 auto resource_data_consumer_node::cancel_resource_stream(
   identifier_t request_id) noexcept -> bool {
     if(const auto found{find(_streamed_resources, request_id)}) {
-        auto locator{std::move(found->locator.release_string())};
+        const auto locator{found->locator.release_string()};
         _streamed_resources.erase(found.position());
-        log_info("resource request id ${reqId} (${locator}) cancelled")
+        log_info("resource request id ${reqId} (${locator}) canceled")
           .tag("streamDone")
           .arg("reqId", request_id)
-          .arg("locator", "string", locator)
+          .arg("locator", locator)
           .arg("remaining", _streamed_resources.size());
         return true;
     }
@@ -398,12 +398,12 @@ void resource_data_consumer_node::_handle_missing(
 void resource_data_consumer_node::_handle_stream_done(
   identifier_t request_id) noexcept {
     if(const auto found{find(_streamed_resources, request_id)}) {
-        auto locator{std::move(found->locator.release_string())};
+        const auto locator{found->locator.release_string()};
         _streamed_resources.erase(found.position());
         log_info("resource request id ${reqId} (${locator}) done")
           .tag("streamDone")
           .arg("reqId", request_id)
-          .arg("locator", "string", locator)
+          .arg("locator", locator)
           .arg("remaining", _streamed_resources.size());
     }
 }
