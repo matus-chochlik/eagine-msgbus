@@ -1,6 +1,9 @@
 [Unit]
 Description=EAGine message bus pingable node (%i)
 ConditionPathExists=/var/lib/eagine/.config/eagine/systemd/environment
+Requires=eagine-msgbus-router.service
+After=eagine-msgbus-router.service
+BindsTo=eagine-msgbus-router.service
 
 [Service]
 KeyringMode=private
