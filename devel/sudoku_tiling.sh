@@ -9,4 +9,4 @@
 	-S "tile_size=${2:-64}" \
 	-I "solver=${3:-2}" \
 	-P "solver=${4:-2}" \
-	"$(dirname ${0})/sudoku_tiling.eagiproc"
+	"${@}" "$(dirname ${0})/sudoku_tiling.eagiproc"

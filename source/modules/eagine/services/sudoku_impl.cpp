@@ -496,18 +496,21 @@ struct sudoku_solver_rank_info {
     memory::buffer serialize_buffer;
 
     timeout search_timeout{std::chrono::seconds(3), nothing};
-    timeout solution_timeout{
-      adjusted_duration(std::chrono::seconds{S * S * S * S * S})};
 
-    object_pool<std::vector<basic_sudoku_board<S>>, 8> board_vector_pool;
+    constexpr auto default_solution_timeout() noexcept {
+        return adjusted_duration(std::chrono::seconds{S * S * S * S * S});
+    }
+
+    timeout solution_timeout{default_solution_timeout()};
+
+    using board_set = std::vector<basic_sudoku_board<S>>;
+
+    object_pool<board_set, 8> board_set_pool;
+
+    flat_map<sudoku_solver_key, pool_object<board_set, 8>> key_boards;
 
     flat_map<sudoku_solver_key, std::chrono::steady_clock::time_point>
       key_starts;
-
-    flat_map<
-      sudoku_solver_key,
-      flat_map<span_size_t, pool_object<std::vector<basic_sudoku_board<S>>, 8>>>
-      key_boards;
 
     struct pending_info {
         pending_info(basic_sudoku_board<S> b)
@@ -524,7 +527,6 @@ struct sudoku_solver_rank_info {
 
     flat_set<identifier_t> known_helpers;
     flat_set<identifier_t> ready_helpers;
-    flat_map<identifier_t, timeout> used_helpers;
     flat_map<identifier_t, std::intmax_t> updated_by_helper;
     flat_map<identifier_t, std::intmax_t> solved_by_helper;
     std::vector<identifier_t> found_helpers;
@@ -571,6 +573,14 @@ struct sudoku_solver_rank_info {
       auto& solver,
       const message_context& msg_ctx,
       const stored_message& message) noexcept;
+
+    void do_send_board_to(
+      auto& solver,
+      endpoint& bus,
+      data_compressor& compressor,
+      const identifier_t helper_id,
+      auto key,
+      auto& boards) noexcept;
 
     auto send_board_to(
       auto& solver,
@@ -619,9 +629,7 @@ void sudoku_solver_rank_info<S>::queue_length_changed(
         sudoku_board_queue_change change{.rank = S};
         for(const auto& key_and_boards : key_boards) {
             change.key_count++;
-            for(const auto& count_and_boards : std::get<1>(key_and_boards)) {
-                change.board_count += std::get<1>(count_and_boards)->size();
-            }
+            change.board_count += std::get<1>(key_and_boards)->size();
         }
         solver.signals.queue_length_changed(change);
     }
@@ -635,14 +643,18 @@ void sudoku_solver_rank_info<S>::add_board(
     if(not key_starts.contains(key)) {
         key_starts[key] = std::chrono::steady_clock::now();
     }
-    const auto alt_count{board.alternative_count()};
-    auto& alt_boards{key_boards[key]};
-    auto pos{alt_boards.find(alt_count)};
-    if(pos == alt_boards.end()) {
-        pos = alt_boards.emplace(alt_count, board_vector_pool).first;
+    auto spos{key_boards.find(key)};
+    if(spos == key_boards.end()) {
+        spos = key_boards.emplace(key, board_set_pool).first;
+        std::get<1>(*spos)->clear();
     }
-    auto& boards = std::get<1>(*pos);
-    boards->emplace_back(std::move(board));
+    auto& boards{std::get<1>(*spos)};
+    const auto bpos{std::upper_bound(
+      boards->begin(),
+      boards->end(),
+      board.alternative_count(),
+      [](const auto v, const auto& e) { return v > e.alternative_count(); })};
+    boards->emplace(bpos, std::move(board));
     queue_length_changed(solver);
 }
 //------------------------------------------------------------------------------
@@ -671,7 +683,6 @@ auto sudoku_solver_rank_info<S>::handle_timeouted(
                 ++count;
             }
             known_helpers.erase(entry.used_helper);
-            used_helpers.erase(entry.used_helper);
             return true;
         }
         return false;
@@ -792,55 +803,59 @@ void sudoku_solver_rank_info<S>::handle_response(
 }
 //------------------------------------------------------------------------------
 template <unsigned S>
+void sudoku_solver_rank_info<S>::do_send_board_to(
+  auto& solver,
+  endpoint& bus,
+  data_compressor& compressor,
+  const identifier_t helper_id,
+  auto key,
+  auto& boards) noexcept {
+
+    assert(not boards->empty());
+    auto& board = boards->back();
+
+    serialize_buffer.ensure(default_serialize_buffer_size_for(board));
+    const auto serialized{
+      (S >= 4)
+        ? default_serialize_packed(board, cover(serialize_buffer), compressor)
+        : default_serialize(board, cover(serialize_buffer))};
+    assert(serialized);
+
+    message_view response{*serialized};
+    response.set_target_id(helper_id);
+    response.set_sequence_no(query_sequence);
+    bus.post(sudoku_query_msg(unsigned_constant<S>{}), response);
+
+    pending.emplace_back(std::move(board));
+    auto& query = pending.back();
+    query.used_helper = helper_id;
+    query.sequence_no = query_sequence;
+    query.key = std::move(key);
+    query.too_late.reset(default_solution_timeout());
+    boards->pop_back();
+    queue_length_changed(solver);
+
+    ready_helpers.erase(helper_id);
+}
+//------------------------------------------------------------------------------
+template <unsigned S>
 auto sudoku_solver_rank_info<S>::send_board_to(
   auto& solver,
   endpoint& bus,
   data_compressor& compressor,
   const identifier_t helper_id) noexcept -> bool {
-    if(not key_boards.empty()) {
-        const auto kbpos{
-          std::next(key_boards.begin(), query_sequence % key_boards.size())};
-        auto& [key, alt_boards] = *kbpos;
+    if(const auto key_board_count{key_boards.size()}) {
+        const auto offs{query_sequence++ % key_board_count};
+        const auto kbpos{std::next(key_boards.begin(), offs)};
 
-        const auto abpos{std::prev(alt_boards.end(), 1)};
-        auto& [count, boards] = *abpos;
-
-        const auto bpos{std::prev(boards->end(), 1)};
-        auto& board = *bpos;
-
-        serialize_buffer.ensure(default_serialize_buffer_size_for(board));
-        const auto serialized{
-          (S >= 4) ? default_serialize_packed(
-                       board, cover(serialize_buffer), compressor)
-                   : default_serialize(board, cover(serialize_buffer))};
-        assert(serialized);
-
-        const auto sequence_no{query_sequence++};
-        message_view response{*serialized};
-        response.set_target_id(helper_id);
-        response.set_sequence_no(sequence_no);
-        bus.post(sudoku_query_msg(unsigned_constant<S>{}), response);
-
-        pending.emplace_back(std::move(board));
-        auto& query = pending.back();
-        query.used_helper = helper_id;
-        query.sequence_no = sequence_no;
-        query.key = std::move(key);
-        query.too_late.reset(
-          adjusted_duration(std::chrono::seconds{S * S * S * S}));
-        boards->erase(bpos);
+        auto& [key, boards] = *kbpos;
         if(boards->empty()) {
-            alt_boards.erase(abpos);
-            if(alt_boards.empty()) {
-                key_boards.erase(kbpos);
-            }
+            key_boards.erase(kbpos);
+        } else {
+            do_send_board_to(
+              solver, bus, compressor, helper_id, std::move(key), boards);
+            return true;
         }
-        queue_length_changed(solver);
-
-        ready_helpers.erase(helper_id);
-        used_helpers[helper_id].reset(
-          adjusted_duration(std::chrono::seconds{S}));
-        return true;
     }
     return false;
 }
@@ -851,11 +866,7 @@ auto sudoku_solver_rank_info<S>::find_helpers(
     span_size_t done = 0;
     for(const auto helper_id : ready_helpers) {
         if(done < dst.size()) {
-            const auto helper{eagine::find(used_helpers, helper_id)};
-            const auto is_usable = helper ? helper->is_expired() : true;
-            if(is_usable) {
-                dst[done++] = helper_id;
-            }
+            dst[done++] = helper_id;
         } else {
             break;
         }
@@ -896,7 +907,6 @@ void sudoku_solver_rank_info<S>::pending_done(
 
     if(pos != pending.end()) {
         ready_helpers.insert(pos->used_helper);
-        used_helpers.erase(pos->used_helper);
         const unsigned_constant<S> rank{};
         if(solver.driver().already_done(pos->key, rank)) {
             std::erase_if(remaining, [&](const auto& entry) {
@@ -941,7 +951,6 @@ void sudoku_solver_rank_info<S>::reset(auto& solver) noexcept {
     key_boards.clear();
     pending.clear();
     remaining.clear();
-    used_helpers.clear();
     solution_timeout.reset();
 
     queue_length_changed(solver);
