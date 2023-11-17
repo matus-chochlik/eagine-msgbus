@@ -174,7 +174,7 @@ struct pending_blob {
     auto received_size() const noexcept -> span_size_t;
     auto total_size_mismatch(const span_size_t size) const noexcept -> bool;
 
-    auto prepare() const noexcept -> bool;
+    auto prepare() const noexcept -> span_size_t;
     auto sent_everything() const noexcept -> bool;
     auto received_everything() const noexcept -> bool;
 
