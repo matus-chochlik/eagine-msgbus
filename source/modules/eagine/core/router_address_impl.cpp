@@ -29,7 +29,7 @@ void router_address::configure(application_config& config) {
         log_info("configured router address(es) ${address}")
           .arg_func([&](logger_backend& backend) {
               for(auto& addr : _addrs) {
-                  backend.add_string("address", "string", addr);
+                  backend.add_string("address", "str", addr);
               }
           });
     }

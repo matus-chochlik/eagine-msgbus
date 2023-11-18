@@ -1132,11 +1132,9 @@ export auto adapt_entry_arg(
             value.instance().build_version().and_then(
               backend.add_adapted("buildInfo", _1));
 
-            value.display_name().and_then(
-              backend.add_string("dispName", "string", _1));
+            value.display_name().and_then(backend.add_adapted("dispName", _1));
 
-            value.description().and_then(
-              backend.add_string("descrption", "string", _1));
+            value.description().and_then(backend.add_adapted("descrption", _1));
         }
     };
     return _adapter{.name = name, .value = value};
@@ -1152,7 +1150,7 @@ export auto adapt_entry_arg(
         void operator()(logger_backend& backend) const noexcept {
             backend.add_unsigned(name, "uint64", value.id().value_or(0U));
 
-            value.name().and_then(backend.add_string("hostname", "string", _1));
+            value.name().and_then(backend.add_string("hostname", "str", _1));
             value.cpu_concurrent_threads().and_then(
               backend.add_integer("cpuThreads", "int64", _1));
             value.total_ram_size().and_then(

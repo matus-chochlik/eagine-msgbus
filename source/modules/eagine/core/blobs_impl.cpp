@@ -342,9 +342,12 @@ auto pending_blob::total_size_mismatch(const span_size_t size) const noexcept
     return (info.total_size != 0) and (info.total_size != size);
 }
 //------------------------------------------------------------------------------
-auto pending_blob::prepare() const noexcept -> bool {
+auto pending_blob::prepare() const noexcept -> span_size_t {
     assert(source_io);
-    return source_io->prepare();
+    if(source_io->prepare()) {
+        return source_io->total_size();
+    }
+    return 0;
 }
 //------------------------------------------------------------------------------
 auto pending_blob::sent_everything() const noexcept -> bool {
@@ -958,8 +961,10 @@ auto blob_manipulator::process_outgoing(
     max_messages = std::min(max_messages, span_size(_outgoing.size()));
     while(max_messages-- > 0) {
         auto& pending = _outgoing[_outgoing_index++ % _outgoing.size()];
-        if(pending.prepare()) {
+        if(const auto new_size{pending.prepare()}) {
             pending.linger_time.reset();
+            pending.info.total_size = new_size;
+            std::get<1>(pending.todo_parts().back()) = new_size;
         } else if(not pending.sent_everything()) {
             auto& [bgn, end] = pending.todo_parts().back();
             assert(end != 0);

@@ -108,7 +108,7 @@ public:
     }
 
     /// @brief Does some work and updates internal state (should be called periodically).
-    auto update_and_process_all() noexcept -> work_done final;
+    auto update_and_process_all() noexcept -> work_done override;
 
     /// @brief Indicates if embedded resource with the specified id is available.
     auto has_embedded_resource(identifier res_id) noexcept -> bool {

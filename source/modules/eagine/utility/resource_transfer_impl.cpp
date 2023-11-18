@@ -212,14 +212,9 @@ auto resource_data_consumer_node::update_and_process_all() noexcept
     }
 
     if(not _embedded_resources.empty()) {
-        std::vector<unique_holder<_embedded_resource_info>> temp;
-        std::swap(temp, _embedded_resources);
-
-        for(auto& entry : temp) {
-            assert(entry);
-            if(entry->unpack_next()) {
-                _embedded_resources.emplace_back(std::move(entry));
-            }
+        assert(_embedded_resources.front());
+        if(not _embedded_resources.front()->unpack_next()) {
+            _embedded_resources.erase(_embedded_resources.begin());
         }
 
         something_done();
@@ -317,8 +312,13 @@ auto resource_data_consumer_node::fetch_resource_chunks(
 auto resource_data_consumer_node::cancel_resource_stream(
   identifier_t request_id) noexcept -> bool {
     if(const auto found{find(_streamed_resources, request_id)}) {
-        // TODO: cancel in base
+        const auto locator{found->locator.release_string()};
         _streamed_resources.erase(found.position());
+        log_info("resource request id ${reqId} (${locator}) canceled")
+          .tag("streamDone")
+          .arg("reqId", request_id)
+          .arg("locator", locator)
+          .arg("remaining", _streamed_resources.size());
         return true;
     }
 
@@ -397,11 +397,15 @@ void resource_data_consumer_node::_handle_missing(
 //------------------------------------------------------------------------------
 void resource_data_consumer_node::_handle_stream_done(
   identifier_t request_id) noexcept {
-    _streamed_resources.erase(request_id);
-    log_info("resource request id ${reqId} done")
-      .tag("streamDone")
-      .arg("reqId", request_id)
-      .arg("remaining", _streamed_resources.size());
+    if(const auto found{find(_streamed_resources, request_id)}) {
+        const auto locator{found->locator.release_string()};
+        _streamed_resources.erase(found.position());
+        log_info("resource request id ${reqId} (${locator}) done")
+          .tag("streamDone")
+          .arg("reqId", request_id)
+          .arg("locator", locator)
+          .arg("remaining", _streamed_resources.size());
+    }
 }
 //------------------------------------------------------------------------------
 void resource_data_consumer_node::_handle_stream_data(
