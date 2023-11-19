@@ -1,8 +1,4 @@
 msgbus:
-  asio_local_stream: true
-  router:
-    address:
-      - /var/run/eagine/msgbus-service.socket
   sudoku:
     solver:
       width: 2048
