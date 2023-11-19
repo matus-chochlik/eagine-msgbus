@@ -328,6 +328,7 @@ eagine_add_module(
 		eagine.core.utility
 		eagine.core.units
 		eagine.core.c_api
+		eagine.core.logging
 		eagine.core.main_ctx
 		eagine.core.resource
 		eagine.sslplus

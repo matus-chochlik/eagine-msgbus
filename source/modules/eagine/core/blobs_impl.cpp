@@ -20,6 +20,7 @@ import eagine.core.container;
 import eagine.core.identifier;
 import eagine.core.serialization;
 import eagine.core.valid_if;
+import eagine.core.logging;
 import eagine.core.main_ctx;
 
 namespace eagine::msgbus {
@@ -335,6 +336,10 @@ auto pending_blob::received_size() const noexcept -> span_size_t {
         result += end - bgn;
     }
     return result;
+}
+//------------------------------------------------------------------------------
+auto pending_blob::total_size() const noexcept -> span_size_t {
+    return info.total_size;
 }
 //------------------------------------------------------------------------------
 auto pending_blob::total_size_mismatch(const span_size_t size) const noexcept
@@ -709,12 +714,20 @@ auto blob_manipulator::push_incoming_fragment(
                     pending.info.priority = priority;
                 }
                 if(pending.merge_fragment(integer(offset), fragment)) {
-                    log_debug("merged blob fragment")
+                    log_debug("merged blob fragment (${progress})")
                       .arg("source", source_id)
                       .arg("srcBlobId", source_blob_id)
                       .arg("parts", pending.done_parts().size())
                       .arg("offset", offset)
-                      .arg("size", fragment.size());
+                      .arg("size", fragment.size())
+                      .arg_func([&](logger_backend& backend) {
+                          backend.add_float(
+                            "progress",
+                            "Progress",
+                            0.F,
+                            float(pending.received_size()),
+                            float(pending.total_size()));
+                      });
                 } else {
                     log_warning("failed to merge blob fragment")
                       .arg("offset", offset)
