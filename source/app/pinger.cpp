@@ -302,7 +302,7 @@ private:
 } // namespace msgbus
 
 auto main(main_ctx& ctx) -> int {
-    const signal_switch interrupted;
+    signal_switch interrupted;
     const auto& log = ctx.log();
     log.active_state("pinging");
     log.declare_state("pinging", "pingStart", "pingFinish");

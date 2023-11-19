@@ -175,7 +175,6 @@ void sudoku_helpers::_helper_main() noexcept {
 } // namespace msgbus
 //------------------------------------------------------------------------------
 auto main(main_ctx& ctx) -> int {
-    const signal_switch interrupted;
     const auto& log = ctx.log();
     log.active_state("running");
     log.declare_state("running", "helpStart", "helpFinish");

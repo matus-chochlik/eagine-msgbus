@@ -13,7 +13,7 @@ import std;
 namespace eagine {
 //------------------------------------------------------------------------------
 auto main(main_ctx& ctx) -> int {
-    const signal_switch interrupted;
+    signal_switch interrupted;
     enable_message_bus(ctx);
     ctx.preinitialize();
 

@@ -114,7 +114,7 @@ private:
 } // namespace msgbus
 //------------------------------------------------------------------------------
 auto main(main_ctx& ctx) -> int {
-    const signal_switch interrupted;
+    signal_switch interrupted;
     const auto& log = ctx.log();
     msgbus::bridge_node::active_state(log);
 
