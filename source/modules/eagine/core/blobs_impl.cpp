@@ -1010,12 +1010,20 @@ auto blob_manipulator::process_outgoing(
                     message.set_priority(pending.info.priority);
                     something_done(do_send(_fragment_msg_id, message));
 
-                    log_debug("sent blob fragment")
+                    log_debug("sent blob fragment (${progress})")
                       .arg("source", pending.info.source_id)
                       .arg("srcBlobId", pending.source_blob_id)
                       .arg("parts", pending.todo_parts().size())
                       .arg("offset", offset)
-                      .arg("size", "ByteSize", written_size);
+                      .arg("size", "ByteSize", written_size)
+                      .arg_func([&](logger_backend& backend) {
+                          backend.add_float(
+                            "progress",
+                            "Progress",
+                            0.F,
+                            float(pending.sent_size()),
+                            float(pending.total_size()));
+                      });
                 } else {
                     log_error("failed to write fragment of blob ${message}")
                       .arg("message", pending.msg_id);
