@@ -92,7 +92,7 @@ private:
     shared_context _context{};
 
     const process_instance_id_t _instance_id{process_instance_id()};
-    identifier_t _id{invalid_endpoint_id()};
+    endpoint_id_t _id{};
     timeout _no_id_timeout{adjusted_duration(std::chrono::seconds{2}), nothing};
 
     std::chrono::steady_clock::time_point _startup_time{

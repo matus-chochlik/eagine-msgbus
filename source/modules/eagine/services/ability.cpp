@@ -108,7 +108,7 @@ export class ability_info {
 public:
     constexpr ability_info() noexcept = default;
 
-    constexpr ability_info(message_id msg_id, identifier_t endpoint_id) noexcept
+    constexpr ability_info(message_id msg_id, endpoint_id_t endpoint_id) noexcept
       : _msg_id{msg_id}
       , _endpoint_id{endpoint_id} {}
 
@@ -118,7 +118,7 @@ public:
 
 private:
     message_id _msg_id;
-    identifier_t _endpoint_id{invalid_endpoint_id()};
+    endpoint_id_t _endpoint_id{};
 };
 //------------------------------------------------------------------------------
 /// @brief Service consuming information about message types handled by endpoint.

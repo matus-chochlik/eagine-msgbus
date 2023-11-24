@@ -88,7 +88,7 @@ public:
         connect<&ping_example::on_hostname_received>(this, hostname_received);
     }
 
-    void on_id_assigned(const identifier_t endpoint_id) noexcept {
+    void on_id_assigned(const endpoint_id_t endpoint_id) noexcept {
         log_info("new id ${id} assigned").arg("id", endpoint_id);
         _do_ping = true;
     }
@@ -280,7 +280,7 @@ private:
     resetting_timeout _should_query_pingable{std::chrono::seconds(2), nothing};
     std::chrono::steady_clock::time_point prev_log{
       std::chrono::steady_clock::now()};
-    std::map<identifier_t, ping_stats> _targets{};
+    std::map<endpoint_id_t, ping_stats> _targets{};
     std::intmax_t _rep;
     std::intmax_t _mod;
     std::intmax_t _max;

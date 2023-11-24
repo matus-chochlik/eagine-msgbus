@@ -39,7 +39,7 @@ private:
 template <typename Base = eagine::msgbus::subscriber>
 class test_ping : public Base {
 public:
-    void assign_target(eagine::identifier_t id) noexcept {
+    void assign_target(eagine::endpoint_id_t id) noexcept {
         _target = id;
     }
 
@@ -80,7 +80,7 @@ private:
     int _rcvd{0};
     eagine::msgbus::message_sequence_t _seq_id{0};
     eagine::timeout _ping_time{std::chrono::milliseconds{1}};
-    eagine::identifier_t _target{eagine::msgbus::invalid_endpoint_id()};
+    eagine::endpoint_id_t _target{};
 };
 //------------------------------------------------------------------------------
 // test 1

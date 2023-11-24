@@ -13,8 +13,61 @@ import eagine.core.memory;
 import eagine.core.string;
 import eagine.core.reflection;
 import eagine.core.identifier;
+import eagine.core.logging;
 
 namespace eagine {
+//------------------------------------------------------------------------------
+/// @brief Message bus endpoint identifier type.
+/// @ingroup msgbus
+export class endpoint_id_t {
+public:
+    constexpr endpoint_id_t() noexcept = default;
+
+    constexpr endpoint_id_t(identifier_t id) noexcept
+      : _id{id} {}
+
+    explicit constexpr operator bool() const noexcept {
+        return _id != 0;
+    }
+
+    friend constexpr auto is_valid_endpoint_id(const endpoint_id_t id) noexcept
+      -> bool {
+        return bool(id);
+    }
+
+    constexpr auto value() const noexcept -> identifier_t {
+        return _id;
+    }
+
+    constexpr auto operator<=>(const endpoint_id_t&) const noexcept = default;
+
+private:
+    identifier_t _id{0};
+};
+//------------------------------------------------------------------------------
+export constexpr auto broadcast_endpoint_id() noexcept -> endpoint_id_t {
+    return {};
+}
+//------------------------------------------------------------------------------
+export inline auto operator<<(std::ostream& out, endpoint_id_t id)
+  -> std::ostream& {
+    return out << id.value();
+}
+//------------------------------------------------------------------------------
+export auto adapt_entry_arg(
+  const identifier name,
+  const endpoint_id_t id) noexcept {
+    struct _adapter {
+        const identifier name;
+        const endpoint_id_t id;
+
+        void operator()(logger_backend& backend) const noexcept {
+            backend.add_unsigned(name, "MsgBusEpId", id.value());
+        }
+    };
+    return _adapter{.name = name, .id = id};
+}
+//------------------------------------------------------------------------------
 namespace msgbus {
 //------------------------------------------------------------------------------
 /// @brief Message bus node kind enumeration.
@@ -40,7 +93,7 @@ export enum class connection_kind : std::uint8_t {
     in_process = 1U << 0U,
     /// @brief Inter-process connection for local communication.
     local_interprocess = 1U << 1U,
-    /// @brief Inter-process connection for remote communucation
+    /// @brief Inter-process connection for remote communication
     remote_interprocess = 1U << 2U
 };
 //------------------------------------------------------------------------------
@@ -129,7 +182,8 @@ export using stream_protocol_tag =
 export using datagram_protocol_tag =
   connection_protocol_tag<connection_protocol::datagram>;
 //------------------------------------------------------------------------------
-/// @brief The minimum guaranteed block size that can be sent through bus connections.
+/// @brief The minimum guaranteed block size that can be sent through
+/// bus connections.
 /// @ingroup msgbus
 export constexpr const span_size_t min_connection_data_size = 4096;
 //------------------------------------------------------------------------------
@@ -141,10 +195,10 @@ export using message_sequence_t = std::uint32_t;
 /// @ingroup msgbus
 export struct router_topology_info {
     /// @brief The router message bus id.
-    identifier_t router_id{0};
+    endpoint_id_t router_id{};
 
     /// @brief The remote node message bus id.
-    identifier_t remote_id{0};
+    endpoint_id_t remote_id{};
 
     /// @brief The router process instance id.
     process_instance_id_t instance_id{0U};
@@ -160,8 +214,8 @@ constexpr auto data_member_mapping(
     using S = router_topology_info;
     return make_data_member_mapping<
       S,
-      identifier_t,
-      identifier_t,
+      endpoint_id_t,
+      endpoint_id_t,
       process_instance_id_t,
       connection_kind>(
       {"router_id", &S::router_id},
@@ -212,10 +266,10 @@ constexpr auto data_member_mapping(
 /// @ingroup msgbus
 export struct bridge_topology_info {
     /// @brief The bridge message bus id.
-    identifier_t bridge_id{0};
+    endpoint_id_t bridge_id{};
 
     /// @brief The remote node message bus id.
-    identifier_t opposite_id{0};
+    endpoint_id_t opposite_id{};
 
     /// @brief The bridge process instance id.
     process_instance_id_t instance_id{0U};
@@ -228,8 +282,8 @@ constexpr auto data_member_mapping(
     using S = bridge_topology_info;
     return make_data_member_mapping<
       S,
-      identifier_t,
-      identifier_t,
+      endpoint_id_t,
+      endpoint_id_t,
       process_instance_id_t>(
       {"bridge_id", &S::bridge_id},
       {"opposite_id", &S::opposite_id},
@@ -278,7 +332,7 @@ constexpr auto data_member_mapping(
 /// @ingroup msgbus
 export struct endpoint_topology_info {
     /// @brief The endpoint message bus id.
-    identifier_t endpoint_id{0U};
+    endpoint_id_t endpoint_id{};
 
     /// @brief The endpoint process instance id.
     process_instance_id_t instance_id{0U};
@@ -289,7 +343,7 @@ constexpr auto data_member_mapping(
   const std::type_identity<endpoint_topology_info>,
   const Selector) noexcept {
     using S = endpoint_topology_info;
-    return make_data_member_mapping<S, identifier_t, process_instance_id_t>(
+    return make_data_member_mapping<S, endpoint_id_t, process_instance_id_t>(
       {"endpoint_id", &S::endpoint_id}, {"instance_id", &S::instance_id});
 }
 //------------------------------------------------------------------------------
@@ -367,10 +421,10 @@ constexpr auto data_member_mapping(
 /// @ingroup msgbus
 export struct connection_statistics {
     /// @brief The local node message bus id.
-    identifier_t local_id{0};
+    endpoint_id_t local_id{};
 
     /// @brief The remote node message bus id.
-    identifier_t remote_id{0};
+    endpoint_id_t remote_id{};
 
     /// @brief Ratio (0.0 - 1.0) of how much of each message data block is used.
     float block_usage_ratio{-1.F};
@@ -384,7 +438,7 @@ constexpr auto data_member_mapping(
   const std::type_identity<connection_statistics>,
   const Selector) noexcept {
     using S = connection_statistics;
-    return make_data_member_mapping<S, identifier_t, identifier_t, float, float>(
+    return make_data_member_mapping<S, endpoint_id_t, endpoint_id_t, float, float>(
       {"local_id", &S::local_id},
       {"remote_id", &S::remote_id},
       {"block_usage_ratio", &S::block_usage_ratio},

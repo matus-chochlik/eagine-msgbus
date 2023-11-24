@@ -84,7 +84,7 @@ void router_pending::_assign_id() noexcept {
     }
 }
 //------------------------------------------------------------------------------
-auto router_pending::assigned_id() const noexcept -> identifier_t {
+auto router_pending::assigned_id() const noexcept -> endpoint_id_t {
     return _id;
 }
 //------------------------------------------------------------------------------
@@ -322,7 +322,7 @@ void adjacent_node::setup(
 void adjacent_node::enqueue_route_messages(
   workshop& workers,
   router& parent,
-  identifier_t incoming_id,
+  endpoint_id_t incoming_id,
   std::chrono::steady_clock::duration message_age_inc,
   std::latch& completed,
   some_true_atomic& something_done) noexcept {
@@ -416,7 +416,7 @@ auto adjacent_node::send(
 //------------------------------------------------------------------------------
 auto adjacent_node::route_messages(
   router& parent,
-  const identifier_t incoming_id,
+  const endpoint_id_t incoming_id,
   const std::chrono::steady_clock::duration message_age_inc) noexcept
   -> work_done {
 
@@ -444,7 +444,7 @@ auto adjacent_node::try_route(
 }
 //------------------------------------------------------------------------------
 auto adjacent_node::process_blobs(
-  const identifier_t node_id,
+  const endpoint_id_t node_id,
   router_blobs& blobs) noexcept -> work_done {
     some_true something_done;
     if(_connection and _connection->is_usable()) [[likely]] {
@@ -515,7 +515,7 @@ void parent_router::handle_bye(
 //------------------------------------------------------------------------------
 inline void parent_router::announce_id(
   main_ctx_object& user,
-  const identifier_t id_base) noexcept {
+  const endpoint_id_t id_base) noexcept {
     message_view announcement{};
     announcement.set_source_id(id_base);
     _connection->send(msgbus_id{"announceId"}, announcement);
@@ -543,7 +543,7 @@ auto parent_router::query_statistics(connection_statistics& stats) const noexcep
 //------------------------------------------------------------------------------
 inline auto parent_router::update(
   main_ctx_object& user,
-  const identifier_t id_base) noexcept -> work_done {
+  const endpoint_id_t id_base) noexcept -> work_done {
     const auto exec_time{user.measure_time_interval("parentUpdt")};
     some_true something_done{};
 
@@ -609,19 +609,18 @@ auto router_nodes::count() noexcept -> std::size_t {
     return _nodes.size();
 }
 //------------------------------------------------------------------------------
-auto router_nodes::has_id(const identifier_t id) noexcept -> bool {
+auto router_nodes::has_id(const endpoint_id_t id) noexcept -> bool {
     return _nodes.contains(id);
 }
 //------------------------------------------------------------------------------
-auto router_nodes::find(const identifier_t id) noexcept
+auto router_nodes::find(const endpoint_id_t id) noexcept
   -> optional_reference<adjacent_node> {
     return eagine::find(_nodes, id).ref();
 }
 //------------------------------------------------------------------------------
-auto router_nodes::find_outgoing(const identifier_t target_id)
-  -> valid_endpoint_id {
-    return eagine::find(_endpoint_idx, target_id)
-      .value_or(invalid_endpoint_id());
+auto router_nodes::find_outgoing(const endpoint_id_t target_id)
+  -> endpoint_id_t {
+    return eagine::find(_endpoint_idx, target_id).or_default();
 }
 //------------------------------------------------------------------------------
 auto router_nodes::has_some() noexcept -> bool {
@@ -736,14 +735,14 @@ auto router_nodes::remove_timeouted(const main_ctx_object& user) noexcept
     return something_done;
 }
 //------------------------------------------------------------------------------
-auto router_nodes::is_disconnected(const identifier_t endpoint_id) const noexcept
-  -> bool {
+auto router_nodes::is_disconnected(
+  const endpoint_id_t endpoint_id) const noexcept -> bool {
     return eagine::find(_recently_disconnected, endpoint_id)
       .transform([](auto& node) { return not node.is_expired(); })
       .or_false();
 }
 //------------------------------------------------------------------------------
-void router_nodes::mark_disconnected(const identifier_t endpoint_id) noexcept {
+void router_nodes::mark_disconnected(const endpoint_id_t endpoint_id) noexcept {
     const auto node{eagine::find(_recently_disconnected, endpoint_id)};
     if(node) {
         if(node->is_expired()) {
@@ -778,7 +777,7 @@ auto router_nodes::remove_disconnected(const main_ctx_object& user) noexcept
 }
 //------------------------------------------------------------------------------
 auto router_nodes::update_endpoint_info(
-  const identifier_t incoming_id,
+  const endpoint_id_t incoming_id,
   const message_view& message) noexcept -> router_endpoint_info& {
     _endpoint_idx[message.source_id] = incoming_id;
     auto& info = _endpoint_infos[message.source_id];
@@ -787,7 +786,7 @@ auto router_nodes::update_endpoint_info(
 }
 //------------------------------------------------------------------------------
 auto router_nodes::subscribes_to(
-  const identifier_t target_id,
+  const endpoint_id_t target_id,
   const message_id sub_msg_id) noexcept
   -> std::tuple<tribool, tribool, process_instance_id_t> {
 
@@ -802,7 +801,7 @@ auto router_nodes::subscribes_to(
     return {indeterminate, indeterminate, 0U};
 }
 //------------------------------------------------------------------------------
-auto router_nodes::subscriptions_of(const identifier_t target_id) noexcept
+auto router_nodes::subscriptions_of(const endpoint_id_t target_id) noexcept
   -> std::tuple<std::vector<message_id>, process_instance_id_t> {
     if(const auto info{eagine::find(_endpoint_infos, target_id)}) {
         return {info->subscriptions(), info->instance_id()};
@@ -810,7 +809,7 @@ auto router_nodes::subscriptions_of(const identifier_t target_id) noexcept
     return {{}, 0U};
 }
 //------------------------------------------------------------------------------
-void router_nodes::erase(const identifier_t id) noexcept {
+void router_nodes::erase(const endpoint_id_t id) noexcept {
     _endpoint_idx.erase(id);
     _endpoint_infos.erase(id);
 }
@@ -916,7 +915,7 @@ void router_stats::log_stats(const main_ctx_object& user) noexcept {
 //------------------------------------------------------------------------------
 // router_ids
 //------------------------------------------------------------------------------
-auto router_ids::router_id() noexcept -> identifier_t {
+auto router_ids::router_id() noexcept -> endpoint_id_t {
     return _id_base;
 }
 //------------------------------------------------------------------------------
@@ -961,7 +960,7 @@ void router_ids::setup_from_config(const main_ctx_object& user) {
       .arg("end", _id_end);
 }
 //------------------------------------------------------------------------------
-auto router_ids::get_next_id(router& parent) noexcept -> identifier_t {
+auto router_ids::get_next_id(router& parent) noexcept -> endpoint_id_t {
     const auto seq_orig = _id_sequence;
     while(parent.has_node_id(_id_sequence)) {
         if(++_id_sequence >= _id_end) [[unlikely]] {
@@ -997,7 +996,7 @@ auto router_context::add_ca_certificate_pem(
 }
 //------------------------------------------------------------------------------
 auto router_context::add_remote_certificate_pem(
-  const identifier_t id,
+  const endpoint_id_t id,
   const memory::const_block blk) noexcept -> bool {
     if(_context) [[likely]] {
         const std::unique_lock lk_ctx{_context_lock};
@@ -1014,7 +1013,7 @@ auto router_context::get_own_certificate_pem() noexcept -> memory::const_block {
     return {};
 }
 //------------------------------------------------------------------------------
-auto router_context::get_remote_certificate_pem(const identifier_t id) noexcept
+auto router_context::get_remote_certificate_pem(const endpoint_id_t id) noexcept
   -> memory::const_block {
     if(_context) [[likely]] {
         const std::unique_lock lk_ctx{_context_lock};
@@ -1041,8 +1040,8 @@ auto router_blobs::process_outgoing(
 //------------------------------------------------------------------------------
 void router_blobs::push_outgoing(
   const message_id msg_id,
-  const identifier_t source_id,
-  const identifier_t target_id,
+  const endpoint_id_t source_id,
+  const endpoint_id_t target_id,
   const blob_id_t target_blob_id,
   const memory::const_block blob,
   const std::chrono::seconds max_time,
@@ -1052,7 +1051,7 @@ void router_blobs::push_outgoing(
 }
 //------------------------------------------------------------------------------
 auto router_blobs::process_blobs(
-  const identifier_t parent_id,
+  const endpoint_id_t parent_id,
   router& parent) noexcept -> work_done {
     some_true something_done{_blobs.handle_complete() > 0};
     const auto resend_request{
@@ -1108,15 +1107,15 @@ auto router::_uptime_seconds() noexcept -> std::int64_t {
     return _stats.uptime().count();
 }
 //------------------------------------------------------------------------------
-auto router::get_id() noexcept -> identifier_t {
+auto router::get_id() noexcept -> endpoint_id_t {
     return _ids.router_id();
 }
 //------------------------------------------------------------------------------
-auto router::has_id(const identifier_t id) noexcept -> bool {
+auto router::has_id(const endpoint_id_t id) noexcept -> bool {
     return get_id() == id;
 }
 //------------------------------------------------------------------------------
-auto router::has_node_id(const identifier_t id) noexcept -> bool {
+auto router::has_node_id(const endpoint_id_t id) noexcept -> bool {
     return _nodes.has_id(id);
 }
 //------------------------------------------------------------------------------
@@ -1170,7 +1169,7 @@ auto router::_remove_disconnected() noexcept -> work_done {
     return something_done;
 }
 //------------------------------------------------------------------------------
-auto router::_get_next_id() noexcept -> identifier_t {
+auto router::_get_next_id() noexcept -> endpoint_id_t {
     return _ids.get_next_id(*this);
 }
 //------------------------------------------------------------------------------
@@ -1218,7 +1217,7 @@ auto router::_handle_blob(
 }
 //------------------------------------------------------------------------------
 auto router::_update_endpoint_info(
-  const identifier_t incoming_id,
+  const endpoint_id_t incoming_id,
   const message_view& message) noexcept -> router_endpoint_info& {
     const std::unique_lock lk{_router_lock};
     return _nodes.update_endpoint_info(incoming_id, message);
@@ -1226,7 +1225,7 @@ auto router::_update_endpoint_info(
 //------------------------------------------------------------------------------
 auto router::_send_flow_info(const message_flow_info& flow_info) noexcept
   -> work_done {
-    const auto send_info{[&](const identifier_t remote_id, auto& node) {
+    const auto send_info{[&](const endpoint_id_t remote_id, auto& node) {
         auto buf{default_serialize_buffer_for(flow_info)};
         if(const auto serialized{default_serialize(flow_info, cover(buf))})
           [[likely]] {
@@ -1258,7 +1257,7 @@ auto router::_handle_ping(const message_view& message) noexcept
 }
 //------------------------------------------------------------------------------
 auto router::_handle_subscribed(
-  const identifier_t incoming_id,
+  const endpoint_id_t incoming_id,
   const message_view& message) noexcept -> message_handling_result {
     message_id sub_msg_id{};
     if(default_deserialize_message_type(sub_msg_id, message.content()))
@@ -1289,14 +1288,14 @@ auto router::_handle_clear_allow_list(adjacent_node& node) noexcept
 }
 //------------------------------------------------------------------------------
 auto router::_handle_still_alive(
-  const identifier_t incoming_id,
+  const endpoint_id_t incoming_id,
   const message_view& message) noexcept -> message_handling_result {
     _update_endpoint_info(incoming_id, message);
     return should_be_forwarded;
 }
 //------------------------------------------------------------------------------
 auto router::_handle_not_not_a_router(
-  const identifier_t incoming_id,
+  const endpoint_id_t incoming_id,
   adjacent_node& node,
   const message_view& message) noexcept -> message_handling_result {
     if(incoming_id == message.source_id) {
@@ -1309,7 +1308,7 @@ auto router::_handle_not_not_a_router(
 }
 //------------------------------------------------------------------------------
 auto router::_handle_not_subscribed(
-  const identifier_t incoming_id,
+  const endpoint_id_t incoming_id,
   const message_view& message) noexcept -> message_handling_result {
     message_id sub_msg_id{};
     if(default_deserialize_message_type(sub_msg_id, message.content()))
@@ -1326,7 +1325,7 @@ auto router::_handle_not_subscribed(
 }
 //------------------------------------------------------------------------------
 auto router::_handle_msg_allow(
-  const identifier_t incoming_id,
+  const endpoint_id_t incoming_id,
   adjacent_node& node,
   const message_view& message) noexcept -> message_handling_result {
     message_id alw_msg_id{};
@@ -1343,7 +1342,7 @@ auto router::_handle_msg_allow(
 }
 //------------------------------------------------------------------------------
 auto router::_handle_msg_block(
-  const identifier_t incoming_id,
+  const endpoint_id_t incoming_id,
   adjacent_node& node,
   const message_view& message) noexcept -> message_handling_result {
     message_id blk_msg_id{};
@@ -1463,7 +1462,7 @@ auto router::_handle_topology_query(const message_view& message) noexcept
 
     auto temp{default_serialize_buffer_for(info)};
     const auto respond{
-      [&](identifier_t remote_id, const connection_kind conn_kind) {
+      [&](endpoint_id_t remote_id, const connection_kind conn_kind) {
           info.remote_id = remote_id;
           info.connect_kind = conn_kind;
           if(const auto serialized{default_serialize(info, cover(temp))})
@@ -1508,7 +1507,7 @@ auto router::_handle_stats_query(const message_view& message) noexcept
     }
 
     const auto respond{[&, this](
-                         const identifier_t remote_id, const auto& node) {
+                         const endpoint_id_t remote_id, const auto& node) {
         connection_statistics conn_stats{};
         conn_stats.local_id = own_id;
         conn_stats.remote_id = remote_id;
@@ -1570,7 +1569,7 @@ auto router::_handle_blob_resend(const message_view& message) noexcept
 //------------------------------------------------------------------------------
 auto router::_handle_special_common(
   const message_id msg_id,
-  const identifier_t incoming_id,
+  const endpoint_id_t incoming_id,
   const message_view& message) noexcept -> message_handling_result {
 
     switch(msg_id.method_id()) {
@@ -1626,7 +1625,7 @@ auto router::_handle_special_common(
 //------------------------------------------------------------------------------
 auto router::_do_handle_special(
   const message_id msg_id,
-  const identifier_t incoming_id,
+  const endpoint_id_t incoming_id,
   const message_view& message) noexcept -> message_handling_result {
     log_debug("router handling special message ${message} from parent")
       .tag("hndlSpcMsg")
@@ -1645,7 +1644,7 @@ auto router::_do_handle_special(
 //------------------------------------------------------------------------------
 inline auto router::_handle_special(
   const message_id msg_id,
-  const identifier_t incoming_id,
+  const endpoint_id_t incoming_id,
   const message_view& message) noexcept -> message_handling_result {
     if(is_special_message(msg_id)) {
         return _do_handle_special(msg_id, incoming_id, message);
@@ -1655,7 +1654,7 @@ inline auto router::_handle_special(
 //------------------------------------------------------------------------------
 auto router::_do_handle_special(
   const message_id msg_id,
-  const identifier_t incoming_id,
+  const endpoint_id_t incoming_id,
   adjacent_node& node,
   const message_view& message) noexcept -> message_handling_result {
     log_debug("router handling special message ${message} from node")
@@ -1688,7 +1687,7 @@ auto router::_do_handle_special(
 //------------------------------------------------------------------------------
 inline auto router::_handle_special(
   const message_id msg_id,
-  const identifier_t incoming_id,
+  const endpoint_id_t incoming_id,
   adjacent_node& node,
   const message_view& message) noexcept -> message_handling_result {
     if(is_special_message(msg_id)) {
@@ -1717,18 +1716,18 @@ auto router::_forward_to(
 //------------------------------------------------------------------------------
 auto router::_route_targeted_message(
   const message_id msg_id,
-  const identifier_t incoming_id,
+  const endpoint_id_t incoming_id,
   message_view& message) noexcept -> bool {
     bool has_routed = false;
 
     const auto own_id{get_id()};
     if(const auto outgoing_id{_nodes.find_outgoing(message.target_id)}) {
         // if the message should go through the parent router
-        if(*outgoing_id == own_id) {
+        if(outgoing_id == own_id) {
             const std::unique_lock lk{_router_lock};
             has_routed |= _parent_router.send(*this, msg_id, message);
         } else {
-            _nodes.find(*outgoing_id).and_then([&](auto& node_out) {
+            _nodes.find(outgoing_id).and_then([&](auto& node_out) {
                 if(node_out.is_allowed(msg_id)) {
                     const std::unique_lock lk{_router_lock};
                     has_routed = _forward_to(node_out, msg_id, message);
@@ -1767,7 +1766,7 @@ auto router::_route_targeted_message(
 //------------------------------------------------------------------------------
 auto router::_route_broadcast_message(
   const message_id msg_id,
-  const identifier_t incoming_id,
+  const endpoint_id_t incoming_id,
   message_view& message) noexcept -> bool {
 
     const std::unique_lock lk{_router_lock};
@@ -1786,7 +1785,7 @@ auto router::_route_broadcast_message(
 //------------------------------------------------------------------------------
 auto router::_route_message(
   const message_id msg_id,
-  const identifier_t incoming_id,
+  const endpoint_id_t incoming_id,
   message_view& message) noexcept -> bool {
 
     bool result = true;
@@ -1808,7 +1807,7 @@ auto router::_route_message(
 }
 //------------------------------------------------------------------------------
 auto router::_handle_parent_message(
-  const identifier_t incoming_id,
+  const endpoint_id_t incoming_id,
   const std::chrono::steady_clock::duration message_age_inc,
   const message_id msg_id,
   const message_age msg_age,
@@ -1826,7 +1825,7 @@ auto router::_handle_parent_message(
 }
 //------------------------------------------------------------------------------
 auto router::_handle_node_message(
-  const identifier_t incoming_id,
+  const endpoint_id_t incoming_id,
   const std::chrono::steady_clock::duration message_age_inc,
   const message_id msg_id,
   const message_age msg_age,

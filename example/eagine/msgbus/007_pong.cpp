@@ -29,7 +29,7 @@ public:
     }
 
     auto respond_to_ping(
-      const identifier_t,
+      const endpoint_id_t,
       const message_sequence_t,
       const verification_bits) noexcept -> bool final {
         if((++_sent % _mod) == 0) [[unlikely]] {
@@ -86,7 +86,7 @@ auto main(main_ctx& ctx) -> int {
     msgbus::endpoint bus{main_ctx_object{"PongEndpt", ctx}};
 
     if(auto id_arg{ctx.args().find("--pingable-id").next()}) {
-        identifier_t id{0};
+        identifier_t id{};
         if(assign_if_fits(id_arg, id)) {
             bus.preconfigure_id(id);
         }

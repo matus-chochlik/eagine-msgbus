@@ -13,6 +13,7 @@ eagine_add_module(
 		eagine.core.string
 		eagine.core.reflection
 		eagine.core.identifier
+		eagine.core.logging
 )
 
 eagine_add_module(

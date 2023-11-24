@@ -55,7 +55,7 @@ export struct statistics_consumer_signals {
 struct statistics_consumer_intf : interface<statistics_consumer_intf> {
     virtual void add_methods() noexcept = 0;
 
-    virtual void query_statistics(identifier_t node_id) noexcept = 0;
+    virtual void query_statistics(endpoint_id_t node_id) noexcept = 0;
 
     virtual auto decode_router_statistics(
       const message_context& msg_ctx,
@@ -92,7 +92,7 @@ class statistics_consumer
 public:
     /// @brief Queries the statistics information of the specified bus node.
     /// @see discover_statistics
-    void query_statistics(identifier_t node_id) noexcept {
+    void query_statistics(endpoint_id_t node_id) noexcept {
         _impl->query_statistics(node_id);
     }
 

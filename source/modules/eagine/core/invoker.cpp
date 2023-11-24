@@ -128,7 +128,7 @@ public:
     template <typename... Args>
     auto invoke_on(
       endpoint& bus,
-      const identifier_t target_id,
+      const endpoint_id_t target_id,
       const message_id msg_id,
       memory::block buffer,
       Args&&... args) -> bool {
@@ -151,7 +151,7 @@ public:
     template <typename... Args>
     auto invoke_on(
       endpoint& bus,
-      const identifier_t target_id,
+      const endpoint_id_t target_id,
       const message_id msg_id,
       Args&&... args) noexcept -> bool {
         std::array<byte, MaxDataSize> temp{};
@@ -243,7 +243,7 @@ class invoker<Result(Params...), Serializer, Deserializer, Sink, Source, MaxData
 public:
     auto invoke_on(
       endpoint& bus,
-      const identifier_t target_id,
+      const endpoint_id_t target_id,
       const message_id msg_id,
       memory::block buffer,
       std::add_lvalue_reference_t<std::add_const_t<Params>>... args) noexcept
@@ -269,7 +269,7 @@ public:
 
     auto invoke_on(
       endpoint& bus,
-      const identifier_t target_id,
+      const endpoint_id_t target_id,
       const message_id msg_id,
       std::add_lvalue_reference_t<std::add_const_t<Params>>... args) noexcept
       -> future<Result> {
@@ -298,7 +298,7 @@ class invoker<Result(), Serializer, Deserializer, Sink, Source, MaxDataSize>
 public:
     auto invoke_on(
       endpoint& bus,
-      const identifier_t target_id,
+      const endpoint_id_t target_id,
       const message_id msg_id,
       memory::block) noexcept -> future<Result> {
         auto [invocation_id, result] = this->_results.make();
@@ -313,7 +313,7 @@ public:
 
     auto invoke_on(
       endpoint& bus,
-      const identifier_t target_id,
+      const endpoint_id_t target_id,
       const message_id msg_id) noexcept -> future<Result> {
         return invoke_on(bus, target_id, msg_id, {});
     }

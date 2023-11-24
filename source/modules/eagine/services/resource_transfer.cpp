@@ -25,20 +25,20 @@ export struct resource_server_driver : interface<resource_server_driver> {
         return indeterminate;
     }
 
-    virtual auto get_resource_io(const identifier_t, const url&)
+    virtual auto get_resource_io(const endpoint_id_t, const url&)
       -> unique_holder<source_blob_io> {
         return {};
     }
 
     virtual auto get_blob_timeout(
-      const identifier_t,
+      const endpoint_id_t,
       const url&,
       const span_size_t size) noexcept -> std::chrono::seconds {
         return std::chrono::seconds{size / 1024};
     }
 
     virtual auto get_blob_priority(
-      const identifier_t,
+      const endpoint_id_t,
       const url&,
       const message_priority priority) noexcept -> message_priority {
         return priority;
@@ -120,21 +120,21 @@ private:
 export struct resource_manipulator_signals {
     /// @brief Triggered when a server responds that is has a resource.
     /// @see search_resource
-    signal<void(const identifier_t, const url&) noexcept> server_has_resource;
+    signal<void(const endpoint_id_t, const url&) noexcept> server_has_resource;
 
     /// @brief Triggered when a server responds that is has not a resource.
     /// @see search_resource
-    signal<void(const identifier_t, const url&) noexcept>
+    signal<void(const endpoint_id_t, const url&) noexcept>
       server_has_not_resource;
 
     /// @brief Triggered when a resource becomes available.
-    signal<void(const identifier_t, const url&) noexcept> resource_appeared;
+    signal<void(const endpoint_id_t, const url&) noexcept> resource_appeared;
 
     /// @brief Triggered when a resource server appears on the bus.
-    signal<void(const identifier_t) noexcept> resource_server_appeared;
+    signal<void(const endpoint_id_t) noexcept> resource_server_appeared;
 
     /// @brief Triggered when a resource server disappears from the bus.
-    signal<void(const identifier_t) noexcept> resource_server_lost;
+    signal<void(const endpoint_id_t) noexcept> resource_server_lost;
 };
 //------------------------------------------------------------------------------
 struct resource_manipulator_intf : interface<resource_manipulator_intf> {
@@ -146,14 +146,14 @@ struct resource_manipulator_intf : interface<resource_manipulator_intf> {
     virtual auto update() noexcept -> work_done = 0;
 
     virtual auto server_endpoint_id(const url& locator) noexcept
-      -> identifier_t = 0;
+      -> endpoint_id_t = 0;
 
     virtual auto search_resource(
-      const identifier_t endpoint_id,
+      const endpoint_id_t endpoint_id,
       const url& locator) noexcept -> std::optional<message_sequence_t> = 0;
 
     virtual auto query_resource_content(
-      identifier_t endpoint_id,
+      endpoint_id_t endpoint_id,
       const url& locator,
       shared_holder<target_blob_io> write_io,
       const message_priority priority,
@@ -180,7 +180,7 @@ class resource_manipulator
 public:
     /// @brief Returns the best-guess of server endpoint id for a URL.
     /// @see query_resource_content
-    auto server_endpoint_id(const url& locator) noexcept -> identifier_t {
+    auto server_endpoint_id(const url& locator) noexcept -> endpoint_id_t {
         return _impl->server_endpoint_id(locator);
     }
 
@@ -188,7 +188,7 @@ public:
     /// @see server_has_resource
     /// @see server_has_not_resource
     auto search_resource(
-      const identifier_t endpoint_id,
+      const endpoint_id_t endpoint_id,
       const url& locator) noexcept -> std::optional<message_sequence_t> {
         return _impl->search_resource(endpoint_id, locator);
     }
@@ -203,7 +203,7 @@ public:
 
     /// @brief Requests the contents of the file with the specified URL.
     auto query_resource_content(
-      identifier_t endpoint_id,
+      endpoint_id_t endpoint_id,
       const url& locator,
       shared_holder<target_blob_io> write_io,
       const message_priority priority,
@@ -215,7 +215,7 @@ public:
 
     /// @brief Requests the contents of the file with the specified URL.
     auto query_resource_content(
-      identifier_t endpoint_id,
+      endpoint_id_t endpoint_id,
       const url& locator,
       shared_holder<target_blob_io> write_io,
       const message_priority priority,

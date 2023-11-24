@@ -621,7 +621,7 @@ auto remote_node::uptime() const noexcept
 }
 //------------------------------------------------------------------------------
 auto remote_node::connections() const noexcept -> node_connections {
-    std::vector<identifier_t> remote_ids;
+    std::vector<endpoint_id_t> remote_ids;
     _tracker.for_each_connection([&](const auto& conn) {
         if(auto remote_id{conn.opposite_id(_node_id)}) {
             remote_ids.push_back(*remote_id);
@@ -1159,7 +1159,7 @@ auto node_connection_state::assign(const connection_statistics& stats) noexcept
 //------------------------------------------------------------------------------
 class remote_node_tracker_impl {
 public:
-    flat_map<identifier_t, remote_node_state> nodes;
+    flat_map<endpoint_id_t, remote_node_state> nodes;
     flat_map<process_instance_id_t, remote_instance_state> instances;
     flat_map<host_id_t, remote_host_state> hosts;
     std::vector<node_connection_state> connections;
@@ -1185,7 +1185,7 @@ auto remote_node_tracker::cached(const std::string& s) noexcept -> string_view {
 }
 //------------------------------------------------------------------------------
 auto remote_node_tracker::_get_nodes() noexcept
-  -> flat_map<identifier_t, remote_node_state>& {
+  -> flat_map<endpoint_id_t, remote_node_state>& {
     assert(_pimpl);
     return _pimpl->nodes;
 }
@@ -1214,7 +1214,7 @@ auto remote_node_tracker::_get_connections() const noexcept
     return _pimpl->connections;
 }
 //------------------------------------------------------------------------------
-auto remote_node_tracker::get_node(const identifier_t node_id) noexcept
+auto remote_node_tracker::get_node(const endpoint_id_t node_id) noexcept
   -> remote_node_state& {
     assert(_pimpl);
     assert(node_id != 0U);
@@ -1226,7 +1226,7 @@ auto remote_node_tracker::get_node(const identifier_t node_id) noexcept
     return *node;
 }
 //------------------------------------------------------------------------------
-auto remote_node_tracker::remove_node(const identifier_t node_id) noexcept
+auto remote_node_tracker::remove_node(const endpoint_id_t node_id) noexcept
   -> bool {
     assert(_pimpl);
     return _pimpl->nodes.erase(node_id) > 0;
@@ -1275,8 +1275,8 @@ auto remote_node_tracker::get_instance(const process_instance_id_t instance_id)
 }
 //------------------------------------------------------------------------------
 auto remote_node_tracker::get_connection(
-  const identifier_t node_id1,
-  const identifier_t node_id2) noexcept -> node_connection_state& {
+  const endpoint_id_t node_id1,
+  const endpoint_id_t node_id2) noexcept -> node_connection_state& {
     assert(_pimpl);
     for(auto& conn : _pimpl->connections) {
         if(conn.connects(node_id1, node_id2)) {
@@ -1290,8 +1290,8 @@ auto remote_node_tracker::get_connection(
 }
 //------------------------------------------------------------------------------
 auto remote_node_tracker::get_connection(
-  const identifier_t node_id1,
-  const identifier_t node_id2) const noexcept -> node_connection_state {
+  const endpoint_id_t node_id1,
+  const endpoint_id_t node_id2) const noexcept -> node_connection_state {
     if(_pimpl) {
         for(auto& conn : _pimpl->connections) {
             if(conn.connects(node_id1, node_id2)) {
@@ -1303,7 +1303,7 @@ auto remote_node_tracker::get_connection(
 }
 //------------------------------------------------------------------------------
 auto remote_node_tracker::notice_instance(
-  const identifier_t node_id,
+  const endpoint_id_t node_id,
   const process_instance_id_t instance_id) noexcept -> remote_node_state& {
     auto& node = get_node(node_id);
     if(const auto node_inst{node.instance_id()}) {

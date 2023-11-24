@@ -31,7 +31,7 @@ public:
     }
 
     void ping(
-      const identifier_t pingable_id,
+      const endpoint_id_t pingable_id,
       const std::chrono::milliseconds max_time) noexcept final {
         message_view message{};
         auto msg_id{msgbus_id{"ping"}};
@@ -119,7 +119,7 @@ private:
     subscriber& base;
     pinger_signals& signals;
 
-    std::vector<std::tuple<identifier_t, message_sequence_t, timeout>>
+    std::vector<std::tuple<endpoint_id_t, message_sequence_t, timeout>>
       _pending{};
 };
 //------------------------------------------------------------------------------

@@ -273,7 +273,7 @@ auto resource_data_consumer_node::_query_resource(
     auto& info = _streamed_resources[request_id];
     info.locator = std::move(locator);
     info.resource_io = std::move(io);
-    info.source_server_id = invalid_endpoint_id();
+    info.source_server_id = {};
     info.should_search.reset(_config.resource_search_interval.value(), nothing);
     info.blob_timeout.reset(max_time);
     info.blob_priority = priority;
@@ -328,7 +328,7 @@ auto resource_data_consumer_node::cancel_resource_stream(
 }
 //------------------------------------------------------------------------------
 void resource_data_consumer_node::_handle_server_appeared(
-  identifier_t server_id) noexcept {
+  endpoint_id_t server_id) noexcept {
     auto& info = _current_servers[server_id];
     info.should_check.reset(_config.server_check_interval.value(), nothing);
     info.not_responding.reset(_config.server_response_timeout.value());
@@ -338,11 +338,11 @@ void resource_data_consumer_node::_handle_server_appeared(
 }
 //------------------------------------------------------------------------------
 void resource_data_consumer_node::_handle_server_lost(
-  identifier_t server_id) noexcept {
+  endpoint_id_t server_id) noexcept {
     for(auto& entry : _streamed_resources) {
         auto& info = std::get<1>(entry);
         if(info.source_server_id == server_id) {
-            info.source_server_id = invalid_endpoint_id();
+            info.source_server_id = {};
         }
     }
     _current_servers.erase(server_id);
@@ -352,7 +352,7 @@ void resource_data_consumer_node::_handle_server_lost(
 }
 //------------------------------------------------------------------------------
 void resource_data_consumer_node::_handle_resource_found(
-  identifier_t server_id,
+  endpoint_id_t server_id,
   const url& locator) noexcept {
     for(auto& entry : _streamed_resources) {
         auto& info = std::get<1>(entry);
@@ -379,13 +379,13 @@ void resource_data_consumer_node::_handle_resource_found(
 }
 //------------------------------------------------------------------------------
 void resource_data_consumer_node::_handle_missing(
-  identifier_t server_id,
+  endpoint_id_t server_id,
   const url& locator) noexcept {
     for(auto& entry : _streamed_resources) {
         auto& info = std::get<1>(entry);
         if(info.locator == locator) {
             if(info.source_server_id == server_id) {
-                info.source_server_id = invalid_endpoint_id();
+                info.source_server_id = {};
                 log_debug("resource ${locator} not found on server ${id}")
                   .tag("resNotFund")
                   .arg("locator", info.locator.str())

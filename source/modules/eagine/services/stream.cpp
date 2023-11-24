@@ -29,7 +29,7 @@ namespace eagine::msgbus {
 /// @ingroup msgbus
 export struct stream_info {
     /// @brief The stream identifier unique in the scope of the provider.
-    identifier_t id{invalid_endpoint_id()};
+    identifier_t id{0};
 
     /// @brief The stream kind identifier.
     identifier kind{};
@@ -74,20 +74,20 @@ public:
     }
 
     /// @brief Returns the id of the assigned stream relay node.
-    auto stream_relay() const noexcept -> identifier_t {
+    auto stream_relay() const noexcept -> endpoint_id_t {
         return _stream_relay_id;
     }
 
     ///@brief Resets the assigned relay node.
     void reset_stream_relay() noexcept {
-        _stream_relay_id = invalid_endpoint_id();
+        _stream_relay_id = {};
         _stream_relay_hops = subscriber_info::max_hops();
         stream_relay_reset();
     }
 
     ///@brief Explicitly sets the id of the relay node.
     void set_stream_relay(
-      const identifier_t endpoint_id,
+      const endpoint_id_t endpoint_id,
       const subscriber_info::hop_count_t hop_count =
         subscriber_info::max_hops()) noexcept {
         if(is_valid_endpoint_id(endpoint_id)) [[likely]] {
@@ -101,7 +101,7 @@ public:
     }
 
     /// @brief Triggered when a new relay has been assigned.
-    signal<void(const identifier_t relay_id) noexcept> stream_relay_assigned;
+    signal<void(const endpoint_id_t relay_id) noexcept> stream_relay_assigned;
 
     /// @brief Triggered when the current relay has been reset.
     signal<void() noexcept> stream_relay_reset;
@@ -180,7 +180,7 @@ private:
         }
     }
 
-    identifier_t _stream_relay_id{invalid_endpoint_id()};
+    endpoint_id_t _stream_relay_id{};
     timeout _stream_relay_timeout{endpoint_alive_notify_period() * 2, nothing};
     subscriber_info::hop_count_t _stream_relay_hops{
       subscriber_info::max_hops()};
@@ -276,7 +276,7 @@ protected:
 
 private:
     void _announce_stream(
-      const identifier_t relay_id,
+      const endpoint_id_t relay_id,
       const stream_info& info) noexcept {
         auto buffer = default_serialize_buffer_for(info);
 
@@ -290,7 +290,7 @@ private:
     }
 
     void _retract_stream(
-      const identifier_t relay_id,
+      const endpoint_id_t relay_id,
       const identifier_t stream_id) noexcept {
         auto buffer = default_serialize_buffer_for(stream_id);
         auto serialized{default_serialize(stream_id, cover(buffer))};
@@ -302,7 +302,7 @@ private:
         this->bus_node().post(msg_id, message);
     }
 
-    void _handle_stream_relay_assigned(const identifier_t relay_id) noexcept {
+    void _handle_stream_relay_assigned(const endpoint_id_t relay_id) noexcept {
         for(const auto& [stream_id, stream] : _streams) {
             assert(stream_id == stream.info.id);
             (void)(stream_id);
@@ -365,13 +365,13 @@ export template <typename Base = subscriber>
 class stream_consumer : public require_services<Base, stream_endpoint> {
     using This = stream_consumer;
     using base = require_services<Base, stream_endpoint>;
-    using stream_key_t = std::tuple<identifier_t, identifier_t>;
+    using stream_key_t = std::tuple<endpoint_id_t, identifier_t>;
 
 public:
     /// @brief Triggered when a data stream has appeared at the given provider.
     /// @see stream_disappeared
     signal<void(
-      const identifier_t provider_id,
+      const endpoint_id_t provider_id,
       const stream_info&,
       const verification_bits verified) noexcept>
       stream_appeared;
@@ -379,7 +379,7 @@ public:
     /// @brief Triggered when a data stream has been lost at the given provider.
     /// @see stream_appeared
     signal<void(
-      const identifier_t provider_id,
+      const endpoint_id_t provider_id,
       const stream_info&,
       const verification_bits verified) noexcept>
       stream_disappeared;
@@ -387,7 +387,7 @@ public:
     /// @brief Subscribes to the data from the specified stream.
     /// @see unsubscribe_from_stream
     void subscribe_to_stream(
-      const identifier_t provider_id,
+      const endpoint_id_t provider_id,
       const identifier_t stream_id) noexcept {
         const stream_key_t key{provider_id, stream_id};
         auto pos = _streams.find(key);
@@ -402,7 +402,7 @@ public:
     /// @brief Unsubscribes from the specified stream.
     /// @seei subscribe_to_stream
     void unsubscribe_from_stream(
-      const identifier_t provider_id,
+      const endpoint_id_t provider_id,
       const identifier_t stream_id) noexcept {
         const stream_key_t key{provider_id, stream_id};
         auto pos = _streams.find(key);
@@ -492,13 +492,13 @@ class stream_relay
   : public require_services<Base, subscriber_discovery, pingable> {
     using This = stream_relay;
     using base = require_services<Base, subscriber_discovery, pingable>;
-    using stream_key_t = std::tuple<identifier_t, identifier_t>;
+    using stream_key_t = std::tuple<endpoint_id_t, identifier_t>;
 
 public:
     /// @brief Triggered when a data stream was announced by the given provider.
     /// @see stream_retracted
     signal<void(
-      const identifier_t provider_id,
+      const endpoint_id_t provider_id,
       const stream_info&,
       const verification_bits verified) noexcept>
       stream_announced;
@@ -506,7 +506,7 @@ public:
     /// @brief Triggered when a data stream was retracted by the given provider.
     /// @see stream_announced
     signal<void(
-      const identifier_t provider_id,
+      const endpoint_id_t provider_id,
       const stream_info&,
       const verification_bits verified) noexcept>
       stream_retracted;
@@ -595,7 +595,7 @@ private:
     }
 
     void _forward_stream_announce(
-      const identifier_t provider_id,
+      const endpoint_id_t provider_id,
       const stream_status& stream,
       const verification_bits verified,
       message_view message) noexcept {
@@ -626,7 +626,7 @@ private:
     }
 
     void _forward_stream_retract(
-      const identifier_t provider_id,
+      const endpoint_id_t provider_id,
       const stream_status& stream,
       const verification_bits verified,
       message_view message) noexcept {
@@ -692,9 +692,9 @@ private:
     }
 
     std::map<stream_key_t, stream_status> _streams;
-    std::map<identifier_t, provider_status> _providers;
-    std::map<identifier_t, consumer_status> _consumers;
-    std::map<identifier_t, relay_status> _relays;
+    std::map<endpoint_id_t, provider_status> _providers;
+    std::map<endpoint_id_t, consumer_status> _consumers;
+    std::map<endpoint_id_t, relay_status> _relays;
 };
 //------------------------------------------------------------------------------
 } // namespace eagine::msgbus

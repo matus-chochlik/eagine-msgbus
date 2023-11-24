@@ -704,7 +704,7 @@ void endpoint::post_meta_message(
 }
 //------------------------------------------------------------------------------
 void endpoint::post_meta_message_to(
-  const identifier_t target_id,
+  const endpoint_id_t target_id,
   const message_id meta_msg_id,
   const message_id msg_id) noexcept {
     auto temp{default_serialize_buffer_for(msg_id)};
@@ -729,7 +729,7 @@ void endpoint::say_subscribes_to(const message_id msg_id) noexcept {
 }
 //------------------------------------------------------------------------------
 void endpoint::say_subscribes_to(
-  const identifier_t target_id,
+  const endpoint_id_t target_id,
   const message_id msg_id) noexcept {
     log_debug("announces subscription to message ${message}")
       .arg("target", target_id)
@@ -738,7 +738,7 @@ void endpoint::say_subscribes_to(
 }
 //------------------------------------------------------------------------------
 void endpoint::say_not_subscribed_to(
-  const identifier_t target_id,
+  const endpoint_id_t target_id,
   const message_id msg_id) noexcept {
     log_debug("denies subscription to message ${message}")
       .arg("target", target_id)
@@ -752,7 +752,7 @@ void endpoint::say_unsubscribes_from(const message_id msg_id) noexcept {
     post_meta_message(msgbus_id{"unsubFrom"}, msg_id);
 }
 //------------------------------------------------------------------------------
-void endpoint::query_subscriptions_of(const identifier_t target_id) noexcept {
+void endpoint::query_subscriptions_of(const endpoint_id_t target_id) noexcept {
     log_debug("querying subscribed messages of endpoint ${target}")
       .arg("target", target_id);
     message_view msg{};
@@ -787,7 +787,7 @@ void endpoint::allow_message_type(const message_id msg_id) noexcept {
 }
 //------------------------------------------------------------------------------
 auto endpoint::post_certificate(
-  const identifier_t target_id,
+  const endpoint_id_t target_id,
   const blob_id_t target_blob_id) noexcept -> bool {
     assert(_context);
     if(const auto cert_pem{_context->get_own_certificate_pem()}) {
@@ -816,7 +816,7 @@ auto endpoint::broadcast_certificate() noexcept -> bool {
     return false;
 }
 //------------------------------------------------------------------------------
-void endpoint::query_certificate_of(const identifier_t endpoint_id) noexcept {
+void endpoint::query_certificate_of(const endpoint_id_t endpoint_id) noexcept {
     log_debug("querying certificate of endpoint ${endpoint}")
       .arg("endpoint", endpoint_id);
     message_view msg{};

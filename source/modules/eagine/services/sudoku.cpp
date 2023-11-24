@@ -119,7 +119,7 @@ export struct sudoku_solver_driver : interface<sudoku_solver_driver> {
 export template <unsigned S>
 struct solved_sudoku_board {
     /// @brief Id of the helper that provided the solution.
-    identifier_t helper_id{invalid_endpoint_id()};
+    endpoint_id_t helper_id{};
     /// @brief Key, identifiying the board.
     sudoku_solver_key key{0};
     /// @brief Elapsed time.
@@ -155,14 +155,14 @@ struct sudoku_solver_intf : interface<sudoku_solver_intf> {
     virtual auto solution_timeouted(unsigned rank) const noexcept -> bool = 0;
 
     virtual auto updated_by_helper(
-      const identifier_t helper_id,
+      const endpoint_id_t helper_id,
       const unsigned rank) const noexcept -> std::intmax_t = 0;
 
     virtual auto updated_count(const unsigned rank) const noexcept
       -> std::intmax_t = 0;
 
     virtual auto solved_by_helper(
-      const identifier_t helper_id,
+      const endpoint_id_t helper_id,
       const unsigned rank) const noexcept -> std::intmax_t = 0;
 
     virtual auto solved_count(const unsigned rank) const noexcept
@@ -174,7 +174,7 @@ struct sudoku_solver_intf : interface<sudoku_solver_intf> {
 /// @see sudoku_solver_signals
 export struct sudoku_helper_appeared {
     /// @brief Id of the helper endpoint.
-    identifier_t helper_id{invalid_endpoint_id()};
+    endpoint_id_t helper_id{};
 };
 
 /// @brief Type containing information about Sudoku solver queue changes.
@@ -350,7 +350,7 @@ public:
     /// @see updated_count
     template <unsigned S>
     auto updated_by_helper(
-      const identifier_t helper_id,
+      const endpoint_id_t helper_id,
       const unsigned_constant<S>) const noexcept -> std::intmax_t {
         return _impl->updated_by_helper(helper_id, S);
     }
@@ -369,7 +369,7 @@ public:
     /// @see solved_count
     template <unsigned S>
     auto solved_by_helper(
-      const identifier_t helper_id,
+      const endpoint_id_t helper_id,
       const unsigned_constant<S>) const noexcept -> std::intmax_t {
         return _impl->solved_by_helper(helper_id, S);
     }
@@ -764,28 +764,28 @@ public:
 export struct sudoku_tiling_signals {
     /// @brief Triggered then all tiles with rank 3 are generated.
     signal<void(
-      const identifier_t,
+      const endpoint_id_t,
       const sudoku_tiles<3>&,
       const sudoku_solver_key&) noexcept>
       tiles_generated_3;
 
     /// @brief Triggered then all tiles with rank 4 are generated.
     signal<void(
-      const identifier_t,
+      const endpoint_id_t,
       const sudoku_tiles<4>&,
       const sudoku_solver_key&) noexcept>
       tiles_generated_4;
 
     /// @brief Triggered then all tiles with rank 5 are generated.
     signal<void(
-      const identifier_t,
+      const endpoint_id_t,
       const sudoku_tiles<5>&,
       const sudoku_solver_key&) noexcept>
       tiles_generated_5;
 
     /// @brief Triggered then all tiles with rank 6 are generated.
     signal<void(
-      const identifier_t,
+      const endpoint_id_t,
       const sudoku_tiles<6>&,
       const sudoku_solver_key&) noexcept>
       tiles_generated_6;

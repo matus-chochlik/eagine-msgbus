@@ -17,13 +17,13 @@ import eagine.msgbus.core;
 namespace eagine::msgbus {
 //------------------------------------------------------------------------------
 export struct router_shutdown {
-    identifier_t router_id{invalid_endpoint_id()};
+    endpoint_id_t router_id{};
 };
 export struct bridge_shutdown {
-    identifier_t bridge_id{invalid_endpoint_id()};
+    endpoint_id_t bridge_id{};
 };
 export struct endpoint_shutdown {
-    identifier_t endpoint_id{invalid_endpoint_id()};
+    endpoint_id_t endpoint_id{};
 };
 //------------------------------------------------------------------------------
 struct network_topology_intf : interface<network_topology_intf> {
@@ -31,7 +31,7 @@ struct network_topology_intf : interface<network_topology_intf> {
 
     virtual void query_topology(
       endpoint& bus,
-      const identifier_t node_id) noexcept = 0;
+      const endpoint_id_t node_id) noexcept = 0;
 
     virtual auto decode_router_topology_info(
       const message_context& msg_ctx,
@@ -126,7 +126,7 @@ class network_topology
 public:
     /// @brief Queries the topology information of the specified bus node.
     /// @see discover_topology
-    void query_topology(const identifier_t node_id) noexcept {
+    void query_topology(const endpoint_id_t node_id) noexcept {
         _impl->query_topology(this->bus_node(), node_id);
     }
 

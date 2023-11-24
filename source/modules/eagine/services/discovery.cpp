@@ -19,7 +19,7 @@ namespace eagine::msgbus {
 /// @brief Structure containing basic information about a message bus endpoint.
 export struct subscriber_info {
     /// @brief The endpoint id.
-    identifier_t endpoint_id{0U};
+    endpoint_id_t endpoint_id{};
     /// @brief The endpoint's instance (process) id.
     process_instance_id_t instance_id{0U};
 

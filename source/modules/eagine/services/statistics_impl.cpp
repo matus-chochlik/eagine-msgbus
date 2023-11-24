@@ -41,7 +41,7 @@ public:
             &statistics_consumer_impl::_handle_connection>{});
     }
 
-    void query_statistics(identifier_t node_id) noexcept final {
+    void query_statistics(endpoint_id_t node_id) noexcept final {
         message_view message{};
         message.set_target_id(node_id);
         const auto msg_id{msgbus_id{"statsQuery"}};

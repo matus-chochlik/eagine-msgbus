@@ -26,8 +26,8 @@ namespace eagine::msgbus {
 using blob_options_t = std::underlying_type_t<blob_option>;
 //------------------------------------------------------------------------------
 export struct blob_info {
-    identifier_t source_id{0U};
-    identifier_t target_id{0U};
+    endpoint_id_t source_id{};
+    endpoint_id_t target_id{};
     span_size_t total_size{0};
     blob_options options;
     message_priority priority{message_priority::normal};
@@ -219,8 +219,8 @@ public:
 
     auto push_outgoing(
       const message_id msg_id,
-      const identifier_t source_id,
-      const identifier_t target_id,
+      const endpoint_id_t source_id,
+      const endpoint_id_t target_id,
       const blob_id_t target_blob_id,
       shared_holder<source_blob_io> io,
       const std::chrono::seconds max_time,
@@ -229,8 +229,8 @@ public:
 
     auto push_outgoing(
       const message_id msg_id,
-      const identifier_t source_id,
-      const identifier_t target_id,
+      const endpoint_id_t source_id,
+      const endpoint_id_t target_id,
       const blob_id_t target_blob_id,
       shared_holder<source_blob_io> io,
       const std::chrono::seconds max_time,
@@ -248,8 +248,8 @@ public:
 
     auto push_outgoing(
       const message_id msg_id,
-      const identifier_t source_id,
-      const identifier_t target_id,
+      const endpoint_id_t source_id,
+      const endpoint_id_t target_id,
       const blob_id_t target_blob_id,
       const memory::const_block src,
       const std::chrono::seconds max_time,
@@ -258,8 +258,8 @@ public:
 
     auto push_outgoing(
       const message_id msg_id,
-      const identifier_t source_id,
-      const identifier_t target_id,
+      const endpoint_id_t source_id,
+      const endpoint_id_t target_id,
       const blob_id_t target_blob_id,
       const memory::const_block src,
       const std::chrono::seconds max_time,
@@ -277,14 +277,14 @@ public:
 
     auto expect_incoming(
       const message_id msg_id,
-      const identifier_t source_id,
+      const endpoint_id_t source_id,
       const blob_id_t target_blob_id,
       shared_holder<target_blob_io> io,
       const std::chrono::seconds max_time) noexcept -> bool;
 
     auto push_incoming_fragment(
       const message_id msg_id,
-      const identifier_t source_id,
+      const endpoint_id_t source_id,
       const blob_id_t source_blob_id,
       const blob_id_t target_blob_id,
       const std::int64_t offset,
@@ -299,7 +299,7 @@ public:
       -> bool;
     auto process_resend(const message_view& message) noexcept -> bool;
 
-    auto cancel_incoming(const identifier_t target_blob_id) noexcept -> bool;
+    auto cancel_incoming(const endpoint_id_t target_blob_id) noexcept -> bool;
 
     using fetch_handler = callable_ref<
       bool(const message_id, const message_age, const message_view&) noexcept>;

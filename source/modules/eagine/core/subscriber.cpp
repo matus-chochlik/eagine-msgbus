@@ -88,7 +88,7 @@ public:
 
     /// @brief Queries the subscriptions of the remote endpoint with the specified id.
     /// @see query_subscribers_of
-    void query_subscriptions_of(const identifier_t target_id) noexcept {
+    void query_subscriptions_of(const endpoint_id_t target_id) noexcept {
         _endpoint.query_subscriptions_of(target_id);
     }
 
@@ -252,7 +252,7 @@ protected:
     }
 
     void _respond_to_subscription_query(
-      const identifier_t source_id,
+      const endpoint_id_t source_id,
       const span<const handler_entry> msg_handlers) const noexcept {
         for(const auto& entry : msg_handlers) {
             _endpoint.say_subscribes_to(source_id, entry.msg_id);
@@ -260,7 +260,7 @@ protected:
     }
 
     void _respond_to_subscription_query(
-      const identifier_t source_id,
+      const endpoint_id_t source_id,
       const message_id sub_msg,
       const span<const handler_entry> msg_handlers) const noexcept {
         for(const auto& entry : msg_handlers) {
@@ -419,7 +419,7 @@ public:
     /// @see retract_subscriptions
     /// @see announce_subscriptions
     void respond_to_subscription_query(
-      const identifier_t source_id) const noexcept {
+      const endpoint_id_t source_id) const noexcept {
         this->_respond_to_subscription_query(source_id, view(_msg_handlers));
     }
 
@@ -427,7 +427,7 @@ public:
     /// @see retract_subscriptions
     /// @see announce_subscriptions
     void respond_to_subscription_query(
-      const identifier_t source_id,
+      const endpoint_id_t source_id,
       const message_id sub_msg) const noexcept {
         this->_respond_to_subscription_query(
           source_id, sub_msg, view(_msg_handlers));
@@ -563,7 +563,7 @@ public:
     /// @see retract_subscriptions
     /// @see announce_subscriptions
     void respond_to_subscription_query(
-      const identifier_t source_id) const noexcept {
+      const endpoint_id_t source_id) const noexcept {
         this->_respond_to_subscription_query(source_id, view(_msg_handlers));
     }
 
@@ -571,7 +571,7 @@ public:
     /// @see retract_subscriptions
     /// @see announce_subscriptions
     void respond_to_subscription_query(
-      const identifier_t source_id,
+      const endpoint_id_t source_id,
       const message_id sub_msg) const noexcept {
         this->_respond_to_subscription_query(
           source_id, sub_msg, view(_msg_handlers));

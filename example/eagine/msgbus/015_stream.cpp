@@ -56,7 +56,7 @@ protected:
     }
 
 private:
-    void _handle_relay_assigned(const identifier_t relay_id) noexcept {
+    void _handle_relay_assigned(const endpoint_id_t relay_id) noexcept {
         log_info("stream relay ${relay} assigned").arg("relay", relay_id);
     }
 
@@ -91,12 +91,12 @@ public:
     }
 
 private:
-    void _handle_relay_assigned(const identifier_t relay_id) noexcept {
+    void _handle_relay_assigned(const endpoint_id_t relay_id) noexcept {
         log_info("stream relay ${relay} assigned").arg("relay", relay_id);
     }
 
     void _handle_stream_appeared(
-      const identifier_t provider_id,
+      const endpoint_id_t provider_id,
       const stream_info& info,
       const msgbus::verification_bits) noexcept {
         log_info("stream ${stream} appeared at ${provider}")
@@ -108,7 +108,7 @@ private:
     }
 
     void _handle_stream_disappeared(
-      const identifier_t provider_id,
+      const endpoint_id_t provider_id,
       const stream_info& info,
       const msgbus::verification_bits) noexcept {
         log_info("stream ${stream} disappeared from ${provider}")
@@ -118,7 +118,7 @@ private:
         _current_streams.erase({provider_id, info.id});
     }
 
-    flat_set<std::tuple<identifier_t, identifier_t>> _current_streams;
+    flat_set<std::tuple<endpoint_id_t, identifier_t>> _current_streams;
     bool _had_streams{false};
 };
 //------------------------------------------------------------------------------
@@ -134,7 +134,7 @@ auto main(main_ctx& ctx) -> int {
         "RelayEndpt");
 
     const auto on_stream_announced = [&ctx](
-                                       identifier_t provider_id,
+                                       endpoint_id_t provider_id,
                                        const msgbus::stream_info& info,
                                        msgbus::verification_bits) noexcept {
         ctx.log()
@@ -146,7 +146,7 @@ auto main(main_ctx& ctx) -> int {
     relay.stream_announced.connect({construct_from, on_stream_announced});
 
     const auto on_stream_retracted = [&ctx](
-                                       identifier_t provider_id,
+                                       endpoint_id_t provider_id,
                                        const msgbus::stream_info& info,
                                        msgbus::verification_bits) {
         ctx.log()

@@ -51,7 +51,7 @@ public:
         _ptrck = &trck;
     }
 
-    void assign_target(eagine::identifier_t id) noexcept {
+    void assign_target(eagine::endpoint_id_t id) noexcept {
         _target = id;
     }
 
@@ -71,7 +71,7 @@ protected:
     }
     auto update() -> eagine::work_done {
         eagine::some_true something_done{Base::update()};
-        if(eagine::msgbus::is_valid_endpoint_id(_target)) {
+        if(is_valid_endpoint_id(_target)) {
             if(_ping_time.is_expired()) {
                 eagine::msgbus::message_view ping_msg;
                 ping_msg.set_target_id(_target);
@@ -100,7 +100,7 @@ private:
     int _rcvd{0};
     eagine::msgbus::message_sequence_t _seq_id{0};
     eagine::timeout _ping_time{std::chrono::milliseconds{1}};
-    eagine::identifier_t _target{eagine::msgbus::invalid_endpoint_id()};
+    eagine::endpoint_id_t _target{};
     eagitest::track* _ptrck{nullptr};
 };
 //------------------------------------------------------------------------------
@@ -317,8 +317,7 @@ void registry_queues(auto& s) {
                 for(auto& queue : service.process_queues()) {
                     for(auto& message : queue.give_messages()) {
                         test.check(
-                          eagine::msgbus::is_valid_endpoint_id(
-                            message.source_id),
+                          is_valid_endpoint_id(message.source_id),
                           "valid source id");
                         if(queue.context().msg_id().is("eagiTest", "ping")) {
                             test.check_equal(

@@ -278,7 +278,7 @@ private:
 
     struct _streamed_resource_info {
         url locator{};
-        identifier_t source_server_id{invalid_endpoint_id()};
+        endpoint_id_t source_server_id{};
         shared_holder<target_blob_io> resource_io{};
         timeout should_search{};
         timeout blob_timeout{};
@@ -294,10 +294,10 @@ private:
       const std::chrono::seconds max_time,
       const bool all_in_one) -> std::pair<identifier_t, const url&>;
 
-    void _handle_server_appeared(identifier_t) noexcept;
-    void _handle_server_lost(identifier_t) noexcept;
-    void _handle_resource_found(identifier_t, const url&) noexcept;
-    void _handle_missing(identifier_t, const url&) noexcept;
+    void _handle_server_appeared(endpoint_id_t) noexcept;
+    void _handle_server_lost(endpoint_id_t) noexcept;
+    void _handle_resource_found(endpoint_id_t, const url&) noexcept;
+    void _handle_missing(endpoint_id_t, const url&) noexcept;
     void _handle_stream_done(identifier_t) noexcept;
     void _handle_stream_data(const blob_stream_chunk&) noexcept;
     void _handle_ping_response(
@@ -311,7 +311,7 @@ private:
     memory::buffer_pool _buffers;
 
     embedded_resource_loader _embedded_loader;
-    std::map<identifier_t, _server_info> _current_servers;
+    std::map<endpoint_id_t, _server_info> _current_servers;
     std::map<identifier_t, _streamed_resource_info> _streamed_resources;
     std::vector<unique_holder<_embedded_resource_info>> _embedded_resources;
 };

@@ -637,7 +637,7 @@ auto blob_manipulator::_make_target_io(
 //------------------------------------------------------------------------------
 auto blob_manipulator::expect_incoming(
   const message_id msg_id,
-  const identifier_t source_id,
+  const endpoint_id_t source_id,
   const blob_id_t target_blob_id,
   shared_holder<target_blob_io> io,
   const std::chrono::seconds max_time) noexcept -> bool {
@@ -661,7 +661,7 @@ auto blob_manipulator::expect_incoming(
 //------------------------------------------------------------------------------
 auto blob_manipulator::push_incoming_fragment(
   const message_id msg_id,
-  const identifier_t source_id,
+  const endpoint_id_t source_id,
   const blob_id_t source_blob_id,
   const blob_id_t target_blob_id,
   const std::int64_t offset,
@@ -855,10 +855,10 @@ auto blob_manipulator::process_resend(const message_view& message) noexcept
           .arg("srcBlobId", source_blob_id)
           .arg("begin", bgn)
           .arg("end", end);
-        const auto pos = std::find_if(
+        const auto pos{std::find_if(
           _outgoing.begin(), _outgoing.end(), [source_blob_id](auto& pending) {
               return pending.source_blob_id == source_blob_id;
-          });
+          })};
         if(pos != _outgoing.end()) {
             pos->merge_resend_request(bgn, end);
         }
@@ -867,11 +867,11 @@ auto blob_manipulator::process_resend(const message_view& message) noexcept
 }
 //------------------------------------------------------------------------------
 auto blob_manipulator::cancel_incoming(
-  const identifier_t target_blob_id) noexcept -> bool {
-    const auto pos = std::find_if(
+  const endpoint_id_t target_blob_id) noexcept -> bool {
+    const auto pos{std::find_if(
       _incoming.begin(), _incoming.end(), [target_blob_id](auto& pending) {
           return pending.target_blob_id == target_blob_id;
-      });
+      })};
     if(pos != _incoming.end()) {
         auto& pending = *pos;
         pending.target_io->handle_cancelled();
@@ -917,8 +917,8 @@ auto blob_manipulator::_next_blob_id() noexcept -> blob_id_t {
 //------------------------------------------------------------------------------
 auto blob_manipulator::push_outgoing(
   const message_id msg_id,
-  const identifier_t source_id,
-  const identifier_t target_id,
+  const endpoint_id_t source_id,
+  const endpoint_id_t target_id,
   const blob_id_t target_blob_id,
   shared_holder<source_blob_io> io,
   const std::chrono::seconds max_time,
@@ -947,8 +947,8 @@ auto blob_manipulator::push_outgoing(
 //------------------------------------------------------------------------------
 auto blob_manipulator::push_outgoing(
   const message_id msg_id,
-  const identifier_t source_id,
-  const identifier_t target_id,
+  const endpoint_id_t source_id,
+  const endpoint_id_t target_id,
   const blob_id_t target_blob_id,
   const memory::const_block src,
   const std::chrono::seconds max_time,

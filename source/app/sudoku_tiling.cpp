@@ -27,7 +27,7 @@ public:
 private:
     template <unsigned S>
     void _handle_generated(
-      const eagine::identifier_t,
+      const eagine::endpoint_id_t,
       const sudoku_tiles<S>& tiles,
       const sudoku_solver_key&) noexcept;
 
@@ -75,7 +75,7 @@ void sudoku_tiling_node::log_finish() noexcept {
 //------------------------------------------------------------------------------
 template <unsigned S>
 void sudoku_tiling_node::_handle_generated(
-  const eagine::identifier_t,
+  const eagine::endpoint_id_t,
   const sudoku_tiles<S>& tiles,
   const sudoku_solver_key&) noexcept {
     if(_print_progress) {

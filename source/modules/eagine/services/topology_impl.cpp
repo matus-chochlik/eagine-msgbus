@@ -38,7 +38,7 @@ public:
           this, msgbus_map<"byeByeEndp", &This::_handle_endpoint_bye>{});
     }
 
-    void query_topology(endpoint& bus, const identifier_t node_id) noexcept
+    void query_topology(endpoint& bus, const endpoint_id_t node_id) noexcept
       final {
         message_view message{};
         message.set_target_id(node_id);

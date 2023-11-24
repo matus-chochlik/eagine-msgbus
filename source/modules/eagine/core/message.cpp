@@ -24,6 +24,10 @@ import eagine.core.main_ctx;
 import :types;
 
 namespace eagine {
+//------------------------------------------------------------------------------
+export template <identifier_t Sid, typename Selector>
+struct get_serialize_buffer_size<Sid, endpoint_id_t, Selector>
+  : get_serialize_buffer_size<Sid, identifier_t, Selector> {};
 
 export template <identifier_t Sid, typename Selector>
 struct get_serialize_buffer_size<Sid, message_id, Selector>
@@ -31,6 +35,30 @@ struct get_serialize_buffer_size<Sid, message_id, Selector>
       Sid,
       std::tuple<std::uint64_t, std::uint64_t>,
       Selector> {};
+
+export template <>
+struct serializer<endpoint_id_t> {
+    auto write(const endpoint_id_t value, auto& backend) const noexcept {
+        span_size_t written{0};
+        const auto errors{backend.write(view_one(value.value()), written)};
+        if(written < 1) [[unlikely]] {
+            assert(errors.has(serialization_error_code::too_much_data));
+        }
+        return errors;
+    }
+};
+
+export template <>
+struct deserializer<endpoint_id_t> {
+    static auto read(endpoint_id_t& value, auto& backend) noexcept
+      -> deserialization_errors {
+        span_size_t done{0};
+        identifier_t temp{0};
+        auto result{backend.read(cover_one(temp), done)};
+        value = {temp};
+        return result;
+    }
+};
 //------------------------------------------------------------------------------
 namespace msgbus {
 //------------------------------------------------------------------------------
@@ -80,32 +108,6 @@ export [[nodiscard]] constexpr auto is_special_message(
     return msg_id.has_class("eagiMsgBus");
 }
 //------------------------------------------------------------------------------
-/// @brief Returns the special broadcast message bus endpoint id.
-/// @ingroup msgbus
-export [[nodiscard]] constexpr auto broadcast_endpoint_id() noexcept
-  -> identifier_t {
-    return 0U;
-}
-//------------------------------------------------------------------------------
-/// @brief Returns the special invalid message bus endpoint id.
-/// @ingroup msgbus
-/// @see is_valid_id
-export [[nodiscard]] constexpr auto invalid_endpoint_id() noexcept
-  -> identifier_t {
-    return 0U;
-}
-//------------------------------------------------------------------------------
-/// @brief Indicates if the specified endpoint id is valid.
-/// @ingroup msgbus
-/// @see invalid_endpoint_id
-export [[nodiscard]] constexpr auto is_valid_endpoint_id(
-  const identifier_t id) noexcept -> bool {
-    return id != 0U;
-}
-//------------------------------------------------------------------------------
-export using valid_endpoint_id =
-  valid_if_not<identifier_t, invalid_endpoint_id()>;
-//------------------------------------------------------------------------------
 /// @brief Alias for message timestamp type.
 /// @ingroup msgbus
 /// @see message_age
@@ -122,24 +124,20 @@ export using message_age =
 /// @see message_view
 /// @see stored_message
 export struct message_info {
-    static constexpr auto invalid_id() noexcept -> identifier_t {
-        return 0U;
-    }
-
     /// @brief Returns the source endpoint identifier.
     /// @see target_id
     /// @see set_source_id
-    identifier_t source_id{broadcast_endpoint_id()};
+    endpoint_id_t source_id{broadcast_endpoint_id()};
 
     /// @brief Returns the target endpoint identifier.
     /// @see source_id
     /// @see set_target_id
-    identifier_t target_id{broadcast_endpoint_id()};
+    endpoint_id_t target_id{broadcast_endpoint_id()};
 
     /// @brief Returns the identifier of the used serializer.
     /// @see set_serializer_id
     /// @see has_serializer_id
-    identifier_t serializer_id{invalid_id()};
+    endpoint_id_t serializer_id{};
 
     /// @brief Alias for the sequence number type.
     /// @see set_sequence_no
@@ -223,13 +221,13 @@ export struct message_info {
     }
 
     /// @brief Sets the source endpoint identifier.
-    auto set_source_id(const identifier_t id) noexcept -> auto& {
+    auto set_source_id(const endpoint_id_t id) noexcept -> auto& {
         source_id = id;
         return *this;
     }
 
     /// @brief Sets the target endpoint identifier.
-    auto set_target_id(const identifier_t id) noexcept -> auto& {
+    auto set_target_id(const endpoint_id_t id) noexcept -> auto& {
         target_id = id;
         return *this;
     }
@@ -1042,7 +1040,7 @@ public:
 
 private:
     const message_context& _msg_ctx;
-    const identifier_t _source_id{0U};
+    const endpoint_id_t _source_id{};
     const message_sequence_t _invocation_id{0};
 };
 //------------------------------------------------------------------------------

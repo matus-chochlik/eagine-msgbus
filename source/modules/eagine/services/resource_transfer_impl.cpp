@@ -270,7 +270,7 @@ public:
     auto get_resource(
       const message_context& ctx,
       const url& locator,
-      const identifier_t endpoint_id,
+      const endpoint_id_t endpoint_id,
       const message_priority priority)
       -> std::tuple<
         unique_holder<source_blob_io>,
@@ -378,7 +378,7 @@ auto resource_server_impl::has_resource(
 auto resource_server_impl::get_resource(
   const message_context& ctx,
   const url& locator,
-  const identifier_t endpoint_id,
+  const endpoint_id_t endpoint_id,
   const message_priority priority) -> std::
   tuple<unique_holder<source_blob_io>, std::chrono::seconds, message_priority> {
     auto read_io = driver.get_resource_io(endpoint_id, locator);
@@ -582,7 +582,8 @@ public:
         return something_done;
     }
 
-    auto server_endpoint_id(const url& locator) noexcept -> identifier_t final {
+    auto server_endpoint_id(const url& locator) noexcept
+      -> endpoint_id_t final {
         if(locator.has_scheme("eagimbe")) {
             if(const auto opt_id{
                  from_string<identifier_t>(locator.host().or_default())}) {
@@ -605,7 +606,7 @@ public:
     }
 
     auto search_resource(
-      const identifier_t endpoint_id,
+      const endpoint_id_t endpoint_id,
       const url& locator) noexcept -> std::optional<message_sequence_t> final {
         auto buffer = default_serialize_buffer_for(locator.str());
 
@@ -622,7 +623,7 @@ public:
     }
 
     auto query_resource_content(
-      identifier_t endpoint_id,
+      endpoint_id_t endpoint_id,
       const url& locator,
       shared_holder<target_blob_io> write_io,
       const message_priority priority,
@@ -678,7 +679,7 @@ private:
         }
     }
 
-    void _remove_server(const identifier_t endpoint_id) noexcept {
+    void _remove_server(const endpoint_id_t endpoint_id) noexcept {
         const auto spos = _server_endpoints.find(endpoint_id);
         if(spos != _server_endpoints.end()) {
             signals.resource_server_lost(endpoint_id);
@@ -796,15 +797,15 @@ private:
 
     resetting_timeout _search_servers{std::chrono::seconds{5}, nothing};
 
-    flat_map<std::string, flat_set<identifier_t>, str_view_less>
+    flat_map<std::string, flat_set<endpoint_id_t>, str_view_less>
       _hostname_to_endpoint;
-    flat_map<identifier_t, flat_set<identifier_t>> _host_id_to_endpoint;
+    flat_map<identifier_t, flat_set<endpoint_id_t>> _host_id_to_endpoint;
 
     struct _server_info {
         std::chrono::steady_clock::time_point last_report_time{};
     };
 
-    flat_map<identifier_t, _server_info> _server_endpoints;
+    flat_map<endpoint_id_t, _server_info> _server_endpoints;
 };
 //------------------------------------------------------------------------------
 auto make_resource_manipulator_impl(

@@ -50,19 +50,19 @@ private:
 struct system_info_consumer_intf : interface<system_info_consumer_intf> {
     virtual void add_methods(subscriber& base) noexcept = 0;
 
-    virtual void query_uptime(const identifier_t) noexcept = 0;
-    virtual void query_cpu_concurrent_threads(const identifier_t) noexcept = 0;
-    virtual void query_short_average_load(const identifier_t) noexcept = 0;
-    virtual void query_long_average_load(const identifier_t) noexcept = 0;
-    virtual void query_memory_page_size(const identifier_t) noexcept = 0;
-    virtual void query_free_ram_size(const identifier_t) noexcept = 0;
-    virtual void query_total_ram_size(const identifier_t) noexcept = 0;
-    virtual void query_free_swap_size(const identifier_t) noexcept = 0;
-    virtual void query_total_swap_size(const identifier_t) noexcept = 0;
-    virtual void query_temperature_min_max(const identifier_t) noexcept = 0;
-    virtual void query_power_supply_kind(const identifier_t) noexcept = 0;
-    virtual void query_stats(const identifier_t) noexcept = 0;
-    virtual void query_sensors(const identifier_t) noexcept = 0;
+    virtual void query_uptime(const endpoint_id_t) noexcept = 0;
+    virtual void query_cpu_concurrent_threads(const endpoint_id_t) noexcept = 0;
+    virtual void query_short_average_load(const endpoint_id_t) noexcept = 0;
+    virtual void query_long_average_load(const endpoint_id_t) noexcept = 0;
+    virtual void query_memory_page_size(const endpoint_id_t) noexcept = 0;
+    virtual void query_free_ram_size(const endpoint_id_t) noexcept = 0;
+    virtual void query_total_ram_size(const endpoint_id_t) noexcept = 0;
+    virtual void query_free_swap_size(const endpoint_id_t) noexcept = 0;
+    virtual void query_total_swap_size(const endpoint_id_t) noexcept = 0;
+    virtual void query_temperature_min_max(const endpoint_id_t) noexcept = 0;
+    virtual void query_power_supply_kind(const endpoint_id_t) noexcept = 0;
+    virtual void query_stats(const endpoint_id_t) noexcept = 0;
+    virtual void query_sensors(const endpoint_id_t) noexcept = 0;
 };
 //------------------------------------------------------------------------------
 /// @brief Service consuming basic information about endpoint's host system.
@@ -160,69 +160,69 @@ class system_info_consumer
 public:
     /// @brief Queries the endpoint's host system uptime.
     /// @see uptime_received
-    void query_uptime(const identifier_t endpoint_id) noexcept {
+    void query_uptime(const endpoint_id_t endpoint_id) noexcept {
         _impl->query_uptime(endpoint_id);
     }
 
     /// @brief Queries the endpoint's host CPU's supported concurrent thread count.
     /// @see cpu_concurrent_threads_received
-    void query_cpu_concurrent_threads(const identifier_t endpoint_id) noexcept {
+    void query_cpu_concurrent_threads(const endpoint_id_t endpoint_id) noexcept {
         _impl->query_cpu_concurrent_threads(endpoint_id);
     }
 
     /// @brief Queries the endpoint's host system short average load (0.0 - 1.0).
     /// @see short_average_load_received
-    void query_short_average_load(const identifier_t endpoint_id) noexcept {
+    void query_short_average_load(const endpoint_id_t endpoint_id) noexcept {
         _impl->query_short_average_load(endpoint_id);
     }
 
     /// @brief Queries the endpoint's host system long average load (0.0 - 1.0).
     /// @see long_average_load_received
-    void query_long_average_load(const identifier_t endpoint_id) noexcept {
+    void query_long_average_load(const endpoint_id_t endpoint_id) noexcept {
         _impl->query_long_average_load(endpoint_id);
     }
 
     /// @brief Queries the endpoint's host system memory page size in bytes.
     /// @see memory_page_size_received
-    void query_memory_page_size(const identifier_t endpoint_id) noexcept {
+    void query_memory_page_size(const endpoint_id_t endpoint_id) noexcept {
         _impl->query_memory_page_size(endpoint_id);
     }
 
     /// @brief Queries the endpoint's host system free RAM size in bytes.
     /// @see free_ram_size_received
     /// @see query_total_ram_size
-    void query_free_ram_size(const identifier_t endpoint_id) noexcept {
+    void query_free_ram_size(const endpoint_id_t endpoint_id) noexcept {
         _impl->query_free_ram_size(endpoint_id);
     }
 
     /// @brief Queries the endpoint's host system total RAM size in bytes.
     /// @see total_ram_size_received
     /// @see query_free_ram_size
-    void query_total_ram_size(const identifier_t endpoint_id) noexcept {
+    void query_total_ram_size(const endpoint_id_t endpoint_id) noexcept {
         _impl->query_total_ram_size(endpoint_id);
     }
 
     /// @brief Queries the endpoint's host system free swap size in bytes.
     /// @see free_swap_size_received
     /// @see query_total_swap_size
-    void query_free_swap_size(const identifier_t endpoint_id) noexcept {
+    void query_free_swap_size(const endpoint_id_t endpoint_id) noexcept {
         _impl->query_free_swap_size(endpoint_id);
     }
 
     /// @brief Queries the endpoint's host system total swap size in bytes.
     /// @see total_swap_size_received
     /// @see query_free_swap_size
-    void query_total_swap_size(const identifier_t endpoint_id) noexcept {
+    void query_total_swap_size(const endpoint_id_t endpoint_id) noexcept {
         _impl->query_total_swap_size(endpoint_id);
     }
 
     /// @brief Queries the endpoint's host system minimum and maximum temperature.
-    void query_temperature_min_max(const identifier_t endpoint_id) noexcept {
+    void query_temperature_min_max(const endpoint_id_t endpoint_id) noexcept {
         _impl->query_temperature_min_max(endpoint_id);
     }
 
     /// @brief Queries the endpoint's host system power supply kind information.
-    void query_power_supply_kind(const identifier_t endpoint_id) noexcept {
+    void query_power_supply_kind(const endpoint_id_t endpoint_id) noexcept {
         _impl->query_power_supply_kind(endpoint_id);
     }
 
@@ -231,7 +231,7 @@ public:
     /// @see query_memory_page_size
     /// @see query_total_ram_size
     /// @see query_total_swap_size
-    void query_stats(const identifier_t endpoint_id) noexcept {
+    void query_stats(const endpoint_id_t endpoint_id) noexcept {
         _impl->query_stats(endpoint_id);
     }
 
@@ -241,7 +241,7 @@ public:
     /// @see query_free_ram_size
     /// @see query_free_swap_size
     /// @see query_power_supply_kind
-    void query_sensors(const identifier_t endpoint_id) noexcept {
+    void query_sensors(const endpoint_id_t endpoint_id) noexcept {
         _impl->query_sensors(endpoint_id);
     }
 

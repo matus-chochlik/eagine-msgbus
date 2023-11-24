@@ -67,9 +67,9 @@ struct node_tracker_intf : interface<node_tracker_intf> {
       subscriber_discovery_signals&) noexcept = 0;
 
     virtual void update(
-      callable_ref<void(const identifier_t, remote_node_state&)>) noexcept = 0;
+      callable_ref<void(const endpoint_id_t, remote_node_state&)>) noexcept = 0;
     virtual void update_node_info(
-      callable_ref<void(const identifier_t)>) noexcept = 0;
+      callable_ref<void(const endpoint_id_t)>) noexcept = 0;
 
     virtual auto tracker() noexcept -> remote_node_tracker& = 0;
 
@@ -169,7 +169,7 @@ public:
         };
         _impl->update({construct_from, update_node});
 
-        const auto query_node_info = [&](const identifier_t node_id) {
+        const auto query_node_info = [&](const endpoint_id_t node_id) {
             this->query_endpoint_info(node_id);
             this->query_host_id(node_id);
             this->query_hostname(node_id);
@@ -198,7 +198,7 @@ public:
     }
 
     /// @brief Returns information about a node with the specified id.
-    auto get_node(const identifier_t id) noexcept -> const remote_node& {
+    auto get_node(const endpoint_id_t id) noexcept -> const remote_node& {
         return _impl->tracker().get_node(id);
     }
 
