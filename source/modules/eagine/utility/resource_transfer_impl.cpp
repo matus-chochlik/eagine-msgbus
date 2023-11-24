@@ -194,7 +194,7 @@ auto resource_data_consumer_node::update_and_process_all() noexcept
     }
 
     for(auto& [request_id, info] : _streamed_resources) {
-        if(not is_valid_endpoint_id(info.source_server_id)) {
+        if(not is_valid_id(info.source_server_id)) {
             if(info.should_search) {
                 for(auto& [server_id, sinfo] : _current_servers) {
                     if(not sinfo.not_responding) {
@@ -357,7 +357,7 @@ void resource_data_consumer_node::_handle_resource_found(
     for(auto& entry : _streamed_resources) {
         auto& info = std::get<1>(entry);
         if(info.locator == locator) {
-            if(not is_valid_endpoint_id(info.source_server_id)) {
+            if(not is_valid_id(info.source_server_id)) {
                 if(const auto id{query_resource_content(
                      server_id,
                      info.locator,

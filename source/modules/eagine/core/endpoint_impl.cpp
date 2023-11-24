@@ -158,7 +158,7 @@ auto endpoint::_handle_confirm_id(const message_view& message) noexcept
 //------------------------------------------------------------------------------
 auto endpoint::_handle_password_request(const message_view& message) noexcept
   -> message_handling_result {
-    if(is_valid_endpoint_id(_router_id) and (message.source_id == _router_id)) {
+    if(is_valid_id(_router_id) and (message.source_id == _router_id)) {
         if(has_id() and (message.target_id == _endpoint_id)) {
             memory::buffer encrypted;
             if(main_context().encrypt_shared_password(

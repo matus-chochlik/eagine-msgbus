@@ -93,7 +93,7 @@ auto router_pending::password_is_required() const noexcept -> bool {
 }
 //------------------------------------------------------------------------------
 auto router_pending::should_request_password() const noexcept -> bool {
-    return is_valid_endpoint_id(_id) and password_is_required() and
+    return is_valid_id(_id) and password_is_required() and
            _should_request_pwd and not _password_verified;
 }
 //------------------------------------------------------------------------------
@@ -125,7 +125,7 @@ auto router_pending::should_be_removed() noexcept -> bool {
 }
 //------------------------------------------------------------------------------
 auto router_pending::can_be_adopted() noexcept -> bool {
-    return is_valid_endpoint_id(_id) and not(_too_old) and
+    return is_valid_id(_id) and not(_too_old) and
            (not password_is_required() or _password_verified);
 }
 //------------------------------------------------------------------------------

@@ -24,42 +24,6 @@ import eagine.core.main_ctx;
 import :types;
 
 namespace eagine {
-//------------------------------------------------------------------------------
-export template <identifier_t Sid, typename Selector>
-struct get_serialize_buffer_size<Sid, endpoint_id_t, Selector>
-  : get_serialize_buffer_size<Sid, identifier_t, Selector> {};
-
-export template <identifier_t Sid, typename Selector>
-struct get_serialize_buffer_size<Sid, message_id, Selector>
-  : get_serialize_buffer_size<
-      Sid,
-      std::tuple<std::uint64_t, std::uint64_t>,
-      Selector> {};
-
-export template <>
-struct serializer<endpoint_id_t> {
-    auto write(const endpoint_id_t value, auto& backend) const noexcept {
-        span_size_t written{0};
-        const auto errors{backend.write(view_one(value.value()), written)};
-        if(written < 1) [[unlikely]] {
-            assert(errors.has(serialization_error_code::too_much_data));
-        }
-        return errors;
-    }
-};
-
-export template <>
-struct deserializer<endpoint_id_t> {
-    static auto read(endpoint_id_t& value, auto& backend) noexcept
-      -> deserialization_errors {
-        span_size_t done{0};
-        identifier_t temp{0};
-        auto result{backend.read(cover_one(temp), done)};
-        value = {temp};
-        return result;
-    }
-};
-//------------------------------------------------------------------------------
 namespace msgbus {
 //------------------------------------------------------------------------------
 /// @brief Alias for default serialization backend for bus messages.

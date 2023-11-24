@@ -70,7 +70,7 @@ class stream_endpoint : public require_services<Base, subscriber_discovery> {
 public:
     /// @brief Indicates if this stream client has associated a relay node.
     auto has_stream_relay() const noexcept -> bool {
-        return is_valid_endpoint_id(_stream_relay_id);
+        return is_valid_id(_stream_relay_id);
     }
 
     /// @brief Returns the id of the assigned stream relay node.
@@ -90,7 +90,7 @@ public:
       const endpoint_id_t endpoint_id,
       const subscriber_info::hop_count_t hop_count =
         subscriber_info::max_hops()) noexcept {
-        if(is_valid_endpoint_id(endpoint_id)) [[likely]] {
+        if(is_valid_id(endpoint_id)) [[likely]] {
             _stream_relay_id = endpoint_id;
             _stream_relay_timeout.reset();
             _stream_relay_hops = hop_count;

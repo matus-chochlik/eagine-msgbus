@@ -44,11 +44,6 @@ export class endpoint
   : public main_ctx_object
   , public connection_user {
 public:
-    /// @brief Tests if the specified id is a valid endpoint id.
-    static constexpr auto is_valid_id(const endpoint_id_t id) noexcept -> bool {
-        return is_valid_endpoint_id(id);
-    }
-
     /// @brief Alias for message fetch handler callable reference.
     using fetch_handler = connection::fetch_handler;
 

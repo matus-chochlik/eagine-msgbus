@@ -35,7 +35,7 @@ public:
     auto add_connection(unique_holder<connection>) noexcept -> bool final;
 
     auto has_id() const noexcept -> bool {
-        return is_valid_endpoint_id(_id);
+        return is_valid_id(_id);
     }
 
     auto update() noexcept -> work_done;

@@ -17,16 +17,16 @@ void message_valid_endpoint_id(auto& s) {
     eagitest::case_ test{s, 1, "endpoint id"};
 
     using eagine::endpoint_id_t;
-    using eagine::is_valid_endpoint_id;
+    using eagine::is_valid_id;
 
-    test.check(not is_valid_endpoint_id(endpoint_id_t{}), "invalid");
-    test.check(is_valid_endpoint_id(endpoint_id_t{1}), "1");
-    test.check(is_valid_endpoint_id(endpoint_id_t{2}), "2");
-    test.check(is_valid_endpoint_id(endpoint_id_t{8}), "8");
-    test.check(is_valid_endpoint_id(endpoint_id_t{16}), "16");
-    test.check(is_valid_endpoint_id(endpoint_id_t{128}), "128");
-    test.check(is_valid_endpoint_id(endpoint_id_t{1024}), "1024");
-    test.check(is_valid_endpoint_id(endpoint_id_t{1024 * 1024}), "1024^2");
+    test.check(not is_valid_id(endpoint_id_t{}), "invalid");
+    test.check(is_valid_id(endpoint_id_t{1}), "1");
+    test.check(is_valid_id(endpoint_id_t{2}), "2");
+    test.check(is_valid_id(endpoint_id_t{8}), "8");
+    test.check(is_valid_id(endpoint_id_t{16}), "16");
+    test.check(is_valid_id(endpoint_id_t{128}), "128");
+    test.check(is_valid_id(endpoint_id_t{1024}), "1024");
+    test.check(is_valid_id(endpoint_id_t{1024 * 1024}), "1024^2");
 }
 //------------------------------------------------------------------------------
 // is special
