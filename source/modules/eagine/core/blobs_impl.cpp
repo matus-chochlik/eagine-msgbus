@@ -527,7 +527,8 @@ blob_manipulator::blob_manipulator(
 auto blob_manipulator::update(
   const blob_manipulator::send_handler do_send,
   const span_size_t max_message_size) noexcept -> work_done {
-    const auto exec_time{measure_time_interval("blobUpdate")};
+    static const auto exec_time_id{register_time_interval("blobUpdate")};
+    const auto exec_time{measure_time_interval(exec_time_id)};
     const auto now = std::chrono::steady_clock::now();
     some_true something_done{};
 

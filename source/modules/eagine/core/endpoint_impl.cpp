@@ -604,7 +604,8 @@ auto endpoint::_update_send_outbox() noexcept -> work_done {
 }
 //------------------------------------------------------------------------------
 auto endpoint::update() noexcept -> work_done {
-    const auto exec_time{measure_time_interval("busUpdate")};
+    static const auto exec_time_id{register_time_interval("busUpdate")};
+    const auto exec_time{measure_time_interval(exec_time_id)};
     some_true something_done{};
 
     something_done(_process_blobs());

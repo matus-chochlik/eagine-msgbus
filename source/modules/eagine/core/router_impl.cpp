@@ -544,7 +544,8 @@ auto parent_router::query_statistics(connection_statistics& stats) const noexcep
 inline auto parent_router::update(
   main_ctx_object& user,
   const endpoint_id_t id_base) noexcept -> work_done {
-    const auto exec_time{user.measure_time_interval("parentUpdt")};
+    static const auto exec_time_id{user.register_time_interval("parentUpdt")};
+    const auto exec_time{user.measure_time_interval(exec_time_id)};
     some_true something_done{};
 
     if(_connection) [[likely]] {
@@ -1962,7 +1963,8 @@ auto router::do_work() noexcept -> work_done {
 }
 //------------------------------------------------------------------------------
 auto router::update(const valid_if_positive<int>& count) noexcept -> work_done {
-    const auto exec_time{measure_time_interval("busUpdate")};
+    static const auto exec_time_id{register_time_interval("busUpdate")};
+    const auto exec_time{measure_time_interval(exec_time_id)};
     some_true something_done{};
 
     something_done(do_maintenance());
