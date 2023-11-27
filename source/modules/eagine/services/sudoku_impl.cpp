@@ -1418,6 +1418,8 @@ struct sudoku_tiling_rank_info : sudoku_tiles<S> {
         const auto coord{std::get<Coord>(sol.key)};
         if(this->set_board(coord, sol.board)) {
             cells_done += this->cells_per_tile(coord);
+            const auto done{float(cells_done)};
+            const auto all{float(this->cell_count())};
             tiling.solver.base.bus_node()
               .log_info("solved board [${x}, ${y}], ${progress} done")
               .tag("solvdBoard")
@@ -1426,14 +1428,10 @@ struct sudoku_tiling_rank_info : sudoku_tiles<S> {
               .arg("y", std::get<1>(coord))
               .arg("width", this->width())
               .arg("height", this->height())
+              .arg("celPerSide", this->cells_per_tile_side())
               .arg("time", sol.elapsed_time)
               .arg("helper", sol.helper_id)
-              .arg(
-                "progress",
-                "MainPrgrss",
-                0.F,
-                float(cells_done),
-                float(this->cell_count()));
+              .arg("progress", "MainPrgrss", 0.F, done, all);
 
             auto helper{eagine::find(helper_contrib, sol.helper_id)};
             if(not helper) {
