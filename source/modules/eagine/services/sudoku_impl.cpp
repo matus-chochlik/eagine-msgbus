@@ -1424,6 +1424,8 @@ struct sudoku_tiling_rank_info : sudoku_tiles<S> {
               .arg("rank", S)
               .arg("x", std::get<0>(coord))
               .arg("y", std::get<1>(coord))
+              .arg("width", this->width())
+              .arg("height", this->height())
               .arg("time", sol.elapsed_time)
               .arg("helper", sol.helper_id)
               .arg(
