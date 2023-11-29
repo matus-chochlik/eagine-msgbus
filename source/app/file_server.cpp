@@ -14,6 +14,8 @@ namespace eagine {
 //------------------------------------------------------------------------------
 auto main(main_ctx& ctx) -> int {
     signal_switch interrupted;
+    const auto sig_bind{ctx.log().log_when_switched(interrupted)};
+
     enable_message_bus(ctx);
     ctx.preinitialize();
 

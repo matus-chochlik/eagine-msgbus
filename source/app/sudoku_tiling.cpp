@@ -113,6 +113,8 @@ void sudoku_tiling_node::_handle_board_timeout(
 //------------------------------------------------------------------------------
 auto main(main_ctx& ctx) -> int {
     signal_switch interrupted;
+    const auto sig_bind{ctx.log().log_when_switched(interrupted)};
+
     msgbus::sudoku_tiling_node::active_state(ctx.log());
 
     enable_message_bus(ctx);

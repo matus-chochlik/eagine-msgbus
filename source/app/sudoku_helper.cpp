@@ -78,6 +78,8 @@ private:
     void _helper_main() noexcept;
 
     signal_switch _interrupted;
+    signal_binding _sig_bind{
+      main_context().log().log_when_switched(_interrupted)};
     msgbus::registry _registry{*this};
     application_config_value<bool> _shutdown_when_idle{
       *this,

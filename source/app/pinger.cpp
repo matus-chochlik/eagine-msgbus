@@ -304,6 +304,8 @@ private:
 auto main(main_ctx& ctx) -> int {
     signal_switch interrupted;
     const auto& log = ctx.log();
+    const auto sig_bind{log.log_when_switched(interrupted)};
+
     log.active_state("pinging");
     log.declare_state("pinging", "pingStart", "pingFinish");
 

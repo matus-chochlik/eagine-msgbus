@@ -253,9 +253,11 @@ auto router_app::step(msgbus::router_node& node) -> work_done {
 //------------------------------------------------------------------------------
 void router_app::run() {
     signal_switch interrupted;
+    const auto& log = ctx.log();
+    const auto sig_bind{log.log_when_switched(interrupted)};
+
     msgbus::router_node node{node_endpoint};
 
-    auto& log = ctx.log();
     auto alive{ctx.watchdog().start_watch()};
     node.log_start();
 
