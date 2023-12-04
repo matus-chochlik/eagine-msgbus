@@ -14,12 +14,12 @@ src_dir = os.path.realpath("@SRC_DIR@")
 bin_dir = os.path.realpath("@BIN_DIR@")
 pkg_dir = os.path.realpath("@PKG_DIR@")
 deb_dir  = os.path.join(pkg_dir, "DEBIAN")
-syd_prefix = os.path.join(pkg_dir, "etc", "systemd", "system")
+etc_prefix = os.path.join(pkg_dir, "etc")
 cfg_prefix = os.path.join(pkg_dir, "var", "lib", "eagine", ".config")
 pkg_prefix = os.path.join(pkg_dir, "usr")
 bin_prefix = os.path.join(pkg_prefix, "bin")
 
-for path in [cfg_prefix, syd_prefix, bin_prefix, deb_dir]:
+for path in [cfg_prefix, etc_prefix, bin_prefix, deb_dir]:
     if not os.path.exists(path):
         os.makedirs(path)
 # ------------------------------------------------------------------------------
@@ -44,10 +44,10 @@ for filename in [
         os.path.join(src_dir, "deploy", "dpkg", "apps", "procman", filename), 
         os.path.join(bin_prefix, "eagiproc-" + filename))
 
-for unit in os.listdir(os.path.join(src_dir, "deploy", "dpkg", "apps", "systemd")):
-    shutil.copy(
-        os.path.join(src_dir, "deploy", "dpkg", "apps", "systemd", unit),
-        syd_prefix)
+shutil.copytree(
+    os.path.join(src_dir, "deploy", "dpkg", "apps", "etc"),
+    etc_prefix,
+    dirs_exist_ok=True)
 
 shutil.copytree(
     os.path.join(src_dir, "deploy", "dpkg", "apps", "_config"),

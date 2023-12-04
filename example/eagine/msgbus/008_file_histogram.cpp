@@ -118,17 +118,17 @@ auto main(main_ctx& ctx) -> int {
     msgbus::manipulator_node node{"FileManip", ctx};
     msgbus::setup_connectors(ctx, node);
 
-    const auto on_server_appeared = [&](identifier_t endpoint_id) {
+    const auto on_server_appeared{[&](endpoint_id_t endpoint_id) {
         for(const auto& blob_io : blobs) {
             if(not blob_io->is_done()) {
                 node.search_resource(endpoint_id, blob_io->locator());
             }
         }
-    };
+    }};
     node.resource_server_appeared.connect({construct_from, on_server_appeared});
 
-    const auto on_resource_found =
-      [&](identifier_t endpoint_id, const url& locator) {
+    const auto on_resource_found{
+      [&](endpoint_id_t endpoint_id, const url& locator) {
           for(const auto& blob_io : blobs) {
               if(not blob_io->is_active() and not blob_io->is_done()) {
                   if(blob_io->locator() == locator) {
@@ -142,10 +142,10 @@ auto main(main_ctx& ctx) -> int {
                   }
               }
           }
-      };
+      }};
     node.server_has_resource.connect({construct_from, on_resource_found});
 
-    const auto on_resource_missing = [&](identifier_t, const url& locator) {
+    const auto on_resource_missing = [&](endpoint_id_t, const url& locator) {
         for(const auto& blob_io : blobs) {
             if(not blob_io->is_active() and not blob_io->is_done()) {
                 if(blob_io->locator() == locator) {

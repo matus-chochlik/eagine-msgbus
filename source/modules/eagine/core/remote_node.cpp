@@ -260,11 +260,11 @@ public:
     /// @see get_connection
     /// @see for_each_node
     /// @see remove_node
-    auto get_node(const identifier_t node_id) noexcept -> remote_node_state&;
+    auto get_node(const endpoint_id_t node_id) noexcept -> remote_node_state&;
 
     /// @brief Removes tracked node with the specified id.
     /// @see get_node
-    auto remove_node(const identifier_t node_id) noexcept -> bool;
+    auto remove_node(const endpoint_id_t node_id) noexcept -> bool;
 
     /// @brief Finds and returns the state information about a remote host.
     /// @see get_node
@@ -300,8 +300,8 @@ public:
     /// @see get_instance
     /// @see for_each_connection
     auto get_connection(
-      const identifier_t node_id1,
-      const identifier_t node_id2) noexcept -> node_connection_state&;
+      const endpoint_id_t node_id1,
+      const endpoint_id_t node_id2) noexcept -> node_connection_state&;
 
     /// @brief Finds and returns the information about remote node connections.
     /// @see get_node
@@ -309,11 +309,11 @@ public:
     /// @see get_instance
     /// @see for_each_connection
     auto get_connection(
-      const identifier_t node_id1,
-      const identifier_t node_id2) const noexcept -> node_connection_state;
+      const endpoint_id_t node_id1,
+      const endpoint_id_t node_id2) const noexcept -> node_connection_state;
 
     auto notice_instance(
-      const identifier_t node_id,
+      const endpoint_id_t node_id,
       const process_instance_id_t) noexcept -> remote_node_state&;
 
     /// @brief Calls a function on each tracked remote host.
@@ -400,7 +400,7 @@ public:
 private:
     friend class node_connections;
 
-    auto _get_nodes() noexcept -> flat_map<identifier_t, remote_node_state>&;
+    auto _get_nodes() noexcept -> flat_map<endpoint_id_t, remote_node_state>&;
     auto _get_instances() noexcept
       -> flat_map<process_instance_id_t, remote_instance_state>&;
     auto _get_hosts() noexcept -> flat_map<host_id_t, remote_host_state>&;
@@ -695,7 +695,9 @@ public:
 export class remote_node {
 public:
     remote_node() noexcept = default;
-    remote_node(const identifier_t node_id, remote_node_tracker tracker) noexcept
+    remote_node(
+      const endpoint_id_t node_id,
+      remote_node_tracker tracker) noexcept
       : _node_id{node_id}
       , _tracker{std::move(tracker)} {}
 
@@ -705,7 +707,7 @@ public:
     }
 
     /// @brief Returns the unique id of the remote bus node.
-    auto id() const noexcept -> valid_if_not_zero<identifier_t> {
+    auto id() const noexcept -> valid_if_not_zero<endpoint_id_t> {
         return {_node_id};
     }
 
@@ -819,7 +821,7 @@ public:
     auto connections() const noexcept -> node_connections;
 
 private:
-    identifier_t _node_id{0U};
+    endpoint_id_t _node_id{};
     shared_holder<remote_node_impl> _pimpl{};
 
 protected:
@@ -882,8 +884,8 @@ export class node_connection {
 public:
     node_connection() noexcept = default;
     node_connection(
-      const identifier_t id1,
-      const identifier_t id2,
+      const endpoint_id_t id1,
+      const endpoint_id_t id2,
       remote_node_tracker tracker) noexcept
       : _id1{id1}
       , _id2{id2}
@@ -896,13 +898,13 @@ public:
 
     /// @brief Indicates if the connection connects node with the specified id.
     /// @see opposite_id
-    auto connects(const identifier_t id) const noexcept {
+    auto connects(const endpoint_id_t id) const noexcept {
         return (_id1 == id) or (_id2 == id);
     }
 
     /// @brief Indicates if the connection connects nodes with the specified id.
     /// @see opposite_id
-    auto connects(const identifier_t id1, const identifier_t id2)
+    auto connects(const endpoint_id_t id1, const endpoint_id_t id2)
       const noexcept {
         return ((_id1 == id1) and (_id2 == id2)) or
                ((_id1 == id2) and (_id2 == id1));
@@ -910,8 +912,8 @@ public:
 
     /// @brief Returns the id of the node opposite to the node with id in argument.
     /// @see connects
-    auto opposite_id(const identifier_t id) const noexcept
-      -> valid_if_not_zero<identifier_t> {
+    auto opposite_id(const endpoint_id_t id) const noexcept
+      -> valid_if_not_zero<endpoint_id_t> {
         if(_id1 == id) {
             return {_id2};
         }
@@ -934,8 +936,8 @@ private:
     shared_holder<node_connection_impl> _pimpl{};
 
 protected:
-    identifier_t _id1{0U};
-    identifier_t _id2{0U};
+    endpoint_id_t _id1{0U};
+    endpoint_id_t _id2{0U};
     remote_node_tracker _tracker{nothing};
     auto _impl() const noexcept
       -> optional_reference<const node_connection_impl>;
@@ -968,8 +970,8 @@ public:
 export class node_connections {
 public:
     node_connections(
-      identifier_t origin_id,
-      std::vector<identifier_t> remote_ids,
+      endpoint_id_t origin_id,
+      std::vector<endpoint_id_t> remote_ids,
       remote_node_tracker tracker) noexcept
       : _origin_id{origin_id}
       , _remote_ids{std::move(remote_ids)}
@@ -1006,8 +1008,8 @@ public:
     }
 
 private:
-    identifier_t _origin_id{0U};
-    std::vector<identifier_t> _remote_ids{};
+    endpoint_id_t _origin_id{};
+    std::vector<endpoint_id_t> _remote_ids{};
     remote_node_tracker _tracker{nothing};
 };
 //------------------------------------------------------------------------------
@@ -1109,7 +1111,8 @@ export auto adapt_entry_arg(
         const msgbus::remote_node& value;
 
         void operator()(logger_backend& backend) const noexcept {
-            backend.add_unsigned(name, "uint64", value.id().value_or(0U));
+            backend.add_unsigned(
+              name, "MsgBusEpId", value.id().or_default().value());
 
             value.instance_id().and_then(
               backend.add_unsigned("instanceId", "uint32", _1));

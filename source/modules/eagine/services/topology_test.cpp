@@ -39,7 +39,7 @@ private:
 template <typename Base = eagine::msgbus::subscriber>
 class test_ping : public Base {
 public:
-    void assign_target(eagine::identifier_t id) noexcept {
+    void assign_target(eagine::endpoint_id_t id) noexcept {
         _target = id;
     }
 
@@ -56,7 +56,7 @@ protected:
 
     auto update() -> eagine::work_done {
         eagine::some_true something_done{Base::update()};
-        if(eagine::msgbus::is_valid_endpoint_id(_target)) {
+        if(eagine::is_valid_id(_target)) {
             if(_ping_time.is_expired()) {
                 eagine::msgbus::message_view ping_msg;
                 ping_msg.set_target_id(_target);
@@ -80,7 +80,7 @@ private:
     int _rcvd{0};
     eagine::msgbus::message_sequence_t _seq_id{0};
     eagine::timeout _ping_time{std::chrono::milliseconds{1}};
-    eagine::identifier_t _target{eagine::msgbus::invalid_endpoint_id()};
+    eagine::endpoint_id_t _target{};
 };
 //------------------------------------------------------------------------------
 // test 1

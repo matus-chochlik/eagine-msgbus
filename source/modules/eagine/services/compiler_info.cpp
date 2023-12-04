@@ -67,7 +67,7 @@ class compiler_info_consumer
 public:
     /// @brief Queries information about compiler used to build given endpoint.
     /// @see compiler_info_received
-    void query_compiler_info(const identifier_t endpoint_id) noexcept {
+    void query_compiler_info(const endpoint_id_t endpoint_id) noexcept {
         _compiler.invoke_on(
           this->bus_node(), endpoint_id, {"eagiCplInf", "request"});
     }

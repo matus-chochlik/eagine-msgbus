@@ -12,6 +12,9 @@ import std;
 namespace eagine {
 
 auto main(main_ctx& ctx) -> int {
+    signal_switch interrupted;
+    const auto sig_bind{ctx.log().log_when_switched(interrupted)};
+
     enable_message_bus(ctx);
 
     timeout idle_too_long{std::chrono::seconds{30}};
@@ -71,10 +74,7 @@ auto main(main_ctx& ctx) -> int {
     }
 
     const auto is_done{[&] {
-        if(idle_too_long or not node.has_pending_resources()) {
-            return true;
-        }
-        return false;
+        return interrupted or idle_too_long or not node.has_pending_resources();
     }};
 
     while(not is_done()) {

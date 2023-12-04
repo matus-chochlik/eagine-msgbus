@@ -30,7 +30,7 @@ export using shutdown_service_duration =
 /// @see shutdown_target_signals
 export struct shutdown_request {
     /// @brief Id of the endpoint that sent the request.
-    identifier_t source_id;
+    endpoint_id_t source_id;
     /// @brief The age of the request.
     std::chrono::milliseconds age;
     /// @brief Bitfield indicating what part of the message could be verified.
@@ -110,7 +110,7 @@ class shutdown_invoker
 
 public:
     /// @brief Sends shutdown request to the specified target endpoint.
-    void shutdown_one(const identifier_t target_id) noexcept {
+    void shutdown_one(const endpoint_id_t target_id) noexcept {
         std::array<byte, 32> temp{};
         const auto ts{this->now()};
         const auto ticks{std::chrono::duration_cast<shutdown_service_duration>(

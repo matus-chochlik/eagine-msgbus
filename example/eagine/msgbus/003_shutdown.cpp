@@ -70,7 +70,7 @@ public:
     }
 
 private:
-    std::set<identifier_t> _targets{};
+    std::set<endpoint_id_t> _targets{};
 };
 //------------------------------------------------------------------------------
 } // namespace msgbus

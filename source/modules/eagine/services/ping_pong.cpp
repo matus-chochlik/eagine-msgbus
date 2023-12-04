@@ -27,7 +27,7 @@ class pingable : public Base {
 public:
     /// @brief Decides if a ping request should be responded.
     virtual auto respond_to_ping(
-      [[maybe_unused]] const identifier_t pinger_id,
+      [[maybe_unused]] const endpoint_id_t pinger_id,
       const message_sequence_t,
       const verification_bits) noexcept -> bool {
         return true;
@@ -60,7 +60,7 @@ private:
 /// @see pinger_signals
 export struct ping_response {
     /// @brief Id of the endpoint that responded to the ping.
-    identifier_t pingable_id;
+    endpoint_id_t pingable_id;
     /// @brief Age of the response message.
     std::chrono::microseconds age;
     /// @brief Sequence number of the ping response message.
@@ -74,7 +74,7 @@ export struct ping_response {
 /// @see pinger_signals
 export struct ping_timeout {
     /// @brief Id of the endpoint that responded to the ping.
-    identifier_t pingable_id;
+    endpoint_id_t pingable_id;
     /// @brief Age of the response message.
     std::chrono::microseconds age;
     /// @brief Sequence number of the ping response message.
@@ -87,7 +87,7 @@ struct pinger_intf : interface<pinger_intf> {
     virtual void query_pingables() noexcept = 0;
 
     virtual void ping(
-      const identifier_t pingable_id,
+      const endpoint_id_t pingable_id,
       const std::chrono::milliseconds max_time) noexcept = 0;
 
     virtual auto decode_ping_response(
@@ -148,7 +148,7 @@ public:
     /// @see ping_timeouted
     /// @see has_pending_pings
     void ping(
-      const identifier_t pingable_id,
+      const endpoint_id_t pingable_id,
       const std::chrono::milliseconds max_time) noexcept {
         _impl->ping(pingable_id, max_time);
     }
@@ -157,7 +157,7 @@ public:
     /// @see ping_responded
     /// @see ping_timeouted
     /// @see has_pending_pings
-    auto ping_if(const identifier_t pingable_id, timeout& should_ping) noexcept
+    auto ping_if(const endpoint_id_t pingable_id, timeout& should_ping) noexcept
       -> bool {
         if(should_ping) {
             ping(
@@ -174,7 +174,7 @@ public:
     /// @see ping_responded
     /// @see ping_timeouted
     /// @see has_pending_pings
-    void ping(const identifier_t pingable_id) noexcept {
+    void ping(const endpoint_id_t pingable_id) noexcept {
         ping(pingable_id, adjusted_duration(std::chrono::milliseconds{5000}));
     }
 

@@ -281,7 +281,7 @@ private:
         argument_tuple_type args{};
         callable_ref<Signature> func{};
         timeout too_late{};
-        identifier_t invoker_id{};
+        endpoint_id_t invoker_id{};
     };
 
     flat_map<id_t, lazy_call> _pending{};
@@ -382,7 +382,7 @@ private:
           std::remove_reference_t<decltype(std::apply(func, args))>>;
         result_type result{};
 
-        identifier_t invoker_id{};
+        endpoint_id_t invoker_id{};
         std::atomic<bool> finished{false};
 
         auto do_it() noexcept -> bool final {

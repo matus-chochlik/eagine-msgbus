@@ -83,7 +83,7 @@ public:
     /// @see add_remote_certificate_pem
     /// @see add_router_certificate_pem
     auto add_remote_certificate_pem(
-      const identifier_t node_id,
+      const endpoint_id_t node_id,
       memory::const_block) noexcept -> bool;
 
     /// @brief Sets the router certificate encoded in PEM format.
@@ -119,7 +119,7 @@ public:
     /// @see get_ca_certificate_pem
     /// @see get_remote_certificate_pem
     /// @see get_router_certificate_pem
-    auto get_remote_certificate_pem(const identifier_t) const noexcept
+    auto get_remote_certificate_pem(const endpoint_id_t) const noexcept
       -> memory::const_block;
 
     /// @brief Gets the router certificate encoded in PEM format.
@@ -131,11 +131,11 @@ public:
         return get_remote_certificate_pem(0);
     }
 
-    auto get_remote_nonce(const identifier_t) const noexcept
+    auto get_remote_nonce(const endpoint_id_t) const noexcept
       -> memory::const_block;
 
     /// @brief Indicates if the private key of a remote node was verified.
-    auto verified_remote_key(const identifier_t) const noexcept -> bool;
+    auto verified_remote_key(const endpoint_id_t) const noexcept -> bool;
 
     /// @brief Returns the default message digest type.
     auto default_message_digest() noexcept
@@ -149,7 +149,7 @@ public:
     auto message_digest_verify_init(
       const sslplus::message_digest mdc,
       const sslplus::message_digest_type mdt,
-      const identifier_t node_id) noexcept
+      const endpoint_id_t node_id) noexcept
       -> decltype(ssl().message_digest_verify_init.fail());
 
     /// @brief Signs the specified memory block and returns the signature.
@@ -159,13 +159,13 @@ public:
     auto verify_remote_signature(
       const memory::const_block data,
       const memory::const_block sig,
-      const identifier_t,
+      const endpoint_id_t,
       const bool = false) noexcept -> verification_bits;
 
     /// @brief Verifies the signature on a data block from a remote node.
     auto verify_remote_signature(
       const memory::const_block sig,
-      const identifier_t) noexcept -> bool;
+      const endpoint_id_t) noexcept -> bool;
 
 private:
     //
@@ -183,7 +183,7 @@ private:
     sslplus::owned_x509 _ca_cert{};
     sslplus::owned_pkey _own_pkey{};
     //
-    std::map<identifier_t, context_remote_node> _remotes{};
+    std::map<endpoint_id_t, context_remote_node> _remotes{};
 };
 //------------------------------------------------------------------------------
 export using shared_context = shared_holder<context>;

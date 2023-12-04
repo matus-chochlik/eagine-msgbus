@@ -27,7 +27,7 @@ public:
 private:
     template <unsigned S>
     void _handle_generated(
-      const eagine::identifier_t,
+      const eagine::endpoint_id_t,
       const sudoku_tiles<S>& tiles,
       const sudoku_solver_key&) noexcept;
 
@@ -75,7 +75,7 @@ void sudoku_tiling_node::log_finish() noexcept {
 //------------------------------------------------------------------------------
 template <unsigned S>
 void sudoku_tiling_node::_handle_generated(
-  const eagine::identifier_t,
+  const eagine::endpoint_id_t,
   const sudoku_tiles<S>& tiles,
   const sudoku_solver_key&) noexcept {
     if(_print_progress) {
@@ -113,6 +113,8 @@ void sudoku_tiling_node::_handle_board_timeout(
 //------------------------------------------------------------------------------
 auto main(main_ctx& ctx) -> int {
     signal_switch interrupted;
+    const auto sig_bind{ctx.log().log_when_switched(interrupted)};
+
     msgbus::sudoku_tiling_node::active_state(ctx.log());
 
     enable_message_bus(ctx);

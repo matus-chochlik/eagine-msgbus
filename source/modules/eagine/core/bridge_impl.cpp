@@ -585,7 +585,8 @@ auto bridge::_update_connections() noexcept -> work_done {
 }
 //------------------------------------------------------------------------------
 auto bridge::update() noexcept -> work_done {
-    const auto exec_time{measure_time_interval("busUpdate")};
+    static const auto exec_time_id{register_time_interval("busUpdate")};
+    const auto exec_time{measure_time_interval(exec_time_id)};
     some_true something_done{};
 
     const bool had_id = has_id();

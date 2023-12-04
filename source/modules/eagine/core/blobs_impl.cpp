@@ -20,6 +20,7 @@ import eagine.core.container;
 import eagine.core.identifier;
 import eagine.core.serialization;
 import eagine.core.valid_if;
+import eagine.core.logging;
 import eagine.core.main_ctx;
 
 namespace eagine::msgbus {
@@ -337,6 +338,10 @@ auto pending_blob::received_size() const noexcept -> span_size_t {
     return result;
 }
 //------------------------------------------------------------------------------
+auto pending_blob::total_size() const noexcept -> span_size_t {
+    return info.total_size;
+}
+//------------------------------------------------------------------------------
 auto pending_blob::total_size_mismatch(const span_size_t size) const noexcept
   -> bool {
     return (info.total_size != 0) and (info.total_size != size);
@@ -522,7 +527,8 @@ blob_manipulator::blob_manipulator(
 auto blob_manipulator::update(
   const blob_manipulator::send_handler do_send,
   const span_size_t max_message_size) noexcept -> work_done {
-    const auto exec_time{measure_time_interval("blobUpdate")};
+    static const auto exec_time_id{register_time_interval("blobUpdate")};
+    const auto exec_time{measure_time_interval(exec_time_id)};
     const auto now = std::chrono::steady_clock::now();
     some_true something_done{};
 
@@ -632,7 +638,7 @@ auto blob_manipulator::_make_target_io(
 //------------------------------------------------------------------------------
 auto blob_manipulator::expect_incoming(
   const message_id msg_id,
-  const identifier_t source_id,
+  const endpoint_id_t source_id,
   const blob_id_t target_blob_id,
   shared_holder<target_blob_io> io,
   const std::chrono::seconds max_time) noexcept -> bool {
@@ -656,7 +662,7 @@ auto blob_manipulator::expect_incoming(
 //------------------------------------------------------------------------------
 auto blob_manipulator::push_incoming_fragment(
   const message_id msg_id,
-  const identifier_t source_id,
+  const endpoint_id_t source_id,
   const blob_id_t source_blob_id,
   const blob_id_t target_blob_id,
   const std::int64_t offset,
@@ -709,12 +715,20 @@ auto blob_manipulator::push_incoming_fragment(
                     pending.info.priority = priority;
                 }
                 if(pending.merge_fragment(integer(offset), fragment)) {
-                    log_debug("merged blob fragment")
+                    log_debug("merged blob fragment (${progress})")
                       .arg("source", source_id)
                       .arg("srcBlobId", source_blob_id)
                       .arg("parts", pending.done_parts().size())
                       .arg("offset", offset)
-                      .arg("size", fragment.size());
+                      .arg("size", fragment.size())
+                      .arg_func([&](logger_backend& backend) {
+                          backend.add_float(
+                            "progress",
+                            "Progress",
+                            0.F,
+                            float(pending.received_size()),
+                            float(pending.total_size()));
+                      });
                 } else {
                     log_warning("failed to merge blob fragment")
                       .arg("offset", offset)
@@ -842,10 +856,10 @@ auto blob_manipulator::process_resend(const message_view& message) noexcept
           .arg("srcBlobId", source_blob_id)
           .arg("begin", bgn)
           .arg("end", end);
-        const auto pos = std::find_if(
+        const auto pos{std::find_if(
           _outgoing.begin(), _outgoing.end(), [source_blob_id](auto& pending) {
               return pending.source_blob_id == source_blob_id;
-          });
+          })};
         if(pos != _outgoing.end()) {
             pos->merge_resend_request(bgn, end);
         }
@@ -854,11 +868,11 @@ auto blob_manipulator::process_resend(const message_view& message) noexcept
 }
 //------------------------------------------------------------------------------
 auto blob_manipulator::cancel_incoming(
-  const identifier_t target_blob_id) noexcept -> bool {
-    const auto pos = std::find_if(
+  const endpoint_id_t target_blob_id) noexcept -> bool {
+    const auto pos{std::find_if(
       _incoming.begin(), _incoming.end(), [target_blob_id](auto& pending) {
           return pending.target_blob_id == target_blob_id;
-      });
+      })};
     if(pos != _incoming.end()) {
         auto& pending = *pos;
         pending.target_io->handle_cancelled();
@@ -904,8 +918,8 @@ auto blob_manipulator::_next_blob_id() noexcept -> blob_id_t {
 //------------------------------------------------------------------------------
 auto blob_manipulator::push_outgoing(
   const message_id msg_id,
-  const identifier_t source_id,
-  const identifier_t target_id,
+  const endpoint_id_t source_id,
+  const endpoint_id_t target_id,
   const blob_id_t target_blob_id,
   shared_holder<source_blob_io> io,
   const std::chrono::seconds max_time,
@@ -934,8 +948,8 @@ auto blob_manipulator::push_outgoing(
 //------------------------------------------------------------------------------
 auto blob_manipulator::push_outgoing(
   const message_id msg_id,
-  const identifier_t source_id,
-  const identifier_t target_id,
+  const endpoint_id_t source_id,
+  const endpoint_id_t target_id,
   const blob_id_t target_blob_id,
   const memory::const_block src,
   const std::chrono::seconds max_time,
@@ -997,12 +1011,20 @@ auto blob_manipulator::process_outgoing(
                     message.set_priority(pending.info.priority);
                     something_done(do_send(_fragment_msg_id, message));
 
-                    log_debug("sent blob fragment")
+                    log_debug("sent blob fragment (${progress})")
                       .arg("source", pending.info.source_id)
                       .arg("srcBlobId", pending.source_blob_id)
                       .arg("parts", pending.todo_parts().size())
                       .arg("offset", offset)
-                      .arg("size", "ByteSize", written_size);
+                      .arg("size", "ByteSize", written_size)
+                      .arg_func([&](logger_backend& backend) {
+                          backend.add_float(
+                            "progress",
+                            "Progress",
+                            0.F,
+                            float(pending.sent_size()),
+                            float(pending.total_size()));
+                      });
                 } else {
                     log_error("failed to write fragment of blob ${message}")
                       .arg("message", pending.msg_id);

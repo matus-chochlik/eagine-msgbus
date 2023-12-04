@@ -57,7 +57,7 @@ class router_pending {
 public:
     router_pending(router&, unique_holder<connection>) noexcept;
 
-    auto assigned_id() const noexcept -> identifier_t;
+    auto assigned_id() const noexcept -> endpoint_id_t;
 
     auto password_is_required() const noexcept -> bool;
     auto should_request_password() const noexcept -> bool;
@@ -91,7 +91,7 @@ private:
     auto _send_handler() noexcept;
 
     std::reference_wrapper<router> _parent;
-    identifier_t _id{invalid_endpoint_id()};
+    endpoint_id_t _id{};
     timeout _too_old{adjusted_duration(std::chrono::seconds{30})};
     timeout _should_request_pwd{
       adjusted_duration(std::chrono::seconds{3}),
@@ -110,7 +110,7 @@ public:
     route_node_messages_work_unit(
       router& parent,
       adjacent_node& node,
-      identifier_t incoming_id,
+      endpoint_id_t incoming_id,
       std::chrono::steady_clock::duration message_age_inc,
       std::latch& completed,
       some_true_atomic& something_done) noexcept
@@ -127,7 +127,7 @@ private:
     router* _parent{nullptr};
     adjacent_node* _node{nullptr};
     some_true_atomic* _something_done{nullptr};
-    identifier_t _incoming_id{};
+    endpoint_id_t _incoming_id{};
     std::chrono::steady_clock::duration _message_age_inc{};
 };
 //------------------------------------------------------------------------------
@@ -170,7 +170,7 @@ public:
     void enqueue_route_messages(
       workshop&,
       router&,
-      identifier_t,
+      endpoint_id_t,
       std::chrono::steady_clock::duration,
       std::latch&,
       some_true_atomic&) noexcept;
@@ -193,7 +193,7 @@ public:
 
     auto route_messages(
       router&,
-      const identifier_t incoming_id,
+      const endpoint_id_t incoming_id,
       const std::chrono::steady_clock::duration message_age_inc) noexcept
       -> work_done;
 
@@ -202,7 +202,7 @@ public:
       const message_id,
       const message_view&) const noexcept -> bool;
 
-    auto process_blobs(const identifier_t node_id, router_blobs& blobs) noexcept
+    auto process_blobs(const endpoint_id_t node_id, router_blobs& blobs) noexcept
       -> work_done;
 
 private:
@@ -224,7 +224,7 @@ public:
         return _connection and _confirmed_id;
     }
 
-    auto id() const noexcept -> identifier_t {
+    auto id() const noexcept -> endpoint_id_t {
         return _confirmed_id;
     }
 
@@ -235,12 +235,12 @@ public:
     void handle_bye(const main_ctx_object&, message_id, const message_view&)
       const noexcept;
 
-    void announce_id(main_ctx_object&, const identifier_t id_base) noexcept;
+    void announce_id(main_ctx_object&, const endpoint_id_t id_base) noexcept;
     auto query_statistics(connection_statistics&) const noexcept -> bool;
 
     auto kind_of_connection() const noexcept -> connection_kind;
 
-    auto update(main_ctx_object&, const identifier_t id_base) noexcept
+    auto update(main_ctx_object&, const endpoint_id_t id_base) noexcept
       -> work_done;
 
     auto send(const main_ctx_object&, const message_id, const message_view&)
@@ -253,7 +253,7 @@ public:
 
 private:
     unique_holder<connection> _connection{};
-    identifier_t _confirmed_id{0};
+    endpoint_id_t _confirmed_id{};
     timeout _confirm_id_timeout{
       adjusted_duration(std::chrono::seconds{2}),
       nothing};
@@ -263,27 +263,28 @@ class router_nodes {
 public:
     auto get() noexcept;
     auto count() noexcept -> std::size_t;
-    auto has_id(const identifier_t id) noexcept -> bool;
-    auto find(const identifier_t id) noexcept
+    auto has_id(const endpoint_id_t id) noexcept -> bool;
+    auto find(const endpoint_id_t id) noexcept
       -> optional_reference<adjacent_node>;
-    auto find_outgoing(const identifier_t target_id) -> valid_endpoint_id;
+    auto find_outgoing(const endpoint_id_t target_id) -> endpoint_id_t;
     auto has_some() noexcept -> bool;
     void add_acceptor(shared_holder<acceptor> an_acceptor) noexcept;
     auto handle_pending(router&) noexcept -> work_done;
     auto handle_accept(router&) noexcept -> work_done;
     auto remove_timeouted(const main_ctx_object&) noexcept -> work_done;
-    auto is_disconnected(const identifier_t endpoint_id) const noexcept -> bool;
-    void mark_disconnected(const identifier_t endpoint_id) noexcept;
+    auto is_disconnected(const endpoint_id_t endpoint_id) const noexcept
+      -> bool;
+    void mark_disconnected(const endpoint_id_t endpoint_id) noexcept;
     auto remove_disconnected(const main_ctx_object&) noexcept -> work_done;
     auto update_endpoint_info(
-      const identifier_t incoming_id,
+      const endpoint_id_t incoming_id,
       const message_view& message) noexcept -> router_endpoint_info&;
 
-    auto subscribes_to(const identifier_t, const message_id) noexcept
+    auto subscribes_to(const endpoint_id_t, const message_id) noexcept
       -> std::tuple<tribool, tribool, process_instance_id_t>;
-    auto subscriptions_of(const identifier_t target_id) noexcept
+    auto subscriptions_of(const endpoint_id_t target_id) noexcept
       -> std::tuple<std::vector<message_id>, process_instance_id_t>;
-    void erase(const identifier_t) noexcept;
+    void erase(const endpoint_id_t) noexcept;
     void cleanup() noexcept;
 
 private:
@@ -292,10 +293,10 @@ private:
 
     small_vector<shared_holder<acceptor>, 2> _acceptors;
     std::vector<router_pending> _pending;
-    flat_map<identifier_t, adjacent_node> _nodes;
-    flat_map<identifier_t, identifier_t> _endpoint_idx;
-    flat_map<identifier_t, router_endpoint_info> _endpoint_infos;
-    flat_map<identifier_t, timeout> _recently_disconnected;
+    flat_map<endpoint_id_t, adjacent_node> _nodes;
+    flat_map<endpoint_id_t, endpoint_id_t> _endpoint_idx;
+    flat_map<endpoint_id_t, router_endpoint_info> _endpoint_infos;
+    flat_map<endpoint_id_t, timeout> _recently_disconnected;
 };
 //------------------------------------------------------------------------------
 class router_stats {
@@ -331,12 +332,12 @@ private:
 //------------------------------------------------------------------------------
 class router_ids {
 public:
-    auto router_id() noexcept -> identifier_t;
+    auto router_id() noexcept -> endpoint_id_t;
     auto instance_id() noexcept -> process_instance_id_t;
     void set_description(main_ctx_object&);
     void setup_from_config(const main_ctx_object&);
 
-    auto get_next_id(router&) noexcept -> identifier_t;
+    auto get_next_id(router&) noexcept -> endpoint_id_t;
 
 private:
     identifier_t _id_base{0};
@@ -351,10 +352,10 @@ public:
     auto add_certificate_pem(const memory::const_block blk) noexcept -> bool;
     auto add_ca_certificate_pem(const memory::const_block blk) noexcept -> bool;
     auto add_remote_certificate_pem(
-      const identifier_t,
+      const endpoint_id_t,
       const memory::const_block blk) noexcept -> bool;
     auto get_own_certificate_pem() noexcept -> memory::const_block;
-    auto get_remote_certificate_pem(const identifier_t) noexcept
+    auto get_remote_certificate_pem(const endpoint_id_t) noexcept
       -> memory::const_block;
 
 private:
@@ -371,7 +372,7 @@ public:
 
     auto has_outgoing() noexcept -> bool;
 
-    auto process_blobs(const identifier_t parent_id, router& parent) noexcept
+    auto process_blobs(const endpoint_id_t parent_id, router& parent) noexcept
       -> work_done;
 
     auto process_outgoing(
@@ -381,8 +382,8 @@ public:
 
     void push_outgoing(
       const message_id msg_id,
-      const identifier_t source_id,
-      const identifier_t target_id,
+      const endpoint_id_t source_id,
+      const endpoint_id_t target_id,
       const blob_id_t target_blob_id,
       const memory::const_block blob,
       const std::chrono::seconds max_time,
@@ -411,10 +412,10 @@ public:
     router(main_ctx_parent parent) noexcept;
 
     /// @brief Returns the unique id of this router.
-    auto get_id() noexcept -> identifier_t;
+    auto get_id() noexcept -> endpoint_id_t;
 
-    auto has_id(const identifier_t) noexcept -> bool;
-    auto has_node_id(const identifier_t) noexcept -> bool;
+    auto has_id(const endpoint_id_t) noexcept -> bool;
+    auto has_node_id(const endpoint_id_t) noexcept -> bool;
     auto node_count() noexcept -> span_size_t;
     auto password_is_required() const noexcept -> bool;
 
@@ -456,7 +457,7 @@ private:
     auto _uptime_seconds() noexcept -> std::int64_t;
     auto _remove_disconnected() noexcept -> work_done;
 
-    auto _get_next_id() noexcept -> identifier_t;
+    auto _get_next_id() noexcept -> endpoint_id_t;
 
     auto _process_blobs() noexcept -> work_done;
 
@@ -466,7 +467,7 @@ private:
       const message_view&) noexcept -> bool;
 
     auto _update_endpoint_info(
-      const identifier_t incoming_id,
+      const endpoint_id_t incoming_id,
       const message_view&) noexcept -> router_endpoint_info&;
 
     auto _send_flow_info(const message_flow_info&) noexcept -> work_done;
@@ -474,7 +475,7 @@ private:
     auto _handle_ping(const message_view&) noexcept -> message_handling_result;
 
     auto _handle_subscribed(
-      const identifier_t incoming_id,
+      const endpoint_id_t incoming_id,
       const message_view&) noexcept -> message_handling_result;
 
     auto _handle_clear_block_list(adjacent_node& node) noexcept
@@ -482,21 +483,21 @@ private:
     auto _handle_clear_allow_list(adjacent_node& node) noexcept
       -> message_handling_result;
     auto _handle_still_alive(
-      const identifier_t incoming_id,
+      const endpoint_id_t incoming_id,
       const message_view&) noexcept -> message_handling_result;
     auto _handle_not_not_a_router(
-      const identifier_t incoming_id,
+      const endpoint_id_t incoming_id,
       adjacent_node& node,
       const message_view&) noexcept -> message_handling_result;
     auto _handle_not_subscribed(
-      const identifier_t incoming_id,
+      const endpoint_id_t incoming_id,
       const message_view&) noexcept -> message_handling_result;
     auto _handle_msg_allow(
-      const identifier_t incoming_id,
+      const endpoint_id_t incoming_id,
       adjacent_node& node,
       const message_view&) noexcept -> message_handling_result;
     auto _handle_msg_block(
-      const identifier_t incoming_id,
+      const endpoint_id_t incoming_id,
       adjacent_node& node,
       const message_view&) noexcept -> message_handling_result;
 
@@ -534,28 +535,28 @@ private:
 
     auto _handle_special_common(
       const message_id msg_id,
-      const identifier_t incoming_id,
+      const endpoint_id_t incoming_id,
       const message_view&) noexcept -> message_handling_result;
 
     auto _do_handle_special(
       const message_id msg_id,
-      const identifier_t incoming_id,
+      const endpoint_id_t incoming_id,
       const message_view&) noexcept -> message_handling_result;
 
     auto _do_handle_special(
       const message_id msg_id,
-      const identifier_t incoming_id,
+      const endpoint_id_t incoming_id,
       adjacent_node&,
       const message_view&) noexcept -> message_handling_result;
 
     auto _handle_special(
       const message_id msg_id,
-      const identifier_t incoming_id,
+      const endpoint_id_t incoming_id,
       const message_view&) noexcept -> message_handling_result;
 
     auto _handle_special(
       const message_id msg_id,
-      const identifier_t incoming_id,
+      const endpoint_id_t incoming_id,
       adjacent_node&,
       const message_view&) noexcept -> message_handling_result;
 
@@ -570,24 +571,24 @@ private:
       message_view& message) noexcept -> bool;
     auto _route_targeted_message(
       const message_id msg_id,
-      const identifier_t incoming_id,
+      const endpoint_id_t incoming_id,
       message_view& message) noexcept -> bool;
     auto _route_broadcast_message(
       const message_id msg_id,
-      const identifier_t incoming_id,
+      const endpoint_id_t incoming_id,
       message_view& message) noexcept -> bool;
     auto _route_message(
       const message_id msg_id,
-      const identifier_t incoming_id,
+      const endpoint_id_t incoming_id,
       message_view& message) noexcept -> bool;
     auto _handle_parent_message(
-      const identifier_t incoming_id,
+      const endpoint_id_t incoming_id,
       const std::chrono::steady_clock::duration message_age_inc,
       const message_id msg_id,
       const message_age msg_age,
       message_view message) noexcept -> bool;
     auto _handle_node_message(
-      const identifier_t incoming_id,
+      const endpoint_id_t incoming_id,
       const std::chrono::steady_clock::duration message_age_inc,
       const message_id msg_id,
       const message_age msg_age,

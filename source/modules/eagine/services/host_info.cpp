@@ -80,7 +80,7 @@ public:
     /// @brief Queries the endpoint's host identifier.
     /// @see host_id_received
     /// @see query_hostname
-    void query_host_id(const identifier_t endpoint_id) noexcept {
+    void query_host_id(const endpoint_id_t endpoint_id) noexcept {
         _host_id.invoke_on(
           this->bus_node(), endpoint_id, message_id{"eagiSysInf", "rqHostId"});
     }
@@ -88,7 +88,7 @@ public:
     /// @brief Queries the endpoint's host name.
     /// @see hostname_received
     /// @see query_host_id
-    void query_hostname(const identifier_t endpoint_id) noexcept {
+    void query_hostname(const endpoint_id_t endpoint_id) noexcept {
         _hostname.invoke_on(
           this->bus_node(),
           endpoint_id,

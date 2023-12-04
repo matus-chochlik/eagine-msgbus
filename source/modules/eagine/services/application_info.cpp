@@ -69,7 +69,7 @@ class application_info_consumer
 public:
     /// @brief Queries the specified endpoint's application name.
     /// @see application_name_received
-    void query_application_name(const identifier_t endpoint_id) noexcept {
+    void query_application_name(const endpoint_id_t endpoint_id) noexcept {
         _app_name.invoke_on(
           this->bus_node(), endpoint_id, message_id{"eagiAppInf", "rqAppName"});
     }

@@ -114,10 +114,10 @@ public:
     }
 
 private:
-    std::set<identifier_t> _routers;
-    std::set<identifier_t> _bridges;
-    std::set<identifier_t> _endpoints;
-    std::set<std::pair<identifier_t, identifier_t>> _connections;
+    std::set<endpoint_id_t> _routers;
+    std::set<endpoint_id_t> _bridges;
+    std::set<endpoint_id_t> _endpoints;
+    std::set<std::pair<endpoint_id_t, endpoint_id_t>> _connections;
     logger _log{};
 };
 //------------------------------------------------------------------------------

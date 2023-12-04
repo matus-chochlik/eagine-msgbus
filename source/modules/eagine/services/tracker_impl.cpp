@@ -93,7 +93,7 @@ public:
         connect<&This::_handle_ping_timeout>(this, pings.ping_timeouted);
     }
 
-    void update(callable_ref<void(const identifier_t, remote_node_state&)>
+    void update(callable_ref<void(const endpoint_id_t, remote_node_state&)>
                   update_node) noexcept final {
 
         _tracker.for_each_host_state([&](const auto host_id, auto& host) {
@@ -111,7 +111,7 @@ public:
     }
 
     void update_node_info(
-      callable_ref<void(const identifier_t)> update_node) noexcept final {
+      callable_ref<void(const endpoint_id_t)> update_node) noexcept final {
         if(not _update_node_ids.empty()) {
             for(const auto node_id : _update_node_ids) {
                 update_node(node_id);
@@ -138,7 +138,7 @@ public:
 
 private:
     void _handle_host_change(
-      const identifier_t,
+      const endpoint_id_t,
       remote_host_state& host) noexcept {
         if(const auto changes{host.update().changes()}) {
             signals.host_changed(host, changes);
@@ -146,7 +146,7 @@ private:
     }
 
     void _handle_inst_change(
-      const identifier_t,
+      const endpoint_id_t,
       remote_instance_state& inst) noexcept {
         if(const auto changes{inst.update().changes()}) {
             signals.instance_changed(inst, changes);
@@ -154,7 +154,7 @@ private:
     }
 
     void _handle_node_change(
-      const identifier_t node_id,
+      const endpoint_id_t node_id,
       remote_node_state& node) noexcept {
         if(const auto changes{node.update().changes()}) {
             signals.node_changed(node, changes);
@@ -503,12 +503,13 @@ private:
         return _tracker.get_instance(id);
     }
 
-    auto _get_node(const identifier_t id) noexcept -> remote_node_state& {
+    auto _get_node(const endpoint_id_t id) noexcept -> remote_node_state& {
         return _tracker.get_node(id);
     }
 
-    auto _get_connection(const identifier_t id1, const identifier_t id2) noexcept
-      -> node_connection_state& {
+    auto _get_connection(
+      const endpoint_id_t id1,
+      const endpoint_id_t id2) noexcept -> node_connection_state& {
         return _tracker.get_connection(id1, id2);
     }
 
@@ -519,7 +520,7 @@ private:
     resetting_timeout _should_query_stats{std::chrono::seconds{30}, nothing};
     resetting_timeout _should_query_info{std::chrono::seconds{5}};
 
-    std::vector<identifier_t> _update_node_ids;
+    std::vector<endpoint_id_t> _update_node_ids;
 
     remote_node_tracker _tracker{};
 };

@@ -66,7 +66,7 @@ class build_version_info_consumer
 public:
     /// @brief Queries endpoint's build version information.
     /// @see build_info_received
-    void query_build_version_info(const identifier_t endpoint_id) noexcept {
+    void query_build_version_info(const endpoint_id_t endpoint_id) noexcept {
         _build_version.invoke_on(
           this->bus_node(), endpoint_id, {"eagiBldInf", "request"});
     }

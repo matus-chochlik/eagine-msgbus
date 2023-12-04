@@ -44,20 +44,11 @@ export class endpoint
   : public main_ctx_object
   , public connection_user {
 public:
-    static constexpr auto invalid_id() noexcept -> identifier_t {
-        return invalid_endpoint_id();
-    }
-
-    /// @brief Tests if the specified id is a valid endpoint id.
-    static constexpr auto is_valid_id(const identifier_t id) noexcept -> bool {
-        return is_valid_endpoint_id(id);
-    }
-
     /// @brief Alias for message fetch handler callable reference.
     using fetch_handler = connection::fetch_handler;
 
     /// @brief Triggered when the id is confirmed or assigned to this endpoint.
-    signal<void(const identifier_t) noexcept> id_assigned;
+    signal<void(const endpoint_id_t) noexcept> id_assigned;
 
     /// @brief Triggered when this endpoint's connection is established.
     signal<void(const bool) noexcept> connection_established;
@@ -101,7 +92,7 @@ public:
     /// @see set_id
     /// @see has_preconfigured_id
     /// @see get_preconfigured_id
-    auto preconfigure_id(const identifier_t id) noexcept -> auto& {
+    auto preconfigure_id(const endpoint_id_t id) noexcept -> auto& {
         _preconfd_id = id;
         return *this;
     }
@@ -235,7 +226,7 @@ public:
     /// @see max_data_size
     auto post_blob(
       const message_id msg_id,
-      const identifier_t target_id,
+      const endpoint_id_t target_id,
       const blob_id_t target_blob_id,
       const memory::const_block blob,
       const std::chrono::seconds max_time,
@@ -277,8 +268,9 @@ public:
     }
 
     /// @brief Posts the certificate of this enpoint to the specified remote.
-    auto post_certificate(const identifier_t target_id, const blob_id_t) noexcept
-      -> bool;
+    auto post_certificate(
+      const endpoint_id_t target_id,
+      const blob_id_t) noexcept -> bool;
 
     /// @brief Broadcasts the certificate of this enpoint to the whole bus.
     auto broadcast_certificate() noexcept -> bool;
@@ -314,7 +306,7 @@ public:
     /// @see post_meta_message
     /// @see default_serialize
     void post_meta_message_to(
-      const identifier_t target_id,
+      const endpoint_id_t target_id,
       const message_id meta_msg_id,
       const message_id msg_id) noexcept;
 
@@ -329,7 +321,7 @@ public:
     /// @see say_unsubscribes_from
     /// @see say_not_subscribed_to
     void say_subscribes_to(
-      const identifier_t target_id,
+      const endpoint_id_t target_id,
       const message_id) noexcept;
 
     /// @brief Broadcasts a message that this unsubscribes from message with given type.
@@ -343,13 +335,13 @@ public:
     /// @see say_subscribes_to
     /// @see say_not_subscribed_to
     void say_not_subscribed_to(
-      const identifier_t target_id,
+      const endpoint_id_t target_id,
       const message_id) noexcept;
 
     /// @brief Posts a message requesting all subscriptions of a target node.
     /// @see query_subscribers_of
     /// @see say_subscribes_to
-    void query_subscriptions_of(const identifier_t target_id) noexcept;
+    void query_subscriptions_of(const endpoint_id_t target_id) noexcept;
 
     /// @brief Posts a message requesting all subscribers of a given message type.
     /// @see query_subscribers_of
@@ -377,7 +369,7 @@ public:
     void allow_message_type(const message_id) noexcept;
 
     /// @brief Sends a message requesting remote endpoint certificate.
-    void query_certificate_of(const identifier_t endpoint_id) noexcept;
+    void query_certificate_of(const endpoint_id_t endpoint_id) noexcept;
 
     /// @brief Posts a message as a response to another received message.
     /// @see message_info::setup_response
@@ -462,9 +454,9 @@ private:
 
     shared_context _context{make_context(*this)};
 
-    identifier_t _preconfd_id{invalid_id()};
-    identifier_t _endpoint_id{invalid_id()};
-    identifier_t _router_id{invalid_id()};
+    endpoint_id_t _preconfd_id{};
+    endpoint_id_t _endpoint_id{};
+    endpoint_id_t _router_id{};
     const process_instance_id_t _instance_id{process_instance_id()};
 
     std::chrono::steady_clock::time_point _startup_time{
@@ -586,8 +578,8 @@ private:
     endpoint(endpoint&& temp) noexcept
       : main_ctx_object{static_cast<main_ctx_object&&>(temp)}
       , _context{std::move(temp._context)}
-      , _preconfd_id{std::exchange(temp._preconfd_id, invalid_id())}
-      , _endpoint_id{std::exchange(temp._endpoint_id, invalid_id())}
+      , _preconfd_id{std::exchange(temp._preconfd_id, {})}
+      , _endpoint_id{std::exchange(temp._endpoint_id, {})}
       , _connection{std::move(temp._connection)}
       , _outgoing{std::move(temp._outgoing)}
       , _incoming{std::move(temp._incoming)}
@@ -596,8 +588,8 @@ private:
     endpoint(endpoint&& temp, fetch_handler store_message) noexcept
       : main_ctx_object{static_cast<main_ctx_object&&>(temp)}
       , _context{std::move(temp._context)}
-      , _preconfd_id{std::exchange(temp._preconfd_id, invalid_id())}
-      , _endpoint_id{std::exchange(temp._endpoint_id, invalid_id())}
+      , _preconfd_id{std::exchange(temp._preconfd_id, {})}
+      , _endpoint_id{std::exchange(temp._endpoint_id, {})}
       , _connection{std::move(temp._connection)}
       , _outgoing{std::move(temp._outgoing)}
       , _incoming{std::move(temp._incoming)}

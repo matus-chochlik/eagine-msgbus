@@ -78,7 +78,7 @@ class endpoint_info_consumer
 public:
     /// @brief Queries basic information about the specified endpoint.
     /// @see endpoint_info_received
-    void query_endpoint_info(const identifier_t endpoint_id) noexcept {
+    void query_endpoint_info(const endpoint_id_t endpoint_id) noexcept {
         _info.invoke_on(
           this->bus_node(), endpoint_id, message_id{"eagiEptInf", "request"});
     }

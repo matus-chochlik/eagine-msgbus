@@ -96,7 +96,7 @@ public:
         setup_connectors(main_context(), *this);
     }
 
-    void on_id_assigned(const identifier_t endpoint_id) noexcept {
+    void on_id_assigned(const endpoint_id_t endpoint_id) noexcept {
         log_info("new id ${id} assigned").arg("id", endpoint_id);
         _can_ping = true;
     }
@@ -289,7 +289,7 @@ private:
       nothing};
     std::chrono::steady_clock::time_point prev_log{
       std::chrono::steady_clock::now()};
-    std::map<identifier_t, ping_state> _targets{};
+    std::map<endpoint_id_t, ping_state> _targets{};
     std::intmax_t _limit{1000};
     std::intmax_t _mod{10000};
     std::intmax_t _max{100000};
@@ -302,8 +302,10 @@ private:
 } // namespace msgbus
 
 auto main(main_ctx& ctx) -> int {
-    const signal_switch interrupted;
+    signal_switch interrupted;
     const auto& log = ctx.log();
+    const auto sig_bind{log.log_when_switched(interrupted)};
+
     log.active_state("pinging");
     log.declare_state("pinging", "pingStart", "pingFinish");
 

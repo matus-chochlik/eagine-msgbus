@@ -223,71 +223,72 @@ public:
                           .map_fulfill_by({"eagiSysInf", "powerSuply"}));
     }
 
-    void query_uptime(const identifier_t endpoint_id) noexcept final {
+    void query_uptime(const endpoint_id_t endpoint_id) noexcept final {
         _uptime.invoke_on(
           base.bus_node(), endpoint_id, {"eagiSysInf", "rqUptime"});
     }
 
     void query_cpu_concurrent_threads(
-      const identifier_t endpoint_id) noexcept final {
+      const endpoint_id_t endpoint_id) noexcept final {
         _cpu_concurrent_threads.invoke_on(
           base.bus_node(), endpoint_id, {"eagiSysInf", "rqCpuThrds"});
     }
 
     void query_short_average_load(
-      const identifier_t endpoint_id) noexcept final {
+      const endpoint_id_t endpoint_id) noexcept final {
         _short_average_load.invoke_on(
           base.bus_node(), endpoint_id, {"eagiSysInf", "rqShrtLoad"});
     }
 
-    void query_long_average_load(const identifier_t endpoint_id) noexcept final {
+    void query_long_average_load(
+      const endpoint_id_t endpoint_id) noexcept final {
         _long_average_load.invoke_on(
           base.bus_node(), endpoint_id, {"eagiSysInf", "rqLongLoad"});
     }
 
-    void query_memory_page_size(const identifier_t endpoint_id) noexcept final {
+    void query_memory_page_size(const endpoint_id_t endpoint_id) noexcept final {
         _memory_page_size.invoke_on(
           base.bus_node(), endpoint_id, {"eagiSysInf", "rqMemPgSz"});
     }
 
-    void query_free_ram_size(const identifier_t endpoint_id) noexcept final {
+    void query_free_ram_size(const endpoint_id_t endpoint_id) noexcept final {
         _free_ram_size.invoke_on(
           base.bus_node(), endpoint_id, {"eagiSysInf", "rqFreRamSz"});
     }
 
-    void query_total_ram_size(const identifier_t endpoint_id) noexcept final {
+    void query_total_ram_size(const endpoint_id_t endpoint_id) noexcept final {
         _total_ram_size.invoke_on(
           base.bus_node(), endpoint_id, {"eagiSysInf", "rqTtlRamSz"});
     }
 
-    void query_free_swap_size(const identifier_t endpoint_id) noexcept final {
+    void query_free_swap_size(const endpoint_id_t endpoint_id) noexcept final {
         _free_swap_size.invoke_on(
           base.bus_node(), endpoint_id, {"eagiSysInf", "rqFreSwpSz"});
     }
 
-    void query_total_swap_size(const identifier_t endpoint_id) noexcept final {
+    void query_total_swap_size(const endpoint_id_t endpoint_id) noexcept final {
         _total_swap_size.invoke_on(
           base.bus_node(), endpoint_id, {"eagiSysInf", "rqTtlSwpSz"});
     }
 
-    void query_temperature_min_max(const identifier_t endpoint_id) noexcept {
+    void query_temperature_min_max(const endpoint_id_t endpoint_id) noexcept {
         _temperature_min_max.invoke_on(
           base.bus_node(), endpoint_id, {"eagiSysInf", "rqTempMnMx"});
     }
 
-    void query_power_supply_kind(const identifier_t endpoint_id) noexcept {
+    void query_power_supply_kind(const endpoint_id_t endpoint_id) noexcept {
         _power_supply_kind.invoke_on(
           base.bus_node(), endpoint_id, {"eagiSysInf", "rqPwrSuply"});
     }
 
-    void query_stats(const identifier_t endpoint_id) noexcept {
+    void query_stats(const endpoint_id_t endpoint_id) noexcept {
         message_view message{};
         const message_id msg_id{"eagiSysInf", "qryStats"};
         message.set_target_id(endpoint_id);
         base.bus_node().post(msg_id, message);
     }
 
-    void query_sensors(const identifier_t endpoint_id) noexcept {
+    void query_sensors(const endpoint_id_t endpoint_id) noexcept {
         message_view message{};
         const message_id msg_id{"eagiSysInf", "qrySensors"};
         message.set_target_id(endpoint_id);

@@ -1,0 +1,6 @@
+msgbus:
+  router:
+    id_count: 1000
+    shutdown_verify: true
+    shutdown_delay: 15s
+

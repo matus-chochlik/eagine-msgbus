@@ -31,7 +31,7 @@ public:
     }
 
     auto respond_to_ping(
-      const identifier_t,
+      const endpoint_id_t,
       const message_sequence_t,
       const verification_bits) noexcept -> bool final {
         if((++_sent % _mod) == 0) [[unlikely]] {

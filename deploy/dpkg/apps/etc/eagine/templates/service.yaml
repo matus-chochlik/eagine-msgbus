@@ -1,9 +1,9 @@
 msgbus:
   asio_local_stream: true
+  asio_tcp_ipv4: false
+  asio_udp_ipv4: false
+  posix_mqueue: false
   router:
     address:
       - /var/run/eagine/msgbus-service.socket
-    id_count: 1000
-    shutdown_verify: true
-    shutdown_delay: 15s
-
+      - localhost:34918

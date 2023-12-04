@@ -35,7 +35,7 @@ public:
     auto add_connection(unique_holder<connection>) noexcept -> bool final;
 
     auto has_id() const noexcept -> bool {
-        return is_valid_endpoint_id(_id);
+        return is_valid_id(_id);
     }
 
     auto update() noexcept -> work_done;
@@ -92,7 +92,7 @@ private:
     shared_context _context{};
 
     const process_instance_id_t _instance_id{process_instance_id()};
-    identifier_t _id{invalid_endpoint_id()};
+    endpoint_id_t _id{};
     timeout _no_id_timeout{adjusted_duration(std::chrono::seconds{2}), nothing};
 
     std::chrono::steady_clock::time_point _startup_time{

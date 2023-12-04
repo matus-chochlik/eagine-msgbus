@@ -197,20 +197,20 @@ struct sudoku_helper_rank_info {
     int max_recursion{1};
 
     std::vector<
-      std::tuple<identifier_t, message_sequence_t, basic_sudoku_board<S>>>
+      std::tuple<endpoint_id_t, message_sequence_t, basic_sudoku_board<S>>>
       boards;
 
-    flat_set<identifier_t> searches;
+    flat_set<endpoint_id_t> searches;
 
     sudoku_helper_rank_info() noexcept = default;
 
-    void on_search(const identifier_t source_id) noexcept {
+    void on_search(const endpoint_id_t source_id) noexcept {
         searches.insert(source_id);
     }
 
     void add_board(
       endpoint& bus,
-      const identifier_t source_id,
+      const endpoint_id_t source_id,
       const message_sequence_t sequence_no,
       const basic_sudoku_board<S> board) noexcept;
 
@@ -237,7 +237,7 @@ struct sudoku_helper_rank_info {
 template <unsigned S>
 void sudoku_helper_rank_info<S>::add_board(
   endpoint& bus,
-  const identifier_t source_id,
+  const endpoint_id_t source_id,
   const message_sequence_t sequence_no,
   const basic_sudoku_board<S> board) noexcept {
     if(boards.size() < 20) [[likely]] {
@@ -517,7 +517,7 @@ struct sudoku_solver_rank_info {
           : board{std::move(b)} {}
 
         basic_sudoku_board<S> board;
-        identifier_t used_helper{0U};
+        endpoint_id_t used_helper{0U};
         message_sequence_t sequence_no{0U};
         sudoku_solver_key key{0};
         timeout too_late{};
@@ -525,11 +525,11 @@ struct sudoku_solver_rank_info {
     std::vector<pending_info> pending;
     std::vector<pending_info> remaining;
 
-    flat_set<identifier_t> known_helpers;
-    flat_set<identifier_t> ready_helpers;
-    flat_map<identifier_t, std::intmax_t> updated_by_helper;
-    flat_map<identifier_t, std::intmax_t> solved_by_helper;
-    std::vector<identifier_t> found_helpers;
+    flat_set<endpoint_id_t> known_helpers;
+    flat_set<endpoint_id_t> ready_helpers;
+    flat_map<endpoint_id_t, std::intmax_t> updated_by_helper;
+    flat_map<endpoint_id_t, std::intmax_t> solved_by_helper;
+    std::vector<endpoint_id_t> found_helpers;
 
     std::default_random_engine randeng{std::random_device{}()};
 
@@ -578,7 +578,7 @@ struct sudoku_solver_rank_info {
       auto& solver,
       endpoint& bus,
       data_compressor& compressor,
-      const identifier_t helper_id,
+      const endpoint_id_t helper_id,
       auto key,
       auto& boards) noexcept;
 
@@ -586,10 +586,10 @@ struct sudoku_solver_rank_info {
       auto& solver,
       endpoint& bus,
       data_compressor& compressor,
-      const identifier_t helper_id) noexcept -> bool;
+      const endpoint_id_t helper_id) noexcept -> bool;
 
-    auto find_helpers(span<identifier_t> dst) const noexcept
-      -> span<identifier_t>;
+    auto find_helpers(span<endpoint_id_t> dst) const noexcept
+      -> span<endpoint_id_t>;
 
     auto send_boards(
       auto& solver,
@@ -609,14 +609,14 @@ struct sudoku_solver_rank_info {
 
     void reset(auto& solver) noexcept;
 
-    auto updated_by_helper_count(const identifier_t helper_id) const noexcept
+    auto updated_by_helper_count(const endpoint_id_t helper_id) const noexcept
       -> std::intmax_t {
         return eagine::find(updated_by_helper, helper_id).value_or(0);
     }
 
     auto updated_count() const noexcept -> std::intmax_t;
 
-    auto solved_by_helper_count(const identifier_t helper_id) const noexcept
+    auto solved_by_helper_count(const endpoint_id_t helper_id) const noexcept
       -> std::intmax_t;
 
     auto solved_count() const noexcept -> std::intmax_t;
@@ -807,7 +807,7 @@ void sudoku_solver_rank_info<S>::do_send_board_to(
   auto& solver,
   endpoint& bus,
   data_compressor& compressor,
-  const identifier_t helper_id,
+  const endpoint_id_t helper_id,
   auto key,
   auto& boards) noexcept {
 
@@ -843,7 +843,7 @@ auto sudoku_solver_rank_info<S>::send_board_to(
   auto& solver,
   endpoint& bus,
   data_compressor& compressor,
-  const identifier_t helper_id) noexcept -> bool {
+  const endpoint_id_t helper_id) noexcept -> bool {
     if(const auto key_board_count{key_boards.size()}) {
         const auto offs{query_sequence++ % key_board_count};
         const auto kbpos{std::next(key_boards.begin(), offs)};
@@ -862,7 +862,7 @@ auto sudoku_solver_rank_info<S>::send_board_to(
 //------------------------------------------------------------------------------
 template <unsigned S>
 auto sudoku_solver_rank_info<S>::find_helpers(
-  span<identifier_t> dst) const noexcept -> span<identifier_t> {
+  span<endpoint_id_t> dst) const noexcept -> span<endpoint_id_t> {
     span_size_t done = 0;
     for(const auto helper_id : ready_helpers) {
         if(done < dst.size()) {
@@ -969,7 +969,7 @@ auto sudoku_solver_rank_info<S>::updated_count() const noexcept
 //------------------------------------------------------------------------------
 template <unsigned S>
 auto sudoku_solver_rank_info<S>::solved_by_helper_count(
-  const identifier_t helper_id) const noexcept -> std::intmax_t {
+  const endpoint_id_t helper_id) const noexcept -> std::intmax_t {
     return eagine::find(solved_by_helper, helper_id).value_or(0);
 }
 //------------------------------------------------------------------------------
@@ -1038,13 +1038,13 @@ public:
 
     auto solution_timeouted(unsigned rank) const noexcept -> bool final;
 
-    auto updated_by_helper(const identifier_t helper_id, const unsigned rank)
+    auto updated_by_helper(const endpoint_id_t helper_id, const unsigned rank)
       const noexcept -> std::intmax_t final;
 
     auto updated_count(const unsigned rank) const noexcept
       -> std::intmax_t final;
 
-    auto solved_by_helper(const identifier_t helper_id, const unsigned rank)
+    auto solved_by_helper(const endpoint_id_t helper_id, const unsigned rank)
       const noexcept -> std::intmax_t final;
 
     auto solved_count(const unsigned rank) const noexcept
@@ -1055,7 +1055,7 @@ public:
     data_compressor compressor;
 
 private:
-    void _on_id_assigned(const identifier_t) noexcept {
+    void _on_id_assigned(const endpoint_id_t) noexcept {
         _can_work = true;
     }
 
@@ -1235,7 +1235,7 @@ auto sudoku_solver_impl::solution_timeouted(unsigned rank) const noexcept
 }
 //------------------------------------------------------------------------------
 auto sudoku_solver_impl::updated_by_helper(
-  const identifier_t helper_id,
+  const endpoint_id_t helper_id,
   const unsigned rank) const noexcept -> std::intmax_t {
     std::intmax_t result{0};
     apply_to_sudoku_rank_unit(
@@ -1256,7 +1256,7 @@ auto sudoku_solver_impl::updated_count(const unsigned rank) const noexcept
 }
 //------------------------------------------------------------------------------
 auto sudoku_solver_impl::solved_by_helper(
-  const identifier_t helper_id,
+  const endpoint_id_t helper_id,
   const unsigned rank) const noexcept -> std::intmax_t {
     std::intmax_t result{0};
     apply_to_sudoku_rank_unit(
@@ -1418,20 +1418,20 @@ struct sudoku_tiling_rank_info : sudoku_tiles<S> {
         const auto coord{std::get<Coord>(sol.key)};
         if(this->set_board(coord, sol.board)) {
             cells_done += this->cells_per_tile(coord);
+            const auto done{float(cells_done)};
+            const auto all{float(this->cell_count())};
             tiling.solver.base.bus_node()
               .log_info("solved board [${x}, ${y}], ${progress} done")
               .tag("solvdBoard")
               .arg("rank", S)
               .arg("x", std::get<0>(coord))
               .arg("y", std::get<1>(coord))
+              .arg("width", this->width())
+              .arg("height", this->height())
+              .arg("celPerSide", this->cells_per_tile_side())
               .arg("time", sol.elapsed_time)
               .arg("helper", sol.helper_id)
-              .arg(
-                "progress",
-                "MainPrgrss",
-                0.F,
-                float(cells_done),
-                float(this->cell_count()));
+              .arg("progress", "MainPrgrss", 0.F, done, all);
 
             auto helper{eagine::find(helper_contrib, sol.helper_id)};
             if(not helper) {
@@ -1476,7 +1476,7 @@ struct sudoku_tiling_rank_info : sudoku_tiles<S> {
         return {this->x_tiles_count(), this->y_tiles_count()};
     }
 
-    flat_map<identifier_t, span_size_t> helper_contrib;
+    flat_map<endpoint_id_t, span_size_t> helper_contrib;
     int cells_done{0};
 };
 //------------------------------------------------------------------------------
