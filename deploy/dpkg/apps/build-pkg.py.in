@@ -48,11 +48,6 @@ shutil.copytree(
     os.path.join(src_dir, "deploy", "dpkg", "apps", "etc"),
     etc_prefix,
     dirs_exist_ok=True)
-
-shutil.copytree(
-    os.path.join(src_dir, "deploy", "dpkg", "apps", "_config"),
-    cfg_prefix,
-    dirs_exist_ok=True)
 # ------------------------------------------------------------------------------
 def dir_file_size(path):
     total_size = 0
