@@ -854,8 +854,8 @@ auto sudoku_solver_rank_info<S>::send_board_to(
         } else {
             do_send_board_to(
               solver, bus, compressor, helper_id, std::move(key), boards);
-            return true;
         }
+        return true;
     }
     return false;
 }
