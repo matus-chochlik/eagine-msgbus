@@ -56,7 +56,7 @@ protected:
 
     auto update() -> eagine::work_done {
         eagine::some_true something_done{Base::update()};
-        if(eagine::is_valid_id(_target)) {
+        if(is_valid_id(_target)) {
             if(_ping_time.is_expired()) {
                 eagine::msgbus::message_view ping_msg;
                 ping_msg.set_target_id(_target);

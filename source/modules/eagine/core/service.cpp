@@ -105,7 +105,7 @@ public:
 
     /// @brief Returns the underlying endpoint identifier if one is assigned.
     /// @see has_id
-    auto get_id() const noexcept -> std::optional<endpoint_id_t> {
+    auto get_id() const noexcept -> optionally_valid<endpoint_id_t> {
         const auto id{this->bus_node().get_id()};
         if(is_valid_id(id)) {
             return {id};
