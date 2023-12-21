@@ -80,7 +80,7 @@ public:
 
     void push(const message_id msg_id, const message_view& message) noexcept {
         const std::unique_lock lock{_output_mutex};
-        _outgoing.back().push(msg_id, message);
+        _outgoing.next().push(msg_id, message);
     }
 
     void notify_output_ready() noexcept {
@@ -107,7 +107,7 @@ public:
         auto& queue{[this]() -> message_storage& {
             const std::unique_lock lock{_input_mutex};
             _incoming.swap();
-            return _incoming.front();
+            return _incoming.current();
         }()};
         return queue.fetch_all(handler);
     }
@@ -180,7 +180,7 @@ void bridge_state::send_output() noexcept {
         std::unique_lock lock{_output_mutex};
         _output_ready.wait(lock);
         _outgoing.swap();
-        return _outgoing.front();
+        return _outgoing.current();
     }()};
     queue.fetch_all({construct_from, handler});
 }
@@ -206,7 +206,7 @@ void bridge_state::_do_recv_input(const span_size_t pos) noexcept {
         }
 
         const std::unique_lock lock{_input_mutex};
-        _incoming.back().push({class_id, method_id}, _recv_dest);
+        _incoming.next().push({class_id, method_id}, _recv_dest);
     } else {
         ++_decode_errors;
     }

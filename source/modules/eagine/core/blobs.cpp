@@ -155,19 +155,19 @@ struct pending_blob {
     auto target_buffer_io() noexcept -> buffer_blob_io*;
 
     auto done_parts() const noexcept -> const auto& {
-        return fragment_parts.front();
+        return fragment_parts.current();
     }
 
     auto done_parts() noexcept -> auto& {
-        return fragment_parts.front();
+        return fragment_parts.current();
     }
 
     auto todo_parts() const noexcept -> const auto& {
-        return fragment_parts.back();
+        return fragment_parts.next();
     }
 
     auto todo_parts() noexcept -> auto& {
-        return fragment_parts.back();
+        return fragment_parts.next();
     }
 
     auto sent_size() const noexcept -> span_size_t;
