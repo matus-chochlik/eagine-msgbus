@@ -1,3 +1,0 @@
-router:Message bus router
-file-server:Message bus file server
-sudoku-helper:Message bus Sudoku solver helper
