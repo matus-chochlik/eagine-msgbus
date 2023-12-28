@@ -9,6 +9,7 @@ import os
 import json
 import math
 import shutil
+import subprocess
 # ------------------------------------------------------------------------------
 src_dir = os.path.realpath("@SRC_DIR@")
 bin_dir = os.path.realpath("@BIN_DIR@")
@@ -40,9 +41,11 @@ for filename in [
     "resource-hexdump",
     "resource-histogram",
     "sudoku-tiling"]:
+    dst_path = os.path.join(bin_prefix, "eagiproc-" + filename)
     shutil.copy(
         os.path.join(src_dir, "deploy", "dpkg", "apps", "procman", filename), 
-        os.path.join(bin_prefix, "eagiproc-" + filename))
+        dst_path)
+    subprocess.call(["strip", dst_path])
 
 shutil.copytree(
     os.path.join(src_dir, "deploy", "dpkg", "apps", "etc"),
