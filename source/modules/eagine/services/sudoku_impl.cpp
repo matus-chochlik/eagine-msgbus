@@ -192,7 +192,6 @@ auto sudoku_response_msg(
 //------------------------------------------------------------------------------
 template <unsigned S>
 struct sudoku_helper_rank_info {
-    default_sudoku_board_traits<S> traits;
     memory::buffer serialize_buffer;
     int max_recursion{1};
 
@@ -423,7 +422,7 @@ auto sudoku_helper_impl::_handle_board(
   const stored_message& message) noexcept -> bool {
     const unsigned_constant<S> rank{};
     auto& info = _infos.get(rank);
-    basic_sudoku_board<S> board{info.traits};
+    basic_sudoku_board<S> board{};
 
     const auto deserialized{
       (S >= 4)
@@ -492,7 +491,6 @@ auto sudoku_helper_impl::update() noexcept -> work_done {
 template <unsigned S>
 struct sudoku_solver_rank_info {
     message_sequence_t query_sequence{0};
-    default_sudoku_board_traits<S> traits;
     memory::buffer serialize_buffer;
 
     timeout search_timeout{std::chrono::seconds(3), nothing};
@@ -775,7 +773,7 @@ void sudoku_solver_rank_info<S>::handle_response(
   auto& solver,
   const message_context& msg_ctx,
   const stored_message& message) noexcept {
-    basic_sudoku_board<S> board{traits};
+    basic_sudoku_board<S> board{};
 
     const auto deserialized{
       (S >= 4) ? default_deserialize_packed(

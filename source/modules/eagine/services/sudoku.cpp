@@ -686,7 +686,7 @@ public:
 
 protected:
     auto new_board() noexcept -> basic_sudoku_board<S> {
-        return {_traits};
+        return {};
     }
 
 private:

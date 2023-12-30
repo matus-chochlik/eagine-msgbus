@@ -30,9 +30,12 @@ public:
     void print(
       const result_context&,
       const solved_sudoku_board<S>& sol) noexcept {
-        std::cout << "board: " << std::get<int>(sol.key) << '\n'
-                  << sol.board << std::endl;
+        std::cout << "board: " << std::get<int>(sol.key) << '\n';
+        default_sudoku_board_traits<S>().print(std::cout, sol.board);
+        std::cout << std::endl;
     }
+
+private:
 };
 
 } // namespace msgbus
