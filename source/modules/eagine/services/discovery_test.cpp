@@ -56,7 +56,7 @@ protected:
 
     auto update() -> eagine::work_done {
         eagine::some_true something_done{Base::update()};
-        if(eagine::is_valid_id(_target)) {
+        if(is_valid_id(_target)) {
             if(_ping_time.is_expired()) {
                 eagine::msgbus::message_view ping_msg;
                 ping_msg.set_target_id(_target);
@@ -132,17 +132,11 @@ void discovery_1(auto& s) {
             const eagine::msgbus::subscriber_subscribed& sub) {
               if(sub.message_type.is("eagiTest", "pong")) {
                   test.check_equal(
-                    sub.source.endpoint_id,
-                    pinger.get_id().value_or(
-                      eagine::msgbus::invalid_endpoint_id()),
-                    "pinger id");
+                    sub.source.endpoint_id, pinger.get_id(), "pinger id");
                   found_pinger = true;
               } else if(sub.message_type.is("eagiTest", "ping")) {
                   test.check_equal(
-                    sub.source.endpoint_id,
-                    ponger.get_id().value_or(
-                      eagine::msgbus::invalid_endpoint_id()),
-                    "ponger id");
+                    sub.source.endpoint_id, ponger.get_id(), "ponger id");
                   found_ponger = true;
               }
               trck.checkpoint(2);
@@ -223,18 +217,12 @@ void discovery_2(auto& s) {
           [&](const eagine::msgbus::subscriber_subscribed& sub) {
               if(sub.message_type.is("eagiTest", "pong")) {
                   test.check_equal(
-                    sub.source.endpoint_id,
-                    pinger.get_id().value_or(
-                      eagine::msgbus::invalid_endpoint_id()),
-                    "pinger id");
+                    sub.source.endpoint_id, pinger.get_id(), "pinger id");
                   found_pinger = true;
               }
               if(sub.message_type.is("eagiTest", "ping")) {
                   test.check_equal(
-                    sub.source.endpoint_id,
-                    ponger.get_id().value_or(
-                      eagine::msgbus::invalid_endpoint_id()),
-                    "ponger id");
+                    sub.source.endpoint_id, ponger.get_id(), "ponger id");
                   found_ponger = true;
               }
               trck.checkpoint(2);
@@ -317,18 +305,12 @@ void discovery_3(auto& s) {
           [&](const eagine::msgbus::subscriber_subscribed& sub) {
               if(sub.message_type.is("eagiTest", "pong")) {
                   test.check_equal(
-                    sub.source.endpoint_id,
-                    pinger.get_id().value_or(
-                      eagine::msgbus::invalid_endpoint_id()),
-                    "pinger id");
+                    sub.source.endpoint_id, pinger.get_id(), "pinger id");
                   found_pinger = true;
               }
               if(sub.message_type.is("eagiTest", "ping")) {
                   test.check_equal(
-                    sub.source.endpoint_id,
-                    ponger.get_id().value_or(
-                      eagine::msgbus::invalid_endpoint_id()),
-                    "ponger id");
+                    sub.source.endpoint_id, ponger.get_id(), "ponger id");
                   found_ponger = true;
               }
               trck.checkpoint(2);

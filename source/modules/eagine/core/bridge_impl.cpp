@@ -80,7 +80,7 @@ public:
 
     void push(const message_id msg_id, const message_view& message) noexcept {
         const std::unique_lock lock{_output_mutex};
-        _outgoing.back().push(msg_id, message);
+        _outgoing.next().push(msg_id, message);
     }
 
     void notify_output_ready() noexcept {
@@ -99,46 +99,7 @@ public:
         return _decode_errors;
     }
 
-    void send_output() noexcept {
-        const auto handler{[this](
-                             const message_id msg_id,
-                             const message_age msg_age,
-                             message_view message) {
-            if(not message.add_age(msg_age).too_old()) [[likely]] {
-                default_serializer_backend backend(_sink);
-                if(serialize_message_header(msg_id, message, backend))
-                  [[likely]] {
-                    span_size_t i = 0;
-                    do_dissolve_bits(
-                      make_span_getter(i, message.data()),
-                      [this](byte b) {
-                          const auto encode{make_base64_encode_transform()};
-                          if(auto opt_c{encode(b)}) [[likely]] {
-                              this->_output << *opt_c;
-                              return true;
-                          }
-                          return false;
-                      },
-                      6);
-
-                    _output << '\n' << std::flush;
-                    ++_forwarded_messages;
-                } else {
-                    ++_dropped_messages;
-                }
-            } else {
-                ++_dropped_messages;
-            }
-            return true;
-        }};
-        auto& queue{[this]() -> message_storage& {
-            std::unique_lock lock{_output_mutex};
-            _output_ready.wait(lock);
-            _outgoing.swap();
-            return _outgoing.front();
-        }()};
-        queue.fetch_all({construct_from, handler});
-    }
+    void send_output() noexcept;
 
     using fetch_handler = message_storage::fetch_handler;
 
@@ -146,44 +107,18 @@ public:
         auto& queue{[this]() -> message_storage& {
             const std::unique_lock lock{_input_mutex};
             _incoming.swap();
-            return _incoming.front();
+            return _incoming.current();
         }()};
         return queue.fetch_all(handler);
     }
 
-    void recv_input() noexcept {
-        if(const auto pos{_source.scan_for('\n', _max_read)}) {
-            block_data_source source(_source.top(*pos));
-            default_deserializer_backend backend(source);
-            identifier class_id{};
-            identifier method_id{};
-            _recv_dest.clear_data();
-
-            if(deserialize_message_header(
-                 class_id, method_id, _recv_dest, backend)) [[likely]] {
-                _buffer.ensure(source.remaining().size());
-                span_size_t i = 0;
-                span_size_t o = 0;
-                if(do_concentrate_bits(
-                     make_span_getter(
-                       i, source.remaining(), make_base64_decode_transform()),
-                     make_span_putter(o, cover(_buffer)),
-                     6)) {
-                    _recv_dest.store_content(head(view(_buffer), o));
-                }
-
-                const std::unique_lock lock{_input_mutex};
-                _incoming.back().push({class_id, method_id}, _recv_dest);
-            } else {
-                ++_decode_errors;
-            }
-            _source.pop(*pos + 1);
-        } else {
-            std::this_thread::sleep_for(std::chrono::milliseconds(5));
-        }
-    }
+    void recv_input() noexcept;
 
 private:
+    auto _make_send_handler() noexcept;
+
+    void _do_recv_input(const span_size_t pos) noexcept;
+
     const span_size_t _max_read;
 
     std::mutex _input_mutex{};
@@ -205,6 +140,86 @@ private:
     span_size_t _dropped_messages{0};
     span_size_t _decode_errors{0};
 };
+//------------------------------------------------------------------------------
+auto bridge_state::_make_send_handler() noexcept {
+    return [this](
+             const message_id msg_id,
+             const message_age msg_age,
+             message_view message) {
+        if(not message.add_age(msg_age).too_old()) [[likely]] {
+            default_serializer_backend backend(_sink);
+            if(serialize_message_header(msg_id, message, backend)) [[likely]] {
+                span_size_t i{0};
+                do_dissolve_bits(
+                  make_span_getter(i, message.data()),
+                  [this](byte b) {
+                      const auto encode{make_base64_encode_transform()};
+                      if(auto opt_c{encode(b)}) [[likely]] {
+                          this->_output << *opt_c;
+                          return true;
+                      }
+                      return false;
+                  },
+                  6);
+
+                _output << '\n' << std::flush;
+                ++_forwarded_messages;
+            } else {
+                ++_dropped_messages;
+            }
+        } else {
+            ++_dropped_messages;
+        }
+        return true;
+    };
+}
+//------------------------------------------------------------------------------
+void bridge_state::send_output() noexcept {
+    const auto handler{_make_send_handler()};
+    auto& queue{[this]() -> message_storage& {
+        std::unique_lock lock{_output_mutex};
+        _output_ready.wait(lock);
+        _outgoing.swap();
+        return _outgoing.current();
+    }()};
+    queue.fetch_all({construct_from, handler});
+}
+//------------------------------------------------------------------------------
+void bridge_state::_do_recv_input(const span_size_t pos) noexcept {
+    block_data_source source(_source.top(pos));
+    default_deserializer_backend backend(source);
+    identifier class_id{};
+    identifier method_id{};
+    _recv_dest.clear_data();
+
+    if(deserialize_message_header(class_id, method_id, _recv_dest, backend))
+      [[likely]] {
+        _buffer.ensure(source.remaining().size());
+        span_size_t i{0};
+        span_size_t o{0};
+        if(do_concentrate_bits(
+             make_span_getter(
+               i, source.remaining(), make_base64_decode_transform()),
+             make_span_putter(o, cover(_buffer)),
+             6)) {
+            _recv_dest.store_content(head(view(_buffer), o));
+        }
+
+        const std::unique_lock lock{_input_mutex};
+        _incoming.next().push({class_id, method_id}, _recv_dest);
+    } else {
+        ++_decode_errors;
+    }
+    _source.pop(pos + 1);
+}
+//------------------------------------------------------------------------------
+void bridge_state::recv_input() noexcept {
+    if(const auto pos{_source.scan_for('\n', _max_read)}) {
+        _do_recv_input(*pos);
+    } else {
+        std::this_thread::sleep_for(std::chrono::milliseconds(5));
+    }
+}
 //------------------------------------------------------------------------------
 // bridge
 //------------------------------------------------------------------------------

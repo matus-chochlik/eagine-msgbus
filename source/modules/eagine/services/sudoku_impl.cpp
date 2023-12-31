@@ -192,7 +192,6 @@ auto sudoku_response_msg(
 //------------------------------------------------------------------------------
 template <unsigned S>
 struct sudoku_helper_rank_info {
-    default_sudoku_board_traits<S> traits;
     memory::buffer serialize_buffer;
     int max_recursion{1};
 
@@ -423,7 +422,7 @@ auto sudoku_helper_impl::_handle_board(
   const stored_message& message) noexcept -> bool {
     const unsigned_constant<S> rank{};
     auto& info = _infos.get(rank);
-    basic_sudoku_board<S> board{info.traits};
+    basic_sudoku_board<S> board{};
 
     const auto deserialized{
       (S >= 4)
@@ -492,7 +491,6 @@ auto sudoku_helper_impl::update() noexcept -> work_done {
 template <unsigned S>
 struct sudoku_solver_rank_info {
     message_sequence_t query_sequence{0};
-    default_sudoku_board_traits<S> traits;
     memory::buffer serialize_buffer;
 
     timeout search_timeout{std::chrono::seconds(3), nothing};
@@ -503,7 +501,7 @@ struct sudoku_solver_rank_info {
 
     timeout solution_timeout{default_solution_timeout()};
 
-    using board_set = std::vector<basic_sudoku_board<S>>;
+    using board_set = chunk_list<basic_sudoku_board<S>, 8191>;
 
     object_pool<board_set, 8> board_set_pool;
 
@@ -649,7 +647,8 @@ void sudoku_solver_rank_info<S>::add_board(
         std::get<1>(*spos)->clear();
     }
     auto& boards{std::get<1>(*spos)};
-    const auto bpos{std::upper_bound(
+    using std::upper_bound;
+    const auto bpos{upper_bound(
       boards->begin(),
       boards->end(),
       board.alternative_count(),
@@ -775,7 +774,7 @@ void sudoku_solver_rank_info<S>::handle_response(
   auto& solver,
   const message_context& msg_ctx,
   const stored_message& message) noexcept {
-    basic_sudoku_board<S> board{traits};
+    basic_sudoku_board<S> board{};
 
     const auto deserialized{
       (S >= 4) ? default_deserialize_packed(
@@ -854,8 +853,8 @@ auto sudoku_solver_rank_info<S>::send_board_to(
         } else {
             do_send_board_to(
               solver, bus, compressor, helper_id, std::move(key), boards);
-            return true;
         }
+        return true;
     }
     return false;
 }

@@ -71,7 +71,7 @@ protected:
     }
     auto update() -> eagine::work_done {
         eagine::some_true something_done{Base::update()};
-        if(eagine::is_valid_id(_target)) {
+        if(is_valid_id(_target)) {
             if(_ping_time.is_expired()) {
                 eagine::msgbus::message_view ping_msg;
                 ping_msg.set_target_id(_target);
@@ -317,8 +317,7 @@ void registry_queues(auto& s) {
                 for(auto& queue : service.process_queues()) {
                     for(auto& message : queue.give_messages()) {
                         test.check(
-                          eagine::is_valid_id(message.source_id),
-                          "valid source id");
+                          is_valid_id(message.source_id), "valid source id");
                         if(queue.context().msg_id().is("eagiTest", "ping")) {
                             test.check_equal(
                               message.source_id,

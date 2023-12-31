@@ -61,7 +61,7 @@ public:
       const message_id msg_id,
       const message_view& message) noexcept {
         const std::unique_lock lock{_client_to_server_lock};
-        _client_to_server.back().push(msg_id, message);
+        _client_to_server.next().push(msg_id, message);
     }
 
     /// @brief Sends a message to the client counterpart.
@@ -70,7 +70,7 @@ public:
       const message_view& message) noexcept -> bool {
         if(_client_connected) [[likely]] {
             const std::unique_lock lock{_server_to_client_lock};
-            _server_to_client.back().push(msg_id, message);
+            _server_to_client.next().push(msg_id, message);
             return true;
         }
         return false;
@@ -82,7 +82,7 @@ public:
         auto& c2s{[this]() -> message_storage& {
             const std::unique_lock lock{_client_to_server_lock};
             _client_to_server.swap();
-            return _client_to_server.front();
+            return _client_to_server.current();
         }()};
         return {c2s.fetch_all(handler), _client_connected};
     }
@@ -93,7 +93,7 @@ public:
         auto& s2c{[this]() -> message_storage& {
             const std::unique_lock lock{_server_to_client_lock};
             _server_to_client.swap();
-            return _server_to_client.front();
+            return _server_to_client.current();
         }()};
         return s2c.fetch_all(handler);
     }
