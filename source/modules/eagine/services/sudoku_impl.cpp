@@ -501,7 +501,7 @@ struct sudoku_solver_rank_info {
 
     timeout solution_timeout{default_solution_timeout()};
 
-    using board_set = std::vector<basic_sudoku_board<S>>;
+    using board_set = chunk_list<basic_sudoku_board<S>, 8191>;
 
     object_pool<board_set, 8> board_set_pool;
 
@@ -647,7 +647,8 @@ void sudoku_solver_rank_info<S>::add_board(
         std::get<1>(*spos)->clear();
     }
     auto& boards{std::get<1>(*spos)};
-    const auto bpos{std::upper_bound(
+    using std::upper_bound;
+    const auto bpos{upper_bound(
       boards->begin(),
       boards->end(),
       board.alternative_count(),
