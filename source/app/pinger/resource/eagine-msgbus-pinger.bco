@@ -2,7 +2,7 @@
 #  (See accompanying file LICENSE_1_0.txt or copy at
 #  http://www.boost.org/LICENSE_1_0.txt)
 
-function _eagine_msgbus_pingable()
+function _eagine_msgbus_pinger()
 {
     COMPREPLY=()
     local curr="${COMP_WORDS[COMP_CWORD]}"
@@ -14,7 +14,8 @@ function _eagine_msgbus_pingable()
         --msgbus-asio-local-stream \
         --msgbus-asio-tcp-ipv4 \
         --msgbus-asio-udp-ipv4 \
-        --pingable-id \
+        --ping-count \
+        --limit-count \
     "
 
     local opts="
@@ -47,11 +48,13 @@ function _eagine_msgbus_pingable()
             return 0;;
         --msgbus-router-address)
             COMPREPLY=( "ADDRESS" )
-        --pingable-id)
-            COMPREPLY=( "1234" );;
+        --ping-count)
+            COMPREPLY=( "100k" );;
+        --limit-count)
+            COMPREPLY=( "1k" );;
         *)
             COMPREPLY=($(compgen -W "${opts}" -- "${curr}"));;
     esac
 
-} && complete -F _eagine_msgbus_pingable eagine-msgbus-pingable
+} && complete -F _eagine_msgbus_pinger eagine-msgbus-pinger
 # vi: syntax=bash

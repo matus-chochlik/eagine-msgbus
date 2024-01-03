@@ -13,15 +13,7 @@ add_subdirectory(bridge)
 add_subdirectory(pingable)
 
 # pinger
-add_executable(eagine-msgbus-pinger pinger.cpp)
-eagine_add_exe_analysis(eagine-msgbus-pinger)
-eagine_target_modules(
-	eagine-msgbus-pinger
-	std
-	eagine.core
-	eagine.sslplus
-	eagine.msgbus
-)
+add_subdirectory(pinger)
 
 # file server
 add_executable(eagine-msgbus-file-server file_server.cpp)
