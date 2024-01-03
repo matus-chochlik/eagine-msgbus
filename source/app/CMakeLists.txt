@@ -4,15 +4,7 @@
 #  http://www.boost.org/LICENSE_1_0.txt
 
 # router
-add_executable(eagine-msgbus-router router.cpp)
-eagine_add_exe_analysis(eagine-msgbus-router)
-eagine_target_modules(
-	eagine-msgbus-router
-	std
-	eagine.core
-	eagine.sslplus
-	eagine.msgbus
-)
+add_subdirectory(router)
 
 # bridge
 add_executable(eagine-msgbus-bridge bridge.cpp)

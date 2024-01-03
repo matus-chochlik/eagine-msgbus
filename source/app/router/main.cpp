@@ -11,6 +11,27 @@ import std;
 
 namespace eagine {
 //------------------------------------------------------------------------------
+void print_bash_completion(
+  main_ctx& ctx,
+  std::ostream& out,
+  const embedded_resource& res) {
+    if(res) {
+        const auto print{[&](const memory::const_block data) {
+            write_to_stream(out, data);
+            return true;
+        }};
+        res.fetch(ctx, {construct_from, print});
+    }
+}
+//------------------------------------------------------------------------------
+auto handle_special_args(main_ctx& ctx) -> bool {
+    if(ctx.args().find("--print-bash-completion")) {
+        print_bash_completion(ctx, std::cout, search_resource("BashCmpltn"));
+        return true;
+    }
+    return false;
+}
+//------------------------------------------------------------------------------
 namespace msgbus {
 using router_node_base = service_composition<require_services<
   subscriber,
@@ -275,6 +296,9 @@ void router_app::run() {
 // main function
 //------------------------------------------------------------------------------
 auto main(main_ctx& ctx) -> int {
+    if(handle_special_args(ctx)) {
+        return 0;
+    }
 
     msgbus::router_node::active_state(ctx.log());
     msgbus::router_app{ctx}.run();
