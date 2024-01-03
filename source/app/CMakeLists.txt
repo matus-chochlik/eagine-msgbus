@@ -7,15 +7,7 @@
 add_subdirectory(router)
 
 # bridge
-add_executable(eagine-msgbus-bridge bridge.cpp)
-eagine_add_exe_analysis(eagine-msgbus-bridge)
-eagine_target_modules(
-	eagine-msgbus-bridge
-	std
-	eagine.core
-	eagine.sslplus
-	eagine.msgbus
-)
+add_subdirectory(bridge)
 
 # pingable
 add_executable(eagine-msgbus-pingable pingable.cpp)

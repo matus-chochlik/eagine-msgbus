@@ -1,0 +1,74 @@
+#  Distributed under the Boost Software License, Version 1.0.
+#  (See accompanying file LICENSE_1_0.txt or copy at
+#  http://www.boost.org/LICENSE_1_0.txt)
+#
+#  Automatically generated file. Do NOT modify manually.
+
+function _eagine_msgbus_bridge()
+{
+    COMPREPLY=()
+    local curr="${COMP_WORDS[COMP_CWORD]}"
+    local prev="${COMP_WORDS[COMP_CWORD-1]}"
+
+    local only_once_opts=" \
+        -h --help \
+        --msgbus-posix-mqueue \
+        --msgbus-asio-local-stream \
+        --msgbus-asio-tcp-ipv4 \
+        --msgbus-asio-udp-ipv4 \
+        --msgbus-bridge-id-major \
+        --msgbus-bridge-id-count \
+        --msgbus-bridge-shutdown-delay \
+        --msgbus-bridge-shutdown-max-age \
+        --msgbus-bridge-keep-running \
+        --msgbus-bridge-shutdown-verify \
+    "
+
+    local opts="
+        --msgbus-router-address \
+    "
+
+    for opt in ${only_once_opts}
+    do
+        local opt_used=false
+        for pre in ${COMP_WORDS[@]}
+        do
+            if [ "${opt}" == "${pre}" ]
+            then opt_used=true && break
+            fi
+        done
+        if [ "${opt_used}" == "false" ]
+        then
+            if [ "${opt_used}" == "false" ]
+            then opts="${opts} ${opt}"
+            fi
+        fi
+    done
+
+    if [ ${COMP_CWORD} -le 1 ]
+    then opts="--help ${opts}"
+    fi
+
+    case "${prev}" in
+        -h|--help)
+            return 0;;
+        --msgbus-router-address)
+            COMPREPLY=( "ADDRESS" );;
+        --msgbus-bridge-id-major)
+            COMPREPLY=( "1000" );;
+        --msgbus-bridge-id-count)
+            COMPREPLY=( "1000" );;
+        --msgbus-bridge-shutdown-delay)
+            COMPREPLY=( "60s" );;
+        --msgbus-bridge-shutdown-max-age)
+            COMPREPLY=( "2500ms" );;
+        --msgbus-bridge-keep-running)
+            COMPREPLY=( "false" "true" );;
+        --msgbus-bridge-shutdown-verify)
+            COMPREPLY=( "true" "false" );;
+        *)
+            COMPREPLY=($(compgen -W "${opts}" -- "${curr}"));;
+    esac
+
+} && complete -F _eagine_msgbus_bridge eagine-msgbus-bridge
+# vi: syntax=bash
