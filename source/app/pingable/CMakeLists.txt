@@ -18,6 +18,7 @@ eagine_target_modules(
 eagine_embed_target_resources(
 	TARGET eagine-msgbus-pingable
 	RESOURCES
+		BoostLcnse "../../../LICENSE_1_0.txt"
 		BashCmpltn "resource/eagine-msgbus-pingable.bco"
 	PACKED
 	ENABLE_SEARCH)

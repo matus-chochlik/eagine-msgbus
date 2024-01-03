@@ -19,6 +19,7 @@ eagine_embed_target_resources(
 	TARGET eagine-msgbus-bridge
 	RESOURCES
 		BashCmpltn "resource/eagine-msgbus-bridge.bco"
+		BoostLcnse "../../../LICENSE_1_0.txt"
 	PACKED
 	ENABLE_SEARCH)
 
