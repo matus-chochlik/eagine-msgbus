@@ -2,7 +2,7 @@
 #  (See accompanying file LICENSE_1_0.txt or copy at
 #  http://www.boost.org/LICENSE_1_0.txt)
 
-function _eagine_msgbus_resource-hexdump()
+function _eagine_msgbus_resource_hexdump()
 {
     COMPREPLY=()
     local curr="${COMP_WORDS[COMP_CWORD]}"
@@ -53,5 +53,5 @@ function _eagine_msgbus_resource-hexdump()
             COMPREPLY=($(compgen -W "${opts}" -- "${curr}"));;
     esac
 
-} && complete -F _eagine_msgbus_resource-hexdump eagine-msgbus-resource-hexdump
+} && complete -F _eagine_msgbus_resource_hexdump eagine-msgbus-resource-hexdump
 # vi: syntax=bash

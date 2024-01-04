@@ -177,6 +177,10 @@ void sudoku_helpers::_helper_main() noexcept {
 } // namespace msgbus
 //------------------------------------------------------------------------------
 auto main(main_ctx& ctx) -> int {
+    if(const auto exit_code{handle_common_special_args(ctx)}) {
+        return *exit_code;
+    }
+
     const auto& log = ctx.log();
     log.active_state("running");
     log.declare_state("running", "helpStart", "helpFinish");

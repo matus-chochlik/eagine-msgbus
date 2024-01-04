@@ -2,7 +2,7 @@
 #  (See accompanying file LICENSE_1_0.txt or copy at
 #  http://www.boost.org/LICENSE_1_0.txt)
 
-function _eagine_msgbus_resource_histogram()
+function _eagine_msgbus_sudoku_helper()
 {
     COMPREPLY=()
     local curr="${COMP_WORDS[COMP_CWORD]}"
@@ -14,6 +14,9 @@ function _eagine_msgbus_resource_histogram()
         --msgbus-asio-local-stream \
         --msgbus-asio-tcp-ipv4 \
         --msgbus-asio-udp-ipv4 \
+		--msgbus-sudoku-helper-shutdown-when-idle \
+		--msgbus-sudoku-helper-max-idle-time \
+		--msgbus-sudoku-helper-count \
     "
 
     local opts="
@@ -46,9 +49,15 @@ function _eagine_msgbus_resource_histogram()
             return 0;;
         --msgbus-router-address)
             COMPREPLY=( "ADDRESS" )
+        --msgbus-sudoku-helper-shutdown-when-idle)
+            COMPREPLY=( "true" "false" )
+		--msgbus-sudoku-helper-max-idle-time)
+            COMPREPLY=( "30s" )
+		--msgbus-sudoku-helper-count)
+            COMPREPLY=( "4" )
         *)
             COMPREPLY=($(compgen -W "${opts}" -- "${curr}"));;
     esac
 
-} && complete -F _eagine_msgbus_resource_histogram eagine-msgbus-resource-histogram
+} && complete -F _eagine_msgbus_sudoku_helper eagine-msgbus-sudoku-helper
 # vi: syntax=bash

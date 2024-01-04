@@ -23,15 +23,7 @@ add_subdirectory(resource_hexdump)
 add_subdirectory(resource_histogram)
 
 # sudoku solver helper
-add_executable(eagine-msgbus-sudoku-helper sudoku_helper.cpp)
-eagine_add_exe_analysis(eagine-msgbus-sudoku-helper)
-eagine_target_modules(
-	eagine-msgbus-sudoku-helper
-	std
-	eagine.core
-	eagine.sslplus
-	eagine.msgbus
-)
+add_subdirectory(sudoku_helper)
 
 # sudoku tiling generator
 add_executable(eagine-msgbus-sudoku-tiling sudoku_tiling.cpp)
