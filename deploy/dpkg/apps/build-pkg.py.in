@@ -16,11 +16,12 @@ bin_dir = os.path.realpath("@BIN_DIR@")
 pkg_dir = os.path.realpath("@PKG_DIR@")
 deb_dir  = os.path.join(pkg_dir, "DEBIAN")
 etc_prefix = os.path.join(pkg_dir, "etc")
+bco_prefix = os.path.join(pkg_dir, "etc", "bash_completion.d")
 cfg_prefix = os.path.join(pkg_dir, "var", "lib", "eagine", ".config")
 pkg_prefix = os.path.join(pkg_dir, "usr")
 bin_prefix = os.path.join(pkg_prefix, "bin")
 
-for path in [cfg_prefix, etc_prefix, bin_prefix, deb_dir]:
+for path in [cfg_prefix, etc_prefix, bco_prefix, bin_prefix, deb_dir]:
     if not os.path.exists(path):
         os.makedirs(path)
 # ------------------------------------------------------------------------------
@@ -28,9 +29,15 @@ with open(os.path.join("@CMAKE_CURRENT_BINARY_DIR@", "build-pkg.json"), "rb") as
     info = json.load(build_pkg_json)
     for name, src_path in info.items():
         if os.path.exists(src_path):
+            full_name = "eagine-msgbus-" + name
             shutil.copy(
                 src_path,
                 os.path.join(bin_prefix, "eagine-msgbus-" + name))
+            subprocess.call(["strip", os.path.join(bin_prefix, full_name)])
+            with open(os.path.join(bco_prefix, full_name), "wt") as bcofd:
+                subprocess.call(
+                    [os.path.join(bin_prefix, full_name), "--print-bash-completion"],
+                    stdout=bcofd)
 shutil.copy(
     os.path.join(src_dir, "source", "app", "eagine-local-bridge.sh"),
     os.path.join(bin_prefix, "eagine-local-bridge"))
@@ -45,7 +52,6 @@ for filename in [
     shutil.copy(
         os.path.join(src_dir, "deploy", "dpkg", "apps", "procman", filename), 
         dst_path)
-    subprocess.call(["strip", dst_path])
 
 shutil.copytree(
     os.path.join(src_dir, "deploy", "dpkg", "apps", "etc"),
