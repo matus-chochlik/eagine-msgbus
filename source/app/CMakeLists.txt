@@ -20,16 +20,7 @@ add_subdirectory(file_server)
 
 # resource clients
 add_subdirectory(resource_hexdump)
-
-add_executable(eagine-msgbus-resource-histogram resource_histogram.cpp)
-eagine_add_exe_analysis(eagine-msgbus-resource-histogram)
-eagine_target_modules(
-	eagine-msgbus-resource-histogram
-	std
-	eagine.core
-	eagine.sslplus
-	eagine.msgbus
-)
+add_subdirectory(resource_histogram)
 
 # sudoku solver helper
 add_executable(eagine-msgbus-sudoku-helper sudoku_helper.cpp)
