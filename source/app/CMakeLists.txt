@@ -16,15 +16,7 @@ add_subdirectory(pingable)
 add_subdirectory(pinger)
 
 # file server
-add_executable(eagine-msgbus-file-server file_server.cpp)
-eagine_add_exe_analysis(eagine-msgbus-file-server)
-eagine_target_modules(
-	eagine-msgbus-file-server
-	std
-	eagine.core
-	eagine.sslplus
-	eagine.msgbus
-)
+add_subdirectory(file_server)
 
 # resource clients
 add_executable(eagine-msgbus-resource-hexdump resource_hexdump.cpp)
