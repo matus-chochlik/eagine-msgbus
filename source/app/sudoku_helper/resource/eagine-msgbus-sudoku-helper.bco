@@ -14,9 +14,9 @@ function _eagine_msgbus_sudoku_helper()
         --msgbus-asio-local-stream \
         --msgbus-asio-tcp-ipv4 \
         --msgbus-asio-udp-ipv4 \
-		--msgbus-sudoku-helper-shutdown-when-idle \
-		--msgbus-sudoku-helper-max-idle-time \
-		--msgbus-sudoku-helper-count \
+        --msgbus-sudoku-helper-shutdown-when-idle \
+        --msgbus-sudoku-helper-max-idle-time \
+        --msgbus-sudoku-helper-count \
     "
 
     local opts="
@@ -48,13 +48,13 @@ function _eagine_msgbus_sudoku_helper()
         -h|--help)
             return 0;;
         --msgbus-router-address)
-            COMPREPLY=( "ADDRESS" )
+            COMPREPLY=( "ADDRESS" );;
         --msgbus-sudoku-helper-shutdown-when-idle)
-            COMPREPLY=( "true" "false" )
-		--msgbus-sudoku-helper-max-idle-time)
-            COMPREPLY=( "30s" )
-		--msgbus-sudoku-helper-count)
-            COMPREPLY=( "4" )
+            COMPREPLY=( "true" "false" );;
+        --msgbus-sudoku-helper-max-idle-time)
+            COMPREPLY=( "30s" );;
+        --msgbus-sudoku-helper-count)
+            COMPREPLY=( "4" );;
         *)
             COMPREPLY=($(compgen -W "${opts}" -- "${curr}"));;
     esac

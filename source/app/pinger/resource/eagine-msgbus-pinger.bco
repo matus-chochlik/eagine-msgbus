@@ -47,7 +47,7 @@ function _eagine_msgbus_pinger()
         -h|--help)
             return 0;;
         --msgbus-router-address)
-            COMPREPLY=( "ADDRESS" )
+            COMPREPLY=( "ADDRESS" );;
         --ping-count)
             COMPREPLY=( "100k" );;
         --limit-count)

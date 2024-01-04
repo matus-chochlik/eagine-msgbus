@@ -45,7 +45,7 @@ function _eagine_msgbus_resource_histogram()
         -h|--help)
             return 0;;
         --msgbus-router-address)
-            COMPREPLY=( "ADDRESS" )
+            COMPREPLY=( "ADDRESS" );;
         *)
             COMPREPLY=($(compgen -W "${opts}" -- "${curr}"));;
     esac

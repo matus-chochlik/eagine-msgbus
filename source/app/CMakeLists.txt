@@ -26,15 +26,7 @@ add_subdirectory(resource_histogram)
 add_subdirectory(sudoku_helper)
 
 # sudoku tiling generator
-add_executable(eagine-msgbus-sudoku-tiling sudoku_tiling.cpp)
-eagine_add_exe_analysis(eagine-msgbus-sudoku-tiling)
-eagine_target_modules(
-	eagine-msgbus-sudoku-tiling
-	std
-	eagine.core
-	eagine.sslplus
-	eagine.msgbus
-)
+add_subdirectory(sudoku_tiling)
 
 # scripts
 install(

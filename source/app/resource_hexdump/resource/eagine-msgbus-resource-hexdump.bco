@@ -46,9 +46,9 @@ function _eagine_msgbus_resource_hexdump()
         -h|--help)
             return 0;;
         --msgbus-router-address)
-            COMPREPLY=( "ADDRESS" )
+            COMPREPLY=( "ADDRESS" );;
         --url)
-            COMPREPLY=( "URL" )
+            COMPREPLY=( "URL" );;
         *)
             COMPREPLY=($(compgen -W "${opts}" -- "${curr}"));;
     esac

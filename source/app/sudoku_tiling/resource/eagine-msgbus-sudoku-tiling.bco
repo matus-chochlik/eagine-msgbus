@@ -1,0 +1,81 @@
+#  Distributed under the Boost Software License, Version 1.0.
+#  (See accompanying file LICENSE_1_0.txt or copy at
+#  http://www.boost.org/LICENSE_1_0.txt)
+
+function _eagine_msgbus_sudoku_tiling()
+{
+    COMPREPLY=()
+    local curr="${COMP_WORDS[COMP_CWORD]}"
+    local prev="${COMP_WORDS[COMP_CWORD-1]}"
+
+    local only_once_opts=" \
+        -h --help \
+        --msgbus-posix-mqueue \
+        --msgbus-asio-local-stream \
+        --msgbus-asio-tcp-ipv4 \
+        --msgbus-asio-udp-ipv4 \
+        --msgbus-sudoku-solver-block-cells \
+        --msgbus-sudoku-solver-print-progres \
+        --msgbus-sudoku-solver-print-incomplete \
+        --msgbus-sudoku-solver-output-path \
+        --msgbus-sudoku-solver-width \
+        --msgbus-sudoku-solver-height \
+        --msgbus-sudoku-solver-rank \
+        --msgbus-sudoku-solver-solution-timeout \
+        --msgbus-sudoku-solver-log-contribution-timeout \
+    "
+
+    local opts="
+        --msgbus-router-address \
+    "
+
+    for opt in ${only_once_opts}
+    do
+        local opt_used=false
+        for pre in ${COMP_WORDS[@]}
+        do
+            if [ "${opt}" == "${pre}" ]
+            then opt_used=true && break
+            fi
+        done
+        if [ "${opt_used}" == "false" ]
+        then
+            if [ "${opt_used}" == "false" ]
+            then opts="${opts} ${opt}"
+            fi
+        fi
+    done
+
+    if [ ${COMP_CWORD} -le 1 ]
+    then opts="--help ${opts}"
+    fi
+
+    case "${prev}" in
+        -h|--help)
+            return 0;;
+        --msgbus-router-address)
+            COMPREPLY=( "ADDRESS" );;
+        --msgbus.sudoku.solver.block_cells)
+            COMPREPLY=( "false" "true" );;
+        --msgbus-sudoku-solver-print-progres)
+            COMPREPLY=( "false" "true" );;
+        --msgbus-sudoku-solver-print-incomplete)
+            COMPREPLY=( "false" "true" );;
+        --msgbus-sudoku-solver-output-path)
+            COMPREPLY=( "/tmp/tiling0.txt" );;
+        --msgbus-sudoku-solver-width)
+            COMPREPLY=( "32" "64" "128" "256" "512" "1024" "2048" );;
+        --msgbus-sudoku-solver-height)
+            COMPREPLY=( "32" "64" "128" "256" "512" "1024" "2048" );;
+        --msgbus-sudoku-solver-rank)
+            COMPREPLY=( "4" );;
+        --msgbus-sudoku-solver-solution-timeout)
+            COMPREPLY=( "4hr" );;
+        --msgbus-sudoku-solver-log-contribution-timeout)
+            COMPREPLY=( "5min" );;
+        *)
+            COMPREPLY=($(compgen -W "${opts}" -- "${curr}"));;
+    esac
+
+} && complete -F _eagine_msgbus_sudoku_tiling eagine-msgbus-sudoku-tiling
+# vi: syntax=bash

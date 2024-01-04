@@ -46,7 +46,7 @@ function _eagine_msgbus_pingable()
         -h|--help)
             return 0;;
         --msgbus-router-address)
-            COMPREPLY=( "ADDRESS" )
+            COMPREPLY=( "ADDRESS" );;
         --pingable-id)
             COMPREPLY=( "1234" );;
         *)
