@@ -19,15 +19,7 @@ add_subdirectory(pinger)
 add_subdirectory(file_server)
 
 # resource clients
-add_executable(eagine-msgbus-resource-hexdump resource_hexdump.cpp)
-eagine_add_exe_analysis(eagine-msgbus-resource-hexdump)
-eagine_target_modules(
-	eagine-msgbus-resource-hexdump
-	std
-	eagine.core
-	eagine.sslplus
-	eagine.msgbus
-)
+add_subdirectory(resource_hexdump)
 
 add_executable(eagine-msgbus-resource-histogram resource_histogram.cpp)
 eagine_add_exe_analysis(eagine-msgbus-resource-histogram)
@@ -80,5 +72,5 @@ if(Qt5_FOUND)
 	set(CMAKE_AUTOMOC ON)
 	set(CMAKE_AUTORCC ON)
 	add_subdirectory(monitor)
-	add_subdirectory(tiling)
+	add_subdirectory(sudoku_tiling_gui)
 endif()
