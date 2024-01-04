@@ -76,9 +76,9 @@ function _eagine_msgbus_router()
         --msgbus-router-shutdown-max-age)
             COMPREPLY=( "2500ms" );;
         --msgbus-router-keep-running)
-            COMPREPLY=( "false" "true" );;
+            COMPREPLY=($(compgen -W "false true" -- "${curr}"));;
         --msgbus-router-shutdown-verify)
-            COMPREPLY=( "true" "false" );;
+            COMPREPLY=($(compgen -W "false true" -- "${curr}"));;
         *)
             COMPREPLY=($(compgen -W "${opts}" -- "${curr}"));;
     esac

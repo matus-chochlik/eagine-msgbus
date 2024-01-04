@@ -61,7 +61,7 @@ function _eagine_msgbus_bridge()
         --msgbus-bridge-shutdown-max-age)
             COMPREPLY=( "2500ms" );;
         --msgbus-bridge-keep-running)
-            COMPREPLY=( "false" "true" );;
+            COMPREPLY=($(compgen -W "false true" -- "${curr}"));;
         --msgbus-bridge-shutdown-verify)
             COMPREPLY=( "true" "false" );;
         *)

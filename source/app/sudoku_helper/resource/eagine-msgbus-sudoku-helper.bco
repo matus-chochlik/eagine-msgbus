@@ -50,7 +50,7 @@ function _eagine_msgbus_sudoku_helper()
         --msgbus-router-address)
             COMPREPLY=( "ADDRESS" );;
         --msgbus-sudoku-helper-shutdown-when-idle)
-            COMPREPLY=( "true" "false" );;
+            COMPREPLY=($(compgen -W "false true" -- "${curr}"));;
         --msgbus-sudoku-helper-max-idle-time)
             COMPREPLY=( "30s" );;
         --msgbus-sudoku-helper-count)
