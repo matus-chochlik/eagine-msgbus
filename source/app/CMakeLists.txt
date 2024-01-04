@@ -35,12 +35,6 @@ install(
 	DESTINATION bin
 	COMPONENT tools
 )
-install(
-	PROGRAMS eagine-sudoku-tiling.sh
-	RENAME eagine-sudoku-tiling
-	DESTINATION bin
-	COMPONENT tools
-)
 
 find_package(Qt5 COMPONENTS Core Widgets Qml Quick)
 if(Qt5_FOUND)
