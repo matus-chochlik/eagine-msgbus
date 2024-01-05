@@ -257,7 +257,7 @@ auto blob_chunk_io::store_fragment(
     span_size_t copy_srco{0};
     auto copy_dsto{offset - (chunk_idx * _chunk_size)};
     auto copy_size{std::min(_chunk_size - copy_dsto, data.size())};
-    auto store = [&, this]() {
+    const auto store{[&, this]() {
         if(copy_size > 0) {
             const auto idx{std_size(chunk_idx)};
             const auto nsz{idx + 1U};
@@ -267,7 +267,9 @@ auto blob_chunk_io::store_fragment(
             auto& chunk = _chunks[idx];
             if(chunk.empty()) {
                 chunk = _buffers.get(_chunk_size);
+                chunk.clear();
             }
+            // the data may come out of order so we don't want resize here
             chunk.ensure(copy_dsto + copy_size);
             memory::copy(
               head(skip(data, copy_srco), copy_size),
@@ -275,7 +277,7 @@ auto blob_chunk_io::store_fragment(
             copy_srco += copy_size;
         }
         ++chunk_idx;
-    };
+    }};
     store();
     while(chunk_idx <= last_chunk) {
         copy_dsto = 0;
