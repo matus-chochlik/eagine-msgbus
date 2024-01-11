@@ -224,10 +224,11 @@ private:
 void serialized_message_storage::push(
   const memory::const_block message,
   const message_priority priority) noexcept {
-    assert(not message.empty());
-    auto buf = _buffers.get(message.size());
-    memory::copy_into(message, buf);
-    _messages.emplace_back(std::move(buf), _clock_t::now(), priority);
+    if(not message.empty()) [[likely]] {
+        auto buf{_buffers.get(message.size())};
+        memory::copy_into(message, buf);
+        _messages.emplace_back(std::move(buf), _clock_t::now(), priority);
+    }
 }
 //------------------------------------------------------------------------------
 auto serialized_message_storage::pack_into(memory::block dest) noexcept
