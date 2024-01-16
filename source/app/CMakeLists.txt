@@ -19,6 +19,7 @@ add_subdirectory(pinger)
 add_subdirectory(file_server)
 
 # resource clients
+add_subdirectory(resource_get)
 add_subdirectory(resource_hexdump)
 add_subdirectory(resource_histogram)
 
