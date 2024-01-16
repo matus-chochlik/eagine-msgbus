@@ -11,6 +11,10 @@ import std;
 
 namespace eagine {
 //------------------------------------------------------------------------------
+auto handle_special_args(main_ctx& ctx) {
+    return handle_common_special_args(ctx);
+}
+//------------------------------------------------------------------------------
 namespace msgbus {
 using router_node_base = service_composition<require_services<
   subscriber,
@@ -275,6 +279,9 @@ void router_app::run() {
 // main function
 //------------------------------------------------------------------------------
 auto main(main_ctx& ctx) -> int {
+    if(const auto exit_code{handle_special_args(ctx)}) {
+        return *exit_code;
+    }
 
     msgbus::router_node::active_state(ctx.log());
     msgbus::router_app{ctx}.run();

@@ -11,6 +11,11 @@ import eagine.msgbus;
 import std;
 
 namespace eagine {
+//------------------------------------------------------------------------------
+auto handle_special_args(main_ctx& ctx) {
+    return handle_common_special_args(ctx);
+}
+//------------------------------------------------------------------------------
 namespace msgbus {
 //------------------------------------------------------------------------------
 using pingable_base =
@@ -78,6 +83,10 @@ private:
 } // namespace msgbus
 
 auto main(main_ctx& ctx) -> int {
+    if(const auto exit_code{handle_special_args(ctx)}) {
+        return *exit_code;
+    }
+
     const auto& log{ctx.log()};
     log.active_state("ponging");
     log.declare_state("ponging", "pongStart", "pongFinish");

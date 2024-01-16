@@ -1,0 +1,63 @@
+#  Distributed under the Boost Software License, Version 1.0.
+#  (See accompanying file LICENSE_1_0.txt or copy at
+#  http://www.boost.org/LICENSE_1_0.txt)
+
+function _eagine_msgbus_sudoku_helper()
+{
+    COMPREPLY=()
+    local curr="${COMP_WORDS[COMP_CWORD]}"
+    local prev="${COMP_WORDS[COMP_CWORD-1]}"
+
+    local only_once_opts=" \
+        -h --help \
+        --msgbus-posix-mqueue \
+        --msgbus-asio-local-stream \
+        --msgbus-asio-tcp-ipv4 \
+        --msgbus-asio-udp-ipv4 \
+        --msgbus-sudoku-helper-shutdown-when-idle \
+        --msgbus-sudoku-helper-max-idle-time \
+        --msgbus-sudoku-helper-count \
+    "
+
+    local opts="
+        --msgbus-router-address \
+    "
+
+    for opt in ${only_once_opts}
+    do
+        local opt_used=false
+        for pre in ${COMP_WORDS[@]}
+        do
+            if [ "${opt}" == "${pre}" ]
+            then opt_used=true && break
+            fi
+        done
+        if [ "${opt_used}" == "false" ]
+        then
+            if [ "${opt_used}" == "false" ]
+            then opts="${opts} ${opt}"
+            fi
+        fi
+    done
+
+    if [ ${COMP_CWORD} -le 1 ]
+    then opts="--help ${opts}"
+    fi
+
+    case "${prev}" in
+        -h|--help)
+            return 0;;
+        --msgbus-router-address)
+            COMPREPLY=( "ADDRESS" );;
+        --msgbus-sudoku-helper-shutdown-when-idle)
+            COMPREPLY=($(compgen -W "false true" -- "${curr}"));;
+        --msgbus-sudoku-helper-max-idle-time)
+            COMPREPLY=( "30s" );;
+        --msgbus-sudoku-helper-count)
+            COMPREPLY=( "4" );;
+        *)
+            COMPREPLY=($(compgen -W "${opts}" -- "${curr}"));;
+    esac
+
+} && complete -F _eagine_msgbus_sudoku_helper eagine-msgbus-sudoku-helper
+# vi: syntax=bash

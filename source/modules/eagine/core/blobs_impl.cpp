@@ -257,7 +257,7 @@ auto blob_chunk_io::store_fragment(
     span_size_t copy_srco{0};
     auto copy_dsto{offset - (chunk_idx * _chunk_size)};
     auto copy_size{std::min(_chunk_size - copy_dsto, data.size())};
-    auto store = [&, this]() {
+    const auto store{[&, this]() {
         if(copy_size > 0) {
             const auto idx{std_size(chunk_idx)};
             const auto nsz{idx + 1U};
@@ -267,7 +267,9 @@ auto blob_chunk_io::store_fragment(
             auto& chunk = _chunks[idx];
             if(chunk.empty()) {
                 chunk = _buffers.get(_chunk_size);
+                chunk.clear();
             }
+            // the data may come out of order so we don't want resize here
             chunk.ensure(copy_dsto + copy_size);
             memory::copy(
               head(skip(data, copy_srco), copy_size),
@@ -275,7 +277,7 @@ auto blob_chunk_io::store_fragment(
             copy_srco += copy_size;
         }
         ++chunk_idx;
-    };
+    }};
     store();
     while(chunk_idx <= last_chunk) {
         copy_dsto = 0;
@@ -890,15 +892,14 @@ auto blob_manipulator::_message_size(
   const span_size_t max_message_size) const noexcept -> span_size_t {
     switch(pending.info.priority) {
         case message_priority::critical:
-            return max_message_size - 92;
         case message_priority::high:
-            return max_message_size / 2 - 64;
+            return max_message_size - 92;
         case message_priority::normal:
-            return max_message_size / 3 - 48;
+            return max_message_size * 3 / 4;
         case message_priority::low:
-            return max_message_size / 4 - 32;
+            return max_message_size * 2 / 3;
         case message_priority::idle:
-            return max_message_size / 8 - 12;
+            return max_message_size / 2;
     }
     return 0;
 }

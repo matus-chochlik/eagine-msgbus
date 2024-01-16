@@ -146,7 +146,7 @@ public:
       std::optional<span_size_t> size) noexcept
       : _file{std::move(file)} {
         _file.seekg(0, std::ios::end);
-        _size = limit_cast<span_size_t>(_file.tellg());
+        _size = static_cast<span_size_t>(_file.tellg());
         if(size) {
             _size = _size ? math::minimum(_size, *size) : *size;
         }

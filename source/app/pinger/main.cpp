@@ -10,6 +10,11 @@ import eagine.msgbus;
 import std;
 
 namespace eagine {
+//------------------------------------------------------------------------------
+auto handle_special_args(main_ctx& ctx) {
+    return handle_common_special_args(ctx);
+}
+//------------------------------------------------------------------------------
 namespace msgbus {
 //------------------------------------------------------------------------------
 struct ping_state {
@@ -302,6 +307,10 @@ private:
 } // namespace msgbus
 
 auto main(main_ctx& ctx) -> int {
+    if(const auto exit_code{handle_special_args(ctx)}) {
+        return *exit_code;
+    }
+
     signal_switch interrupted;
     const auto& log = ctx.log();
     const auto sig_bind{log.log_when_switched(interrupted)};

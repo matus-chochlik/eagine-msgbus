@@ -1,0 +1,87 @@
+#  Distributed under the Boost Software License, Version 1.0.
+#  (See accompanying file LICENSE_1_0.txt or copy at
+#  http://www.boost.org/LICENSE_1_0.txt)
+
+function _eagine_msgbus_router()
+{
+    COMPREPLY=()
+    local curr="${COMP_WORDS[COMP_CWORD]}"
+    local prev="${COMP_WORDS[COMP_CWORD-1]}"
+
+    local only_once_opts=" \
+        -h --help \
+        --msgbus-posix-mqueue \
+        --msgbus-asio-local-stream \
+        --msgbus-asio-tcp-ipv4 \
+        --msgbus-asio-udp-ipv4 \
+        --msgbus-router-id-major \
+        --msgbus-router-id-count \
+        --msgbus-router-shutdown-delay \
+        --msgbus-router-shutdown-max-age \
+        --msgbus-router-keep-running \
+        --msgbus-router-shutdown-verify \
+    "
+
+    local opts="
+        --msgbus-router-address \
+    "
+
+    for opt in ${only_once_opts}
+    do
+        local opt_used=false
+        for pre in ${COMP_WORDS[@]}
+        do
+            if [ "${opt}" == "${pre}" ]
+            then opt_used=true && break
+            fi
+        done
+        if [ "${opt_used}" == "false" ]
+        then
+            if [ "${opt_used}" == "false" ]
+            then opts="${opts} ${opt}"
+            fi
+        fi
+    done
+
+    if [ ${COMP_CWORD} -le 1 ]
+    then opts="--help ${opts}"
+    fi
+
+    case "${prev}" in
+        -h|--help)
+            return 0;;
+        --msgbus-router-address)
+            COMPREPLY=( "ADDRESS" )
+            for idx in $(seq ${COMP_CWORD} -1 1)
+            do
+                case "${COMP_WORDS[idx-1]}" in
+                    --msgbus-posix-mqueue)
+                        COMPREPLY=( "/$(head -c 16 /dev/urandom | base64 | tr -d '=+-/' | head -c 10)" )
+                        break;;
+                    --msgbus-asio-local-stream)
+                        COMPREPLY=( "/tmp/eagine-$(head -c 16 /dev/urandom | base64 | tr -d '=+-/' | head -c 10).socket" )
+                        break;;
+                    --msgbus-asio-tcp-ipv4|--msgbus-asio-udp-ipv4)
+                        COMPREPLY=( "localhost:34912" )
+                        break;;
+                    *);;
+                esac
+            done;;
+        --msgbus-router-id-major)
+            COMPREPLY=( "1000" );;
+        --msgbus-router-id-count)
+            COMPREPLY=( "1000" );;
+        --msgbus-router-shutdown-delay)
+            COMPREPLY=( "60s" );;
+        --msgbus-router-shutdown-max-age)
+            COMPREPLY=( "2500ms" );;
+        --msgbus-router-keep-running)
+            COMPREPLY=($(compgen -W "false true" -- "${curr}"));;
+        --msgbus-router-shutdown-verify)
+            COMPREPLY=($(compgen -W "false true" -- "${curr}"));;
+        *)
+            COMPREPLY=($(compgen -W "${opts}" -- "${curr}"));;
+    esac
+
+} && complete -F _eagine_msgbus_router eagine-msgbus-router
+# vi: syntax=bash

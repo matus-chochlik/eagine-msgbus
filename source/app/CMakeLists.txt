@@ -4,113 +4,34 @@
 #  http://www.boost.org/LICENSE_1_0.txt
 
 # router
-add_executable(eagine-msgbus-router router.cpp)
-eagine_add_exe_analysis(eagine-msgbus-router)
-eagine_target_modules(
-	eagine-msgbus-router
-	std
-	eagine.core
-	eagine.sslplus
-	eagine.msgbus
-)
+add_subdirectory(router)
 
 # bridge
-add_executable(eagine-msgbus-bridge bridge.cpp)
-eagine_add_exe_analysis(eagine-msgbus-bridge)
-eagine_target_modules(
-	eagine-msgbus-bridge
-	std
-	eagine.core
-	eagine.sslplus
-	eagine.msgbus
-)
+add_subdirectory(bridge)
 
 # pingable
-add_executable(eagine-msgbus-pingable pingable.cpp)
-eagine_add_exe_analysis(eagine-msgbus-pingable)
-eagine_target_modules(
-	eagine-msgbus-pingable
-	std
-	eagine.core
-	eagine.sslplus
-	eagine.msgbus
-)
+add_subdirectory(pingable)
 
 # pinger
-add_executable(eagine-msgbus-pinger pinger.cpp)
-eagine_add_exe_analysis(eagine-msgbus-pinger)
-eagine_target_modules(
-	eagine-msgbus-pinger
-	std
-	eagine.core
-	eagine.sslplus
-	eagine.msgbus
-)
+add_subdirectory(pinger)
 
 # file server
-add_executable(eagine-msgbus-file-server file_server.cpp)
-eagine_add_exe_analysis(eagine-msgbus-file-server)
-eagine_target_modules(
-	eagine-msgbus-file-server
-	std
-	eagine.core
-	eagine.sslplus
-	eagine.msgbus
-)
+add_subdirectory(file_server)
 
 # resource clients
-add_executable(eagine-msgbus-resource-hexdump resource_hexdump.cpp)
-eagine_add_exe_analysis(eagine-msgbus-resource-hexdump)
-eagine_target_modules(
-	eagine-msgbus-resource-hexdump
-	std
-	eagine.core
-	eagine.sslplus
-	eagine.msgbus
-)
-
-add_executable(eagine-msgbus-resource-histogram resource_histogram.cpp)
-eagine_add_exe_analysis(eagine-msgbus-resource-histogram)
-eagine_target_modules(
-	eagine-msgbus-resource-histogram
-	std
-	eagine.core
-	eagine.sslplus
-	eagine.msgbus
-)
+add_subdirectory(resource_hexdump)
+add_subdirectory(resource_histogram)
 
 # sudoku solver helper
-add_executable(eagine-msgbus-sudoku-helper sudoku_helper.cpp)
-eagine_add_exe_analysis(eagine-msgbus-sudoku-helper)
-eagine_target_modules(
-	eagine-msgbus-sudoku-helper
-	std
-	eagine.core
-	eagine.sslplus
-	eagine.msgbus
-)
+add_subdirectory(sudoku_helper)
 
 # sudoku tiling generator
-add_executable(eagine-msgbus-sudoku-tiling sudoku_tiling.cpp)
-eagine_add_exe_analysis(eagine-msgbus-sudoku-tiling)
-eagine_target_modules(
-	eagine-msgbus-sudoku-tiling
-	std
-	eagine.core
-	eagine.sslplus
-	eagine.msgbus
-)
+add_subdirectory(sudoku_tiling)
 
 # scripts
 install(
 	PROGRAMS eagine-local-bridge.sh
 	RENAME eagine-local-bridge
-	DESTINATION bin
-	COMPONENT tools
-)
-install(
-	PROGRAMS eagine-sudoku-tiling.sh
-	RENAME eagine-sudoku-tiling
 	DESTINATION bin
 	COMPONENT tools
 )
@@ -120,5 +41,5 @@ if(Qt5_FOUND)
 	set(CMAKE_AUTOMOC ON)
 	set(CMAKE_AUTORCC ON)
 	add_subdirectory(monitor)
-	add_subdirectory(tiling)
+	add_subdirectory(sudoku_tiling_gui)
 endif()

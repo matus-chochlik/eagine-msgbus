@@ -112,6 +112,10 @@ void sudoku_tiling_node::_handle_board_timeout(
 } // namespace msgbus
 //------------------------------------------------------------------------------
 auto main(main_ctx& ctx) -> int {
+    if(const auto exit_code{handle_common_special_args(ctx)}) {
+        return *exit_code;
+    }
+
     signal_switch interrupted;
     const auto sig_bind{ctx.log().log_when_switched(interrupted)};
 
