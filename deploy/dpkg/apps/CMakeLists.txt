@@ -28,6 +28,7 @@ add_custom_command(
 		eagine-msgbus-pinger
 		eagine-msgbus-pingable
 		eagine-msgbus-file-server
+		eagine-msgbus-resource-get
 		eagine-msgbus-resource-hexdump
 		eagine-msgbus-resource-histogram
 		eagine-msgbus-sudoku-helper
