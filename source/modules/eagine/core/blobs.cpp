@@ -3,7 +3,7 @@
 /// Copyright Matus Chochlik.
 /// Distributed under the Boost Software License, Version 1.0.
 /// See accompanying file LICENSE_1_0.txt or copy at
-///  http://www.boost.org/LICENSE_1_0.txt
+/// https://www.boost.org/LICENSE_1_0.txt
 ///
 module;
 
@@ -33,10 +33,12 @@ export struct blob_info {
     message_priority priority{message_priority::normal};
 };
 //------------------------------------------------------------------------------
+export enum class blob_preparation : bool { finished = false, working = true };
+//------------------------------------------------------------------------------
 export struct source_blob_io : interface<source_blob_io> {
 
-    virtual auto prepare() noexcept -> bool {
-        return false;
+    virtual auto prepare() noexcept -> blob_preparation {
+        return blob_preparation::finished;
     }
 
     virtual auto is_at_eod(const span_size_t offs) noexcept -> bool {
