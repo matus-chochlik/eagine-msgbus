@@ -34,6 +34,26 @@ export struct blob_info {
 };
 //------------------------------------------------------------------------------
 export enum class blob_preparation : bool { finished = false, working = true };
+export class blob_preparation_result {
+public:
+    auto first() noexcept -> bool {
+        if(_first) {
+            _first = false;
+            return true;
+        }
+        return false;
+    }
+
+    auto operator()(const work_done is_working) noexcept -> blob_preparation {
+        const blob_preparation result{_was_working};
+        _was_working = bool(is_working);
+        return result;
+    }
+
+private:
+    bool _first : 1 {true};
+    bool _was_working : 1 {true};
+};
 //------------------------------------------------------------------------------
 export struct source_blob_io : interface<source_blob_io> {
 
