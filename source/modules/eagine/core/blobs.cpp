@@ -46,7 +46,7 @@ public:
 
     auto operator()(const work_done is_working) noexcept -> blob_preparation {
         const blob_preparation result{_was_working};
-        _was_working = bool(is_working);
+        _was_working = _was_working and is_working;
         return result;
     }
 
