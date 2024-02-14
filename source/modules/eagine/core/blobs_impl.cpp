@@ -349,13 +349,21 @@ auto pending_blob::total_size_mismatch(const span_size_t size) const noexcept
     return (info.total_size != 0) and (info.total_size != size);
 }
 //------------------------------------------------------------------------------
-auto pending_blob::prepare() const noexcept -> span_size_t {
+auto pending_blob::prepare() noexcept -> bool {
     assert(source_io);
     switch(source_io->prepare()) {
-        case blob_preparation::working:
-            return source_io->total_size();
         case blob_preparation::finished:
-            return 0;
+            return false;
+        case blob_preparation::working:
+            if(not todo_parts().empty()) {
+                linger_time.reset();
+                info.total_size = source_io->total_size();
+                std::get<1>(todo_parts().back()) = info.total_size;
+            }
+            return true;
+        case blob_preparation::failed:
+            todo_parts().clear();
+            return false;
     }
 }
 //------------------------------------------------------------------------------
@@ -978,11 +986,7 @@ auto blob_manipulator::process_outgoing(
     max_messages = std::min(max_messages, span_size(_outgoing.size()));
     while(max_messages-- > 0) {
         auto& pending{_outgoing[_outgoing_index++ % _outgoing.size()]};
-        if(const auto new_size{pending.prepare()}) {
-            pending.linger_time.reset();
-            pending.info.total_size = new_size;
-            std::get<1>(pending.todo_parts().back()) = new_size;
-        } else if(not pending.sent_everything()) {
+        if(not pending.prepare() and not pending.sent_everything()) {
             auto& [bgn, end] = pending.todo_parts().back();
             assert(end != 0);
 

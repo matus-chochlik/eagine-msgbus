@@ -33,7 +33,7 @@ export struct blob_info {
     message_priority priority{message_priority::normal};
 };
 //------------------------------------------------------------------------------
-export enum class blob_preparation : bool { finished = false, working = true };
+export enum class blob_preparation : std::uint8_t { finished, working, failed };
 export class blob_preparation_result {
 public:
     auto first() noexcept -> bool {
@@ -45,7 +45,9 @@ public:
     }
 
     auto operator()(const work_done is_working) noexcept -> blob_preparation {
-        const blob_preparation result{_was_working};
+        const auto result{
+          _was_working ? blob_preparation::working
+                       : blob_preparation::finished};
         _was_working = _was_working and is_working;
         return result;
     }
@@ -197,7 +199,7 @@ struct pending_blob {
     auto total_size() const noexcept -> span_size_t;
     auto total_size_mismatch(const span_size_t size) const noexcept -> bool;
 
-    auto prepare() const noexcept -> span_size_t;
+    auto prepare() noexcept -> bool;
     auto sent_everything() const noexcept -> bool;
     auto received_everything() const noexcept -> bool;
 
