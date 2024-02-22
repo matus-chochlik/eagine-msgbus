@@ -84,7 +84,7 @@ private:
 //------------------------------------------------------------------------------
 // blob_stream_io
 //------------------------------------------------------------------------------
-class blob_stream_io : public target_blob_io {
+class blob_stream_io final : public target_blob_io {
 public:
     blob_stream_io(
       blob_id_t blob_id,
@@ -201,7 +201,7 @@ auto make_target_blob_stream_io(
 //------------------------------------------------------------------------------
 // blob_chunk_io
 //------------------------------------------------------------------------------
-class blob_chunk_io : public target_blob_io {
+class blob_chunk_io final : public target_blob_io {
 public:
     blob_chunk_io(
       identifier_t blob_id,
@@ -804,14 +804,14 @@ auto blob_manipulator::process_incoming(
     std::int64_t total_size{0};
     blob_options_t options{0};
 
-    auto header = std::tie(
+    auto header{std::tie(
       class_id,
       method_id,
       source_blob_id,
       target_blob_id,
       offset,
       total_size,
-      options);
+      options)};
     block_data_source source{message.content()};
     default_deserializer_backend backend(source);
     if(const auto deserialized{deserialize(header, backend)}) [[likely]] {
