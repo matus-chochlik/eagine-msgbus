@@ -33,7 +33,7 @@ auto optional_router::init(bool create) noexcept -> bool {
     return false;
 }
 //------------------------------------------------------------------------------
-auto optional_router::init(const string_view option_name) noexcept -> bool {
+auto optional_router::init_if(const string_view option_name) noexcept -> bool {
     return init(app_config().is_set(option_name));
 }
 //------------------------------------------------------------------------------
