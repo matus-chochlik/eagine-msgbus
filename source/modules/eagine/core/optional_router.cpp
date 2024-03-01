@@ -19,7 +19,7 @@ export class optional_router : public main_ctx_object {
 public:
     optional_router(main_ctx_parent ctx) noexcept;
 
-    auto init(bool create) noexcept -> bool;
+    auto do_init(bool create) noexcept -> bool;
     auto init_if(const string_view option_name) noexcept -> bool;
     auto update() noexcept -> work_done;
     void finish() noexcept;

@@ -20,13 +20,13 @@ namespace eagine::msgbus {
 optional_router::optional_router(main_ctx_parent parent) noexcept
   : main_ctx_object{"OptnRouter", parent} {}
 //------------------------------------------------------------------------------
-auto optional_router::init(bool create) noexcept -> bool {
+auto optional_router::do_init(bool create) noexcept -> bool {
     if(create) {
         auto& ctx{main_context()};
         _router.emplace(ctx);
         _router->log_info("starting optional message bus router");
         _router->add_ca_certificate_pem(ca_certificate_pem(ctx));
-        _router->add_certificate_pem(msgbus::router_certificate_pem(ctx));
+        _router->add_certificate_pem(router_certificate_pem(ctx));
         setup_acceptors(ctx, *_router);
         return true;
     }
@@ -34,7 +34,7 @@ auto optional_router::init(bool create) noexcept -> bool {
 }
 //------------------------------------------------------------------------------
 auto optional_router::init_if(const string_view option_name) noexcept -> bool {
-    return init(app_config().is_set(option_name));
+    return do_init(app_config().is_set(option_name));
 }
 //------------------------------------------------------------------------------
 auto optional_router::update() noexcept -> work_done {
