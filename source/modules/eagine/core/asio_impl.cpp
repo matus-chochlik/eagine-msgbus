@@ -45,6 +45,9 @@ template <typename Base, connection_addr_kind, connection_protocol>
 class asio_connection_info;
 
 template <connection_addr_kind, connection_protocol>
+class asio_connection_base;
+
+template <connection_addr_kind, connection_protocol>
 class asio_connection;
 
 template <connection_addr_kind, connection_protocol>
@@ -155,6 +158,9 @@ struct asio_connection_group : interface<asio_connection_group<Kind, Proto>> {
       const memory::const_block) noexcept = 0;
 
     virtual auto has_received() noexcept -> bool = 0;
+
+    virtual auto self_ref() noexcept
+      -> std::shared_ptr<asio_connection_base<Kind, Proto>> = 0;
 };
 //------------------------------------------------------------------------------
 struct asio_connection_state_base
@@ -310,7 +316,7 @@ struct asio_connection_state : asio_connection_state_base {
           connection_protocol_tag<Proto>{},
           target,
           view(write_buffer),
-          [this, self{self_ref()}, &group, target, packed](
+          [this, self{group.self_ref()}, &group, target, packed](
             const std::error_code error,
             [[maybe_unused]] const std::size_t length) {
               if(not error) [[likely]] {
@@ -435,7 +441,7 @@ struct asio_connection_state : asio_connection_state_base {
         do_start_receive(
           connection_protocol_tag<Proto>{},
           blk,
-          [this, selfref{self_ref()}, &group, blk](
+          [this, selfref{group.self_ref()}, &group, blk](
             const std::error_code error, const std::size_t length) {
               memory::const_block rcvd{head(blk, span_size(length))};
               if(not error) [[likely]] {
@@ -584,6 +590,11 @@ public:
         return not _incoming.empty();
     }
 
+    auto self_ref() noexcept
+      -> std::shared_ptr<asio_connection_base<Kind, Proto>> final {
+        return this->shared_from_this();
+    }
+
     auto send(const message_id msg_id, const message_view& message) noexcept
       -> bool final {
         return _outgoing.enqueue(
@@ -702,7 +713,8 @@ private:
 //------------------------------------------------------------------------------
 template <connection_addr_kind Kind>
 class asio_datagram_server_connection
-  : public asio_connection_base<Kind, connection_protocol::datagram>
+  : public std::enable_shared_from_this<asio_datagram_server_connection<Kind>>
+  , public asio_connection_base<Kind, connection_protocol::datagram>
   , public asio_connection_group<Kind, connection_protocol::datagram> {
 
     using base = asio_connection_base<Kind, connection_protocol::datagram>;
@@ -760,6 +772,11 @@ public:
             }
         }
         return false;
+    }
+
+    auto self_ref() noexcept -> std::shared_ptr<
+      asio_connection_base<Kind, connection_protocol::datagram>> final {
+        return this->shared_from_this();
     }
 
     auto send(const message_id, const message_view&) noexcept -> bool final {
@@ -893,6 +910,7 @@ class asio_connector<connection_addr_kind::ipv4, connection_protocol::stream>
     using base =
       asio_connection<connection_addr_kind::ipv4, connection_protocol::stream>;
     using base::conn_state;
+    using base::self_ref;
 
 public:
     asio_connector(
@@ -927,10 +945,6 @@ private:
       adjusted_duration(std::chrono::seconds{1}),
       nothing};
     bool _connecting{false};
-
-    auto self_ref() noexcept {
-        return this->shared_from_this();
-    }
 
     void _start_connect(
       asio::ip::tcp::resolver::iterator resolved,
@@ -1299,9 +1313,7 @@ private:
       nothing};
     bool _connecting{false};
 
-    auto self_ref() noexcept {
-        return this->shared_from_this();
-    }
+    using base::self_ref;
 
     void _start_connect() noexcept {
         _connecting = true;
