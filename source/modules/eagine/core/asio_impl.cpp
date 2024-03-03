@@ -163,9 +163,7 @@ struct asio_connection_group : interface<asio_connection_group<Kind, Proto>> {
       -> std::shared_ptr<asio_connection_base<Kind, Proto>> = 0;
 };
 //------------------------------------------------------------------------------
-struct asio_connection_state_base
-  : std::enable_shared_from_this<asio_connection_state_base>
-  , main_ctx_object {
+struct asio_connection_state_base : main_ctx_object {
     using clock_type = std::chrono::steady_clock;
     using clock_time = typename clock_type::time_point;
 
@@ -204,10 +202,6 @@ struct asio_connection_state_base
           .arg("size", "ByteSize", write_buffer.size());
         log_debug("allocating read buffer of ${size}")
           .arg("size", "ByteSize", read_buffer.size());
-    }
-
-    auto self_ref() noexcept {
-        return this->shared_from_this();
     }
 };
 //------------------------------------------------------------------------------
