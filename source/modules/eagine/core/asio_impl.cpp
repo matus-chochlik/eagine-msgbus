@@ -543,7 +543,8 @@ protected:
 //------------------------------------------------------------------------------
 template <connection_addr_kind Kind, connection_protocol Proto>
 class asio_connection
-  : public asio_connection_base<Kind, Proto>
+  : public std::enable_shared_from_this<asio_connection<Kind, Proto>>
+  , public asio_connection_base<Kind, Proto>
   , public asio_connection_group<Kind, Proto> {
 
     using base = asio_connection_base<Kind, Proto>;
@@ -885,9 +886,7 @@ struct asio_types<connection_addr_kind::ipv4, connection_protocol::stream> {
 //------------------------------------------------------------------------------
 template <>
 class asio_connector<connection_addr_kind::ipv4, connection_protocol::stream>
-  : public std::enable_shared_from_this<
-      asio_connector<connection_addr_kind::ipv4, connection_protocol::stream>>
-  , public asio_connection<
+  : public asio_connection<
       connection_addr_kind::ipv4,
       connection_protocol::stream> {
 
@@ -1116,9 +1115,7 @@ struct asio_types<connection_addr_kind::ipv4, connection_protocol::datagram> {
 //------------------------------------------------------------------------------
 template <>
 class asio_connector<connection_addr_kind::ipv4, connection_protocol::datagram>
-  : public std::enable_shared_from_this<
-      asio_connector<connection_addr_kind::ipv4, connection_protocol::datagram>>
-  , public asio_connection<
+  : public asio_connection<
       connection_addr_kind::ipv4,
       connection_protocol::datagram> {
 
@@ -1261,9 +1258,7 @@ struct asio_types<connection_addr_kind::filepath, connection_protocol::stream> {
 //------------------------------------------------------------------------------
 template <>
 class asio_connector<connection_addr_kind::filepath, connection_protocol::stream>
-  : public std::enable_shared_from_this<
-      asio_connector<connection_addr_kind::filepath, connection_protocol::stream>>
-  , public asio_connection<
+  : public asio_connection<
       connection_addr_kind::filepath,
       connection_protocol::stream> {
     using base = asio_connection<
