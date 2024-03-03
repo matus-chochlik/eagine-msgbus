@@ -48,6 +48,7 @@ auto optional_router::update() noexcept -> work_done {
 void optional_router::finish() noexcept {
     if(_router) {
         _router->finish();
+        _router.reset();
     }
 }
 //------------------------------------------------------------------------------
