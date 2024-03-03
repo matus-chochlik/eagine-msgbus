@@ -89,7 +89,7 @@ struct connection_user : interface<connection_user> {
 
     /// @brief Adds the specified message bus connection.
     /// Result indicates if the connection was used or discarded.
-    virtual auto add_connection(unique_holder<connection>) noexcept -> bool = 0;
+    virtual auto add_connection(shared_holder<connection>) noexcept -> bool = 0;
 };
 //------------------------------------------------------------------------------
 /// @brief Interface for message bus connection acceptors.
@@ -100,7 +100,7 @@ export struct acceptor : connection_info {
 
     /// @brief Alias for accepted connection handler callable reference type.
     using accept_handler =
-      callable_ref<void(unique_holder<connection>) noexcept>;
+      callable_ref<void(shared_holder<connection>) noexcept>;
 
     /// @brief Updates the internal state of the acceptor (called repeatedly).
     virtual auto update() noexcept -> work_done {
@@ -131,12 +131,12 @@ struct connection_factory : connection_info {
     /// @brief Make a new acceptor listening on the specified address.
     /// @see make_connector
     [[nodiscard]] virtual auto make_acceptor(const string_view address)
-      -> unique_holder<acceptor> = 0;
+      -> shared_holder<acceptor> = 0;
 
     /// @brief Make a new connector connecting to the specified address.
     /// @see make_acceptor
     [[nodiscard]] virtual auto make_connector(const string_view address)
-      -> unique_holder<connection> = 0;
+      -> shared_holder<connection> = 0;
 
     /// @brief Make a new acceptor listening on a default address.
     /// @see make_connector

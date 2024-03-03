@@ -319,7 +319,7 @@ private:
 };
 //------------------------------------------------------------------------------
 export struct direct_acceptor_intf : direct_connection_info<acceptor> {
-    virtual auto make_connection() noexcept -> unique_holder<connection> = 0;
+    virtual auto make_connection() noexcept -> shared_holder<connection> = 0;
 };
 //------------------------------------------------------------------------------
 //
@@ -359,7 +359,7 @@ public:
     }
 
     /// @brief Makes a new client-side direct connection.
-    auto make_connection() noexcept -> unique_holder<connection> final {
+    auto make_connection() noexcept -> shared_holder<connection> final {
         if(_address) {
             return {hold<direct_client_connection<Lockable>>, _address};
         }
@@ -387,7 +387,7 @@ public:
       , _default_addr{_make_addr()} {}
 
     auto make_acceptor(const string_view addr_str) noexcept
-      -> unique_holder<acceptor> final {
+      -> shared_holder<acceptor> final {
         if(addr_str) {
             return {hold<direct_acceptor<Lockable>>, *this, _get(addr_str)};
         }
@@ -395,7 +395,7 @@ public:
     }
 
     auto make_connector(const string_view addr_str) noexcept
-      -> unique_holder<connection> final {
+      -> shared_holder<connection> final {
         if(addr_str) {
             return {hold<direct_client_connection<Lockable>>, _get(addr_str)};
         }

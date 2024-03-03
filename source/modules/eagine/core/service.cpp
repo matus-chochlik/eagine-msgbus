@@ -64,7 +64,7 @@ public:
     }
 
     /// @brief Adds a connection to the associated endpoint.
-    auto add_connection(unique_holder<connection> conn) noexcept -> bool final {
+    auto add_connection(shared_holder<connection> conn) noexcept -> bool final {
         return this->bus_node().add_connection(std::move(conn));
     }
 
@@ -158,10 +158,7 @@ public:
     service_node(const identifier id, main_ctx_parent parent) noexcept
       : main_ctx_object{id, parent}
       , protected_member<endpoint>{id, parent}
-      , service_composition<Base> {
-        this->get_the_member()
-    }
-    {}
+      , service_composition<Base>{this->get_the_member()} {}
 };
 //------------------------------------------------------------------------------
 export template <typename Signature, std::size_t MaxDataSize = 8192 - 128>

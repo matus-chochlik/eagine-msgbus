@@ -840,14 +840,14 @@ public:
 
     /// @brief Makes an connection acceptor listening at queue with the specified name.
     auto make_acceptor(const string_view address) noexcept
-      -> unique_holder<acceptor> final {
+      -> shared_holder<acceptor> final {
         return {
           hold<posix_mqueue_acceptor>, *this, to_string(address), _shared_state};
     }
 
     /// @brief Makes a connector connecting to queue with the specified name.
     auto make_connector(const string_view address) noexcept
-      -> unique_holder<connection> final {
+      -> shared_holder<connection> final {
         return {
           hold<posix_mqueue_connector>,
           *this,
