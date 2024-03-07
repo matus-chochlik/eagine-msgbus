@@ -460,7 +460,7 @@ void endpoint::add_ca_certificate_pem(const memory::const_block blk) noexcept {
     }
 }
 //------------------------------------------------------------------------------
-auto endpoint::add_connection(unique_holder<connection> conn) noexcept -> bool {
+auto endpoint::add_connection(shared_holder<connection> conn) noexcept -> bool {
     if(conn) [[likely]] {
         if(_connection) {
             log_debug("replacing connection type ${oldType} with ${newType}")

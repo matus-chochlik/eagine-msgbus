@@ -18,7 +18,7 @@ public:
 
     test_pong(
       eagine::main_ctx_parent parent,
-      eagine::unique_holder<eagine::msgbus::connection> conn,
+      eagine::shared_holder<eagine::msgbus::connection> conn,
       eagitest::track& trck)
       : base(
           {"TestPong", parent},
@@ -64,7 +64,7 @@ public:
 
     test_ping(
       eagine::main_ctx_parent parent,
-      eagine::unique_holder<eagine::msgbus::connection> conn,
+      eagine::shared_holder<eagine::msgbus::connection> conn,
       eagitest::track& trck)
       : base(
           {"TestPing", parent},

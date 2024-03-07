@@ -55,7 +55,7 @@ private:
 //------------------------------------------------------------------------------
 class router_pending {
 public:
-    router_pending(router&, unique_holder<connection>) noexcept;
+    router_pending(router&, shared_holder<connection>) noexcept;
 
     auto assigned_id() const noexcept -> endpoint_id_t;
 
@@ -75,7 +75,7 @@ public:
     auto update() noexcept -> work_done;
 
     void send(const message_id msg_id, const message_view&) noexcept;
-    auto release_connection() noexcept -> unique_holder<msgbus::connection>;
+    auto release_connection() noexcept -> shared_holder<msgbus::connection>;
 
 private:
     void _assign_id() noexcept;
@@ -96,7 +96,7 @@ private:
     timeout _should_request_pwd{
       adjusted_duration(std::chrono::seconds{3}),
       nothing};
-    unique_holder<msgbus::connection> _connection{};
+    shared_holder<msgbus::connection> _connection{};
     std::vector<byte> _nonce{};
     identifier _connection_type;
     msgbus::connection_kind _connection_kind;
@@ -165,7 +165,7 @@ public:
 
     auto is_allowed(const message_id) const noexcept -> bool;
 
-    void setup(unique_holder<connection>, bool maybe_router) noexcept;
+    void setup(shared_holder<connection>, bool maybe_router) noexcept;
 
     void enqueue_route_messages(
       workshop&,
@@ -207,7 +207,7 @@ public:
 
 private:
     unique_holder<std::shared_mutex> _lock{default_selector};
-    unique_holder<connection> _connection{};
+    shared_holder<connection> _connection{};
     route_node_messages_work_unit _route_messages_work{};
     connection_update_work_unit _update_connection_work{};
     std::vector<message_id> _message_block_list{};
@@ -218,7 +218,7 @@ private:
 //------------------------------------------------------------------------------
 class parent_router {
 public:
-    void reset(unique_holder<connection>) noexcept;
+    void reset(shared_holder<connection>) noexcept;
 
     explicit operator bool() const noexcept {
         return _connection and _confirmed_id;
@@ -252,7 +252,7 @@ public:
       -> work_done;
 
 private:
-    unique_holder<connection> _connection{};
+    shared_holder<connection> _connection{};
     endpoint_id_t _confirmed_id{};
     timeout _confirm_id_timeout{
       adjusted_duration(std::chrono::seconds{2}),
@@ -423,7 +423,7 @@ public:
     void add_ca_certificate_pem(const memory::const_block blk) noexcept;
 
     auto add_acceptor(shared_holder<acceptor>) noexcept -> bool final;
-    auto add_connection(unique_holder<connection>) noexcept -> bool final;
+    auto add_connection(shared_holder<connection>) noexcept -> bool final;
 
     auto do_maintenance() noexcept -> work_done;
     auto do_work_by_workers() noexcept -> work_done;

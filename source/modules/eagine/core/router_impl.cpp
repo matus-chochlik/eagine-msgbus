@@ -53,7 +53,7 @@ static inline void message_id_list_remove(
 //------------------------------------------------------------------------------
 router_pending::router_pending(
   router& parent,
-  unique_holder<msgbus::connection> conn) noexcept
+  shared_holder<msgbus::connection> conn) noexcept
   : _parent{parent}
   , _connection{std::move(conn)}
   , _connection_type{_connection->type_id()}
@@ -217,7 +217,7 @@ auto router_pending::update() noexcept -> work_done {
 }
 //------------------------------------------------------------------------------
 auto router_pending::release_connection() noexcept
-  -> unique_holder<msgbus::connection> {
+  -> shared_holder<msgbus::connection> {
     return std::move(_connection);
 }
 //------------------------------------------------------------------------------
@@ -313,7 +313,7 @@ auto adjacent_node::is_allowed(const message_id msg_id) const noexcept -> bool {
 }
 //------------------------------------------------------------------------------
 void adjacent_node::setup(
-  unique_holder<connection> conn,
+  shared_holder<connection> conn,
   bool maybe_router) noexcept {
     _connection = std::move(conn);
     _maybe_router = maybe_router;
@@ -486,7 +486,7 @@ void adjacent_node::clear_allow_list() noexcept {
 // parent_router
 //------------------------------------------------------------------------------
 inline void parent_router::reset(
-  unique_holder<connection> a_connection) noexcept {
+  shared_holder<connection> a_connection) noexcept {
     _connection = std::move(a_connection);
     _confirmed_id = 0;
 }
@@ -690,7 +690,7 @@ auto router_nodes::handle_accept(router& parent) noexcept -> work_done {
     some_true something_done{};
 
     if(not _acceptors.empty()) [[likely]] {
-        const auto handle_conn{[&](unique_holder<connection> a_connection) {
+        const auto handle_conn{[&](shared_holder<connection> a_connection) {
             assert(a_connection);
             parent.log_info("accepted pending connection")
               .tag("acPendConn")
@@ -1149,7 +1149,7 @@ auto router::add_acceptor(shared_holder<acceptor> an_acceptor) noexcept
     return false;
 }
 //------------------------------------------------------------------------------
-auto router::add_connection(unique_holder<connection> a_connection) noexcept
+auto router::add_connection(shared_holder<connection> a_connection) noexcept
   -> bool {
     if(a_connection) {
         log_info("assigning parent router connection")

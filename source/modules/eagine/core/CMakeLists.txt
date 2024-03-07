@@ -253,6 +253,15 @@ eagine_add_module(
 )
 
 eagine_add_module(
+	eagine.msgbus.core PARTITION optional_router
+	IMPORTS
+		std router
+		eagine.core.memory
+		eagine.core.utility
+		eagine.core.main_ctx
+)
+
+eagine_add_module(
 	eagine.msgbus.core PARTITION registry
 	IMPORTS
 		std types interface setup direct
@@ -311,6 +320,7 @@ eagine_add_module(
 		router
 		bridge
 		registry
+		optional_router
 		remote_node
 	IMPORTS
 		std

@@ -27,6 +27,11 @@ auto main(main_ctx& ctx) -> int {
     msgbus::resource_data_consumer_node node{bus};
     msgbus::setup_connectors(ctx, node);
 
+    const application_config_value<std::chrono::seconds> blob_timeout{
+      ctx.config(),
+      "msgbus.resource_hexdump.blob_timeout",
+      std::chrono::hours{12}};
+
     auto next_arg{[arg{ctx.args().first()}] mutable {
         while(arg) {
             arg = arg.next();
@@ -42,7 +47,7 @@ auto main(main_ctx& ctx) -> int {
             node.stream_resource(
               std::move(locator),
               msgbus::message_priority::critical,
-              std::chrono::hours{1});
+              blob_timeout);
         }
     }};
 

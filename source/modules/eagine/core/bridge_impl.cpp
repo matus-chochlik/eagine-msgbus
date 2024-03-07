@@ -247,7 +247,7 @@ void bridge::add_ca_certificate_pem(const memory::const_block blk) noexcept {
     }
 }
 //------------------------------------------------------------------------------
-auto bridge::add_connection(unique_holder<connection> conn) noexcept -> bool {
+auto bridge::add_connection(shared_holder<connection> conn) noexcept -> bool {
     _connection = std::move(conn);
     return true;
 }

@@ -66,7 +66,7 @@ void posix_mqueue_roundtrip(auto& s) {
         auto read_conn{fact->make_connector(eagine::identifier{"roundtrip"})};
         test.ensure(bool(read_conn), "has read connection");
 
-        eagine::unique_holder<eagine::msgbus::connection> write_conn;
+        eagine::shared_holder<eagine::msgbus::connection> write_conn;
         test.check(not bool(write_conn), "has not write connection");
 
         const eagine::timeout accept_time{std::chrono::seconds{5}};
@@ -75,7 +75,7 @@ void posix_mqueue_roundtrip(auto& s) {
             cacc->update();
             cacc->process_accepted(
               {eagine::construct_from,
-               [&](eagine::unique_holder<eagine::msgbus::connection> conn) {
+               [&](eagine::shared_holder<eagine::msgbus::connection> conn) {
                    write_conn = std::move(conn);
                }});
             if(accept_time.is_expired()) {

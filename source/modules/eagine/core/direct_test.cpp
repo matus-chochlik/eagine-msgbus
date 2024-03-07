@@ -47,12 +47,12 @@ void direct_roundtrip(auto& s) {
     auto read_conn{cacc->make_connection()};
     test.ensure(bool(read_conn), "has read connection");
 
-    eagine::unique_holder<eagine::msgbus::connection> write_conn;
+    eagine::shared_holder<eagine::msgbus::connection> write_conn;
     test.check(not bool(write_conn), "has not write connection");
 
     cacc->process_accepted(
       {eagine::construct_from,
-       [&](eagine::unique_holder<eagine::msgbus::connection> conn) {
+       [&](eagine::shared_holder<eagine::msgbus::connection> conn) {
            write_conn = std::move(conn);
        }});
     test.ensure(bool(write_conn), "has write connection");
@@ -116,12 +116,12 @@ void direct_roundtrip_thread(auto& s) {
     auto read_conn{cacc->make_connection()};
     test.ensure(bool(read_conn), "has read connection");
 
-    eagine::unique_holder<eagine::msgbus::connection> write_conn;
+    eagine::shared_holder<eagine::msgbus::connection> write_conn;
     test.check(not bool(write_conn), "has not write connection");
 
     cacc->process_accepted(
       {eagine::construct_from,
-       [&](eagine::unique_holder<eagine::msgbus::connection> conn) {
+       [&](eagine::shared_holder<eagine::msgbus::connection> conn) {
            write_conn = std::move(conn);
        }});
     test.ensure(bool(write_conn), "has write connection");

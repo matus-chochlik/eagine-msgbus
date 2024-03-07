@@ -81,7 +81,7 @@ auto main(main_ctx& ctx) -> int {
 
     msgbus::endpoint bus{identifier{"Loopback"}, ctx};
     bus.set_id(identifier{"BusExample"});
-    bus.add_connection(std::make_unique<msgbus::loopback_connection>());
+    bus.add_connection(hold<msgbus::loopback_connection>);
 
     msgbus::str_utils_server server(bus);
     msgbus::str_utils_client client(bus);

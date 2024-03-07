@@ -45,6 +45,9 @@ template <typename Base, connection_addr_kind, connection_protocol>
 class asio_connection_info;
 
 template <connection_addr_kind, connection_protocol>
+class asio_connection_base;
+
+template <connection_addr_kind, connection_protocol>
 class asio_connection;
 
 template <connection_addr_kind, connection_protocol>
@@ -155,11 +158,12 @@ struct asio_connection_group : interface<asio_connection_group<Kind, Proto>> {
       const memory::const_block) noexcept = 0;
 
     virtual auto has_received() noexcept -> bool = 0;
+
+    virtual auto self_ref() noexcept
+      -> std::shared_ptr<asio_connection_base<Kind, Proto>> = 0;
 };
 //------------------------------------------------------------------------------
-struct asio_connection_state_base
-  : std::enable_shared_from_this<asio_connection_state_base>
-  , main_ctx_object {
+struct asio_connection_state_base : main_ctx_object {
     using clock_type = std::chrono::steady_clock;
     using clock_time = typename clock_type::time_point;
 
@@ -198,10 +202,6 @@ struct asio_connection_state_base
           .arg("size", "ByteSize", write_buffer.size());
         log_debug("allocating read buffer of ${size}")
           .arg("size", "ByteSize", read_buffer.size());
-    }
-
-    auto self_ref() noexcept {
-        return this->shared_from_this();
     }
 };
 //------------------------------------------------------------------------------
@@ -310,7 +310,7 @@ struct asio_connection_state : asio_connection_state_base {
           connection_protocol_tag<Proto>{},
           target,
           view(write_buffer),
-          [this, &group, target, packed, self{self_ref()}](
+          [this, self{group.self_ref()}, &group, target, packed](
             const std::error_code error,
             [[maybe_unused]] const std::size_t length) {
               if(not error) [[likely]] {
@@ -435,7 +435,7 @@ struct asio_connection_state : asio_connection_state_base {
         do_start_receive(
           connection_protocol_tag<Proto>{},
           blk,
-          [this, &group, selfref{self_ref()}, blk](
+          [this, selfref{group.self_ref()}, &group, blk](
             const std::error_code error, const std::size_t length) {
               memory::const_block rcvd{head(blk, span_size(length))};
               if(not error) [[likely]] {
@@ -543,7 +543,8 @@ protected:
 //------------------------------------------------------------------------------
 template <connection_addr_kind Kind, connection_protocol Proto>
 class asio_connection
-  : public asio_connection_base<Kind, Proto>
+  : public std::enable_shared_from_this<asio_connection<Kind, Proto>>
+  , public asio_connection_base<Kind, Proto>
   , public asio_connection_group<Kind, Proto> {
 
     using base = asio_connection_base<Kind, Proto>;
@@ -581,6 +582,11 @@ public:
 
     auto has_received() noexcept -> bool final {
         return not _incoming.empty();
+    }
+
+    auto self_ref() noexcept
+      -> std::shared_ptr<asio_connection_base<Kind, Proto>> final {
+        return this->shared_from_this();
     }
 
     auto send(const message_id msg_id, const message_view& message) noexcept
@@ -701,7 +707,8 @@ private:
 //------------------------------------------------------------------------------
 template <connection_addr_kind Kind>
 class asio_datagram_server_connection
-  : public asio_connection_base<Kind, connection_protocol::datagram>
+  : public std::enable_shared_from_this<asio_datagram_server_connection<Kind>>
+  , public asio_connection_base<Kind, connection_protocol::datagram>
   , public asio_connection_group<Kind, connection_protocol::datagram> {
 
     using base = asio_connection_base<Kind, connection_protocol::datagram>;
@@ -759,6 +766,11 @@ public:
             }
         }
         return false;
+    }
+
+    auto self_ref() noexcept -> std::shared_ptr<
+      asio_connection_base<Kind, connection_protocol::datagram>> final {
+        return this->shared_from_this();
     }
 
     auto send(const message_id, const message_view&) noexcept -> bool final {
@@ -892,6 +904,7 @@ class asio_connector<connection_addr_kind::ipv4, connection_protocol::stream>
     using base =
       asio_connection<connection_addr_kind::ipv4, connection_protocol::stream>;
     using base::conn_state;
+    using base::self_ref;
 
 public:
     asio_connector(
@@ -938,7 +951,9 @@ private:
           .arg("port", "IpV4Port", std::get<1>(_addr));
 
         conn_state().socket.async_connect(
-          ep, [this, resolved, port](const std::error_code error) mutable {
+          ep,
+          [this, selfref{self_ref()}, resolved, port](
+            const std::error_code error) mutable {
               if(not error) {
                   this->log_debug("connected on address ${host}:${port}")
                     .arg("host", "IpV4Host", std::get<0>(_addr))
@@ -982,7 +997,9 @@ private:
 //------------------------------------------------------------------------------
 template <>
 class asio_acceptor<connection_addr_kind::ipv4, connection_protocol::stream>
-  : public asio_connection_info<
+  : public std::enable_shared_from_this<
+      asio_acceptor<connection_addr_kind::ipv4, connection_protocol::stream>>
+  , public asio_connection_info<
       acceptor,
       connection_addr_kind::ipv4,
       connection_protocol::stream>
@@ -1047,29 +1064,34 @@ private:
 
     std::vector<asio::ip::tcp::socket> _accepted;
 
+    auto self_ref() noexcept {
+        return this->shared_from_this();
+    }
+
     void _start_accept() noexcept {
         log_debug("accepting connection on address ${host}:${port}")
           .arg("host", "IpV4Host", std::get<0>(_addr))
           .arg("port", "IpV4Port", std::get<1>(_addr));
 
         _socket = asio::ip::tcp::socket(this->_asio_state->context);
-        _acceptor.async_accept(_socket, [this](const std::error_code error) {
-            if(not error) {
-                log_debug("accepted connection on address ${host}:${port}")
-                  .arg("host", "IpV4Host", std::get<0>(_addr))
-                  .arg("port", "IpV4Port", std::get<1>(_addr));
-                this->_accepted.emplace_back(std::move(this->_socket));
-            } else {
-                log_error(
-                  "failed to accept connection on address "
-                  "${host}:${port}: "
-                  "${error}")
-                  .arg("error", error.message())
-                  .arg("host", "IpV4Host", std::get<0>(_addr))
-                  .arg("port", "IpV4Port", std::get<1>(_addr));
-            }
-            _start_accept();
-        });
+        _acceptor.async_accept(
+          _socket, [this, selfref{self_ref()}](const std::error_code error) {
+              if(not error) {
+                  log_debug("accepted connection on address ${host}:${port}")
+                    .arg("host", "IpV4Host", std::get<0>(_addr))
+                    .arg("port", "IpV4Port", std::get<1>(_addr));
+                  this->_accepted.emplace_back(std::move(this->_socket));
+              } else {
+                  log_error(
+                    "failed to accept connection on address "
+                    "${host}:${port}: "
+                    "${error}")
+                    .arg("error", error.message())
+                    .arg("host", "IpV4Host", std::get<0>(_addr))
+                    .arg("port", "IpV4Port", std::get<1>(_addr));
+              }
+              _start_accept();
+          });
     }
 };
 //------------------------------------------------------------------------------
@@ -1174,7 +1196,9 @@ private:
 //------------------------------------------------------------------------------
 template <>
 class asio_acceptor<connection_addr_kind::ipv4, connection_protocol::datagram>
-  : public asio_connection_info<
+  : public std::enable_shared_from_this<
+      asio_acceptor<connection_addr_kind::ipv4, connection_protocol::datagram>>
+  , public asio_connection_info<
       acceptor,
       connection_addr_kind::ipv4,
       connection_protocol::datagram>
@@ -1283,6 +1307,8 @@ private:
       nothing};
     bool _connecting{false};
 
+    using base::self_ref;
+
     void _start_connect() noexcept {
         _connecting = true;
         this->log_debug("connecting to ${address}")
@@ -1290,7 +1316,7 @@ private:
 
         conn_state().socket.async_connect(
           conn_state().conn_endpoint,
-          [this](const std::error_code error) mutable {
+          [this, selfref{self_ref()}](const std::error_code error) mutable {
               if(not error) {
                   this->log_debug("connected on address ${address}")
                     .arg("address", "FsPath", _addr_str);
@@ -1310,7 +1336,9 @@ private:
 //------------------------------------------------------------------------------
 template <>
 class asio_acceptor<connection_addr_kind::filepath, connection_protocol::stream>
-  : public asio_connection_info<
+  : public std::enable_shared_from_this<
+      asio_acceptor<connection_addr_kind::filepath, connection_protocol::stream>>
+  , public asio_connection_info<
       acceptor,
       connection_addr_kind::filepath,
       connection_protocol::stream>
@@ -1389,12 +1417,16 @@ private:
 
     std::vector<asio::local::stream_protocol::socket> _accepted;
 
+    auto self_ref() noexcept {
+        return this->shared_from_this();
+    }
+
     void _start_accept() noexcept {
         log_debug("accepting connection on address ${address}")
           .arg("address", "FsPath", _addr_str);
 
         _accepting = true;
-        _acceptor.async_accept([this](
+        _acceptor.async_accept([this, selfref{self_ref()}](
                                  const std::error_code error,
                                  asio::local::stream_protocol::socket socket) {
             if(error) {
@@ -1460,7 +1492,7 @@ public:
       : asio_connection_factory{parent, default_block_size()} {}
 
     auto make_acceptor(const string_view addr_str) noexcept
-      -> unique_holder<acceptor> final {
+      -> shared_holder<acceptor> final {
         return {
           hold<asio_acceptor<Kind, Proto>>,
           *this,
@@ -1470,7 +1502,7 @@ public:
     }
 
     auto make_connector(const string_view addr_str) noexcept
-      -> unique_holder<connection> final {
+      -> shared_holder<connection> final {
         return {
           hold<asio_connector<Kind, Proto>>,
           *this,
