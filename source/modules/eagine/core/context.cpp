@@ -176,7 +176,7 @@ private:
     memory::buffer _own_cert_pem{};
     memory::buffer _ca_cert_pem{};
     //
-    sslplus::ssl_api _ssl{};
+    sslplus::ssl_api _ssl{*this};
     sslplus::owned_engine _ssl_engine{};
     sslplus::owned_x509_store _ssl_store{};
     sslplus::owned_x509 _own_cert{};
