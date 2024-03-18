@@ -12,9 +12,10 @@ module;
 module eagine.msgbus.core;
 
 import std;
-import eagine.core.types;
 import eagine.core.debug;
+import eagine.core.types;
 import eagine.core.memory;
+import eagine.core.math;
 import eagine.core.utility;
 import eagine.core.container;
 import eagine.core.identifier;
@@ -24,6 +25,17 @@ import eagine.core.logging;
 import eagine.core.main_ctx;
 
 namespace eagine::msgbus {
+//------------------------------------------------------------------------------
+blob_preparation_result::blob_preparation_result(float progress) noexcept
+  : _progress{math::clamp(progress, 0.F, 1.F)}
+  , _status{
+      progress < 1.F ? blob_preparation_status::working
+                     : blob_preparation_status::finished} {}
+//------------------------------------------------------------------------------
+blob_preparation_result::blob_preparation_result(
+  blob_preparation_status status) noexcept
+  : _progress{status == blob_preparation_status::working ? 0.F : 1.F}
+  , _status{status} {}
 //------------------------------------------------------------------------------
 // buffer blob I/O
 //------------------------------------------------------------------------------
@@ -351,19 +363,22 @@ auto pending_blob::total_size_mismatch(const span_size_t size) const noexcept
 //------------------------------------------------------------------------------
 auto pending_blob::prepare() noexcept -> bool {
     assert(source_io);
-    switch(source_io->prepare()) {
-        case blob_preparation::finished:
-            return false;
-        case blob_preparation::working:
-            if(not todo_parts().empty()) {
-                linger_time.reset();
-                info.total_size = source_io->total_size();
-                std::get<1>(todo_parts().back()) = info.total_size;
-            }
-            return true;
-        case blob_preparation::failed:
-            todo_parts().clear();
-            return false;
+    const auto result{source_io->prepare()};
+    if(result.is_working()) {
+        if(not todo_parts().empty()) {
+            linger_time.reset();
+            info.total_size = source_io->total_size();
+            std::get<1>(todo_parts().back()) = info.total_size;
+        }
+        prepare_progress = result.progress();
+        return true;
+    } else if(result.has_finished()) {
+        prepare_progress = 1.F;
+        return false;
+    } else {
+        todo_parts().clear();
+        prepare_progress = 1.F;
+        return false;
     }
 }
 //------------------------------------------------------------------------------

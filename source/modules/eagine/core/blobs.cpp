@@ -33,8 +33,43 @@ export struct blob_info {
     message_priority priority{message_priority::normal};
 };
 //------------------------------------------------------------------------------
-export enum class blob_preparation : std::uint8_t { finished, working, failed };
+export enum class blob_preparation_status : std::uint8_t {
+    finished,
+    working,
+    failed
+};
+
 export class blob_preparation_result {
+public:
+    blob_preparation_result(float progress) noexcept;
+    blob_preparation_result(blob_preparation_status status) noexcept;
+
+    static auto finished() noexcept -> blob_preparation_result {
+        return blob_preparation_result{blob_preparation_status::finished};
+    }
+
+    auto is_working() const noexcept -> bool {
+        return _status == blob_preparation_status::working;
+    }
+
+    auto has_finished() const noexcept -> bool {
+        return _status == blob_preparation_status::finished;
+    }
+
+    auto has_failed() const noexcept -> bool {
+        return _status == blob_preparation_status::failed;
+    }
+
+    auto progress() const noexcept -> float {
+        return _progress;
+    }
+
+private:
+    float _progress;
+    blob_preparation_status _status;
+};
+//------------------------------------------------------------------------------
+export class blob_preparation_context {
 public:
     auto first() noexcept -> bool {
         if(_first) {
@@ -44,12 +79,13 @@ public:
         return false;
     }
 
-    auto operator()(const work_done is_working) noexcept -> blob_preparation {
+    auto operator()(const work_done is_working) noexcept
+      -> blob_preparation_result {
         const auto result{
-          _was_working ? blob_preparation::working
-                       : blob_preparation::finished};
+          _was_working ? blob_preparation_status::working
+                       : blob_preparation_status::finished};
         _was_working = _was_working and is_working;
-        return result;
+        return {result};
     }
 
 private:
@@ -59,8 +95,8 @@ private:
 //------------------------------------------------------------------------------
 export struct source_blob_io : interface<source_blob_io> {
 
-    virtual auto prepare() noexcept -> blob_preparation {
-        return blob_preparation::finished;
+    virtual auto prepare() noexcept -> blob_preparation_result {
+        return blob_preparation_result::finished();
     }
 
     virtual auto is_at_eod(const span_size_t offs) noexcept -> bool {
@@ -174,6 +210,7 @@ struct pending_blob {
     timeout max_time{};
     blob_id_t source_blob_id{0U};
     blob_id_t target_blob_id{0U};
+    float prepare_progress{0.F};
 
     auto source_buffer_io() noexcept -> buffer_blob_io*;
     auto target_buffer_io() noexcept -> buffer_blob_io*;
