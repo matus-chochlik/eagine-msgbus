@@ -377,9 +377,7 @@ void pending_blob::handle_source_preparing(float new_progress) noexcept {
         info.total_size = source_io->total_size();
         std::get<1>(todo_parts().back()) = info.total_size;
     }
-    if(new_progress - prepare_progress > 0.1F) {
-        prepare_progress = new_progress;
-    }
+    prepare_progress = new_progress;
 }
 //------------------------------------------------------------------------------
 auto pending_blob::prepare() noexcept -> blob_preparation_result {
@@ -653,7 +651,7 @@ auto blob_manipulator::update(
                 const std::tuple<identifier_t, std::uint64_t, std::uint64_t>
                   params{pending.source_blob_id, bgn, end};
                 auto buffer{default_serialize_buffer_for(params)};
-                auto serialized{default_serialize(params, cover(buffer))};
+                const auto serialized{default_serialize(params, cover(buffer))};
                 assert(serialized);
                 message_view resend_request{*serialized};
                 resend_request.set_target_id(pending.info.source_id);
@@ -1033,16 +1031,22 @@ auto blob_manipulator::_process_preparing_outgoing(
   const send_handler do_send,
   const span_size_t max_message_size,
   pending_blob& pending) noexcept -> work_done {
-    const std::tuple<identifier_t, float> params{
-      pending.target_blob_id, pending.prepare_progress};
-    auto buffer{default_serialize_buffer_for(params)};
-    const auto serialized{default_serialize(params, cover(buffer))};
-    assert(serialized);
-    message_view message(*serialized);
-    message.set_source_id(pending.info.source_id);
-    message.set_target_id(pending.info.target_id);
-    message.set_priority(message_priority::normal);
-    return {do_send(_prepare_msg_id, message)};
+    if(
+      (pending.prepare_progress >= 1.F) or
+      (pending.prepare_progress - pending.previous_progress >= 0.001F)) {
+        pending.previous_progress = pending.prepare_progress;
+        const std::tuple<identifier_t, float> params{
+          pending.target_blob_id, pending.prepare_progress};
+        auto buffer{default_serialize_buffer_for(params)};
+        const auto serialized{default_serialize(params, cover(buffer))};
+        assert(serialized);
+        message_view message(*serialized);
+        message.set_source_id(pending.info.source_id);
+        message.set_target_id(pending.info.target_id);
+        message.set_priority(message_priority::normal);
+        return {do_send(_prepare_msg_id, message)};
+    }
+    return {false};
 }
 //------------------------------------------------------------------------------
 auto blob_manipulator::_process_finished_outgoing(
