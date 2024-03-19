@@ -310,7 +310,8 @@ resource_server_impl::resource_server_impl(
   , _blobs{
       base,
       message_id{"eagiRsrces", "fragment"},
-      message_id{"eagiRsrces", "fragResend"}} {}
+      message_id{"eagiRsrces", "fragResend"},
+      message_id{"eagiRsrces", "blobPrpare"}} {}
 //------------------------------------------------------------------------------
 void resource_server_impl::notify_resource_available(
   const string_view locator) noexcept {
@@ -563,6 +564,12 @@ public:
           this,
           message_map<
             "eagiRsrces",
+            "blobPrpare",
+            &resource_manipulator_impl::_handle_resource_prepare>{});
+        base.add_method(
+          this,
+          message_map<
+            "eagiRsrces",
             "available",
             &resource_manipulator_impl::_handle_resource_available>{});
     }
@@ -773,6 +780,13 @@ private:
         return true;
     }
 
+    auto _handle_resource_prepare(
+      const message_context&,
+      const stored_message& message) noexcept -> bool {
+        _blobs.process_prepare(message);
+        return true;
+    }
+
     auto _handle_resource_available(
       const message_context&,
       const stored_message& message) noexcept -> bool {
@@ -793,7 +807,8 @@ private:
     blob_manipulator _blobs{
       base.bus_node(),
       message_id{"eagiRsrces", "fragment"},
-      message_id{"eagiRsrces", "fragResend"}};
+      message_id{"eagiRsrces", "fragResend"},
+      message_id{"eagiRsrces", "blobPrpare"}};
 
     resetting_timeout _search_servers{std::chrono::seconds{5}, nothing};
 

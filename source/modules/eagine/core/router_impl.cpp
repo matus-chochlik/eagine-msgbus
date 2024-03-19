@@ -1026,7 +1026,11 @@ auto router_context::get_remote_certificate_pem(const endpoint_id_t id) noexcept
 // router_blobs
 //------------------------------------------------------------------------------
 router_blobs::router_blobs(router& parent) noexcept
-  : _blobs{parent, msgbus_id{"blobFrgmnt"}, msgbus_id{"blobResend"}} {}
+  : _blobs{
+      parent,
+      msgbus_id{"blobFrgmnt"},
+      msgbus_id{"blobResend"},
+      msgbus_id{"blobPrpare"}} {}
 //------------------------------------------------------------------------------
 auto router_blobs::has_outgoing() noexcept -> bool {
     return _blobs.has_outgoing();
@@ -1089,6 +1093,10 @@ void router_blobs::handle_fragment(
 //------------------------------------------------------------------------------
 void router_blobs::handle_resend(const message_view& message) noexcept {
     _blobs.process_resend(message);
+}
+//------------------------------------------------------------------------------
+void router_blobs::handle_prepare(const message_view& message) noexcept {
+    _blobs.process_prepare(message);
 }
 //------------------------------------------------------------------------------
 // router
@@ -1568,6 +1576,16 @@ auto router::_handle_blob_resend(const message_view& message) noexcept
     return should_be_forwarded;
 }
 //------------------------------------------------------------------------------
+auto router::_handle_blob_prepare(const message_view& message) noexcept
+  -> message_handling_result {
+    if(has_id(message.target_id)) {
+        const std::unique_lock lk{_router_lock};
+        _blobs.handle_prepare(message);
+        return was_handled;
+    }
+    return should_be_forwarded;
+}
+//------------------------------------------------------------------------------
 auto router::_handle_special_common(
   const message_id msg_id,
   const endpoint_id_t incoming_id,
@@ -1589,6 +1607,8 @@ auto router::_handle_special_common(
             return _handle_blob_fragment(message);
         case id_v("blobResend"):
             return _handle_blob_resend(message);
+        case id_v("blobPrpare"):
+            return _handle_blob_prepare(message);
         case id_v("rtrCertQry"):
             return _handle_router_certificate_query(message);
         case id_v("eptCertQry"):

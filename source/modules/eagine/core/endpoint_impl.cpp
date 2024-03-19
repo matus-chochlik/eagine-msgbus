@@ -186,6 +186,12 @@ auto endpoint::_handle_blob_resend(const message_view& message) noexcept
     return was_handled;
 }
 //------------------------------------------------------------------------------
+auto endpoint::_handle_blob_prepare(const message_view& message) noexcept
+  -> message_handling_result {
+    _blobs.process_prepare(message);
+    return was_handled;
+}
+//------------------------------------------------------------------------------
 auto endpoint::_handle_flow_info(const message_view& message) noexcept
   -> message_handling_result {
     message_flow_info flow_info{};
@@ -344,6 +350,8 @@ auto endpoint::_handle_special(
                 return _handle_blob_fragment(message);
             case id_v("blobResend"):
                 return _handle_blob_resend(message);
+            case id_v("blobPrpare"):
+                return _handle_blob_prepare(message);
             case id_v("assignId"):
                 return _handle_assign_id(message);
             case id_v("confirmId"):

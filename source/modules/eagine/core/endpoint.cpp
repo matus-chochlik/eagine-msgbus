@@ -508,7 +508,8 @@ private:
     blob_manipulator _blobs{
       *this,
       msgbus_id{"blobFrgmnt"},
-      msgbus_id{"blobResend"}};
+      msgbus_id{"blobResend"},
+      msgbus_id{"blobPrpare"}};
 
     auto _process_blobs() noexcept -> work_done;
 
@@ -538,6 +539,8 @@ private:
     auto _handle_blob_fragment(const message_view&) noexcept
       -> message_handling_result;
     auto _handle_blob_resend(const message_view&) noexcept
+      -> message_handling_result;
+    auto _handle_blob_prepare(const message_view&) noexcept
       -> message_handling_result;
     auto _handle_flow_info(const message_view&) noexcept
       -> message_handling_result;

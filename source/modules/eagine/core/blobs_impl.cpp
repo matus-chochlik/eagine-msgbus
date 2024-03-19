@@ -111,6 +111,10 @@ public:
       memory::const_block data,
       const blob_info& info) noexcept -> bool final;
 
+    void handle_prepared(float progress) noexcept final {
+        _signals.blob_preparation_progressed(_blob_id, progress);
+    }
+
     void handle_finished(
       const message_id,
       const message_age,
@@ -230,6 +234,8 @@ public:
       memory::const_block data,
       const blob_info& info) noexcept -> bool final;
 
+    void handle_prepared(float progress) noexcept final;
+
     void handle_finished(
       const message_id,
       const message_age,
@@ -299,6 +305,10 @@ auto blob_chunk_io::store_fragment(
     return true;
 }
 //------------------------------------------------------------------------------
+void blob_chunk_io::handle_prepared(float progress) noexcept {
+    _signals.blob_preparation_progressed(_blob_id, progress);
+}
+//------------------------------------------------------------------------------
 void blob_chunk_io::handle_finished(
   const message_id,
   const message_age,
@@ -361,25 +371,29 @@ auto pending_blob::total_size_mismatch(const span_size_t size) const noexcept
     return (info.total_size != 0) and (info.total_size != size);
 }
 //------------------------------------------------------------------------------
-auto pending_blob::prepare() noexcept -> bool {
+void pending_blob::handle_source_preparing(float new_progress) noexcept {
+    if(not todo_parts().empty()) {
+        linger_time.reset();
+        info.total_size = source_io->total_size();
+        std::get<1>(todo_parts().back()) = info.total_size;
+    }
+    if(new_progress - prepare_progress > 0.1F) {
+        prepare_progress = new_progress;
+    }
+}
+//------------------------------------------------------------------------------
+auto pending_blob::prepare() noexcept -> blob_preparation_result {
     assert(source_io);
     const auto result{source_io->prepare()};
     if(result.is_working()) {
-        if(not todo_parts().empty()) {
-            linger_time.reset();
-            info.total_size = source_io->total_size();
-            std::get<1>(todo_parts().back()) = info.total_size;
-        }
-        prepare_progress = result.progress();
-        return true;
-    } else if(result.has_finished()) {
-        prepare_progress = 1.F;
-        return false;
+        handle_source_preparing(result.progress());
     } else {
-        todo_parts().clear();
+        if(result.has_failed()) {
+            todo_parts().clear();
+        }
         prepare_progress = 1.F;
-        return false;
     }
+    return result;
 }
 //------------------------------------------------------------------------------
 auto pending_blob::sent_everything() const noexcept -> bool {
@@ -541,15 +555,22 @@ void pending_blob::merge_resend_request(
     }
 }
 //------------------------------------------------------------------------------
+void pending_blob::handle_target_preparing(float new_progress) noexcept {
+    prepare_progress = new_progress;
+    target_io->handle_prepared(new_progress);
+}
+//------------------------------------------------------------------------------
 // blob manipulator
 //------------------------------------------------------------------------------
 blob_manipulator::blob_manipulator(
   main_ctx_parent parent,
   message_id fragment_msg_id,
-  message_id resend_msg_id) noexcept
+  message_id resend_msg_id,
+  message_id prepare_msg_id) noexcept
   : main_ctx_object{"BlobManipl", parent}
   , _fragment_msg_id{std::move(fragment_msg_id)}
-  , _resend_msg_id{std::move(resend_msg_id)} {}
+  , _resend_msg_id{std::move(resend_msg_id)}
+  , _prepare_msg_id{std::move(prepare_msg_id)} {}
 //------------------------------------------------------------------------------
 auto blob_manipulator::update(
   const blob_manipulator::send_handler do_send,
@@ -875,9 +896,9 @@ auto blob_manipulator::process_resend(const message_view& message) noexcept
   -> bool {
     std::tuple<identifier_t, std::uint64_t, std::uint64_t> params{};
     if(default_deserialize(params, message.content())) {
-        const auto source_blob_id = std::get<0>(params);
-        const auto bgn = limit_cast<span_size_t>(std::get<1>(params));
-        const auto end = limit_cast<span_size_t>(std::get<2>(params));
+        const auto source_blob_id{std::get<0>(params)};
+        const auto bgn{limit_cast<span_size_t>(std::get<1>(params))};
+        const auto end{limit_cast<span_size_t>(std::get<2>(params))};
         log_debug("received resend request from ${target}")
           .arg("target", message.source_id)
           .arg("srcBlobId", source_blob_id)
@@ -889,6 +910,22 @@ auto blob_manipulator::process_resend(const message_view& message) noexcept
           })};
         if(pos != _outgoing.end()) {
             pos->merge_resend_request(bgn, end);
+        }
+    }
+    return true;
+}
+//------------------------------------------------------------------------------
+auto blob_manipulator::process_prepare(const message_view& message) noexcept
+  -> bool {
+    std::tuple<identifier_t, float> params{};
+    if(default_deserialize(params, message.content())) {
+        const auto target_blob_id{std::get<0>(params)};
+        const auto pos{std::find_if(
+          _incoming.begin(), _incoming.end(), [target_blob_id](auto& pending) {
+              return pending.target_blob_id == target_blob_id;
+          })};
+        if(pos != _incoming.end()) {
+            pos->handle_target_preparing(std::get<1>(params));
         }
     }
     return true;
@@ -992,6 +1029,85 @@ auto blob_manipulator::push_outgoing(
       priority);
 }
 //------------------------------------------------------------------------------
+auto blob_manipulator::_process_preparing_outgoing(
+  const send_handler do_send,
+  const span_size_t max_message_size,
+  pending_blob& pending) noexcept -> work_done {
+    const std::tuple<identifier_t, float> params{
+      pending.target_blob_id, pending.prepare_progress};
+    auto buffer{default_serialize_buffer_for(params)};
+    const auto serialized{default_serialize(params, cover(buffer))};
+    assert(serialized);
+    message_view message(*serialized);
+    message.set_source_id(pending.info.source_id);
+    message.set_target_id(pending.info.target_id);
+    message.set_priority(message_priority::normal);
+    return {do_send(_prepare_msg_id, message)};
+}
+//------------------------------------------------------------------------------
+auto blob_manipulator::_process_finished_outgoing(
+  const send_handler do_send,
+  const span_size_t max_message_size,
+  pending_blob& pending) noexcept -> work_done {
+    some_true something_done{};
+    auto& [bgn, end] = pending.todo_parts().back();
+    assert(end != 0);
+
+    const auto header{std::make_tuple(
+      pending.msg_id.class_(),
+      pending.msg_id.method(),
+      pending.source_blob_id,
+      pending.target_blob_id,
+      limit_cast<std::int64_t>(bgn),
+      limit_cast<std::int64_t>(pending.info.total_size),
+      static_cast<blob_options_t>(pending.info.options))};
+
+    block_data_sink sink(
+      _scratch_block(_message_size(pending, max_message_size)));
+    default_serializer_backend backend(sink);
+
+    if(const auto serialized{serialize(header, backend)}) {
+        const auto offset = bgn;
+        if(auto written_size{pending.fetch(offset, sink.free())}) {
+
+            sink.mark_used(written_size);
+            bgn += written_size;
+            if(bgn >= end) {
+                pending.todo_parts().pop_back();
+            }
+            message_view message(sink.done());
+            message.set_source_id(pending.info.source_id);
+            message.set_target_id(pending.info.target_id);
+            message.set_priority(pending.info.priority);
+            something_done(do_send(_fragment_msg_id, message));
+
+            log_debug("sent blob fragment (${progress})")
+              .arg("source", pending.info.source_id)
+              .arg("srcBlobId", pending.source_blob_id)
+              .arg("parts", pending.todo_parts().size())
+              .arg("offset", offset)
+              .arg("size", "ByteSize", written_size)
+              .arg_func([&](logger_backend& backend) {
+                  backend.add_float(
+                    "progress",
+                    "Progress",
+                    0.F,
+                    float(pending.sent_size()),
+                    float(pending.total_size()));
+              });
+        } else {
+            log_error("failed to write fragment of blob ${message}")
+              .arg("message", pending.msg_id);
+        }
+    } else {
+        log_error("failed to serialize header of blob ${message}")
+          .arg("errors", get_errors(serialized))
+          .arg("message", pending.msg_id);
+    }
+    pending.linger_time.reset();
+    return something_done;
+}
+//------------------------------------------------------------------------------
 auto blob_manipulator::process_outgoing(
   const send_handler do_send,
   const span_size_t max_message_size,
@@ -1001,62 +1117,13 @@ auto blob_manipulator::process_outgoing(
     max_messages = std::min(max_messages, span_size(_outgoing.size()));
     while(max_messages-- > 0) {
         auto& pending{_outgoing[_outgoing_index++ % _outgoing.size()]};
-        if(not pending.prepare() and not pending.sent_everything()) {
-            auto& [bgn, end] = pending.todo_parts().back();
-            assert(end != 0);
-
-            const auto header{std::make_tuple(
-              pending.msg_id.class_(),
-              pending.msg_id.method(),
-              pending.source_blob_id,
-              pending.target_blob_id,
-              limit_cast<std::int64_t>(bgn),
-              limit_cast<std::int64_t>(pending.info.total_size),
-              static_cast<blob_options_t>(pending.info.options))};
-
-            block_data_sink sink(
-              _scratch_block(_message_size(pending, max_message_size)));
-            default_serializer_backend backend(sink);
-
-            if(const auto serialized{serialize(header, backend)}) {
-                const auto offset = bgn;
-                if(auto written_size{pending.fetch(offset, sink.free())}) {
-
-                    sink.mark_used(written_size);
-                    bgn += written_size;
-                    if(bgn >= end) {
-                        pending.todo_parts().pop_back();
-                    }
-                    message_view message(sink.done());
-                    message.set_source_id(pending.info.source_id);
-                    message.set_target_id(pending.info.target_id);
-                    message.set_priority(pending.info.priority);
-                    something_done(do_send(_fragment_msg_id, message));
-
-                    log_debug("sent blob fragment (${progress})")
-                      .arg("source", pending.info.source_id)
-                      .arg("srcBlobId", pending.source_blob_id)
-                      .arg("parts", pending.todo_parts().size())
-                      .arg("offset", offset)
-                      .arg("size", "ByteSize", written_size)
-                      .arg_func([&](logger_backend& backend) {
-                          backend.add_float(
-                            "progress",
-                            "Progress",
-                            0.F,
-                            float(pending.sent_size()),
-                            float(pending.total_size()));
-                      });
-                } else {
-                    log_error("failed to write fragment of blob ${message}")
-                      .arg("message", pending.msg_id);
-                }
-            } else {
-                log_error("failed to serialize header of blob ${message}")
-                  .arg("errors", get_errors(serialized))
-                  .arg("message", pending.msg_id);
-            }
-            pending.linger_time.reset();
+        const auto preparation{pending.prepare()};
+        if(preparation.has_finished() and not pending.sent_everything()) {
+            something_done(
+              _process_finished_outgoing(do_send, max_message_size, pending));
+        } else if(preparation.is_working()) {
+            something_done(
+              _process_preparing_outgoing(do_send, max_message_size, pending));
         }
     }
 
@@ -1065,7 +1132,7 @@ auto blob_manipulator::process_outgoing(
 //------------------------------------------------------------------------------
 auto blob_manipulator::handle_complete() noexcept -> span_size_t {
 
-    auto predicate = [this](auto& pending) {
+    const auto predicate{[this](auto& pending) {
         if(pending.received_everything()) {
             log_debug("handling complete blob ${id}")
               .arg("source", pending.info.source_id)
@@ -1083,7 +1150,7 @@ auto blob_manipulator::handle_complete() noexcept -> span_size_t {
             return true;
         }
         return false;
-    };
+    }};
 
     return span_size(std::erase_if(_incoming, predicate));
 }
@@ -1091,7 +1158,7 @@ auto blob_manipulator::handle_complete() noexcept -> span_size_t {
 auto blob_manipulator::fetch_all(
   const blob_manipulator::fetch_handler handle_fetch) noexcept -> span_size_t {
 
-    auto predicate = [this, &handle_fetch](auto& pending) {
+    const auto predicate{[this, &handle_fetch](auto& pending) {
         if(pending.received_everything()) {
             log_debug("fetching complete blob ${id}")
               .arg("source", pending.info.source_id)
@@ -1120,7 +1187,7 @@ auto blob_manipulator::fetch_all(
             return true;
         }
         return false;
-    };
+    }};
 
     return span_size(std::erase_if(_incoming, predicate));
 }
