@@ -554,8 +554,11 @@ void pending_blob::merge_resend_request(
 }
 //------------------------------------------------------------------------------
 void pending_blob::handle_target_preparing(float new_progress) noexcept {
-    prepare_progress = new_progress;
-    target_io->handle_prepared(new_progress);
+    if(prepare_progress < new_progress) {
+        previous_progress = prepare_progress;
+        prepare_progress = new_progress;
+        target_io->handle_prepared(new_progress);
+    }
 }
 //------------------------------------------------------------------------------
 // blob manipulator
