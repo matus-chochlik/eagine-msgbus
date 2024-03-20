@@ -158,6 +158,15 @@ export struct blob_stream_chunk {
     const memory::span<const memory::const_block> data;
     /// @brief Additional blob information.
     const blob_info& info;
+
+    /// @brief Returns the total size of all data blocks.
+    auto total_data_size() const noexcept -> span_size_t {
+        return std::accumulate(
+          data.begin(),
+          data.end(),
+          span_size(0),
+          [](span_size_t sz, const auto& blk) { return sz + blk.size(); });
+    }
 };
 //------------------------------------------------------------------------------
 /// @brief Collection of signals emitted by the resource_data_loader_node.
