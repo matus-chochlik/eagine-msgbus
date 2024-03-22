@@ -760,9 +760,10 @@ auto blob_manipulator::push_incoming_fragment(
         if(not pending.total_size_mismatch(integer(total_size))) [[likely]] {
             if(pending.msg_id == msg_id) [[likely]] {
                 pending.max_time.reset();
-                if(pending.info.priority < priority) [[unlikely]] {
-                    pending.info.priority = priority;
-                }
+                pending.info.priority =
+                  std::max(pending.info.priority, priority);
+                pending.info.total_size = std::max(
+                  pending.info.total_size, limit_cast<span_size_t>(total_size));
                 if(pending.merge_fragment(integer(offset), fragment)) {
                     log_debug("merged blob fragment (${progress})")
                       .arg("source", source_id)
