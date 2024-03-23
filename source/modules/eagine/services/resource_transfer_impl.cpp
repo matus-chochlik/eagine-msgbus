@@ -58,31 +58,9 @@ class sequence_blob_io final : public source_blob_io {
             return span_size_of<seq_t>();
         }
 
-        static auto reverse_bytes(seq_t s) noexcept {
-            seq_t r{0U};
-            for(span_size_t i = 1; i < sequence_bytes(); ++i) {
-                r = r | (0xFFU & s);
-                r = r << 8U;
-                s = s >> 8U;
-            }
-            return r | (0xFFU & s);
-        }
+        static auto reverse_bytes(seq_t s) noexcept -> seq_t;
 
-        auto operator()() noexcept -> byte {
-            while(_mod > 0U) {
-                --_mod;
-                ++_ofs;
-                _cur = _cur >> 8U;
-            }
-            const auto result{byte(0xFFU & _cur)};
-            if(++_ofs < sequence_bytes()) {
-                _cur = _cur >> 8U;
-            } else {
-                _cur = reverse_bytes(++_seq);
-                _ofs = 0;
-            }
-            return result;
-        }
+        auto operator()() noexcept -> byte;
 
         _generator(const span_size_t offs) noexcept
           : _mod{limit_cast<seq_t>(offs % sequence_bytes())}
@@ -111,6 +89,32 @@ public:
 private:
     span_size_t _size;
 };
+//------------------------------------------------------------------------------
+auto sequence_blob_io::_generator::reverse_bytes(seq_t s) noexcept -> seq_t {
+    seq_t r{0U};
+    for(span_size_t i = 1; i < sequence_bytes(); ++i) {
+        r = r | (0xFFU & s);
+        r = r << 8U;
+        s = s >> 8U;
+    }
+    return r | (0xFFU & s);
+}
+//------------------------------------------------------------------------------
+auto sequence_blob_io::_generator::operator()() noexcept -> byte {
+    while(_mod > 0U) {
+        --_mod;
+        ++_ofs;
+        _cur = _cur >> 8U;
+    }
+    const auto result{byte(0xFFU & _cur)};
+    if(++_ofs < sequence_bytes()) {
+        _cur = _cur >> 8U;
+    } else {
+        _cur = reverse_bytes(++_seq);
+        _ofs = 0;
+    }
+    return result;
+}
 //------------------------------------------------------------------------------
 // random_byte_blob_io
 //------------------------------------------------------------------------------
@@ -143,17 +147,7 @@ public:
     file_blob_io(
       std::fstream file,
       std::optional<span_size_t> offs,
-      std::optional<span_size_t> size) noexcept
-      : _file{std::move(file)} {
-        _file.seekg(0, std::ios::end);
-        _size = static_cast<span_size_t>(_file.tellg());
-        if(size) {
-            _size = _size ? math::minimum(_size, *size) : *size;
-        }
-        if(offs) {
-            _offs = math::minimum(_size, *offs);
-        }
-    }
+      std::optional<span_size_t> size) noexcept;
 
     auto is_at_eod(const span_size_t offs) noexcept -> bool final {
         return offs >= total_size();
@@ -201,45 +195,29 @@ private:
     span_size_t _size{0};
 };
 //------------------------------------------------------------------------------
+file_blob_io::file_blob_io(
+  std::fstream file,
+  std::optional<span_size_t> offs,
+  std::optional<span_size_t> size) noexcept
+  : _file{std::move(file)} {
+    _file.seekg(0, std::ios::end);
+    _size = static_cast<span_size_t>(_file.tellg());
+    if(size) {
+        _size = _size ? math::minimum(_size, *size) : *size;
+    }
+    if(offs) {
+        _offs = math::minimum(_size, *offs);
+    }
+}
 // resource_server_impl
 //------------------------------------------------------------------------------
 class resource_server_impl : public resource_server_intf {
 public:
     resource_server_impl(subscriber& sub, resource_server_driver& drvr) noexcept;
 
-    void add_methods() noexcept final {
-        base.add_method(
-          this,
-          message_map<
-            "eagiRsrces",
-            "qryResurce",
-            &resource_server_impl::_handle_has_resource_query>{});
-        base.add_method(
-          this,
-          message_map<
-            "eagiRsrces",
-            "getContent",
-            &resource_server_impl::_handle_resource_content_request>{});
-        base.add_method(
-          this,
-          message_map<
-            "eagiRsrces",
-            "fragResend",
-            &resource_server_impl::_handle_resource_resend_request>{});
-    }
+    void add_methods() noexcept final;
 
-    auto update() noexcept -> work_done final {
-        auto& bus = base.bus_node();
-        some_true something_done{
-          _blobs.update(bus.post_callable(), min_connection_data_size)};
-        if(_should_send_outgoing) {
-            something_done(_blobs.process_outgoing(
-              bus.post_callable(), min_connection_data_size, 2));
-            _should_send_outgoing.reset();
-        }
-
-        return something_done;
-    }
+    auto update() noexcept -> work_done final;
 
     auto has_pending_blobs() noexcept -> bool final {
         return _blobs.has_outgoing() or base.bus_node().has_outgoing_blobs();
@@ -312,6 +290,40 @@ resource_server_impl::resource_server_impl(
       message_id{"eagiRsrces", "fragment"},
       message_id{"eagiRsrces", "fragResend"},
       message_id{"eagiRsrces", "blobPrpare"}} {}
+//------------------------------------------------------------------------------
+void resource_server_impl::add_methods() noexcept {
+    base.add_method(
+      this,
+      message_map<
+        "eagiRsrces",
+        "qryResurce",
+        &resource_server_impl::_handle_has_resource_query>{});
+    base.add_method(
+      this,
+      message_map<
+        "eagiRsrces",
+        "getContent",
+        &resource_server_impl::_handle_resource_content_request>{});
+    base.add_method(
+      this,
+      message_map<
+        "eagiRsrces",
+        "fragResend",
+        &resource_server_impl::_handle_resource_resend_request>{});
+}
+//------------------------------------------------------------------------------
+auto resource_server_impl::update() noexcept -> work_done {
+    auto& bus = base.bus_node();
+    some_true something_done{
+      _blobs.update(bus.post_callable(), min_connection_data_size)};
+    if(_should_send_outgoing) {
+        something_done(_blobs.process_outgoing(
+          bus.post_callable(), min_connection_data_size, 2));
+        _should_send_outgoing.reset();
+    }
+
+    return something_done;
+}
 //------------------------------------------------------------------------------
 void resource_server_impl::notify_resource_available(
   const string_view locator) noexcept {
@@ -513,121 +525,17 @@ public:
 
     void init(
       subscriber_discovery_signals& discovery,
-      host_info_consumer_signals& host_info) noexcept final {
-        connect<&resource_manipulator_impl::_handle_alive>(
-          this, discovery.reported_alive);
-        connect<&resource_manipulator_impl::_handle_subscribed>(
-          this, discovery.subscribed);
-        connect<&resource_manipulator_impl::_handle_unsubscribed>(
-          this, discovery.unsubscribed);
-        connect<&resource_manipulator_impl::_handle_not_subscribed>(
-          this, discovery.not_subscribed);
-        connect<&resource_manipulator_impl::_handle_host_id_received>(
-          this, host_info.host_id_received);
-        connect<&resource_manipulator_impl::_handle_hostname_received>(
-          this, host_info.hostname_received);
-    }
+      host_info_consumer_signals& host_info) noexcept final;
 
-    void add_methods() noexcept final {
-        base.add_method(
-          this,
-          message_map<
-            "eagiRsrces",
-            "hasResurce",
-            &resource_manipulator_impl::_handle_has_resource>{});
-        base.add_method(
-          this,
-          message_map<
-            "eagiRsrces",
-            "hasNotRsrc",
-            &resource_manipulator_impl::_handle_has_not_resource>{});
+    void add_methods() noexcept final;
 
-        base.add_method(
-          this,
-          message_map<
-            "eagiRsrces",
-            "fragment",
-            &resource_manipulator_impl::_handle_resource_fragment>{});
-        base.add_method(
-          this,
-          message_map<
-            "eagiRsrces",
-            "notFound",
-            &resource_manipulator_impl::_handle_resource_not_found>{});
-        base.add_method(
-          this,
-          message_map<
-            "eagiRsrces",
-            "fragResend",
-            &resource_manipulator_impl::_handle_resource_resend_request>{});
-        base.add_method(
-          this,
-          message_map<
-            "eagiRsrces",
-            "blobPrpare",
-            &resource_manipulator_impl::_handle_resource_prepare>{});
-        base.add_method(
-          this,
-          message_map<
-            "eagiRsrces",
-            "available",
-            &resource_manipulator_impl::_handle_resource_available>{});
-    }
+    auto update() noexcept -> work_done final;
 
-    auto update() noexcept -> work_done final {
-        some_true something_done{};
-        something_done(_blobs.handle_complete() > 0);
-        something_done(_blobs.update(
-          base.bus_node().post_callable(), min_connection_data_size));
-
-        if(_search_servers) {
-            base.bus_node().query_subscribers_of(
-              message_id{"eagiRsrces", "getContent"});
-            something_done();
-        }
-
-        return something_done;
-    }
-
-    auto server_endpoint_id(const url& locator) noexcept
-      -> endpoint_id_t final {
-        if(locator.has_scheme("eagimbe")) {
-            if(const auto opt_id{
-                 from_string<identifier_t>(locator.host().or_default())}) {
-                if(find(_server_endpoints, *opt_id)) {
-                    return *opt_id;
-                }
-            }
-        } else if(locator.has_scheme("eagimbh")) {
-            if(const auto hostname{locator.host()}) {
-                if(const auto hfound{find(_hostname_to_endpoint, *hostname)}) {
-                    for(const auto endpoint_id : *hfound) {
-                        if(find(_server_endpoints, endpoint_id)) {
-                            return endpoint_id;
-                        }
-                    }
-                }
-            }
-        }
-        return broadcast_endpoint_id();
-    }
+    auto server_endpoint_id(const url& locator) noexcept -> endpoint_id_t final;
 
     auto search_resource(
       const endpoint_id_t endpoint_id,
-      const url& locator) noexcept -> std::optional<message_sequence_t> final {
-        auto buffer = default_serialize_buffer_for(locator.str());
-
-        if(const auto serialized{
-             default_serialize(locator.str(), cover(buffer))}) [[likely]] {
-            const auto msg_id{message_id{"eagiRsrces", "qryResurce"}};
-            message_view message{*serialized};
-            message.set_target_id(endpoint_id);
-            base.bus_node().set_next_sequence_id(msg_id, message);
-            base.bus_node().post(msg_id, message);
-            return {message.sequence_no};
-        }
-        return {};
-    }
+      const url& locator) noexcept -> std::optional<message_sequence_t> final;
 
     auto query_resource_content(
       endpoint_id_t endpoint_id,
@@ -635,172 +543,62 @@ public:
       shared_holder<target_blob_io> write_io,
       const message_priority priority,
       const std::chrono::seconds max_time)
-      -> std::optional<message_sequence_t> final {
-        auto buffer = default_serialize_buffer_for(locator.str());
-
-        if(endpoint_id == broadcast_endpoint_id()) {
-            endpoint_id = server_endpoint_id(locator);
-        }
-
-        if(const auto serialized{
-             default_serialize(locator.str(), cover(buffer))}) {
-            const auto msg_id{message_id{"eagiRsrces", "getContent"}};
-            message_view message{*serialized};
-            message.set_target_id(endpoint_id);
-            message.set_priority(priority);
-            base.bus_node().set_next_sequence_id(msg_id, message);
-            base.bus_node().post(msg_id, message);
-            _blobs.expect_incoming(
-              message_id{"eagiRsrces", "content"},
-              endpoint_id,
-              message.sequence_no,
-              std::move(write_io),
-              max_time);
-            return {message.sequence_no};
-        }
-        return {};
-    }
+      -> std::optional<message_sequence_t> final;
 
 private:
     void _handle_alive(
       const result_context&,
-      const subscriber_alive& alive) noexcept {
-        const auto pos{_server_endpoints.find(alive.source.endpoint_id)};
-        if(pos != _server_endpoints.end()) {
-            auto& svr_info = std::get<1>(*pos);
-            svr_info.last_report_time = std::chrono::steady_clock::now();
-        }
-    }
+      const subscriber_alive& alive) noexcept;
 
     void _handle_subscribed(
       const result_context&,
-      const subscriber_subscribed& sub) noexcept {
-        if(sub.message_type.is("eagiRsrces", "getContent")) {
-            auto spos{_server_endpoints.find(sub.source.endpoint_id)};
-            if(spos == _server_endpoints.end()) {
-                spos = _server_endpoints.emplace(sub.source.endpoint_id).first;
-                signals.resource_server_appeared(sub.source.endpoint_id);
-            }
-            auto& svr_info = std::get<1>(*spos);
-            svr_info.last_report_time = std::chrono::steady_clock::now();
-        }
-    }
+      const subscriber_subscribed& sub) noexcept;
 
-    void _remove_server(const endpoint_id_t endpoint_id) noexcept {
-        const auto spos = _server_endpoints.find(endpoint_id);
-        if(spos != _server_endpoints.end()) {
-            signals.resource_server_lost(endpoint_id);
-            _server_endpoints.erase(spos);
-        }
-        for(auto& entry : _host_id_to_endpoint) {
-            std::get<1>(entry).erase(endpoint_id);
-        }
-        _host_id_to_endpoint.erase_if(
-          [](const auto& entry) { return std::get<1>(entry).empty(); });
-
-        for(auto& entry : _hostname_to_endpoint) {
-            std::get<1>(entry).erase(endpoint_id);
-        }
-        _hostname_to_endpoint.erase_if(
-          [](const auto& entry) { return std::get<1>(entry).empty(); });
-    }
+    void _remove_server(const endpoint_id_t endpoint_id) noexcept;
 
     void _handle_unsubscribed(
       const result_context&,
-      const subscriber_unsubscribed& sub) noexcept {
-        if(sub.message_type.is("eagiRsrces", "getContent")) {
-            _remove_server(sub.source.endpoint_id);
-        }
-    }
+      const subscriber_unsubscribed& sub) noexcept;
 
     void _handle_not_subscribed(
       const result_context&,
-      const subscriber_not_subscribed& sub) noexcept {
-        if(sub.message_type.is("eagiRsrces", "getContent")) {
-            _remove_server(sub.source.endpoint_id);
-        }
-    }
+      const subscriber_not_subscribed& sub) noexcept;
 
     void _handle_host_id_received(
       const result_context& ctx,
-      const valid_if_positive<host_id_t>& host_id) noexcept {
-        if(host_id) {
-            _host_id_to_endpoint[*host_id].insert(ctx.source_id());
-        }
-    }
+      const valid_if_positive<host_id_t>& host_id) noexcept;
 
     void _handle_hostname_received(
       const result_context& ctx,
-      const valid_if_not_empty<std::string>& hostname) noexcept {
-        if(hostname) {
-            _hostname_to_endpoint[*hostname].insert(ctx.source_id());
-        }
-    }
+      const valid_if_not_empty<std::string>& hostname) noexcept;
 
     auto _handle_has_resource(
       const message_context&,
-      const stored_message& message) noexcept -> bool {
-        std::string url_str;
-        if(default_deserialize(url_str, message.content())) [[likely]] {
-            const url locator{std::move(url_str)};
-            signals.server_has_resource(message.source_id, locator);
-        }
-        return true;
-    }
+      const stored_message& message) noexcept -> bool;
 
     auto _handle_has_not_resource(
       const message_context&,
-      const stored_message& message) noexcept -> bool {
-        std::string url_str;
-        if(default_deserialize(url_str, message.content())) [[likely]] {
-            const url locator{std::move(url_str)};
-            signals.server_has_not_resource(message.source_id, locator);
-        }
-        return true;
-    }
+      const stored_message& message) noexcept -> bool;
 
     auto _handle_resource_fragment(
       [[maybe_unused]] const message_context& ctx,
-      const stored_message& message) noexcept -> bool {
-        _blobs.process_incoming(message);
-        return true;
-    }
+      const stored_message& message) noexcept -> bool;
 
     auto _handle_resource_not_found(
       const message_context&,
-      const stored_message& message) noexcept -> bool {
-        _blobs.cancel_incoming(message.sequence_no);
-        return true;
-    }
+      const stored_message& message) noexcept -> bool;
 
     auto _handle_resource_resend_request(
       const message_context&,
-      const stored_message& message) noexcept -> bool {
-        _blobs.process_resend(message);
-        return true;
-    }
+      const stored_message& message) noexcept -> bool;
 
     auto _handle_resource_prepare(
       const message_context&,
-      const stored_message& message) noexcept -> bool {
-        _blobs.process_prepare(message);
-        return true;
-    }
+      const stored_message& message) noexcept -> bool;
 
     auto _handle_resource_available(
       const message_context&,
-      const stored_message& message) noexcept -> bool {
-        std::string url_str;
-        if(default_deserialize(url_str, message.content())) [[likely]] {
-            const url locator{std::move(url_str)};
-            base.bus_node()
-              .log_info("resource ${locator} is available at ${source}")
-              .arg("source", message.source_id)
-              .arg("locator", locator.str());
-            signals.resource_appeared(message.source_id, locator);
-        }
-        return true;
-    }
+      const stored_message& message) noexcept -> bool;
 
     subscriber& base;
     resource_manipulator_signals& signals;
@@ -822,6 +620,295 @@ private:
 
     flat_map<endpoint_id_t, _server_info> _server_endpoints;
 };
+//------------------------------------------------------------------------------
+void resource_manipulator_impl::_handle_alive(
+  const result_context&,
+  const subscriber_alive& alive) noexcept {
+    const auto pos{_server_endpoints.find(alive.source.endpoint_id)};
+    if(pos != _server_endpoints.end()) {
+        auto& svr_info = std::get<1>(*pos);
+        svr_info.last_report_time = std::chrono::steady_clock::now();
+    }
+}
+//------------------------------------------------------------------------------
+void resource_manipulator_impl::_handle_subscribed(
+  const result_context&,
+  const subscriber_subscribed& sub) noexcept {
+    if(sub.message_type.is("eagiRsrces", "getContent")) {
+        auto spos{_server_endpoints.find(sub.source.endpoint_id)};
+        if(spos == _server_endpoints.end()) {
+            spos = _server_endpoints.emplace(sub.source.endpoint_id).first;
+            signals.resource_server_appeared(sub.source.endpoint_id);
+        }
+        auto& svr_info = std::get<1>(*spos);
+        svr_info.last_report_time = std::chrono::steady_clock::now();
+    }
+}
+//------------------------------------------------------------------------------
+void resource_manipulator_impl::_remove_server(
+  const endpoint_id_t endpoint_id) noexcept {
+    const auto spos = _server_endpoints.find(endpoint_id);
+    if(spos != _server_endpoints.end()) {
+        signals.resource_server_lost(endpoint_id);
+        _server_endpoints.erase(spos);
+    }
+    for(auto& entry : _host_id_to_endpoint) {
+        std::get<1>(entry).erase(endpoint_id);
+    }
+    _host_id_to_endpoint.erase_if(
+      [](const auto& entry) { return std::get<1>(entry).empty(); });
+
+    for(auto& entry : _hostname_to_endpoint) {
+        std::get<1>(entry).erase(endpoint_id);
+    }
+    _hostname_to_endpoint.erase_if(
+      [](const auto& entry) { return std::get<1>(entry).empty(); });
+}
+//------------------------------------------------------------------------------
+void resource_manipulator_impl::_handle_unsubscribed(
+  const result_context&,
+  const subscriber_unsubscribed& sub) noexcept {
+    if(sub.message_type.is("eagiRsrces", "getContent")) {
+        _remove_server(sub.source.endpoint_id);
+    }
+}
+//------------------------------------------------------------------------------
+void resource_manipulator_impl::_handle_not_subscribed(
+  const result_context&,
+  const subscriber_not_subscribed& sub) noexcept {
+    if(sub.message_type.is("eagiRsrces", "getContent")) {
+        _remove_server(sub.source.endpoint_id);
+    }
+}
+//------------------------------------------------------------------------------
+void resource_manipulator_impl::_handle_host_id_received(
+  const result_context& ctx,
+  const valid_if_positive<host_id_t>& host_id) noexcept {
+    if(host_id) {
+        _host_id_to_endpoint[*host_id].insert(ctx.source_id());
+    }
+}
+//------------------------------------------------------------------------------
+void resource_manipulator_impl::_handle_hostname_received(
+  const result_context& ctx,
+  const valid_if_not_empty<std::string>& hostname) noexcept {
+    if(hostname) {
+        _hostname_to_endpoint[*hostname].insert(ctx.source_id());
+    }
+}
+//------------------------------------------------------------------------------
+auto resource_manipulator_impl::_handle_has_resource(
+  const message_context&,
+  const stored_message& message) noexcept -> bool {
+    std::string url_str;
+    if(default_deserialize(url_str, message.content())) [[likely]] {
+        const url locator{std::move(url_str)};
+        signals.server_has_resource(message.source_id, locator);
+    }
+    return true;
+}
+//------------------------------------------------------------------------------
+auto resource_manipulator_impl::_handle_has_not_resource(
+  const message_context&,
+  const stored_message& message) noexcept -> bool {
+    std::string url_str;
+    if(default_deserialize(url_str, message.content())) [[likely]] {
+        const url locator{std::move(url_str)};
+        signals.server_has_not_resource(message.source_id, locator);
+    }
+    return true;
+}
+//------------------------------------------------------------------------------
+auto resource_manipulator_impl::_handle_resource_fragment(
+  [[maybe_unused]] const message_context& ctx,
+  const stored_message& message) noexcept -> bool {
+    _blobs.process_incoming(message);
+    return true;
+}
+//------------------------------------------------------------------------------
+auto resource_manipulator_impl::_handle_resource_not_found(
+  const message_context&,
+  const stored_message& message) noexcept -> bool {
+    _blobs.cancel_incoming(message.sequence_no);
+    return true;
+}
+//------------------------------------------------------------------------------
+auto resource_manipulator_impl::_handle_resource_resend_request(
+  const message_context&,
+  const stored_message& message) noexcept -> bool {
+    _blobs.process_resend(message);
+    return true;
+}
+//------------------------------------------------------------------------------
+auto resource_manipulator_impl::_handle_resource_prepare(
+  const message_context&,
+  const stored_message& message) noexcept -> bool {
+    _blobs.process_prepare(message);
+    return true;
+}
+//------------------------------------------------------------------------------
+auto resource_manipulator_impl::_handle_resource_available(
+  const message_context&,
+  const stored_message& message) noexcept -> bool {
+    std::string url_str;
+    if(default_deserialize(url_str, message.content())) [[likely]] {
+        const url locator{std::move(url_str)};
+        base.bus_node()
+          .log_info("resource ${locator} is available at ${source}")
+          .arg("source", message.source_id)
+          .arg("locator", locator.str());
+        signals.resource_appeared(message.source_id, locator);
+    }
+    return true;
+}
+//------------------------------------------------------------------------------
+void resource_manipulator_impl::init(
+  subscriber_discovery_signals& discovery,
+  host_info_consumer_signals& host_info) noexcept {
+    connect<&resource_manipulator_impl::_handle_alive>(
+      this, discovery.reported_alive);
+    connect<&resource_manipulator_impl::_handle_subscribed>(
+      this, discovery.subscribed);
+    connect<&resource_manipulator_impl::_handle_unsubscribed>(
+      this, discovery.unsubscribed);
+    connect<&resource_manipulator_impl::_handle_not_subscribed>(
+      this, discovery.not_subscribed);
+    connect<&resource_manipulator_impl::_handle_host_id_received>(
+      this, host_info.host_id_received);
+    connect<&resource_manipulator_impl::_handle_hostname_received>(
+      this, host_info.hostname_received);
+}
+//------------------------------------------------------------------------------
+void resource_manipulator_impl::add_methods() noexcept {
+    base.add_method(
+      this,
+      message_map<
+        "eagiRsrces",
+        "hasResurce",
+        &resource_manipulator_impl::_handle_has_resource>{});
+    base.add_method(
+      this,
+      message_map<
+        "eagiRsrces",
+        "hasNotRsrc",
+        &resource_manipulator_impl::_handle_has_not_resource>{});
+
+    base.add_method(
+      this,
+      message_map<
+        "eagiRsrces",
+        "fragment",
+        &resource_manipulator_impl::_handle_resource_fragment>{});
+    base.add_method(
+      this,
+      message_map<
+        "eagiRsrces",
+        "notFound",
+        &resource_manipulator_impl::_handle_resource_not_found>{});
+    base.add_method(
+      this,
+      message_map<
+        "eagiRsrces",
+        "fragResend",
+        &resource_manipulator_impl::_handle_resource_resend_request>{});
+    base.add_method(
+      this,
+      message_map<
+        "eagiRsrces",
+        "blobPrpare",
+        &resource_manipulator_impl::_handle_resource_prepare>{});
+    base.add_method(
+      this,
+      message_map<
+        "eagiRsrces",
+        "available",
+        &resource_manipulator_impl::_handle_resource_available>{});
+}
+//------------------------------------------------------------------------------
+auto resource_manipulator_impl::update() noexcept -> work_done {
+    some_true something_done{};
+    something_done(_blobs.handle_complete() > 0);
+    something_done(
+      _blobs.update(base.bus_node().post_callable(), min_connection_data_size));
+
+    if(_search_servers) {
+        base.bus_node().query_subscribers_of(
+          message_id{"eagiRsrces", "getContent"});
+        something_done();
+    }
+
+    return something_done;
+}
+//------------------------------------------------------------------------------
+auto resource_manipulator_impl::server_endpoint_id(const url& locator) noexcept
+  -> endpoint_id_t {
+    if(locator.has_scheme("eagimbe")) {
+        if(const auto opt_id{
+             from_string<identifier_t>(locator.host().or_default())}) {
+            if(find(_server_endpoints, *opt_id)) {
+                return *opt_id;
+            }
+        }
+    } else if(locator.has_scheme("eagimbh")) {
+        if(const auto hostname{locator.host()}) {
+            if(const auto hfound{find(_hostname_to_endpoint, *hostname)}) {
+                for(const auto endpoint_id : *hfound) {
+                    if(find(_server_endpoints, endpoint_id)) {
+                        return endpoint_id;
+                    }
+                }
+            }
+        }
+    }
+    return broadcast_endpoint_id();
+}
+//------------------------------------------------------------------------------
+auto resource_manipulator_impl::search_resource(
+  const endpoint_id_t endpoint_id,
+  const url& locator) noexcept -> std::optional<message_sequence_t> {
+    auto buffer = default_serialize_buffer_for(locator.str());
+
+    if(const auto serialized{default_serialize(locator.str(), cover(buffer))})
+      [[likely]] {
+        const auto msg_id{message_id{"eagiRsrces", "qryResurce"}};
+        message_view message{*serialized};
+        message.set_target_id(endpoint_id);
+        base.bus_node().set_next_sequence_id(msg_id, message);
+        base.bus_node().post(msg_id, message);
+        return {message.sequence_no};
+    }
+    return {};
+}
+//------------------------------------------------------------------------------
+auto resource_manipulator_impl::query_resource_content(
+  endpoint_id_t endpoint_id,
+  const url& locator,
+  shared_holder<target_blob_io> write_io,
+  const message_priority priority,
+  const std::chrono::seconds max_time) -> std::optional<message_sequence_t> {
+    auto buffer = default_serialize_buffer_for(locator.str());
+
+    if(endpoint_id == broadcast_endpoint_id()) {
+        endpoint_id = server_endpoint_id(locator);
+    }
+
+    if(const auto serialized{default_serialize(locator.str(), cover(buffer))}) {
+        const auto msg_id{message_id{"eagiRsrces", "getContent"}};
+        message_view message{*serialized};
+        message.set_target_id(endpoint_id);
+        message.set_priority(priority);
+        base.bus_node().set_next_sequence_id(msg_id, message);
+        base.bus_node().post(msg_id, message);
+        _blobs.expect_incoming(
+          message_id{"eagiRsrces", "content"},
+          endpoint_id,
+          message.sequence_no,
+          std::move(write_io),
+          max_time);
+        return {message.sequence_no};
+    }
+    return {};
+}
 //------------------------------------------------------------------------------
 auto make_resource_manipulator_impl(
   subscriber& base,
