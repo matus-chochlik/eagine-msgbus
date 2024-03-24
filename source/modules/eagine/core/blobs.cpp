@@ -48,6 +48,9 @@ public:
       : blob_preparation_result{float(cur) / float(max)} {}
 
     blob_preparation_result(blob_preparation_status status) noexcept;
+    blob_preparation_result(
+      float progress,
+      blob_preparation_status status) noexcept;
 
     static auto finished() noexcept -> blob_preparation_result {
         return blob_preparation_result{blob_preparation_status::finished};

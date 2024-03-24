@@ -37,6 +37,12 @@ blob_preparation_result::blob_preparation_result(
   : _progress{status == blob_preparation_status::working ? 0.F : 1.F}
   , _status{status} {}
 //------------------------------------------------------------------------------
+blob_preparation_result::blob_preparation_result(
+  float progress,
+  blob_preparation_status status) noexcept
+  : _progress{progress}
+  , _status{status} {}
+//------------------------------------------------------------------------------
 // buffer blob I/O
 //------------------------------------------------------------------------------
 class buffer_blob_io final
