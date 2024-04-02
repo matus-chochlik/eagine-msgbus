@@ -394,6 +394,7 @@ public:
       const fetch_handler) noexcept;
 
     void handle_resend(const message_view& message) noexcept;
+    void handle_prepare(const message_view& message) noexcept;
 
 private:
     auto _get_blob_target_io(
@@ -531,6 +532,8 @@ private:
     auto _handle_blob_fragment(const message_view&) noexcept
       -> message_handling_result;
     auto _handle_blob_resend(const message_view&) noexcept
+      -> message_handling_result;
+    auto _handle_blob_prepare(const message_view&) noexcept
       -> message_handling_result;
 
     auto _handle_special_common(

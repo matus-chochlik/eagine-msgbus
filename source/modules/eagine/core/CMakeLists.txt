@@ -338,6 +338,7 @@ eagine_add_module(
 		eagine.core.runtime
 		eagine.core.utility
 		eagine.core.units
+		eagine.core.math
 		eagine.core.c_api
 		eagine.core.logging
 		eagine.core.main_ctx

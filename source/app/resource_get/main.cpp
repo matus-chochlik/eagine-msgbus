@@ -27,7 +27,7 @@ auto main(main_ctx& ctx) -> int {
     msgbus::resource_data_consumer_node node{bus};
     msgbus::setup_connectors(ctx, node);
     const application_config_value<std::chrono::seconds> blob_timeout{
-      ctx.config(), "msgbus.resource_get.blob_timeout", std::chrono::hours{12}};
+      ctx.config(), "msgbus.resource_get.blob_timeout", std::chrono::hours{24}};
 
     auto next_arg{[arg{ctx.args().first()}] mutable {
         while(arg) {

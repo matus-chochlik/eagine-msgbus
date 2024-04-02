@@ -33,8 +33,51 @@ export struct blob_info {
     message_priority priority{message_priority::normal};
 };
 //------------------------------------------------------------------------------
-export enum class blob_preparation : std::uint8_t { finished, working, failed };
+export enum class blob_preparation_status : std::uint8_t {
+    finished,
+    working,
+    failed
+};
+
 export class blob_preparation_result {
+public:
+    blob_preparation_result(float progress) noexcept;
+    blob_preparation_result(
+      std::integral auto cur,
+      std::integral auto max) noexcept
+      : blob_preparation_result{float(cur) / float(max)} {}
+
+    blob_preparation_result(blob_preparation_status status) noexcept;
+    blob_preparation_result(
+      float progress,
+      blob_preparation_status status) noexcept;
+
+    static auto finished() noexcept -> blob_preparation_result {
+        return blob_preparation_result{blob_preparation_status::finished};
+    }
+
+    auto is_working() const noexcept -> bool {
+        return _status == blob_preparation_status::working;
+    }
+
+    auto has_finished() const noexcept -> bool {
+        return _status == blob_preparation_status::finished;
+    }
+
+    auto has_failed() const noexcept -> bool {
+        return _status == blob_preparation_status::failed;
+    }
+
+    auto progress() const noexcept -> float {
+        return _progress;
+    }
+
+private:
+    float _progress;
+    blob_preparation_status _status;
+};
+//------------------------------------------------------------------------------
+export class blob_preparation_context {
 public:
     auto first() noexcept -> bool {
         if(_first) {
@@ -44,12 +87,13 @@ public:
         return false;
     }
 
-    auto operator()(const work_done is_working) noexcept -> blob_preparation {
+    auto operator()(const work_done is_working) noexcept
+      -> blob_preparation_result {
         const auto result{
-          _was_working ? blob_preparation::working
-                       : blob_preparation::finished};
+          _was_working ? blob_preparation_status::working
+                       : blob_preparation_status::finished};
         _was_working = _was_working and is_working;
-        return result;
+        return {result};
     }
 
 private:
@@ -59,8 +103,8 @@ private:
 //------------------------------------------------------------------------------
 export struct source_blob_io : interface<source_blob_io> {
 
-    virtual auto prepare() noexcept -> blob_preparation {
-        return blob_preparation::finished;
+    virtual auto prepare() noexcept -> blob_preparation_result {
+        return blob_preparation_result::finished();
     }
 
     virtual auto is_at_eod(const span_size_t offs) noexcept -> bool {
@@ -79,6 +123,7 @@ export struct source_blob_io : interface<source_blob_io> {
 };
 //------------------------------------------------------------------------------
 export struct target_blob_io : interface<target_blob_io> {
+    virtual void handle_prepared([[maybe_unused]] float progress) noexcept {}
 
     virtual void handle_finished(
       [[maybe_unused]] const message_id msg_id,
@@ -116,6 +161,15 @@ export struct blob_stream_chunk {
     const memory::span<const memory::const_block> data;
     /// @brief Additional blob information.
     const blob_info& info;
+
+    /// @brief Returns the total size of all data blocks.
+    auto total_data_size() const noexcept -> span_size_t {
+        return std::accumulate(
+          data.begin(),
+          data.end(),
+          span_size(0),
+          [](span_size_t sz, const auto& blk) { return sz + blk.size(); });
+    }
 };
 //------------------------------------------------------------------------------
 /// @brief Collection of signals emitted by the resource_data_loader_node.
@@ -124,6 +178,10 @@ export struct blob_stream_chunk {
 /// @see make_target_blob_stream_io
 /// @see make_target_blob_chunk_io
 export struct blob_stream_signals {
+    /// @brief Emitted repeatedly when blob preparation progresses.
+    signal<void(identifier_t blob_id, float) noexcept>
+      blob_preparation_progressed;
+
     /// @brief Emitted repeatedly when a new consecutive chunk of data is streamed.
     signal<void(const blob_stream_chunk&) noexcept> blob_stream_data_appended;
 
@@ -174,6 +232,8 @@ struct pending_blob {
     timeout max_time{};
     blob_id_t source_blob_id{0U};
     blob_id_t target_blob_id{0U};
+    float previous_progress{0.F};
+    float prepare_progress{0.F};
 
     auto source_buffer_io() noexcept -> buffer_blob_io*;
     auto target_buffer_io() noexcept -> buffer_blob_io*;
@@ -199,7 +259,8 @@ struct pending_blob {
     auto total_size() const noexcept -> span_size_t;
     auto total_size_mismatch(const span_size_t size) const noexcept -> bool;
 
-    auto prepare() noexcept -> bool;
+    void handle_source_preparing(float) noexcept;
+    auto prepare() noexcept -> blob_preparation_result;
     auto sent_everything() const noexcept -> bool;
     auto received_everything() const noexcept -> bool;
 
@@ -213,6 +274,7 @@ struct pending_blob {
       const span_size_t bgn,
       const memory::const_block) noexcept -> bool;
     void merge_resend_request(const span_size_t bgn, span_size_t end) noexcept;
+    void handle_target_preparing(float) noexcept;
 };
 //------------------------------------------------------------------------------
 export class blob_manipulator : main_ctx_object {
@@ -220,7 +282,8 @@ public:
     blob_manipulator(
       main_ctx_parent parent,
       message_id fragment_msg_id,
-      message_id resend_msg_id) noexcept;
+      message_id resend_msg_id,
+      message_id prepare_msg_id) noexcept;
 
     auto max_blob_size() const noexcept -> valid_if_positive<span_size_t> {
         return {span_size(_max_blob_size)};
@@ -322,6 +385,7 @@ public:
     auto process_incoming(target_io_getter, const message_view& message) noexcept
       -> bool;
     auto process_resend(const message_view& message) noexcept -> bool;
+    auto process_prepare(const message_view& message) noexcept -> bool;
 
     auto cancel_incoming(const endpoint_id_t target_blob_id) noexcept -> bool;
 
@@ -340,8 +404,18 @@ public:
       span_size_t max_messages) noexcept -> work_done;
 
 private:
+    auto _process_preparing_outgoing(
+      const send_handler do_send,
+      const span_size_t max_message_size,
+      pending_blob& pending) noexcept -> work_done;
+    auto _process_finished_outgoing(
+      const send_handler do_send,
+      const span_size_t max_message_size,
+      pending_blob& pending) noexcept -> work_done;
+
     const message_id _fragment_msg_id;
     const message_id _resend_msg_id;
+    const message_id _prepare_msg_id;
     std::int64_t _max_blob_size{128 * 1024 * 1024};
     blob_id_t _blob_id_sequence{0U};
     memory::buffer _scratch_buffer{};

@@ -107,29 +107,31 @@ void blobs_roundtrip_zeroes_single_big(auto& s) {
     const eagine::message_id test_msg_id{"test", eagine::random_identifier()};
     const eagine::message_id send_msg_id{"test", "send"};
     const eagine::message_id resend_msg_id{"test", "resend"};
+    const eagine::message_id prepare_msg_id{"test", "prepare"};
     eagine::msgbus::blob_manipulator sender{
-      s.context(), send_msg_id, resend_msg_id};
+      s.context(), send_msg_id, resend_msg_id, prepare_msg_id};
     eagine::msgbus::blob_manipulator receiver{
-      s.context(), send_msg_id, resend_msg_id};
+      s.context(), send_msg_id, resend_msg_id, prepare_msg_id};
 
-    auto send_s2r = [&](
-                      const eagine::message_id msg_id,
-                      const eagine::msgbus::message_view& message) -> bool {
-        test.check(msg_id == send_msg_id, "message id");
+    auto send_s2r{
+      [&](
+        const eagine::message_id msg_id,
+        const eagine::msgbus::message_view& message) -> bool {
+          test.check(msg_id == send_msg_id, "message id");
 
-        receiver.process_incoming(message);
+          receiver.process_incoming(message);
 
-        trck.checkpoint(1);
-        return true;
-    };
+          trck.checkpoint(1);
+          return true;
+      }};
     const eagine::msgbus::blob_manipulator::send_handler handler_s2r{
       eagine::construct_from, send_s2r};
 
-    auto send_r2s = [&](
-                      const eagine::message_id,
-                      const eagine::msgbus::message_view&) -> bool {
-        return true;
-    };
+    auto send_r2s{
+      [&](
+        const eagine::message_id, const eagine::msgbus::message_view&) -> bool {
+          return true;
+      }};
     const eagine::msgbus::blob_manipulator::send_handler handler_r2s{
       eagine::construct_from, send_r2s};
 
@@ -167,29 +169,31 @@ void blobs_roundtrip_zeroes_single(unsigned r, auto& s) {
     const eagine::message_id test_msg_id{"test", eagine::random_identifier()};
     const eagine::message_id send_msg_id{"test", "send"};
     const eagine::message_id resend_msg_id{"test", "resend"};
+    const eagine::message_id prepare_msg_id{"test", "prepare"};
     eagine::msgbus::blob_manipulator sender{
-      s.context(), send_msg_id, resend_msg_id};
+      s.context(), send_msg_id, resend_msg_id, prepare_msg_id};
     eagine::msgbus::blob_manipulator receiver{
-      s.context(), send_msg_id, resend_msg_id};
+      s.context(), send_msg_id, resend_msg_id, prepare_msg_id};
 
-    auto send_s2r = [&](
-                      const eagine::message_id msg_id,
-                      const eagine::msgbus::message_view& message) -> bool {
-        test.check(msg_id == send_msg_id, "message id");
+    auto send_s2r{
+      [&](
+        const eagine::message_id msg_id,
+        const eagine::msgbus::message_view& message) -> bool {
+          test.check(msg_id == send_msg_id, "message id");
 
-        receiver.process_incoming(message);
+          receiver.process_incoming(message);
 
-        trck.checkpoint(1);
-        return true;
-    };
+          trck.checkpoint(1);
+          return true;
+      }};
     const eagine::msgbus::blob_manipulator::send_handler handler_s2r{
       eagine::construct_from, send_s2r};
 
-    auto send_r2s = [&](
-                      const eagine::message_id,
-                      const eagine::msgbus::message_view&) -> bool {
-        return true;
-    };
+    auto send_r2s{
+      [&](
+        const eagine::message_id, const eagine::msgbus::message_view&) -> bool {
+          return true;
+      }};
     const eagine::msgbus::blob_manipulator::send_handler handler_r2s{
       eagine::construct_from, send_r2s};
 
@@ -316,29 +320,31 @@ void blobs_roundtrip_bfs_single(auto& s) {
     const eagine::message_id test_msg_id{eagine::random_identifier(), "test"};
     const eagine::message_id send_msg_id{"check", "send"};
     const eagine::message_id resend_msg_id{"check", "resend"};
+    const eagine::message_id prepare_msg_id{"test", "prepare"};
     eagine::msgbus::blob_manipulator sender{
-      s.context(), send_msg_id, resend_msg_id};
+      s.context(), send_msg_id, resend_msg_id, prepare_msg_id};
     eagine::msgbus::blob_manipulator receiver{
-      s.context(), send_msg_id, resend_msg_id};
+      s.context(), send_msg_id, resend_msg_id, prepare_msg_id};
 
-    auto send_s2r = [&](
-                      const eagine::message_id msg_id,
-                      const eagine::msgbus::message_view& message) -> bool {
-        test.check(msg_id == send_msg_id, "message id");
+    auto send_s2r{
+      [&](
+        const eagine::message_id msg_id,
+        const eagine::msgbus::message_view& message) -> bool {
+          test.check(msg_id == send_msg_id, "message id");
 
-        receiver.process_incoming(message);
+          receiver.process_incoming(message);
 
-        trck.checkpoint(1);
-        return true;
-    };
+          trck.checkpoint(1);
+          return true;
+      }};
     const eagine::msgbus::blob_manipulator::send_handler handler_s2r{
       eagine::construct_from, send_s2r};
 
-    auto send_r2s = [&](
-                      const eagine::message_id,
-                      const eagine::msgbus::message_view&) -> bool {
-        return true;
-    };
+    auto send_r2s{
+      [&](
+        const eagine::message_id, const eagine::msgbus::message_view&) -> bool {
+          return true;
+      }};
     const eagine::msgbus::blob_manipulator::send_handler handler_r2s{
       eagine::construct_from, send_r2s};
 
@@ -467,29 +473,31 @@ void blobs_roundtrip_ces_multiple(auto& s) {
     const eagine::message_id test_msg_id{eagine::random_identifier(), "test"};
     const eagine::message_id send_msg_id{"check", "send"};
     const eagine::message_id resend_msg_id{"check", "resend"};
+    const eagine::message_id prepare_msg_id{"test", "prepare"};
     eagine::msgbus::blob_manipulator sender{
-      s.context(), send_msg_id, resend_msg_id};
+      s.context(), send_msg_id, resend_msg_id, prepare_msg_id};
     eagine::msgbus::blob_manipulator receiver{
-      s.context(), send_msg_id, resend_msg_id};
+      s.context(), send_msg_id, resend_msg_id, prepare_msg_id};
 
-    auto send_s2r = [&](
-                      const eagine::message_id msg_id,
-                      const eagine::msgbus::message_view& message) -> bool {
-        test.check(msg_id == send_msg_id, "message id");
+    auto send_s2r{
+      [&](
+        const eagine::message_id msg_id,
+        const eagine::msgbus::message_view& message) -> bool {
+          test.check(msg_id == send_msg_id, "message id");
 
-        receiver.process_incoming(message);
+          receiver.process_incoming(message);
 
-        trck.checkpoint(1);
-        return true;
-    };
+          trck.checkpoint(1);
+          return true;
+      }};
     const eagine::msgbus::blob_manipulator::send_handler handler_s2r{
       eagine::construct_from, send_s2r};
 
-    auto send_r2s = [&](
-                      const eagine::message_id,
-                      const eagine::msgbus::message_view&) -> bool {
-        return true;
-    };
+    auto send_r2s{
+      [&](
+        const eagine::message_id, const eagine::msgbus::message_view&) -> bool {
+          return true;
+      }};
     const eagine::msgbus::blob_manipulator::send_handler handler_r2s{
       eagine::construct_from, send_r2s};
 
@@ -533,15 +541,16 @@ void blobs_roundtrip_chunk_signals_finished(auto& s) {
     const eagine::message_id test_msg_id{eagine::random_identifier(), "test"};
     const eagine::message_id send_msg_id{"check", "send"};
     const eagine::message_id resend_msg_id{"check", "resend"};
+    const eagine::message_id prepare_msg_id{"test", "prepare"};
     eagine::msgbus::blob_manipulator sender{
-      s.context(), send_msg_id, resend_msg_id};
+      s.context(), send_msg_id, resend_msg_id, prepare_msg_id};
     eagine::msgbus::blob_manipulator receiver{
-      s.context(), send_msg_id, resend_msg_id};
+      s.context(), send_msg_id, resend_msg_id, prepare_msg_id};
 
     eagine::msgbus::blob_stream_signals signals;
     std::map<eagine::identifier_t, std::array<eagine::span_size_t, 2>>
       blob_sizes;
-    const auto check_stream_data =
+    const auto check_stream_data{
       [&](const eagine::msgbus::blob_stream_chunk& chunk) {
           test.check(chunk.offset >= 0, "offset ok 1");
           test.check(
@@ -555,12 +564,12 @@ void blobs_roundtrip_chunk_signals_finished(auto& s) {
               }
               blob_sizes[chunk.request_id][1] += blk.size();
           }
-      };
+      }};
     signals.blob_stream_data_appended.connect(
       {eagine::construct_from, check_stream_data});
 
     unsigned done{0};
-    const auto check_stream_finished =
+    const auto check_stream_finished{
       [&](const eagine::identifier_t request_id) {
           test.check_equal(
             blob_sizes[request_id][0],
@@ -569,28 +578,29 @@ void blobs_roundtrip_chunk_signals_finished(auto& s) {
           blob_sizes.erase(request_id);
           ++done;
           trck.checkpoint(3);
-      };
+      }};
     signals.blob_stream_finished.connect(
       {eagine::construct_from, check_stream_finished});
 
-    auto send_s2r = [&](
-                      const eagine::message_id msg_id,
-                      const eagine::msgbus::message_view& message) -> bool {
-        test.check(msg_id == send_msg_id, "message id");
+    auto send_s2r{
+      [&](
+        const eagine::message_id msg_id,
+        const eagine::msgbus::message_view& message) -> bool {
+          test.check(msg_id == send_msg_id, "message id");
 
-        receiver.process_incoming(message);
+          receiver.process_incoming(message);
 
-        trck.checkpoint(1);
-        return true;
-    };
+          trck.checkpoint(1);
+          return true;
+      }};
     const eagine::msgbus::blob_manipulator::send_handler handler_s2r{
       eagine::construct_from, send_s2r};
 
-    auto send_r2s = [&](
-                      const eagine::message_id,
-                      const eagine::msgbus::message_view&) -> bool {
-        return true;
-    };
+    auto send_r2s{
+      [&](
+        const eagine::message_id, const eagine::msgbus::message_view&) -> bool {
+          return true;
+      }};
     const eagine::msgbus::blob_manipulator::send_handler handler_r2s{
       eagine::construct_from, send_r2s};
 
@@ -654,15 +664,16 @@ void blobs_roundtrip_stream_signals_finished(auto& s) {
     const eagine::message_id test_msg_id{eagine::random_identifier(), "test"};
     const eagine::message_id send_msg_id{"check", "send"};
     const eagine::message_id resend_msg_id{"check", "resend"};
+    const eagine::message_id prepare_msg_id{"test", "prepare"};
     eagine::msgbus::blob_manipulator sender{
-      s.context(), send_msg_id, resend_msg_id};
+      s.context(), send_msg_id, resend_msg_id, prepare_msg_id};
     eagine::msgbus::blob_manipulator receiver{
-      s.context(), send_msg_id, resend_msg_id};
+      s.context(), send_msg_id, resend_msg_id, prepare_msg_id};
 
     eagine::msgbus::blob_stream_signals signals;
     std::map<eagine::identifier_t, std::array<eagine::span_size_t, 2>>
       blob_sizes;
-    const auto check_stream_data =
+    const auto check_stream_data{
       [&](const eagine::msgbus::blob_stream_chunk& chunk) {
           for(const auto blk : chunk.data) {
               for(const auto b : blk) {
@@ -675,12 +686,12 @@ void blobs_roundtrip_stream_signals_finished(auto& s) {
                 blob_sizes[chunk.request_id][1], chunk.offset, "offset ok");
               blob_sizes[chunk.request_id][1] += blk.size();
           }
-      };
+      }};
     signals.blob_stream_data_appended.connect(
       {eagine::construct_from, check_stream_data});
 
     unsigned done{0};
-    const auto check_stream_finished =
+    const auto check_stream_finished{
       [&](const eagine::identifier_t request_id) {
           test.check_equal(
             blob_sizes[request_id][0],
@@ -689,20 +700,21 @@ void blobs_roundtrip_stream_signals_finished(auto& s) {
           blob_sizes.erase(request_id);
           ++done;
           trck.checkpoint(3);
-      };
+      }};
     signals.blob_stream_finished.connect(
       {eagine::construct_from, check_stream_finished});
 
-    auto send_s2r = [&](
-                      const eagine::message_id msg_id,
-                      const eagine::msgbus::message_view& message) -> bool {
-        test.check(msg_id == send_msg_id, "message id");
+    auto send_s2r{
+      [&](
+        const eagine::message_id msg_id,
+        const eagine::msgbus::message_view& message) -> bool {
+          test.check(msg_id == send_msg_id, "message id");
 
-        receiver.process_incoming(message);
+          receiver.process_incoming(message);
 
-        trck.checkpoint(1);
-        return true;
-    };
+          trck.checkpoint(1);
+          return true;
+      }};
     const eagine::msgbus::blob_manipulator::send_handler handler_s2r{
       eagine::construct_from, send_s2r};
 
@@ -774,45 +786,47 @@ void blobs_roundtrip_chunk_signals_failed(auto& s) {
     const eagine::message_id test_msg_id{eagine::random_identifier(), "test"};
     const eagine::message_id send_msg_id{"check", "send"};
     const eagine::message_id resend_msg_id{"check", "resend"};
+    const eagine::message_id prepare_msg_id{"test", "prepare"};
     eagine::msgbus::blob_manipulator sender{
-      s.context(), send_msg_id, resend_msg_id};
+      s.context(), send_msg_id, resend_msg_id, prepare_msg_id};
     eagine::msgbus::blob_manipulator receiver{
-      s.context(), send_msg_id, resend_msg_id};
+      s.context(), send_msg_id, resend_msg_id, prepare_msg_id};
 
     eagine::msgbus::blob_stream_signals signals;
 
     bool done{false};
-    const auto check_stream_cancelled = [&](const eagine::identifier_t) {
+    const auto check_stream_cancelled{[&](const eagine::identifier_t) {
         done = true;
         trck.checkpoint(2);
-    };
+    }};
     signals.blob_stream_cancelled.connect(
       {eagine::construct_from, check_stream_cancelled});
 
-    auto send_s2r = [&](
-                      const eagine::message_id msg_id,
-                      const eagine::msgbus::message_view& message) -> bool {
-        test.check(msg_id == send_msg_id, "message id");
+    auto send_s2r{
+      [&](
+        const eagine::message_id msg_id,
+        const eagine::msgbus::message_view& message) -> bool {
+          test.check(msg_id == send_msg_id, "message id");
 
-        if(rg.one_of(1000000)) {
-            if(rg.one_of(1000000)) {
-                if(rg.one_of(1000000)) {
-                    receiver.process_incoming(message);
-                }
-            }
-        }
+          if(rg.one_of(1000000)) {
+              if(rg.one_of(1000000)) {
+                  if(rg.one_of(1000000)) {
+                      receiver.process_incoming(message);
+                  }
+              }
+          }
 
-        trck.checkpoint(1);
-        return true;
-    };
+          trck.checkpoint(1);
+          return true;
+      }};
     const eagine::msgbus::blob_manipulator::send_handler handler_s2r{
       eagine::construct_from, send_s2r};
 
-    auto send_r2s = [&](
-                      const eagine::message_id,
-                      const eagine::msgbus::message_view&) -> bool {
-        return true;
-    };
+    auto send_r2s{
+      [&](
+        const eagine::message_id, const eagine::msgbus::message_view&) -> bool {
+          return true;
+      }};
     const eagine::msgbus::blob_manipulator::send_handler handler_r2s{
       eagine::construct_from, send_r2s};
 
@@ -872,36 +886,39 @@ void blobs_roundtrip_resend_1(auto& s) {
     const eagine::message_id test_msg_id{eagine::random_identifier(), "test"};
     const eagine::message_id send_msg_id{"check", "send"};
     const eagine::message_id resend_msg_id{"check", "resend"};
+    const eagine::message_id prepare_msg_id{"test", "prepare"};
     eagine::msgbus::blob_manipulator sender{
-      s.context(), send_msg_id, resend_msg_id};
+      s.context(), send_msg_id, resend_msg_id, prepare_msg_id};
     eagine::msgbus::blob_manipulator receiver{
-      s.context(), send_msg_id, resend_msg_id};
+      s.context(), send_msg_id, resend_msg_id, prepare_msg_id};
 
-    auto send_s2r = [&](
-                      const eagine::message_id msg_id,
-                      const eagine::msgbus::message_view& message) -> bool {
-        test.check(msg_id == send_msg_id, "message id");
+    auto send_s2r{
+      [&](
+        const eagine::message_id msg_id,
+        const eagine::msgbus::message_view& message) -> bool {
+          test.check(msg_id == send_msg_id, "message id");
 
-        if(not rg.one_of(5)) {
-            receiver.process_incoming(message);
-            trck.checkpoint(1);
-        }
-        return true;
-    };
+          if(not rg.one_of(5)) {
+              receiver.process_incoming(message);
+              trck.checkpoint(1);
+          }
+          return true;
+      }};
     const eagine::msgbus::blob_manipulator::send_handler handler_s2r{
       eagine::construct_from, send_s2r};
 
-    auto send_r2s = [&](
-                      const eagine::message_id msg_id,
-                      const eagine::msgbus::message_view& message) -> bool {
-        if(not rg.one_of(11)) {
-            if(msg_id == resend_msg_id) {
-                sender.process_resend(message);
-                trck.checkpoint(5);
-            }
-        }
-        return true;
-    };
+    auto send_r2s{
+      [&](
+        const eagine::message_id msg_id,
+        const eagine::msgbus::message_view& message) -> bool {
+          if(not rg.one_of(11)) {
+              if(msg_id == resend_msg_id) {
+                  sender.process_resend(message);
+                  trck.checkpoint(5);
+              }
+          }
+          return true;
+      }};
     const eagine::msgbus::blob_manipulator::send_handler handler_r2s{
       eagine::construct_from, send_r2s};
 
@@ -944,36 +961,39 @@ void blobs_roundtrip_resend_2(auto& s) {
     const eagine::message_id test_msg_id{eagine::random_identifier(), "test"};
     const eagine::message_id send_msg_id{"check", "send"};
     const eagine::message_id resend_msg_id{"check", "resend"};
+    const eagine::message_id prepare_msg_id{"test", "prepare"};
     eagine::msgbus::blob_manipulator sender{
-      s.context(), send_msg_id, resend_msg_id};
+      s.context(), send_msg_id, resend_msg_id, prepare_msg_id};
     eagine::msgbus::blob_manipulator receiver{
-      s.context(), send_msg_id, resend_msg_id};
+      s.context(), send_msg_id, resend_msg_id, prepare_msg_id};
 
-    auto send_s2r = [&](
-                      const eagine::message_id msg_id,
-                      const eagine::msgbus::message_view& message) -> bool {
-        test.check(msg_id == send_msg_id, "message id");
+    auto send_s2r{
+      [&](
+        const eagine::message_id msg_id,
+        const eagine::msgbus::message_view& message) -> bool {
+          test.check(msg_id == send_msg_id, "message id");
 
-        if(not rg.one_of(5)) {
-            receiver.process_incoming(message);
-            trck.checkpoint(1);
-        }
-        return true;
-    };
+          if(not rg.one_of(5)) {
+              receiver.process_incoming(message);
+              trck.checkpoint(1);
+          }
+          return true;
+      }};
     const eagine::msgbus::blob_manipulator::send_handler handler_s2r{
       eagine::construct_from, send_s2r};
 
-    auto send_r2s = [&](
-                      const eagine::message_id msg_id,
-                      const eagine::msgbus::message_view& message) -> bool {
-        if(not rg.one_of(11)) {
-            if(msg_id == resend_msg_id) {
-                sender.process_resend(message);
-                trck.checkpoint(5);
-            }
-        }
-        return true;
-    };
+    auto send_r2s{
+      [&](
+        const eagine::message_id msg_id,
+        const eagine::msgbus::message_view& message) -> bool {
+          if(not rg.one_of(11)) {
+              if(msg_id == resend_msg_id) {
+                  sender.process_resend(message);
+                  trck.checkpoint(5);
+              }
+          }
+          return true;
+      }};
     const eagine::msgbus::blob_manipulator::send_handler handler_r2s{
       eagine::construct_from, send_r2s};
 
