@@ -68,28 +68,41 @@ export enum class remote_node_change : std::uint16_t {
     connection_info = 1U << 15U
 };
 //------------------------------------------------------------------------------
-export template <typename Selector>
-constexpr auto enumerator_mapping(
-  const std::type_identity<remote_node_change>,
-  const Selector) noexcept {
-    return enumerator_map_type<remote_node_change, 16>{
-      {{"kind", remote_node_change::kind},
-       {"instance_id", remote_node_change::instance_id},
-       {"host_id", remote_node_change::host_id},
-       {"host_info", remote_node_change::host_info},
-       {"build_info", remote_node_change::build_info},
-       {"application_info", remote_node_change::application_info},
-       {"endpoint_info", remote_node_change::endpoint_info},
-       {"methods_added", remote_node_change::methods_added},
-       {"methods_removed", remote_node_change::methods_removed},
-       {"started_responding", remote_node_change::started_responding},
-       {"stopped_responding", remote_node_change::stopped_responding},
-       {"response_rate", remote_node_change::response_rate},
-       {"hardware_config", remote_node_change::hardware_config},
-       {"sensor_values", remote_node_change::sensor_values},
-       {"statistics", remote_node_change::statistics},
-       {"connection_info", remote_node_change::connection_info}}};
-}
+/// @brief Enumeration of changes tracked about remote message bus instances.
+/// @ingroup msgbus
+/// @see remote_instance_changes
+/// @see remote_node_change
+export enum class remote_instance_change : std::uint16_t {
+    /// @brief The host identifier has appeared or changed.
+    host_id = 1U << 0U,
+    /// @brief Instance started responding.
+    started_responding = 1U << 1U,
+    /// @brief Instance stopped responding.
+    stopped_responding = 1U << 2U,
+    /// @brief The build information has appeared or changed.
+    build_info = 1U << 3U,
+    /// @brief The application information has appeared or changed.
+    application_info = 1U << 4U,
+    /// @brief New statistics have appeared or changed.
+    statistics = 1U << 5U
+};
+//------------------------------------------------------------------------------
+/// @brief Enumeration of changes tracked about remote message bus hosts.
+/// @ingroup msgbus
+/// @see remote_host_changes
+/// @see remote_node_change
+export enum class remote_host_change : std::uint16_t {
+    /// @brief The host name has appeared or changed.
+    hostname = 1U << 0U,
+    /// @brief Host started responding.
+    started_responding = 1U << 1U,
+    /// @brief Host stopped responding.
+    stopped_responding = 1U << 2U,
+    /// @brief The hardware configuration information has appeared or changed.
+    hardware_config = 1U << 3U,
+    /// @brief New sensor values have appeared or changed.
+    sensor_values = 1U << 4U
+};
 //------------------------------------------------------------------------------
 /// @brief Class providing and manipulating information about remote node changes.
 /// @ingroup msgbus
@@ -118,37 +131,6 @@ export constexpr auto operator|(
     return {l, r};
 }
 //------------------------------------------------------------------------------
-/// @brief Enumeration of changes tracked about remote message bus instances.
-/// @ingroup msgbus
-/// @see remote_instance_changes
-/// @see remote_node_change
-export enum class remote_instance_change : std::uint16_t {
-    /// @brief The host identifier has appeared or changed.
-    host_id = 1U << 0U,
-    /// @brief Instance started responding.
-    started_responding = 1U << 1U,
-    /// @brief Instance stopped responding.
-    stopped_responding = 1U << 2U,
-    /// @brief The build information has appeared or changed.
-    build_info = 1U << 3U,
-    /// @brief The application information has appeared or changed.
-    application_info = 1U << 4U,
-    /// @brief New statistics have appeared or changed.
-    statistics = 1U << 5U
-};
-//------------------------------------------------------------------------------
-export template <typename Selector>
-constexpr auto enumerator_mapping(
-  const std::type_identity<remote_instance_change>,
-  const Selector) noexcept {
-    return enumerator_map_type<remote_instance_change, 5>{
-      {{"host_id", remote_instance_change::host_id},
-       {"started_responding", remote_instance_change::started_responding},
-       {"stopped_responding", remote_instance_change::stopped_responding},
-       {"application_info", remote_instance_change::application_info},
-       {"statistics", remote_instance_change::statistics}}};
-}
-//------------------------------------------------------------------------------
 /// @brief Class providing and manipulating information about remote instance changes.
 /// @ingroup msgbus
 /// @see remote_node_changes
@@ -169,35 +151,6 @@ export constexpr auto operator|(
   const remote_instance_change l,
   const remote_instance_change r) noexcept -> remote_instance_changes {
     return {l, r};
-}
-//------------------------------------------------------------------------------
-/// @brief Enumeration of changes tracked about remote message bus hosts.
-/// @ingroup msgbus
-/// @see remote_host_changes
-/// @see remote_node_change
-export enum class remote_host_change : std::uint16_t {
-    /// @brief The host name has appeared or changed.
-    hostname = 1U << 0U,
-    /// @brief Host started responding.
-    started_responding = 1U << 1U,
-    /// @brief Host stopped responding.
-    stopped_responding = 1U << 2U,
-    /// @brief The hardware configuration information has appeared or changed.
-    hardware_config = 1U << 3U,
-    /// @brief New sensor values have appeared or changed.
-    sensor_values = 1U << 4U
-};
-//------------------------------------------------------------------------------
-export template <typename Selector>
-constexpr auto enumerator_mapping(
-  const std::type_identity<remote_host_change>,
-  const Selector) noexcept {
-    return enumerator_map_type<remote_host_change, 5>{
-      {{"hostname", remote_host_change::hostname},
-       {"started_responding", remote_host_change::started_responding},
-       {"stopped_responding", remote_host_change::stopped_responding},
-       {"hardware_config", remote_host_change::hardware_config},
-       {"sensor_values", remote_host_change::sensor_values}}};
 }
 //------------------------------------------------------------------------------
 /// @brief Class providing and manipulating information about remote host changes.
@@ -1101,7 +1054,57 @@ void remote_node_tracker::for_each_connection(Function func) const {
         }
     }
 }
+//------------------------------------------------------------------------------
 } // namespace msgbus
+export template <>
+struct enumerator_traits<msgbus::remote_node_change> {
+    static constexpr auto mapping() noexcept {
+        using msgbus::remote_node_change;
+        return enumerator_map_type<remote_node_change, 16>{
+          {{"kind", remote_node_change::kind},
+           {"instance_id", remote_node_change::instance_id},
+           {"host_id", remote_node_change::host_id},
+           {"host_info", remote_node_change::host_info},
+           {"build_info", remote_node_change::build_info},
+           {"application_info", remote_node_change::application_info},
+           {"endpoint_info", remote_node_change::endpoint_info},
+           {"methods_added", remote_node_change::methods_added},
+           {"methods_removed", remote_node_change::methods_removed},
+           {"started_responding", remote_node_change::started_responding},
+           {"stopped_responding", remote_node_change::stopped_responding},
+           {"response_rate", remote_node_change::response_rate},
+           {"hardware_config", remote_node_change::hardware_config},
+           {"sensor_values", remote_node_change::sensor_values},
+           {"statistics", remote_node_change::statistics},
+           {"connection_info", remote_node_change::connection_info}}};
+    }
+};
+//------------------------------------------------------------------------------
+export template <>
+struct enumerator_traits<msgbus::remote_instance_change> {
+    static constexpr auto mapping() noexcept {
+        using msgbus::remote_instance_change;
+        return enumerator_map_type<remote_instance_change, 5>{
+          {{"host_id", remote_instance_change::host_id},
+           {"started_responding", remote_instance_change::started_responding},
+           {"stopped_responding", remote_instance_change::stopped_responding},
+           {"application_info", remote_instance_change::application_info},
+           {"statistics", remote_instance_change::statistics}}};
+    }
+};
+//------------------------------------------------------------------------------
+export template <>
+struct enumerator_traits<msgbus::remote_host_change> {
+    static constexpr auto mapping() noexcept {
+        using msgbus::remote_host_change;
+        return enumerator_map_type<remote_host_change, 5>{
+          {{"hostname", remote_host_change::hostname},
+           {"started_responding", remote_host_change::started_responding},
+           {"stopped_responding", remote_host_change::stopped_responding},
+           {"hardware_config", remote_host_change::hardware_config},
+           {"sensor_values", remote_host_change::sensor_values}}};
+    }
+};
 //------------------------------------------------------------------------------
 export auto adapt_entry_arg(
   const identifier name,
@@ -1142,7 +1145,14 @@ export auto adapt_entry_arg(
     };
     return _adapter{.name = name, .value = value};
 }
-
+//------------------------------------------------------------------------------
+export auto adapt_entry_arg(
+  const identifier name,
+  const msgbus::remote_node_changes& value) noexcept {
+    return adapt_entry_arg(
+      name, static_cast<const bitfield<msgbus::remote_node_change>&>(value));
+};
+//------------------------------------------------------------------------------
 export auto adapt_entry_arg(
   const identifier name,
   const msgbus::remote_host& value) noexcept {
