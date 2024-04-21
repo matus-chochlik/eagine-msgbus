@@ -162,23 +162,6 @@ export struct router_topology_info {
     /// @brief The connection kind.
     connection_kind connect_kind{0U};
 };
-
-export template <typename Selector>
-constexpr auto data_member_mapping(
-  const std::type_identity<router_topology_info>,
-  const Selector) noexcept {
-    using S = router_topology_info;
-    return make_data_member_mapping<
-      S,
-      endpoint_id_t,
-      endpoint_id_t,
-      process_instance_id_t,
-      connection_kind>(
-      {"router_id", &S::router_id},
-      {"remote_id", &S::remote_id},
-      {"instance_id", &S::instance_id},
-      {"connect_kind", &S::connect_kind});
-}
 //------------------------------------------------------------------------------
 /// @brief Structure holding router statistics information.
 /// @ingroup msgbus
@@ -198,25 +181,6 @@ export struct router_statistics {
     /// @brief Uptime in seconds.
     std::int64_t uptime_seconds{0};
 };
-
-export template <typename Selector>
-constexpr auto data_member_mapping(
-  const std::type_identity<router_statistics>,
-  const Selector) noexcept {
-    using S = router_statistics;
-    return make_data_member_mapping<
-      S,
-      std::int64_t,
-      std::int64_t,
-      std::int32_t,
-      std::int32_t,
-      std::int64_t>(
-      {"forwarded_messages", &S::forwarded_messages},
-      {"dropped_messages", &S::dropped_messages},
-      {"message_age_us", &S::message_age_us},
-      {"messages_per_second", &S::messages_per_second},
-      {"uptime_seconds", &S::uptime_seconds});
-}
 //------------------------------------------------------------------------------
 /// @brief Structure holding part of bridge connection topology information.
 /// @ingroup msgbus
@@ -230,21 +194,6 @@ export struct bridge_topology_info {
     /// @brief The bridge process instance id.
     process_instance_id_t instance_id{0U};
 };
-
-export template <typename Selector>
-constexpr auto data_member_mapping(
-  const std::type_identity<bridge_topology_info>,
-  const Selector) noexcept {
-    using S = bridge_topology_info;
-    return make_data_member_mapping<
-      S,
-      endpoint_id_t,
-      endpoint_id_t,
-      process_instance_id_t>(
-      {"bridge_id", &S::bridge_id},
-      {"opposite_id", &S::opposite_id},
-      {"instance_id", &S::instance_id});
-}
 //------------------------------------------------------------------------------
 /// @brief Structure holding bridge statistics information.
 /// @ingroup msgbus
@@ -264,25 +213,6 @@ export struct bridge_statistics {
     /// @brief Uptime in seconds.
     std::int64_t uptime_seconds{0};
 };
-
-export template <typename Selector>
-constexpr auto data_member_mapping(
-  const std::type_identity<bridge_statistics>,
-  const Selector) noexcept {
-    using S = bridge_statistics;
-    return make_data_member_mapping<
-      S,
-      std::int64_t,
-      std::int64_t,
-      std::int32_t,
-      std::int32_t,
-      std::int64_t>(
-      {"forwarded_messages", &S::forwarded_messages},
-      {"dropped_messages", &S::dropped_messages},
-      {"message_age_milliseconds", &S::message_age_milliseconds},
-      {"messages_per_second", &S::messages_per_second},
-      {"uptime_seconds", &S::uptime_seconds});
-}
 //------------------------------------------------------------------------------
 /// @brief Structure holding part of endpoint connection topology information.
 /// @ingroup msgbus
@@ -293,15 +223,6 @@ export struct endpoint_topology_info {
     /// @brief The endpoint process instance id.
     process_instance_id_t instance_id{0U};
 };
-
-export template <typename Selector>
-constexpr auto data_member_mapping(
-  const std::type_identity<endpoint_topology_info>,
-  const Selector) noexcept {
-    using S = endpoint_topology_info;
-    return make_data_member_mapping<S, endpoint_id_t, process_instance_id_t>(
-      {"endpoint_id", &S::endpoint_id}, {"instance_id", &S::instance_id});
-}
 //------------------------------------------------------------------------------
 /// @brief Structure holding endpoint statistics information.
 /// @ingroup msgbus
@@ -318,23 +239,6 @@ export struct endpoint_statistics {
     /// @brief Uptime in seconds.
     std::int64_t uptime_seconds{0};
 };
-
-export template <typename Selector>
-constexpr auto data_member_mapping(
-  const std::type_identity<endpoint_statistics>,
-  const Selector) noexcept {
-    using S = endpoint_statistics;
-    return make_data_member_mapping<
-      S,
-      std::int64_t,
-      std::int64_t,
-      std::int64_t,
-      std::int64_t>(
-      {"sent_messages", &S::sent_messages},
-      {"received_messages", &S::received_messages},
-      {"dropped_messages", &S::dropped_messages},
-      {"uptime_seconds", &S::uptime_seconds});
-}
 //------------------------------------------------------------------------------
 /// @brief Message bus endpoint information.
 /// @ingroup msgbus
@@ -360,18 +264,6 @@ export struct endpoint_info {
         return tie() != r.tie();
     }
 };
-
-export template <typename Selector>
-constexpr auto data_member_mapping(
-  const std::type_identity<endpoint_info>,
-  const Selector) noexcept {
-    using S = endpoint_info;
-    return make_data_member_mapping<S, std::string, std::string, bool, bool>(
-      {"display_name", &S::display_name},
-      {"description", &S::description},
-      {"is_router_node", &S::is_router_node},
-      {"is_bridge_node", &S::is_bridge_node});
-}
 //------------------------------------------------------------------------------
 /// @brief Structure holding message bus connection statistics.
 /// @ingroup msgbus
@@ -388,18 +280,6 @@ export struct connection_statistics {
     /// @brief Number of bytes per second transfered.
     float bytes_per_second{-1.F};
 };
-
-export template <typename Selector>
-constexpr auto data_member_mapping(
-  const std::type_identity<connection_statistics>,
-  const Selector) noexcept {
-    using S = connection_statistics;
-    return make_data_member_mapping<S, endpoint_id_t, endpoint_id_t, float, float>(
-      {"local_id", &S::local_id},
-      {"remote_id", &S::remote_id},
-      {"block_usage_ratio", &S::block_usage_ratio},
-      {"bytes_per_second", &S::bytes_per_second});
-}
 //------------------------------------------------------------------------------
 /// @brief Structure holding message bus data flow information.
 /// @ingroup msgbus
@@ -422,15 +302,6 @@ export struct message_flow_info {
     auto operator==(const message_flow_info&) const noexcept -> bool = default;
     auto operator!=(const message_flow_info&) const noexcept -> bool = default;
 };
-
-export template <typename Selector>
-constexpr auto data_member_mapping(
-  const std::type_identity<message_flow_info>,
-  const Selector) noexcept {
-    using S = message_flow_info;
-    return make_data_member_mapping<S, std::int32_t>(
-      {"avg_msg_age_ms", &S::avg_msg_age_ms});
-}
 //------------------------------------------------------------------------------
 /// @brief Alias for IPv4 port number value type.
 /// @ingroup msgbus
@@ -622,6 +493,140 @@ struct enumerator_traits<msgbus::message_crypto_flag> {
           {{"asymmetric", message_crypto_flag::asymmetric},
            {"signed_header", message_crypto_flag::signed_header},
            {"signed_content", message_crypto_flag::signed_content}}};
+    }
+};
+//------------------------------------------------------------------------------
+export template <>
+struct data_member_traits<msgbus::router_topology_info> {
+    static constexpr auto mapping() noexcept {
+        using S = msgbus::router_topology_info;
+        return make_data_member_mapping<
+          S,
+          endpoint_id_t,
+          endpoint_id_t,
+          process_instance_id_t,
+          msgbus::connection_kind>(
+          {"router_id", &S::router_id},
+          {"remote_id", &S::remote_id},
+          {"instance_id", &S::instance_id},
+          {"connect_kind", &S::connect_kind});
+    }
+};
+//------------------------------------------------------------------------------
+export template <>
+struct data_member_traits<msgbus::router_statistics> {
+    static constexpr auto mapping() noexcept {
+        using S = msgbus::router_statistics;
+        return make_data_member_mapping<
+          S,
+          std::int64_t,
+          std::int64_t,
+          std::int32_t,
+          std::int32_t,
+          std::int64_t>(
+          {"forwarded_messages", &S::forwarded_messages},
+          {"dropped_messages", &S::dropped_messages},
+          {"message_age_us", &S::message_age_us},
+          {"messages_per_second", &S::messages_per_second},
+          {"uptime_seconds", &S::uptime_seconds});
+    }
+};
+//------------------------------------------------------------------------------
+export template <>
+struct data_member_traits<msgbus::bridge_topology_info> {
+    static constexpr auto mapping() noexcept {
+        using S = msgbus::bridge_topology_info;
+        return make_data_member_mapping<
+          S,
+          endpoint_id_t,
+          endpoint_id_t,
+          process_instance_id_t>(
+          {"bridge_id", &S::bridge_id},
+          {"opposite_id", &S::opposite_id},
+          {"instance_id", &S::instance_id});
+    }
+};
+//------------------------------------------------------------------------------
+export template <>
+struct data_member_traits<msgbus::bridge_statistics> {
+    static constexpr auto mapping() noexcept {
+        using S = msgbus::bridge_statistics;
+        return make_data_member_mapping<
+          S,
+          std::int64_t,
+          std::int64_t,
+          std::int32_t,
+          std::int32_t,
+          std::int64_t>(
+          {"forwarded_messages", &S::forwarded_messages},
+          {"dropped_messages", &S::dropped_messages},
+          {"message_age_milliseconds", &S::message_age_milliseconds},
+          {"messages_per_second", &S::messages_per_second},
+          {"uptime_seconds", &S::uptime_seconds});
+    }
+};
+//------------------------------------------------------------------------------
+export template <>
+struct data_member_traits<msgbus::endpoint_topology_info> {
+    static constexpr auto mapping() noexcept {
+        using S = msgbus::endpoint_topology_info;
+        return make_data_member_mapping<S, endpoint_id_t, process_instance_id_t>(
+          {"endpoint_id", &S::endpoint_id}, {"instance_id", &S::instance_id});
+    }
+};
+//------------------------------------------------------------------------------
+export template <>
+struct data_member_traits<msgbus::endpoint_statistics> {
+    static constexpr auto mapping() noexcept {
+        using S = msgbus::endpoint_statistics;
+        return make_data_member_mapping<
+          S,
+          std::int64_t,
+          std::int64_t,
+          std::int64_t,
+          std::int64_t>(
+          {"sent_messages", &S::sent_messages},
+          {"received_messages", &S::received_messages},
+          {"dropped_messages", &S::dropped_messages},
+          {"uptime_seconds", &S::uptime_seconds});
+    }
+};
+//------------------------------------------------------------------------------
+export template <>
+struct data_member_traits<msgbus::endpoint_info> {
+    static constexpr auto mapping() noexcept {
+        using S = msgbus::endpoint_info;
+        return make_data_member_mapping<S, std::string, std::string, bool, bool>(
+          {"display_name", &S::display_name},
+          {"description", &S::description},
+          {"is_router_node", &S::is_router_node},
+          {"is_bridge_node", &S::is_bridge_node});
+    }
+};
+//------------------------------------------------------------------------------
+export template <>
+struct data_member_traits<msgbus::connection_statistics> {
+    static constexpr auto mapping() noexcept {
+        using S = msgbus::connection_statistics;
+        return make_data_member_mapping<
+          S,
+          endpoint_id_t,
+          endpoint_id_t,
+          float,
+          float>(
+          {"local_id", &S::local_id},
+          {"remote_id", &S::remote_id},
+          {"block_usage_ratio", &S::block_usage_ratio},
+          {"bytes_per_second", &S::bytes_per_second});
+    }
+};
+//------------------------------------------------------------------------------
+export template <>
+struct data_member_traits<msgbus::message_flow_info> {
+    static constexpr auto mapping() noexcept {
+        using S = msgbus::message_flow_info;
+        return make_data_member_mapping<S, std::int32_t>(
+          {"avg_msg_age_ms", &S::avg_msg_age_ms});
     }
 };
 //------------------------------------------------------------------------------
