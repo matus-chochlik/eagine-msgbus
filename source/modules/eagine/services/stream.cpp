@@ -23,7 +23,8 @@ import eagine.msgbus.core;
 import :discovery;
 import :ping_pong;
 
-namespace eagine::msgbus {
+namespace eagine {
+namespace msgbus {
 //------------------------------------------------------------------------------
 /// @brief Structure holding information about a data stream.
 /// @ingroup msgbus
@@ -40,23 +41,25 @@ export struct stream_info {
     /// @brief Human-readable description of the stream,
     std::string description{};
 };
-
-export template <typename Selector>
-constexpr auto data_member_mapping(
-  std::type_identity<stream_info>,
-  Selector) noexcept {
-    using S = stream_info;
-    return make_data_member_mapping<
-      S,
-      identifier_t,
-      identifier,
-      identifier,
-      std::string>(
-      {"id", &S::id},
-      {"kind", &S::kind},
-      {"encoding", &S::encoding},
-      {"description", &S::description});
-}
+//------------------------------------------------------------------------------
+} // namespace msgbus
+export template <>
+struct data_member_traits<msgbus::stream_info> {
+    static constexpr auto mapping() noexcept {
+        using S = msgbus::stream_info;
+        return make_data_member_mapping<
+          S,
+          identifier_t,
+          identifier,
+          identifier,
+          std::string>(
+          {"id", &S::id},
+          {"kind", &S::kind},
+          {"encoding", &S::encoding},
+          {"description", &S::description});
+    }
+};
+namespace msgbus {
 //------------------------------------------------------------------------------
 /// @brief Base class for stream provider and consumer services.
 /// @ingroup msgbus
@@ -697,5 +700,6 @@ private:
     std::map<endpoint_id_t, relay_status> _relays;
 };
 //------------------------------------------------------------------------------
-} // namespace eagine::msgbus
+} // namespace msgbus
+} // namespace eagine
 

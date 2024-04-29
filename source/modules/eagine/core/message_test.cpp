@@ -60,9 +60,8 @@ void message_serialize_header_roundtrip_m(
     std::array<eagine::byte, 128> buffer{};
 
     eagine::msgbus::message_sequence_t sequence_no{0};
-    for(const auto& info : eagine::enumerator_mapping(
-          std::type_identity<eagine::msgbus::message_priority>{},
-          eagine::default_selector)) {
+    for(const auto& info :
+        eagine::enumerators<eagine::msgbus::message_priority>()) {
         eagine::block_data_sink sink{eagine::cover(buffer)};
 
         eagine::msgbus::message_view message;
@@ -117,9 +116,8 @@ void message_serialize_message_roundtrip_m_1(
 
     eagine::msgbus::message_sequence_t sequence_no{0};
     for(unsigned i = 0; i < test.repeats(1000); ++i) {
-        for(const auto& info : eagine::enumerator_mapping(
-              std::type_identity<eagine::msgbus::message_priority>{},
-              eagine::default_selector)) {
+        for(const auto& info :
+            eagine::enumerators<eagine::msgbus::message_priority>()) {
             eagine::block_data_sink sink{eagine::cover(buffer)};
 
             content.resize(rg.get_between<std::size_t>(0, 1280));
@@ -185,9 +183,8 @@ void message_serialize_message_roundtrip_m_2(
 
     eagine::msgbus::message_sequence_t sequence_no{0};
     for(unsigned i = 0; i < test.repeats(1000); ++i) {
-        for(const auto& info : eagine::enumerator_mapping(
-              std::type_identity<eagine::msgbus::message_priority>{},
-              eagine::default_selector)) {
+        for(const auto& info :
+            eagine::enumerators<eagine::msgbus::message_priority>()) {
             eagine::block_data_sink sink{eagine::cover(buffer)};
 
             content.resize(rg.get_between<std::size_t>(0, 1920));
