@@ -10,6 +10,13 @@ if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/asio/asio")
 	)
 endif()
 
+if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/paho.mqtt.c/CMakeLists.txt")
+	execute_process(
+		COMMAND git submodule update --init --recursive
+		WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/paho.mqtt.c"
+	)
+endif()
+
 if(NOT TARGET EAGine::Core AND NOT TARGET eagine.core)
 	if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/eagine-core/CMakeLists.txt")
 		unset(SUBMODULE_INIT_ARG)
