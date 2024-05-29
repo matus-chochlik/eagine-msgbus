@@ -16,7 +16,9 @@ if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/paho.mqtt.c/CMakeLists.txt")
 		WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/paho.mqtt.c"
 	)
 endif()
-set(PAHO_ENABLE_TESTING=Off)
+set(PAHO_ENABLE_TESTING Off CACHE INTERNAL "")
+set(PAHO_BUILD_SHARED Off CACHE INTERNAL "")
+set(PAHO_BUILD_STATIC On CACHE INTERNAL "")
 add_subdirectory(paho.mqtt.c)
 
 if(NOT TARGET EAGine::Core AND NOT TARGET eagine.core)

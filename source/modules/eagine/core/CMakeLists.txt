@@ -347,8 +347,10 @@ eagine_add_module(
 		eagine.sslplus
 	PRIVATE_INCLUDE_DIRECTORIES
 		"${PROJECT_SOURCE_DIR}/submodules/asio/asio/include"
+		"${PROJECT_SOURCE_DIR}/submodules/paho.mqtt.c/src"
 	PRIVATE_LINK_LIBRARIES
-		paho-mqtt3c paho-mqtt3a
+		"${PROJECT_BINARY_DIR}/submodules/paho.mqtt.c/src/${CMAKE_STATIC_LIBRARY_PREFIX}paho-mqtt3a${CMAKE_STATIC_LIBRARY_SUFFIX}"
+		"${PROJECT_BINARY_DIR}/submodules/paho.mqtt.c/src/${CMAKE_STATIC_LIBRARY_PREFIX}paho-mqtt3c${CMAKE_STATIC_LIBRARY_SUFFIX}"
 )
 
 eagine_add_module_tests(
