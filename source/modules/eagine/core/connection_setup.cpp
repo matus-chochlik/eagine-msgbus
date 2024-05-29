@@ -29,6 +29,9 @@ export auto make_asio_udp_ipv4_connection_factory(main_ctx_parent parent)
 
 export auto make_asio_local_stream_connection_factory(main_ctx_parent parent)
   -> unique_holder<connection_factory>;
+
+auto make_paho_mqtt_connection_factory(main_ctx_parent parent)
+  -> unique_holder<connection_factory>;
 //------------------------------------------------------------------------------
 export class connection_setup;
 export void connection_setup_configure(connection_setup&, application_config&);

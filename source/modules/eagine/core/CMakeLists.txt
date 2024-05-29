@@ -315,6 +315,7 @@ eagine_add_module(
 		connection_setup
 		router_address
 		posix_mqueue
+		paho_mqtt
 		asio
 		endpoint
 		router
