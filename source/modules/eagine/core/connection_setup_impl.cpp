@@ -229,6 +229,9 @@ void connection_setup_configure(
     if(config.is_set("msgbus.asio_local_stream")) {
         setup.add_factory(make_asio_local_stream_connection_factory(setup));
     }
+    if(config.is_set("msgbus.paho_mqtt")) {
+        setup.add_factory(make_paho_mqtt_connection_factory(setup));
+    }
     if(config.is_set("msgbus.posix_mqueue")) {
         setup.add_factory(make_posix_mqueue_connection_factory(setup));
     }

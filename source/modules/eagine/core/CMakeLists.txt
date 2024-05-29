@@ -347,6 +347,8 @@ eagine_add_module(
 		eagine.sslplus
 	PRIVATE_INCLUDE_DIRECTORIES
 		"${PROJECT_SOURCE_DIR}/submodules/asio/asio/include"
+	PRIVATE_LINK_LIBRARIES
+		paho-mqtt3c paho-mqtt3a
 )
 
 eagine_add_module_tests(

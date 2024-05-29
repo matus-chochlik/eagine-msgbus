@@ -7,6 +7,10 @@
 ///
 module;
 
+#include <cassert>
+#define PAHO_MQTT_IMPORTS 1
+#include <MQTTClient.h>
+
 module eagine.msgbus.core;
 
 import std;
@@ -20,10 +24,6 @@ import eagine.core.valid_if;
 import eagine.core.main_ctx;
 
 namespace eagine::msgbus {
-//------------------------------------------------------------------------------
-// Shared state
-//------------------------------------------------------------------------------
-struct paho_mqtt_common_state {};
 //------------------------------------------------------------------------------
 // Connection info
 //------------------------------------------------------------------------------
@@ -49,7 +49,6 @@ class paho_mqtt_connection
 public:
     paho_mqtt_connection(
       main_ctx_parent parent,
-      const shared_holder<paho_mqtt_common_state>&,
       const string_view addr_str) noexcept;
 
     using fetch_handler = connection::fetch_handler;
@@ -73,11 +72,93 @@ public:
     auto routing_weight() noexcept -> float final;
 
 private:
+    auto _qos() const noexcept -> int;
+
+    auto _add_subscription(string_view) noexcept -> bool;
+    auto _remove_subscription(string_view) noexcept -> bool;
+
+    void _message_delivered() noexcept;
+    auto _message_arrived(string_view, memory::const_block) noexcept;
+    void _connection_lost(string_view) noexcept;
+
+    static void _message_delivered_f(void*, MQTTClient_deliveryToken);
+    static auto _message_arrived_f(void*, char*, int, MQTTClient_message*)
+      -> int;
+    static void _connection_lost_f(void*, char*);
+
+    ::MQTTClient _mqtt_client{};
+    bool _created : 1 {false};
+    bool _connected : 1 {false};
 };
+//------------------------------------------------------------------------------
+auto paho_mqtt_connection::_qos() const noexcept -> int {
+    return 1;
+}
+//------------------------------------------------------------------------------
+void paho_mqtt_connection::_message_delivered() noexcept {}
+//------------------------------------------------------------------------------
+auto paho_mqtt_connection::_message_arrived(
+  string_view,
+  memory::const_block) noexcept {}
+//------------------------------------------------------------------------------
+void paho_mqtt_connection::_connection_lost(string_view) noexcept {
+    _connected = false;
+}
+//------------------------------------------------------------------------------
+void paho_mqtt_connection::_message_delivered_f(
+  void* context,
+  MQTTClient_deliveryToken) {
+    assert(context);
+    auto* that{static_cast<paho_mqtt_connection*>(context)};
+    that->_message_delivered();
+}
+//------------------------------------------------------------------------------
+auto paho_mqtt_connection::_message_arrived_f(
+  void* context,
+  char* topic_str,
+  int topic_len,
+  MQTTClient_message* message) -> int {
+    assert(context);
+    auto* that{static_cast<paho_mqtt_connection*>(context)};
+
+    const auto topic_name{[&] -> string_view {
+        if(topic_len > 0) {
+            return {
+              static_cast<const char*>(topic_str),
+              static_cast<span_size_t>(topic_len)};
+        }
+        return string_view{topic_str};
+    }};
+
+    const auto content{[&] -> memory::const_block {
+        if(message) {
+            return {
+              static_cast<const byte*>(message->payload),
+              static_cast<span_size_t>(message->payloadlen)};
+        }
+        return {};
+    }};
+
+    that->_message_arrived(topic_name(), content());
+    return 1;
+}
+//------------------------------------------------------------------------------
+void paho_mqtt_connection::_connection_lost_f(void* context, char* reason) {
+    assert(context);
+    auto* that{static_cast<paho_mqtt_connection*>(context)};
+    that->_connection_lost(string_view{reason});
+}
+//------------------------------------------------------------------------------
+auto paho_mqtt_connection::_add_subscription(string_view) noexcept -> bool {
+    return false;
+}
+//------------------------------------------------------------------------------
+auto paho_mqtt_connection::_remove_subscription(string_view) noexcept -> bool {
+    return false;
+}
 //------------------------------------------------------------------------------
 paho_mqtt_connection::paho_mqtt_connection(
   main_ctx_parent parent,
-  const shared_holder<paho_mqtt_common_state>&,
   const string_view) noexcept
   : main_ctx_object{"PahoMQTTCn", parent} {}
 //------------------------------------------------------------------------------
@@ -88,12 +169,12 @@ auto paho_mqtt_connection::update() noexcept -> work_done {
 void paho_mqtt_connection::cleanup() noexcept {}
 //------------------------------------------------------------------------------
 auto paho_mqtt_connection::is_usable() noexcept -> bool {
-    return true;
+    return _created and _connected;
 }
 //------------------------------------------------------------------------------
 auto paho_mqtt_connection::max_data_size() noexcept
   -> valid_if_positive<span_size_t> {
-    return {0};
+    return {4 * 1024};
 }
 //------------------------------------------------------------------------------
 auto paho_mqtt_connection::send(
@@ -127,29 +208,28 @@ public:
     using connection_factory::make_acceptor;
     using connection_factory::make_connector;
 
-    paho_mqtt_connection_factory(
-      main_ctx_parent parent,
-      shared_holder<paho_mqtt_common_state> paho_state) noexcept
-      : main_ctx_object{"PahoConnFc", parent}
-      , _paho_state{std::move(paho_state)} {}
-
     paho_mqtt_connection_factory(main_ctx_parent parent) noexcept
-      : paho_mqtt_connection_factory{parent, default_selector} {}
+      : main_ctx_object{"PahoConnFc", parent} {}
 
     auto make_acceptor(const string_view) noexcept
-      -> shared_holder<acceptor> final {
-        return {};
-    }
+      -> shared_holder<acceptor> final;
 
     auto make_connector(const string_view addr_str) noexcept
-      -> shared_holder<connection> final {
-        static_assert(not std::is_abstract_v<paho_mqtt_connection>);
-        return {hold<paho_mqtt_connection>, *this, _paho_state, addr_str};
-    }
+      -> shared_holder<connection> final;
 
 private:
-    shared_holder<paho_mqtt_common_state> _paho_state;
 };
+//------------------------------------------------------------------------------
+auto paho_mqtt_connection_factory::make_acceptor(const string_view) noexcept
+  -> shared_holder<acceptor> {
+    log_error("cannot create a PAHO MQTT connection acceptor.");
+    return {};
+}
+//------------------------------------------------------------------------------
+auto paho_mqtt_connection_factory::make_connector(
+  const string_view addr_str) noexcept -> shared_holder<connection> {
+    return {hold<paho_mqtt_connection>, *this, addr_str};
+}
 //------------------------------------------------------------------------------
 // Factory functions
 //------------------------------------------------------------------------------
