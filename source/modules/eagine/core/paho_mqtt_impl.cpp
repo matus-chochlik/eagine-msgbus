@@ -48,7 +48,12 @@ class paho_mqtt_connection
   : public main_ctx_object
   , public paho_mqtt_connection_info<connection> {
 public:
-    paho_mqtt_connection(main_ctx_parent parent, const url& locator) noexcept;
+    paho_mqtt_connection(main_ctx_parent parent, const url& locator);
+    paho_mqtt_connection(paho_mqtt_connection&&) = delete;
+    paho_mqtt_connection(const paho_mqtt_connection&) = delete;
+    auto operator=(paho_mqtt_connection&&) = delete;
+    auto operator=(const paho_mqtt_connection&) = delete;
+    ~paho_mqtt_connection() noexcept;
 
     using fetch_handler = connection::fetch_handler;
 
@@ -78,6 +83,8 @@ private:
 
     auto _add_subscription(string_view) noexcept -> bool;
     auto _remove_subscription(string_view) noexcept -> bool;
+    auto _subscribe_to(string_view) noexcept -> bool;
+    auto _unsubscribe_from(string_view) noexcept -> bool;
 
     void _message_delivered() noexcept;
     auto _message_arrived(string_view, memory::const_block) noexcept;
@@ -91,6 +98,7 @@ private:
     const std::string _broker_url;
     const std::string _client_uid;
 
+    std::map<std::string, std::size_t, str_view_less> _subscriptions;
     ::MQTTClient _mqtt_client{};
     bool _created : 1 {false};
     bool _connected : 1 {false};
@@ -154,11 +162,36 @@ void paho_mqtt_connection::_connection_lost_f(void* context, char* reason) {
     that->_connection_lost(string_view{reason});
 }
 //------------------------------------------------------------------------------
-auto paho_mqtt_connection::_add_subscription(string_view) noexcept -> bool {
+auto paho_mqtt_connection::_add_subscription(string_view topic) noexcept
+  -> bool {
+    auto pos{_subscriptions.find(topic)};
+    if(pos == _subscriptions.end()) {
+        pos = std::get<0>(_subscriptions.emplace(to_string(topic), 0Z));
+    }
+    return std::get<1>(*pos)++ == 0Z;
+}
+//------------------------------------------------------------------------------
+auto paho_mqtt_connection::_remove_subscription(string_view topic) noexcept
+  -> bool {
+    auto pos{_subscriptions.find(topic)};
+    if(pos != _subscriptions.end()) {
+        if(std::get<1>(*pos) > 0Z) {
+            return --std::get<1>(*pos) == 0Z;
+        }
+    }
     return false;
 }
 //------------------------------------------------------------------------------
-auto paho_mqtt_connection::_remove_subscription(string_view) noexcept -> bool {
+auto paho_mqtt_connection::_subscribe_to(string_view topic) noexcept -> bool {
+    if(_add_subscription(topic)) {
+    }
+    return false;
+}
+//------------------------------------------------------------------------------
+auto paho_mqtt_connection::_unsubscribe_from(string_view topic) noexcept
+  -> bool {
+    if(_remove_subscription(topic)) {
+    }
     return false;
 }
 //------------------------------------------------------------------------------
@@ -182,10 +215,64 @@ auto paho_mqtt_connection::_get_client_uid(const url& locator) noexcept
 //------------------------------------------------------------------------------
 paho_mqtt_connection::paho_mqtt_connection(
   main_ctx_parent parent,
-  const url& locator) noexcept
+  const url& locator)
   : main_ctx_object{"PahoMQTTCn", parent}
   , _broker_url{_get_broker_url(locator)}
-  , _client_uid{_get_client_uid(locator)} {}
+  , _client_uid{_get_client_uid(locator)} {
+    if(
+      MQTTClient_create(
+        &_mqtt_client,
+        _broker_url.c_str(),
+        _client_uid.c_str(),
+        MQTTCLIENT_PERSISTENCE_NONE,
+        nullptr) != MQTTCLIENT_SUCCESS) {
+
+        log_error("PAHO MQTT client creation failed (${clientUrl})")
+          .arg("clientUrl", _broker_url)
+          .arg("clientUid", _client_uid);
+        throw std::runtime_error("failed to create MQTT client");
+    }
+    _created = true;
+
+    if(
+      MQTTClient_setCallbacks(
+        _mqtt_client,
+        static_cast<void*>(this),
+        _connection_lost_f,
+        _message_arrived_f,
+        _message_delivered_f) != MQTTCLIENT_SUCCESS) {
+
+        log_error("PAHO MQTT client set callbacks failed (${clientUrl})")
+          .arg("clientUrl", _broker_url)
+          .arg("clientUid", _client_uid);
+        throw std::runtime_error("failed to set MQTT client callbacks");
+    }
+
+    MQTTClient_connectOptions paho_opts = MQTTClient_connectOptions_initializer;
+    paho_opts.keepAliveInterval = 10;
+    paho_opts.cleansession = 1;
+    if(MQTTClient_connect(_mqtt_client, &paho_opts) != MQTTCLIENT_SUCCESS) {
+
+        log_error("PAHO MQTT client connection failed (${clientUrl})")
+          .arg("clientUrl", _broker_url)
+          .arg("clientUid", _client_uid);
+        throw std::runtime_error("failed to connect MQTT client");
+    }
+    _connected = true;
+
+    log_info("PAHO MQTT created: ${clientUrl}")
+      .arg("clientUrl", _broker_url)
+      .arg("clientUid", _client_uid);
+}
+//------------------------------------------------------------------------------
+paho_mqtt_connection::~paho_mqtt_connection() noexcept {
+    if(_connected) {
+        MQTTClient_disconnect(_mqtt_client, 100);
+    }
+    if(_created) {
+        MQTTClient_destroy(&_mqtt_client);
+    }
+}
 //------------------------------------------------------------------------------
 auto paho_mqtt_connection::update() noexcept -> work_done {
     return {};
@@ -260,7 +347,11 @@ auto paho_mqtt_connection_factory::make_connector(
 //------------------------------------------------------------------------------
 auto make_paho_mqtt_connection_factory(main_ctx_parent parent)
   -> unique_holder<connection_factory> {
-    return {hold<paho_mqtt_connection_factory>, parent};
+    try {
+        return {hold<paho_mqtt_connection_factory>, parent};
+    } catch(const std::exception&) {
+        return {};
+    }
 }
 //------------------------------------------------------------------------------
 } // namespace eagine::msgbus
