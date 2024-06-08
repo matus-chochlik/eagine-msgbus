@@ -78,6 +78,7 @@ public:
 private:
     auto _get_broker_url(const url&) noexcept -> std::string;
     auto _get_client_uid(const url&) noexcept -> std::string;
+    auto _has_uid(const string_view uid) const noexcept -> bool;
 
     auto _qos() const noexcept -> int;
 
@@ -90,6 +91,8 @@ private:
     auto _message_arrived(string_view, memory::const_block) noexcept;
     void _connection_lost(string_view) noexcept;
 
+    auto _topic_to_msg_id(memory::span<const char> s) const noexcept
+      -> message_id;
     static void _message_delivered_f(void*, MQTTClient_deliveryToken);
     static auto _message_arrived_f(void*, char*, int, MQTTClient_message*)
       -> int;
@@ -99,6 +102,8 @@ private:
     const std::string _client_uid;
 
     std::map<std::string, std::size_t, str_view_less> _subscriptions;
+    memory::buffer_pool _buffers;
+    double_buffer<std::tuple<message_id, memory::buffer>> _received;
     ::MQTTClient _mqtt_client{};
     bool _created : 1 {false};
     bool _connected : 1 {false};
@@ -108,11 +113,40 @@ auto paho_mqtt_connection::_qos() const noexcept -> int {
     return 1;
 }
 //------------------------------------------------------------------------------
+auto paho_mqtt_connection::_has_uid(const string_view uid) const noexcept
+  -> bool {
+    return string_view{_client_uid} == uid;
+}
+//------------------------------------------------------------------------------
+auto paho_mqtt_connection::_topic_to_msg_id(
+  memory::span<const char> topic) const noexcept -> message_id {
+    static const string_view topic_prefix{"eagi/bus/"};
+    if(starts_with(topic, topic_prefix)) {
+        topic = head(topic, topic_prefix.size());
+        const auto [cls_str, cls_tail]{split_by_first_element(topic, '/')};
+        const auto [mth_str, conn_uid]{split_by_first_element(cls_tail, '/')};
+        if(cls_str and mth_str and _has_uid(conn_uid)) {
+            if(identifier::can_be_encoded(cls_str)) {
+                if(identifier::can_be_encoded(mth_str)) {
+                    return {identifier{cls_str}, identifier{mth_str}};
+                }
+            }
+        }
+    }
+    return {};
+}
+//------------------------------------------------------------------------------
 void paho_mqtt_connection::_message_delivered() noexcept {}
 //------------------------------------------------------------------------------
 auto paho_mqtt_connection::_message_arrived(
-  string_view,
-  memory::const_block) noexcept {}
+  string_view topic,
+  memory::const_block data) noexcept {
+    if(auto msg_id{_topic_to_msg_id(topic)}) {
+        if(not data.empty()) {
+        } else {
+        }
+    }
+}
 //------------------------------------------------------------------------------
 void paho_mqtt_connection::_connection_lost(string_view) noexcept {
     _connected = false;
@@ -266,19 +300,23 @@ paho_mqtt_connection::paho_mqtt_connection(
 }
 //------------------------------------------------------------------------------
 paho_mqtt_connection::~paho_mqtt_connection() noexcept {
-    if(_connected) {
-        MQTTClient_disconnect(_mqtt_client, 100);
-    }
-    if(_created) {
-        MQTTClient_destroy(&_mqtt_client);
-    }
+    cleanup();
 }
 //------------------------------------------------------------------------------
 auto paho_mqtt_connection::update() noexcept -> work_done {
     return {};
 }
 //------------------------------------------------------------------------------
-void paho_mqtt_connection::cleanup() noexcept {}
+void paho_mqtt_connection::cleanup() noexcept {
+    if(_connected) {
+        _connected = false;
+        MQTTClient_disconnect(_mqtt_client, 100);
+    }
+    if(_created) {
+        _created = false;
+        MQTTClient_destroy(&_mqtt_client);
+    }
+}
 //------------------------------------------------------------------------------
 auto paho_mqtt_connection::is_usable() noexcept -> bool {
     return _created and _connected;
