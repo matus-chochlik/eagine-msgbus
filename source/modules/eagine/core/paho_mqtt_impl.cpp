@@ -98,6 +98,16 @@ private:
       -> int;
     static void _connection_lost_f(void*, char*);
 
+    auto _handle_subsc(const message_view&) noexcept -> message_handling_result;
+    auto _handle_unsub(const message_view&) noexcept -> message_handling_result;
+
+    auto _handle_special_send(
+      const message_id msg_id,
+      const message_view&) noexcept -> message_handling_result;
+    auto _handle_special_recv(
+      const message_id msg_id,
+      const message_view&) noexcept -> message_handling_result;
+
     const std::string _broker_url;
     const std::string _client_uid;
 
@@ -327,9 +337,47 @@ auto paho_mqtt_connection::max_data_size() noexcept
     return {4 * 1024};
 }
 //------------------------------------------------------------------------------
+auto paho_mqtt_connection::_handle_subsc(const message_view&) noexcept
+  -> message_handling_result {
+    // TODO
+    return should_be_forwarded;
+}
+//------------------------------------------------------------------------------
+auto paho_mqtt_connection::_handle_unsub(const message_view&) noexcept
+  -> message_handling_result {
+    // TODO
+    return should_be_forwarded;
+}
+//------------------------------------------------------------------------------
+auto paho_mqtt_connection::_handle_special_send(
+  const message_id msg_id,
+  const message_view& message) noexcept -> message_handling_result {
+    if(is_special_message(msg_id)) {
+        switch(msg_id.method_id()) {
+            case id_v("subscribTo"):
+                return _handle_subsc(message);
+            case id_v("unsubFrom"):
+                return _handle_unsub(message);
+            default:;
+        }
+    }
+    return should_be_forwarded;
+}
+//------------------------------------------------------------------------------
+auto paho_mqtt_connection::_handle_special_recv(
+  const message_id msg_id,
+  const message_view&) noexcept -> message_handling_result {
+    return was_handled;
+}
+//------------------------------------------------------------------------------
 auto paho_mqtt_connection::send(
   const message_id msg_id,
-  const message_view&) noexcept -> bool {
+  const message_view& content) noexcept -> bool {
+    if(is_special_message(msg_id)) {
+        if(_handle_special_send(msg_id, content)) {
+            return true;
+        }
+    }
     return false;
 }
 //------------------------------------------------------------------------------
