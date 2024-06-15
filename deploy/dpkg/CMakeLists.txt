@@ -22,7 +22,6 @@ add_custom_target(eagine-msgbus-deb)
 
 if(TARGET eagine.msgbus)
 	add_subdirectory(dev)
-	add_subdirectory(apps)
 endif()
 
 if(NOT TARGET eagine-deb)

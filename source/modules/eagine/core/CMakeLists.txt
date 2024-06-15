@@ -5,7 +5,9 @@
 configure_file(embedded.cpp.in embedded.cppm @ONLY)
 
 eagine_add_module(
-	eagine.msgbus.core PARTITION types
+	eagine.msgbus.core
+	COMPONENT msgbus-dev
+	PARTITION types
 	IMPORTS
 		std
 		eagine.core.types
@@ -17,7 +19,9 @@ eagine_add_module(
 )
 
 eagine_add_module(
-	eagine.msgbus.core PARTITION future
+	eagine.msgbus.core
+	COMPONENT msgbus-dev
+	PARTITION future
 	IMPORTS
 		std types
 		eagine.core.types
@@ -26,7 +30,9 @@ eagine_add_module(
 )
 
 eagine_add_module(
-	eagine.msgbus.core PARTITION handler_map
+	eagine.msgbus.core
+	COMPONENT msgbus-dev
+	PARTITION handler_map
 	IMPORTS
 		std
 		eagine.core.types
@@ -35,7 +41,9 @@ eagine_add_module(
 )
 
 eagine_add_module(
-	eagine.msgbus.core PARTITION message
+	eagine.msgbus.core
+	COMPONENT msgbus-dev
+	PARTITION message
 	IMPORTS
 		std types
 		eagine.core.types
@@ -50,7 +58,9 @@ eagine_add_module(
 )
 
 eagine_add_module(
-	eagine.msgbus.core PARTITION context
+	eagine.msgbus.core
+	COMPONENT msgbus-dev
+	PARTITION context
 	IMPORTS
 		std types message
 		eagine.core.types
@@ -62,7 +72,9 @@ eagine_add_module(
 )
 
 eagine_add_module(
-	eagine.msgbus.core PARTITION router_address
+	eagine.msgbus.core
+	COMPONENT msgbus-dev
+	PARTITION router_address
 	IMPORTS
 		std
 		eagine.core.types
@@ -74,7 +86,9 @@ eagine_add_module(
 )
 
 eagine_add_module(
-	eagine.msgbus.core PARTITION interface
+	eagine.msgbus.core
+	COMPONENT msgbus-dev
+	PARTITION interface
 	IMPORTS
 		std types message
 		eagine.core.types
@@ -85,7 +99,9 @@ eagine_add_module(
 )
 
 eagine_add_module(
-	eagine.msgbus.core PARTITION blobs
+	eagine.msgbus.core
+	COMPONENT msgbus-dev
+	PARTITION blobs
 	IMPORTS
 		std types message
 		eagine.core.types
@@ -99,7 +115,9 @@ eagine_add_module(
 )
 
 eagine_add_module(
-	eagine.msgbus.core PARTITION loopback
+	eagine.msgbus.core
+	COMPONENT msgbus-dev
+	PARTITION loopback
 	IMPORTS
 		std types message interface
 		eagine.core.types
@@ -110,7 +128,9 @@ eagine_add_module(
 )
 
 eagine_add_module(
-	eagine.msgbus.core PARTITION direct
+	eagine.msgbus.core
+	COMPONENT msgbus-dev
+	PARTITION direct
 	IMPORTS
 		std types message interface
 		eagine.core.types
@@ -122,7 +142,9 @@ eagine_add_module(
 )
 
 eagine_add_module(
-	eagine.msgbus.core PARTITION connection_setup
+	eagine.msgbus.core
+	COMPONENT msgbus-dev
+	PARTITION connection_setup
 	IMPORTS
 		std types interface
 		eagine.core.types
@@ -133,7 +155,9 @@ eagine_add_module(
 )
 
 eagine_add_module(
-	eagine.msgbus.core PARTITION endpoint
+	eagine.msgbus.core
+	COMPONENT msgbus-dev
+	PARTITION endpoint
 	IMPORTS
 		std types blobs message
 		interface context
@@ -150,7 +174,9 @@ eagine_add_module(
 )
 
 eagine_add_module(
-	eagine.msgbus.core PARTITION invoker
+	eagine.msgbus.core
+	COMPONENT msgbus-dev
+	PARTITION invoker
 	IMPORTS
 		std types future handler_map
 		message endpoint
@@ -162,7 +188,9 @@ eagine_add_module(
 )
 
 eagine_add_module(
-	eagine.msgbus.core PARTITION skeleton
+	eagine.msgbus.core
+	COMPONENT msgbus-dev
+	PARTITION skeleton
 	IMPORTS
 		std types message
 		handler_map endpoint
@@ -176,7 +204,9 @@ eagine_add_module(
 )
 
 eagine_add_module(
-	eagine.msgbus.core PARTITION subscriber
+	eagine.msgbus.core
+	COMPONENT msgbus-dev
+	PARTITION subscriber
 	IMPORTS
 		std types message
 		handler_map endpoint
@@ -188,7 +218,9 @@ eagine_add_module(
 )
 
 eagine_add_module(
-	eagine.msgbus.core PARTITION actor
+	eagine.msgbus.core
+	COMPONENT msgbus-dev
+	PARTITION actor
 	IMPORTS
 		std types message handler_map
 		endpoint subscriber
@@ -200,7 +232,9 @@ eagine_add_module(
 )
 
 eagine_add_module(
-	eagine.msgbus.core PARTITION router
+	eagine.msgbus.core
+	COMPONENT msgbus-dev
+	PARTITION router
 	IMPORTS
 		std types message blobs
 		interface context
@@ -215,7 +249,9 @@ eagine_add_module(
 )
 
 eagine_add_module(
-	eagine.msgbus.core PARTITION bridge
+	eagine.msgbus.core
+	COMPONENT msgbus-dev
+	PARTITION bridge
 	IMPORTS
 		std types message
 		interface context
@@ -229,7 +265,9 @@ eagine_add_module(
 )
 
 eagine_add_module(
-	eagine.msgbus.core PARTITION service
+	eagine.msgbus.core
+	COMPONENT msgbus-dev
+	PARTITION service
 	IMPORTS
 		std types interface message
 		invoker skeleton
@@ -243,7 +281,9 @@ eagine_add_module(
 )
 
 eagine_add_module(
-	eagine.msgbus.core PARTITION setup
+	eagine.msgbus.core
+	COMPONENT msgbus-dev
+	PARTITION setup
 	IMPORTS
 		std types interface
 		router_address connection_setup
@@ -253,7 +293,9 @@ eagine_add_module(
 )
 
 eagine_add_module(
-	eagine.msgbus.core PARTITION optional_router
+	eagine.msgbus.core
+	COMPONENT msgbus-dev
+	PARTITION optional_router
 	IMPORTS
 		std router
 		eagine.core.memory
@@ -262,7 +304,9 @@ eagine_add_module(
 )
 
 eagine_add_module(
-	eagine.msgbus.core PARTITION registry
+	eagine.msgbus.core
+	COMPONENT msgbus-dev
+	PARTITION registry
 	IMPORTS
 		std types interface setup direct
 		service endpoint router
@@ -274,7 +318,9 @@ eagine_add_module(
 )
 
 eagine_add_module(
-	eagine.msgbus.core PARTITION remote_node
+	eagine.msgbus.core
+	COMPONENT msgbus-dev
+	PARTITION remote_node
 	IMPORTS
 		std types
 		eagine.core.types
@@ -292,14 +338,18 @@ eagine_add_module(
 )
 
 eagine_add_module(
-	eagine.msgbus.core PARTITION resources
+	eagine.msgbus.core
+	COMPONENT msgbus-dev
+	PARTITION resources
 	IMPORTS
 		std
 		eagine.core
 )
 
 eagine_add_module(
-	eagine.msgbus.core PARTITION embedded
+	eagine.msgbus.core
+	COMPONENT msgbus-dev
+	PARTITION embedded
 	IMPORTS
 		std resources
 		eagine.core
@@ -308,6 +358,7 @@ eagine_embed_target_resources(TARGET eagine.msgbus.core)
 
 eagine_add_module(
 	eagine.msgbus.core
+	COMPONENT msgbus-dev
 	SOURCES
 		message
 		context

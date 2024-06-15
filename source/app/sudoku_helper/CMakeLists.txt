@@ -23,3 +23,19 @@ eagine_embed_target_resources(
 	PACKED
 	ENABLE_SEARCH)
 
+install(
+	TARGETS eagine-msgbus-sudoku-helper
+	COMPONENT msgbus-apps
+	RUNTIME DESTINATION bin)
+
+install(
+	FILES "resource/eagine-msgbus-sudoku-helper.bco"
+	COMPONENT msgbus-apps
+	RENAME eagine-msgbus-sudoku-helper
+	PERMISSIONS OWNER_WRITE OWNER_READ GROUP_READ WORLD_READ
+	DESTINATION share/bash-completion/completions)
+
+install(
+	DIRECTORY etc
+	COMPONENT msgbus-apps
+	DESTINATION /)

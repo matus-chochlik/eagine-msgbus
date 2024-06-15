@@ -32,9 +32,9 @@ add_subdirectory(sudoku_tiling)
 # scripts
 install(
 	PROGRAMS eagine-local-bridge.sh
+	COMPONENT msgbus-apps
 	RENAME eagine-local-bridge
 	DESTINATION bin
-	COMPONENT tools
 )
 
 find_package(Qt5 COMPONENTS Core Widgets Qml Quick)
@@ -44,3 +44,7 @@ if(Qt5_FOUND)
 	add_subdirectory(monitor)
 	add_subdirectory(sudoku_tiling_gui)
 endif()
+
+eagine_add_license(msgbus-apps)
+eagine_add_debian_changelog(msgbus-apps)
+

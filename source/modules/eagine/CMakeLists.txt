@@ -14,3 +14,6 @@ eagine_add_module(
 		utility
 )
 
+eagine_add_license(msgbus-dev)
+eagine_add_debian_changelog(msgbus-dev)
+
