@@ -9,6 +9,6 @@
 set(CPACK_DEBIAN_MSGBUS-APPS_PACKAGE_DEPENDS "eagine-core-tools,eagine-core-user,libsystemd0,libc++1-17")
 set(CPACK_DEBIAN_MSGBUS-DEV_PACKAGE_DEPENDS "eagine-core-dev (>= @EAGINE_VERSION@),eagine-sslplus-dev (>= @EAGINE_VERSION@)")
 #   Descriptions
-set(CPACK_DEBIAN_-MSGBUS-APPS_DESCRIPTION "Collection of EAGine msgbus applications.")
-set(CPACK_DEBIAN_-MSGBUS-DEV_DESCRIPTION "C++ implementation of an inter-process network message bus.")
+set(CPACK_DEBIAN_MSGBUS-APPS_DESCRIPTION "Collection of EAGine msgbus applications.")
+set(CPACK_DEBIAN_MSGBUS-DEV_DESCRIPTION "C++ implementation of an inter-process network message bus.")
 
