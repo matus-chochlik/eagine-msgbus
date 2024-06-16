@@ -8,6 +8,7 @@ add_subdirectory(utility)
 
 eagine_add_module(
 	eagine.msgbus
+	COMPONENT msgbus-dev
 	SUBMODULES
 		core
 		services
