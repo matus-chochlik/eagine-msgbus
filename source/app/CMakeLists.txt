@@ -48,3 +48,15 @@ endif()
 eagine_add_license(msgbus-apps)
 eagine_add_debian_changelog(msgbus-apps)
 
+eagine_add_package_property(
+	msgbus-apps
+	GENERATOR DEBIAN
+	VARIABLE PACKAGE_DEPENDS
+	VALUE "\${CXX_RUNTIME_PKGS},\${EAGINE_CORE_RUNTIME_PKGS},\${EAGINE_SSLPLUS_RUNTIME_PKGS},eagine-core-tools,eagine-core-user")
+
+eagine_add_package_property(
+	msgbus-apps
+	GENERATOR DEBIAN
+	VARIABLE DESCRIPTION
+	VALUE "Collection of EAGine msgbus applications.")
+

@@ -71,5 +71,17 @@ eagine_embed_target_resources(
 	RESOURCES
 		ownSource "${CMAKE_CURRENT_SOURCE_DIR}/006_stream_histogram.cpp"
 	PACKED
-	ENABLE_SEARCH
-)
+	ENABLE_SEARCH)
+
+eagine_add_package_property(
+	msgbus-examples
+	GENERATOR DEBIAN
+	VARIABLE PACKAGE_DEPENDS
+	VALUE "\${CXX_RUNTIME_PKGS},\${EAGINE_CORE_RUNTIME_PKGS},\${EAGINE_SSLPLUS_RUNTIME_PKGS}")
+
+eagine_add_package_property(
+	msgbus-examples
+	GENERATOR DEBIAN
+	VARIABLE DESCRIPTION
+	VALUE "EAGine message bus examples.")
+

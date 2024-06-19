@@ -18,3 +18,15 @@ eagine_add_module(
 eagine_add_license(msgbus-dev)
 eagine_add_debian_changelog(msgbus-dev)
 
+eagine_add_package_property(
+	msgbus-dev
+	GENERATOR DEBIAN
+	VARIABLE PACKAGE_DEPENDS
+	VALUE "eagine-core-dev (>= @EAGINE_VERSION@),eagine-sslplus-dev (>= @EAGINE_VERSION@)")
+
+eagine_add_package_property(
+	msgbus-dev
+	GENERATOR DEBIAN
+	VARIABLE DESCRIPTION
+	VALUE "C++ implementation of an inter-process network message bus.")
+
