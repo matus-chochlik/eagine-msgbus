@@ -73,6 +73,9 @@ eagine_embed_target_resources(
 	PACKED
 	ENABLE_SEARCH)
 
+eagine_add_license(msgbus-examples)
+eagine_add_debian_changelog(msgbus-examples)
+
 eagine_add_package_property(
 	msgbus-examples
 	GENERATOR DEBIAN

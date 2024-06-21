@@ -39,3 +39,6 @@ install(
 	DIRECTORY etc
 	COMPONENT msgbus-apps
 	DESTINATION /)
+
+eagine_add_package_conffiles(msgbus-apps etc)
+
