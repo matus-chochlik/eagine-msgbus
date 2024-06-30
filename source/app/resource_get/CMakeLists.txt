@@ -22,3 +22,15 @@ eagine_embed_target_resources(
 	PACKED
 	ENABLE_SEARCH)
 
+install(
+	TARGETS eagine-msgbus-resource-get
+	COMPONENT msgbus-apps
+	RUNTIME DESTINATION bin)
+
+install(
+	FILES "resource/eagine-msgbus-resource-get.bco"
+	COMPONENT msgbus-apps
+	RENAME eagine-msgbus-resource-get
+	PERMISSIONS OWNER_WRITE OWNER_READ GROUP_READ WORLD_READ
+	DESTINATION share/bash-completion/completions)
+

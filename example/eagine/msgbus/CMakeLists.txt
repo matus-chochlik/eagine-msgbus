@@ -12,8 +12,8 @@ set_target_properties(
 function(eagine_install_example TARGET_NAME)
 	install(
 		TARGETS ${TARGET_NAME}
-		DESTINATION share/eagine/example/msgbus
-	)
+		COMPONENT msgbus-examples
+		DESTINATION share/eagine/example/msgbus)
 endfunction()
 
 function(eagine_example_common EXAMPLE_NAME)
@@ -71,5 +71,20 @@ eagine_embed_target_resources(
 	RESOURCES
 		ownSource "${CMAKE_CURRENT_SOURCE_DIR}/006_stream_histogram.cpp"
 	PACKED
-	ENABLE_SEARCH
-)
+	ENABLE_SEARCH)
+
+eagine_add_license(msgbus-examples)
+eagine_add_debian_changelog(msgbus-examples)
+
+eagine_add_package_property(
+	msgbus-examples
+	GENERATOR DEBIAN
+	VARIABLE PACKAGE_DEPENDS
+	VALUE "\${CXX_RUNTIME_PKGS},\${EAGINE_CORE_RUNTIME_PKGS},\${EAGINE_SSLPLUS_RUNTIME_PKGS}")
+
+eagine_add_package_property(
+	msgbus-examples
+	GENERATOR DEBIAN
+	VARIABLE DESCRIPTION
+	VALUE "EAGine message bus examples.")
+

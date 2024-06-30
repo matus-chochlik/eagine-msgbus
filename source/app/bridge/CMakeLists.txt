@@ -23,3 +23,15 @@ eagine_embed_target_resources(
 	PACKED
 	ENABLE_SEARCH)
 
+install(
+	TARGETS eagine-msgbus-bridge
+	COMPONENT msgbus-apps
+	RUNTIME DESTINATION bin)
+
+install(
+	FILES "resource/eagine-msgbus-bridge.bco"
+	COMPONENT msgbus-apps
+	RENAME eagine-msgbus-bridge
+	PERMISSIONS OWNER_WRITE OWNER_READ GROUP_READ WORLD_READ
+	DESTINATION share/bash-completion/completions)
+

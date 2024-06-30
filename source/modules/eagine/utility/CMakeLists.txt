@@ -3,7 +3,9 @@
 # See accompanying file LICENSE_1_0.txt or copy at
 # https://www.boost.org/LICENSE_1_0.txt
 eagine_add_module(
-	eagine.msgbus.utility PARTITION resource_transfer
+	eagine.msgbus.utility
+	COMPONENT msgbus-dev
+	PARTITION resource_transfer
 	IMPORTS
 		std
 		eagine.core.types
@@ -20,6 +22,7 @@ eagine_add_module(
 
 eagine_add_module(
 	eagine.msgbus.utility
+	COMPONENT msgbus-dev
 	SOURCES
 		resource_transfer
 	IMPORTS

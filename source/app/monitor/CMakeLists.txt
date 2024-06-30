@@ -70,4 +70,3 @@ target_link_libraries(
 		Qt5::Qml
 		Qt5::Quick
 )
-

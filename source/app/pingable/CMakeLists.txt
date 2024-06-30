@@ -23,3 +23,22 @@ eagine_embed_target_resources(
 	PACKED
 	ENABLE_SEARCH)
 
+install(
+	TARGETS eagine-msgbus-pingable
+	COMPONENT msgbus-apps
+	RUNTIME DESTINATION bin)
+
+install(
+	FILES "resource/eagine-msgbus-pingable.bco"
+	COMPONENT msgbus-apps
+	RENAME eagine-msgbus-pingable
+	PERMISSIONS OWNER_WRITE OWNER_READ GROUP_READ WORLD_READ
+	DESTINATION share/bash-completion/completions)
+
+install(
+	DIRECTORY etc
+	COMPONENT msgbus-apps
+	DESTINATION /)
+
+eagine_add_package_conffiles(msgbus-apps etc)
+
