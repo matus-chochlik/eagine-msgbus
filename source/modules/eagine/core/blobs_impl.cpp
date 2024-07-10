@@ -565,6 +565,7 @@ void pending_blob::handle_target_preparing(float new_progress) noexcept {
         prepare_progress = new_progress;
         target_io->handle_prepared(new_progress);
     }
+    linger_time.reset();
 }
 //------------------------------------------------------------------------------
 // blob manipulator
@@ -1041,10 +1042,15 @@ auto blob_manipulator::_process_preparing_outgoing(
   const send_handler do_send,
   const span_size_t max_message_size,
   pending_blob& pending) noexcept -> work_done {
-    if(
-      (pending.prepare_progress >= 1.F) or
-      (pending.prepare_progress - pending.previous_progress >= 0.001F)) {
+    const auto should_notify{[&, this] {
+        return pending.prepare_update_time.is_expired() or
+               (pending.prepare_progress >= 1.F) or
+               (pending.prepare_progress - pending.previous_progress >= 0.001F);
+    }};
+
+    if(should_notify()) {
         pending.previous_progress = pending.prepare_progress;
+        pending.prepare_update_time.reset();
         const std::tuple<identifier_t, float> params{
           pending.target_blob_id, pending.prepare_progress};
         auto buffer{default_serialize_buffer_for(params)};

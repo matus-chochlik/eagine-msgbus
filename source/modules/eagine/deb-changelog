@@ -1,3 +1,10 @@
+eagine-msgbus-logging (0.126.0) unstable; urgency=medium
+
+  * Small changes in BLOB handler.
+  * Extended BLOB linger time to one minute.
+
+ -- Matúš Chochlík <matus.chochlik@proton.me>  Web, 10 Jun 2024 18:00:00 +0200
+
 eagine-msgbus-logging (0.125.0) unstable; urgency=medium
 
   * Initial version with CPack-based packaging.

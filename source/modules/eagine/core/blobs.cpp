@@ -235,12 +235,13 @@ struct pending_blob {
     double_buffer<std::vector<std::tuple<span_size_t, span_size_t>>>
       fragment_parts{};
     std::chrono::steady_clock::time_point latest_update{};
-    timeout linger_time{std::chrono::seconds{5}};
+    timeout linger_time{std::chrono::minutes{1}};
+    timeout prepare_update_time{std::chrono::seconds{5}};
     timeout max_time{};
     blob_id_t source_blob_id{0U};
     blob_id_t target_blob_id{0U};
-    float previous_progress{0.F};
     float prepare_progress{0.F};
+    float previous_progress{0.F};
 
     auto source_buffer_io() noexcept -> buffer_blob_io*;
     auto target_buffer_io() noexcept -> buffer_blob_io*;
