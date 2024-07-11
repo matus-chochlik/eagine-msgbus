@@ -162,7 +162,7 @@ void resource_data_consumer_node::_init() {
       this, server_has_not_resource);
     connect<&resource_data_consumer_node::_handle_stream_done>(
       this, blob_stream_finished);
-    connect<&resource_data_consumer_node::_handle_stream_done>(
+    connect<&resource_data_consumer_node::_handle_stream_cancelled>(
       this, blob_stream_cancelled);
     connect<&resource_data_consumer_node::_handle_stream_data>(
       this, blob_stream_data_appended);
@@ -402,6 +402,19 @@ void resource_data_consumer_node::_handle_stream_done(
         _streamed_resources.erase(found.position());
         log_info("resource request id ${reqId} (${locator}) done")
           .tag("streamDone")
+          .arg("reqId", request_id)
+          .arg("locator", locator)
+          .arg("remaining", _streamed_resources.size());
+    }
+}
+//------------------------------------------------------------------------------
+void resource_data_consumer_node::_handle_stream_cancelled(
+  identifier_t request_id) noexcept {
+    if(const auto found{find(_streamed_resources, request_id)}) {
+        const auto locator{found->locator.release_string()};
+        _streamed_resources.erase(found.position());
+        log_info("resource request id ${reqId} (${locator}) cancelled")
+          .tag("streamCncl")
           .arg("reqId", request_id)
           .arg("locator", locator)
           .arg("remaining", _streamed_resources.size());

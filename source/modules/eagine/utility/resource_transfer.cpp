@@ -299,6 +299,7 @@ private:
     void _handle_resource_found(endpoint_id_t, const url&) noexcept;
     void _handle_missing(endpoint_id_t, const url&) noexcept;
     void _handle_stream_done(identifier_t) noexcept;
+    void _handle_stream_cancelled(identifier_t) noexcept;
     void _handle_stream_data(const blob_stream_chunk&) noexcept;
     void _handle_ping_response(
       const result_context&,
