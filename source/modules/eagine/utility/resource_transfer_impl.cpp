@@ -249,18 +249,16 @@ auto resource_data_consumer_node::get_request_id() noexcept -> identifier_t {
 //------------------------------------------------------------------------------
 auto resource_data_consumer_node::_query_resource(
   identifier_t request_id,
-  url locator,
+  const resource_request_params& params,
   shared_holder<target_blob_io> io,
-  const message_priority priority,
-  const std::chrono::seconds max_time,
   const bool all_in_one) -> std::pair<identifier_t, const url&> {
     assert(request_id != 0);
 
-    if(const auto resource_id{locator.path_identifier()}) {
+    if(const auto resource_id{params.locator.path_identifier()}) {
         if(const auto res{_embedded_loader.search(resource_id)}) {
             _embedded_resources.emplace_back();
             auto& info = *_embedded_resources.back().emplace(
-              *this, request_id, std::move(locator), res);
+              *this, request_id, params.locator, res);
 
             info._is_all_in_one = all_in_one;
 
@@ -271,41 +269,35 @@ auto resource_data_consumer_node::_query_resource(
         }
     }
     auto& info = _streamed_resources[request_id];
-    info.locator = std::move(locator);
+    info.locator = params.locator;
     info.resource_io = std::move(io);
     info.source_server_id = {};
     info.should_search.reset(_config.resource_search_interval.value(), nothing);
-    info.blob_timeout.reset(max_time);
-    info.blob_priority = priority;
+    info.blob_timeout.reset(
+      params.max_time.value_or(_config.resource_stream_timeout));
+    info.blob_priority = params.priority.value_or(message_priority::normal);
     return {request_id, info.locator};
 }
 //------------------------------------------------------------------------------
 auto resource_data_consumer_node::stream_resource(
-  url locator,
-  const message_priority priority,
-  const std::chrono::seconds max_time) -> std::pair<identifier_t, const url&> {
+  const resource_request_params& params)
+  -> std::pair<identifier_t, const url&> {
     const auto request_id{get_request_id()};
     return _query_resource(
       request_id,
-      std::move(locator),
+      params,
       make_target_blob_stream_io(request_id, *this, _buffers),
-      priority,
-      max_time,
       false);
 }
 //------------------------------------------------------------------------------
 auto resource_data_consumer_node::fetch_resource_chunks(
-  url locator,
-  const span_size_t chunk_size,
-  const message_priority priority,
-  const std::chrono::seconds max_time) -> std::pair<identifier_t, const url&> {
+  const resource_request_params& params,
+  const span_size_t chunk_size) -> std::pair<identifier_t, const url&> {
     const auto request_id{get_request_id()};
     return _query_resource(
       request_id,
-      std::move(locator),
+      params,
       make_target_blob_chunk_io(request_id, chunk_size, *this, _buffers),
-      priority,
-      max_time,
       true);
 }
 //------------------------------------------------------------------------------

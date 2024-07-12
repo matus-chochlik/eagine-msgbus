@@ -45,9 +45,9 @@ auto main(main_ctx& ctx) -> int {
     const auto enqueue{[&](url locator) {
         if(locator) {
             node.stream_resource(
-              std::move(locator),
-              msgbus::message_priority::critical,
-              blob_timeout);
+              {.locator = std::move(locator),
+               .max_time = blob_timeout,
+               .priority = msgbus::message_priority::critical});
         }
     }};
 
