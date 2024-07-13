@@ -52,7 +52,13 @@ eagine_add_package_property(
 	msgbus-apps
 	GENERATOR DEBIAN
 	VARIABLE PACKAGE_DEPENDS
-	VALUE "\${CXX_RUNTIME_PKGS},\${EAGINE_CORE_RUNTIME_PKGS},\${EAGINE_SSLPLUS_RUNTIME_PKGS},eagine-core-tools,eagine-core-user")
+	VALUE "\${CXX_RUNTIME_PKGS},\${EAGINE_CORE_RUNTIME_PKGS},\${EAGINE_SSLPLUS_RUNTIME_PKGS},eagine-user-account")
+
+eagine_add_package_property(
+	msgbus-apps
+	GENERATOR DEBIAN
+	VARIABLE PACKAGE_SUGGESTS
+	VALUE "eagine-core-apps")
 
 eagine_add_package_property(
 	msgbus-apps

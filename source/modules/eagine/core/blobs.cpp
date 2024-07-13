@@ -235,12 +235,13 @@ struct pending_blob {
     double_buffer<std::vector<std::tuple<span_size_t, span_size_t>>>
       fragment_parts{};
     std::chrono::steady_clock::time_point latest_update{};
-    timeout linger_time{std::chrono::seconds{5}};
+    timeout linger_time{std::chrono::seconds{15}};
+    timeout prepare_update_time{std::chrono::seconds{5}};
     timeout max_time{};
     blob_id_t source_blob_id{0U};
     blob_id_t target_blob_id{0U};
-    float previous_progress{0.F};
     float prepare_progress{0.F};
+    float previous_progress{0.F};
 
     auto source_buffer_io() noexcept -> buffer_blob_io*;
     auto target_buffer_io() noexcept -> buffer_blob_io*;
@@ -411,6 +412,14 @@ public:
       span_size_t max_messages) noexcept -> work_done;
 
 private:
+    auto _cleanup_outgoing() noexcept -> std::size_t;
+    auto _cleanup_incoming() noexcept -> std::size_t;
+    auto _done_begin_end(
+      const std::vector<std::tuple<span_size_t, span_size_t>>& done,
+      const span_size_t total_size,
+      const span_size_t max_message_size) const noexcept
+      -> std::tuple<span_size_t, span_size_t>;
+
     auto _process_preparing_outgoing(
       const send_handler do_send,
       const span_size_t max_message_size,

@@ -83,6 +83,21 @@ export struct resource_data_consumer_node_config {
     resource_data_consumer_node_config(application_config& c);
 };
 //------------------------------------------------------------------------------
+/// @brief Structure containing parameters for a resource request.
+/// @see resource_loader
+/// @see resource_request_result
+/// @ingroup msgbus
+export struct resource_request_params {
+    /// @brief The locator of the requested resource.
+    url locator;
+
+    /// @brief Maximum time (timeout) for the resource request.
+    std::optional<std::chrono::seconds> max_time{};
+
+    /// @brief The priority of the resource request.
+    std::optional<msgbus::message_priority> priority{};
+};
+//------------------------------------------------------------------------------
 /// @brief Message bus service consuming resource data blocks.
 /// @ingroup msgbus
 export class resource_data_consumer_node
@@ -130,18 +145,10 @@ public:
     /// @see stream_resource
     /// @see fetch_resource_chunks
     void query_resource(
-      url locator,
+      const resource_request_params& params,
       shared_holder<target_blob_io> io,
-      const message_priority priority,
-      const std::chrono::seconds max_time,
       const bool all_in_one) {
-        _query_resource(
-          get_request_id(),
-          std::move(locator),
-          std::move(io),
-          priority,
-          max_time,
-          all_in_one);
+        _query_resource(get_request_id(), params, std::move(io), all_in_one);
     }
 
     /// @brief Requests a resource stream with the specified URL.
@@ -153,29 +160,8 @@ public:
     /// start to the end of the resource BLOB.
     ///
     /// Returns a pair of unique resource request identifier and the URL.
-    auto stream_resource(
-      url locator,
-      const message_priority priority,
-      const std::chrono::seconds max_time)
+    auto stream_resource(const resource_request_params& params)
       -> std::pair<identifier_t, const url&>;
-
-    /// @brief Requests a resource stream with the specified URL.
-    /// @see fetch_resource_chunks
-    ///
-    /// Returns a pair of unique resource request identifier and the URL.
-    auto stream_resource(url locator, const message_priority priority)
-      -> std::pair<identifier_t, const url&> {
-        return stream_resource(
-          std::move(locator), priority, _config.resource_stream_timeout);
-    }
-
-    /// @brief Requests a resource stream with the specified URL.
-    /// @see fetch_resource_chunks
-    ///
-    /// Returns a pair of unique resource request identifier and the URL.
-    auto stream_resource(url locator) -> std::pair<identifier_t, const url&> {
-        return stream_resource(std::move(locator), message_priority::normal);
-    }
 
     /// @brief Requests a resource as a collection of chunks with the specified URL.
     /// @see stream_resource
@@ -186,44 +172,16 @@ public:
     ///
     /// Returns a pair of unique resource request identifier and the URL.
     auto fetch_resource_chunks(
-      url locator,
-      const span_size_t chunk_size,
-      const message_priority priority,
-      const std::chrono::seconds max_time)
-      -> std::pair<identifier_t, const url&>;
+      const resource_request_params& params,
+      const span_size_t chunk_size) -> std::pair<identifier_t, const url&>;
 
     /// @brief Requests a resource as a collection of chunks with the specified URL.
     /// @see stream_resource
     ///
     /// Returns a pair of unique resource request identifier and the URL.
-    auto fetch_resource_chunks(
-      url locator,
-      const span_size_t chunk_size,
-      const message_priority priority) -> std::pair<identifier_t, const url&> {
-        return fetch_resource_chunks(
-          std::move(locator),
-          chunk_size,
-          priority,
-          _config.resource_stream_timeout);
-    }
-
-    /// @brief Requests a resource as a collection of chunks with the specified URL.
-    /// @see stream_resource
-    ///
-    /// Returns a pair of unique resource request identifier and the URL.
-    auto fetch_resource_chunks(url locator, const span_size_t chunk_size)
+    auto fetch_resource_chunks(const resource_request_params& params)
       -> std::pair<identifier_t, const url&> {
-        return fetch_resource_chunks(
-          std::move(locator), chunk_size, message_priority::normal);
-    }
-
-    /// @brief Requests a resource as a collection of chunks with the specified URL.
-    /// @see stream_resource
-    ///
-    /// Returns a pair of unique resource request identifier and the URL.
-    auto fetch_resource_chunks(url locator)
-      -> std::pair<identifier_t, const url&> {
-        return fetch_resource_chunks(std::move(locator), 4096);
+        return fetch_resource_chunks(params, 4096);
     }
 
     /// @brief Cancels a resource request with the specified identifier.
@@ -288,10 +246,8 @@ private:
 
     auto _query_resource(
       identifier_t res_id,
-      url locator,
+      const resource_request_params& params,
       shared_holder<target_blob_io> io,
-      const message_priority priority,
-      const std::chrono::seconds max_time,
       const bool all_in_one) -> std::pair<identifier_t, const url&>;
 
     void _handle_server_appeared(endpoint_id_t) noexcept;
@@ -299,6 +255,7 @@ private:
     void _handle_resource_found(endpoint_id_t, const url&) noexcept;
     void _handle_missing(endpoint_id_t, const url&) noexcept;
     void _handle_stream_done(identifier_t) noexcept;
+    void _handle_stream_cancelled(identifier_t) noexcept;
     void _handle_stream_data(const blob_stream_chunk&) noexcept;
     void _handle_ping_response(
       const result_context&,

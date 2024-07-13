@@ -47,15 +47,15 @@ auto main(main_ctx& ctx) -> int {
         if(locator) {
             if(chunks) {
                 node.fetch_resource_chunks(
-                  std::move(locator),
-                  ctx.default_chunk_size(),
-                  msgbus::message_priority::high,
-                  std::chrono::hours{1});
+                  {.locator = std::move(locator),
+                   .max_time = std::chrono::hours{1},
+                   .priority = msgbus::message_priority::high},
+                  ctx.default_chunk_size());
             } else {
                 node.stream_resource(
-                  std::move(locator),
-                  msgbus::message_priority::high,
-                  std::chrono::hours{1});
+                  {.locator = std::move(locator),
+                   .max_time = std::chrono::hours{1},
+                   .priority = msgbus::message_priority::high});
             }
         }
     };

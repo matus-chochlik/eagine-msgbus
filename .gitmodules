@@ -3,9 +3,9 @@
 	url = https://github.com/chriskohlhoff/asio.git
 [submodule "submodules/eagine-core"]
 	path = submodules/eagine-core
-	url = https://github.com/matus-chochlik/eagine-core.git
+	url = ../eagine-core.git
 	branch = develop
 [submodule "submodules/eagine-sslplus"]
 	path = submodules/eagine-sslplus
-	url = https://github.com/matus-chochlik/eagine-sslplus.git
+	url = ../eagine-sslplus.git
 	branch = develop

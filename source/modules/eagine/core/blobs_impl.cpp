@@ -565,6 +565,7 @@ void pending_blob::handle_target_preparing(float new_progress) noexcept {
         prepare_progress = new_progress;
         target_io->handle_prepared(new_progress);
     }
+    linger_time.reset();
 }
 //------------------------------------------------------------------------------
 // blob manipulator
@@ -579,6 +580,56 @@ blob_manipulator::blob_manipulator(
   , _resend_msg_id{std::move(resend_msg_id)}
   , _prepare_msg_id{std::move(prepare_msg_id)} {}
 //------------------------------------------------------------------------------
+auto blob_manipulator::_cleanup_outgoing() noexcept -> std::size_t {
+    return std::erase_if(_outgoing, [this](auto& pending) {
+        if(
+          pending.max_time.is_expired() or
+          (pending.sent_everything() and pending.linger_time.is_expired())) {
+            if(auto buf_io{pending.source_buffer_io()}) {
+                _buffers.eat(buf_io->release_buffer());
+            }
+            return true;
+        }
+        return false;
+    });
+}
+//------------------------------------------------------------------------------
+auto blob_manipulator::_cleanup_incoming() noexcept -> std::size_t {
+    return std::erase_if(_incoming, [this](auto& pending) {
+        if(pending.max_time.is_expired()) {
+            pending.target_io->handle_cancelled();
+            if(auto buf_io{pending.target_buffer_io()}) {
+                _buffers.eat(buf_io->release_buffer());
+            }
+            return true;
+        }
+        return false;
+    });
+}
+//------------------------------------------------------------------------------
+auto blob_manipulator::_done_begin_end(
+  const std::vector<std::tuple<span_size_t, span_size_t>>& done,
+  const span_size_t total_size,
+  const span_size_t max_message_size) const noexcept
+  -> std::tuple<span_size_t, span_size_t> {
+    const auto max{2 * max_message_size / 3};
+    if(std::get<0>(done[0]) > 0) {
+        return {0, std::min(std::get<0>(done[0]), max)};
+    } else {
+        if(done.size() == 1) {
+            return {
+              std::get<1>(done[0]),
+              std::get<1>(done[0]) +
+                std::min(total_size - std::get<1>(done[0]), max)};
+        } else {
+            return {
+              std::get<1>(done[0]),
+              std::get<1>(done[0]) +
+                std::min(std::get<0>(done[1]) - std::get<1>(done[0]), max)};
+        }
+    }
+}
+//------------------------------------------------------------------------------
 auto blob_manipulator::update(
   const blob_manipulator::send_handler do_send,
   const span_size_t max_message_size) noexcept -> work_done {
@@ -587,75 +638,28 @@ auto blob_manipulator::update(
     const auto now = std::chrono::steady_clock::now();
     some_true something_done{};
 
-    if(const auto erased_count{std::erase_if(
-         _outgoing,
-         [this, &something_done](auto& pending) {
-             if(
-               pending.max_time.is_expired() or
-               (pending.sent_everything() and
-                pending.linger_time.is_expired())) {
-                 if(auto buf_io{pending.source_buffer_io()}) {
-                     _buffers.eat(buf_io->release_buffer());
-                 }
-                 something_done();
-                 return true;
-             }
-             return false;
-         })};
-       erased_count > 0) {
+    if(const auto erased_count{_cleanup_outgoing()}; erased_count > 0) {
         log_debug("erased ${erased} outgoing blobs")
           .tag("delOutBlob")
           .arg("erased", erased_count)
           .arg("remaining", _outgoing.size());
+        something_done();
     }
 
-    if(const auto erased_count{std::erase_if(
-         _incoming,
-         [this, &something_done](auto& pending) {
-             if(pending.max_time.is_expired()) {
-                 pending.target_io->handle_cancelled();
-                 if(auto buf_io{pending.target_buffer_io()}) {
-                     _buffers.eat(buf_io->release_buffer());
-                 }
-                 something_done();
-                 return true;
-             }
-             return false;
-         })};
-       erased_count > 0) {
-        log_debug("erased ${erased} incoming  blobs")
+    if(const auto erased_count{_cleanup_incoming()}; erased_count > 0) {
+        log_debug("erased ${erased} incoming blobs")
           .tag("delIncBlob")
           .arg("erased", erased_count)
           .arg("remaining", _incoming.size());
+        something_done();
     }
 
     for(auto& pending : _incoming) {
         auto& done = pending.done_parts();
         if(not done.empty()) {
             if(now - pending.latest_update > std::chrono::milliseconds{250}) {
-                const auto [bgn, end] =
-                  [&]() -> std::tuple<span_size_t, span_size_t> {
-                    const auto max{2 * max_message_size / 3};
-                    if(std::get<0>(done[0]) > 0) {
-                        return {0, std::min(std::get<0>(done[0]), max)};
-                    } else {
-                        if(done.size() == 1) {
-                            return {
-                              std::get<1>(done[0]),
-                              std::get<1>(done[0]) + std::min(
-                                                       pending.info.total_size -
-                                                         std::get<1>(done[0]),
-                                                       max)};
-                        } else {
-                            return {
-                              std::get<1>(done[0]),
-                              std::get<1>(done[0]) +
-                                std::min(
-                                  std::get<0>(done[1]) - std::get<1>(done[0]),
-                                  max)};
-                        }
-                    }
-                }();
+                const auto [bgn, end]{_done_begin_end(
+                  done, pending.info.total_size, max_message_size)};
 
                 const std::tuple<identifier_t, std::uint64_t, std::uint64_t>
                   params{pending.source_blob_id, bgn, end};
@@ -1041,10 +1045,15 @@ auto blob_manipulator::_process_preparing_outgoing(
   const send_handler do_send,
   const span_size_t max_message_size,
   pending_blob& pending) noexcept -> work_done {
-    if(
-      (pending.prepare_progress >= 1.F) or
-      (pending.prepare_progress - pending.previous_progress >= 0.001F)) {
+    const auto should_notify{[&, this] {
+        return pending.prepare_update_time.is_expired() or
+               (pending.prepare_progress >= 1.F) or
+               (pending.prepare_progress - pending.previous_progress >= 0.001F);
+    }};
+
+    if(should_notify()) {
         pending.previous_progress = pending.prepare_progress;
+        pending.prepare_update_time.reset();
         const std::tuple<identifier_t, float> params{
           pending.target_blob_id, pending.prepare_progress};
         auto buffer{default_serialize_buffer_for(params)};
