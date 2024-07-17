@@ -21,29 +21,17 @@ set(PAHO_BUILD_SHARED Off CACHE INTERNAL "")
 set(PAHO_BUILD_STATIC On CACHE INTERNAL "")
 add_subdirectory(paho.mqtt.c)
 
-if(NOT TARGET eagine.core)
-	if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/eagine-core/CMakeLists.txt")
-		unset(SUBMODULE_INIT_ARG)
-	else()
-		set(SUBMODULE_INIT_ARG --init)
+foreach(SUBMODULE core sslplus)
+	if(NOT TARGET eagine.${SUBMODULE})
+		if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/eagine-${SUBMODULE}/CMakeLists.txt")
+			unset(SUBMODULE_INIT_ARG)
+		else()
+			set(SUBMODULE_INIT_ARG --init)
+		endif()
+		execute_process(
+			COMMAND git submodule update ${SUBMODULE_INIT_ARG}
+			WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/eagine-${SUBMODULE}"
+		)
+		add_subdirectory(eagine-${SUBMODULE} EXCLUDE_FROM_ALL)
 	endif()
-	execute_process(
-		COMMAND git submodule update ${SUBMODULE_INIT_ARG}
-		WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/eagine-core"
-	)
-	add_subdirectory(eagine-core EXCLUDE_FROM_ALL)
-endif()
-
-if(NOT TARGET eagine.sslplus)
-	if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/eagine-sslplus/CMakeLists.txt")
-		unset(SUBMODULE_INIT_ARG)
-	else()
-		set(SUBMODULE_INIT_ARG --init)
-	endif()
-	execute_process(
-		COMMAND git submodule update ${SUBMODULE_INIT_ARG}
-		WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/eagine-sslplus"
-	)
-	add_subdirectory(eagine-sslplus EXCLUDE_FROM_ALL)
-endif()
-
+endforeach()
