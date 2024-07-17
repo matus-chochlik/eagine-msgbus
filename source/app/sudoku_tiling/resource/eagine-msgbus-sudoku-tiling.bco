@@ -10,11 +10,21 @@ function _eagine_msgbus_sudoku_tiling()
 
     local only_once_opts=" \
         -h --help \
+        --version \
+        --version-at-least \
+        --min-log-severity \
+        --use-asio-log \
+        --use-asio-nw-log \
+        --use-cerr-log \
+        --use-null-log \
+        --use-syslog \
+        --log-format-json \
+        --log-use-spinlock \
+        --log-use-no-lock \
         --msgbus-posix-mqueue \
         --msgbus-asio-local-stream \
         --msgbus-asio-tcp-ipv4 \
         --msgbus-asio-udp-ipv4 \
-        --msgbus-router-address \
         --msgbus-sudoku-solver-block-cells \
         --msgbus-sudoku-solver-print-progres \
         --msgbus-sudoku-solver-print-incomplete \
@@ -54,24 +64,32 @@ function _eagine_msgbus_sudoku_tiling()
     case "${prev}" in
         -h|--help)
             return 0;;
+        --min-log-severity)
+            opts="fatal error warning change info stat debug trace backtrace"
+            COMPREPLY=($(compgen -W "${opts}" -- "${curr}"));;
+        --use-asio-log)
+            COMPREPLY=( /tmp/eagine-log );;
+        --use-asio-nw-log)
+            COMPREPLY=( localhost:34917 );;
+        --version-at-least)
+            COMPREPLY=($(eagine-msgbus-sudoku-tiling --version));;
         --msgbus-router-address)
             COMPREPLY=( "ADDRESS" )
             for idx in $(seq ${COMP_CWORD} -1 1)
             do
                 case "${COMP_WORDS[idx-1]}" in
                     --msgbus-posix-mqueue)
-                        COMPREPLY=( $(ls /dev/mqueue/* | while read path; do echo "/$(basename ${path})"; done) )
-                        break;;
+                        opts="$(ls /dev/mqueue/* | while read path; do echo /$(basename ${path}); done)"
+                        COMPREPLY=($(compgen -W "${opts}" -- "${curr}"));;
                     --msgbus-asio-local-stream)
-                        COMPREPLY=( $(ls /var/run/eagine/*.socket /tmp/eagine-*.socket 2> /dev/null) )
-                        break;;
+                        opts="$(ls /var/run/eagine/*.socket /tmp/eagine-*.socket 2> /dev/null)"
+                        COMPREPLY=($(compgen -W "${opts}" -- "${curr}"));;
                     --msgbus-asio-tcp-ipv4|--msgbus-asio-udp-ipv4)
-                        COMPREPLY=( "localhost:34912" )
-                        break;;
+                        COMPREPLY=( "localhost:34912" );;
                     *);;
                 esac
             done;;
-        --msgbus.sudoku.solver.block_cells)
+        --msgbus-sudoku-solver-block-cells)
             COMPREPLY=($(compgen -W "false true" -- "${curr}"));;
         --msgbus-sudoku-solver-print-progres)
             COMPREPLY=($(compgen -W "false true" -- "${curr}"));;
