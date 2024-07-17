@@ -9,3 +9,6 @@
 	path = submodules/eagine-sslplus
 	url = ../eagine-sslplus.git
 	branch = develop
+[submodule "submodules/paho.mqtt.c"]
+	path = submodules/paho.mqtt.c
+	url = https://github.com/eclipse/paho.mqtt.c.git
