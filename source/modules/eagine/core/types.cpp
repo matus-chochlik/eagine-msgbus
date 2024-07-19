@@ -279,7 +279,7 @@ export struct connection_statistics {
     /// @brief Ratio (0.0 - 1.0) of how much of each message data block is used.
     float block_usage_ratio{-1.F};
 
-    /// @brief Number of bytes per second transfered.
+    /// @brief Number of bytes per second transferred.
     float bytes_per_second{-1.F};
 };
 //------------------------------------------------------------------------------
