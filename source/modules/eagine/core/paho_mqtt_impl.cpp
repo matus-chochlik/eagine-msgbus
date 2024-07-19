@@ -152,7 +152,7 @@ auto paho_mqtt_connection::_topic_prefix() const noexcept -> string_view {
 auto paho_mqtt_connection::_topic_to_msg_id(memory::span<const char> topic)
   const noexcept -> std::tuple<message_id, endpoint_id_t> {
     if(starts_with(topic, _topic_prefix())) {
-        topic = head(topic, _topic_prefix().size());
+        topic = skip(topic, _topic_prefix().size());
         const auto [cls_str, cls_tail]{split_by_first_element(topic, '/')};
         const auto [mth_str, mth_tail]{split_by_first_element(cls_tail, '/')};
         const auto [src_id, dst_id]{split_by_first_element(mth_tail, '/')};
@@ -184,9 +184,9 @@ auto paho_mqtt_connection::_msg_id_to_subscr_topic(
     _temp_topic.append("/");
     append_to(msg_id.method().name().view(), _temp_topic);
     if(broadcast) {
-        _temp_topic.append("/*/*");
+        _temp_topic.append("/+/_");
     } else {
-        _temp_topic.append("/*/");
+        _temp_topic.append("/+/");
         append_to(_client_uid.name().view(), _temp_topic);
     }
     return {_temp_topic};
