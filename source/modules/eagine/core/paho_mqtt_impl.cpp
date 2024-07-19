@@ -78,8 +78,7 @@ public:
 
 private:
     auto _get_broker_url(const url&) noexcept -> std::string;
-    auto _get_client_uid(const url&) const noexcept -> std::string;
-    auto _get_client_node_id(const std::string&) const noexcept -> identifier_t;
+    auto _get_client_uid(const url&) const noexcept -> identifier;
     auto _has_uid(const string_view uid) const noexcept -> bool;
 
     auto _qos() const noexcept -> int;
@@ -99,8 +98,11 @@ private:
 
     auto _topic_prefix() const noexcept -> string_view;
     auto _topic_to_msg_id(memory::span<const char> s) const noexcept
-      -> message_id;
-    auto _msg_id_to_topic(const message_id) noexcept -> string_view;
+      -> std::tuple<message_id, endpoint_id_t>;
+    auto _msg_id_to_subscr_topic(const message_id, bool) noexcept
+      -> string_view;
+    auto _msg_id_to_topic(const message_id, endpoint_id_t) noexcept
+      -> string_view;
     static void _message_delivered_f(void*, MQTTClient_deliveryToken);
     static auto _message_arrived_f(void*, char*, int, MQTTClient_message*)
       -> int;
@@ -119,8 +121,7 @@ private:
       const message_view&) noexcept -> message_handling_result;
 
     const std::string _broker_url;
-    const std::string _client_uid;
-    identifier_t _client_node_id;
+    identifier _client_uid;
 
     std::map<std::string, std::size_t, str_view_less> _subscriptions;
     memory::buffer_pool _buffers;
@@ -140,7 +141,7 @@ auto paho_mqtt_connection::_qos() const noexcept -> int {
 //------------------------------------------------------------------------------
 auto paho_mqtt_connection::_has_uid(const string_view uid) const noexcept
   -> bool {
-    return string_view{_client_uid} == uid;
+    return (string_view{"_"} == uid) or (_client_uid.name().view() == uid);
 }
 //------------------------------------------------------------------------------
 auto paho_mqtt_connection::_topic_prefix() const noexcept -> string_view {
@@ -148,16 +149,21 @@ auto paho_mqtt_connection::_topic_prefix() const noexcept -> string_view {
     return topic_prefix;
 }
 //------------------------------------------------------------------------------
-auto paho_mqtt_connection::_topic_to_msg_id(
-  memory::span<const char> topic) const noexcept -> message_id {
+auto paho_mqtt_connection::_topic_to_msg_id(memory::span<const char> topic)
+  const noexcept -> std::tuple<message_id, endpoint_id_t> {
     if(starts_with(topic, _topic_prefix())) {
         topic = head(topic, _topic_prefix().size());
         const auto [cls_str, cls_tail]{split_by_first_element(topic, '/')};
-        const auto [mth_str, conn_uid]{split_by_first_element(cls_tail, '/')};
-        if(cls_str and mth_str and _has_uid(conn_uid)) {
+        const auto [mth_str, mth_tail]{split_by_first_element(cls_tail, '/')};
+        const auto [src_id, dst_id]{split_by_first_element(mth_tail, '/')};
+        if(cls_str and mth_str and _has_uid(dst_id)) {
             if(identifier::can_be_encoded(cls_str)) {
                 if(identifier::can_be_encoded(mth_str)) {
-                    return {identifier{cls_str}, identifier{mth_str}};
+                    if(identifier::can_be_encoded(src_id)) {
+                        return {
+                          {identifier{cls_str}, identifier{mth_str}},
+                          identifier{src_id}.value()};
+                    }
                 }
             }
         }
@@ -165,8 +171,30 @@ auto paho_mqtt_connection::_topic_to_msg_id(
     return {};
 }
 //------------------------------------------------------------------------------
-auto paho_mqtt_connection::_msg_id_to_topic(const message_id msg_id) noexcept
-  -> string_view {
+auto paho_mqtt_connection::_msg_id_to_subscr_topic(
+  const message_id msg_id,
+  bool broadcast) noexcept -> string_view {
+    if(_temp_topic.empty()) [[unlikely]] {
+        assign_to(_topic_prefix(), _temp_topic);
+    } else {
+        assert(starts_with(string_view{_temp_topic}, _topic_prefix()));
+        _temp_topic.resize(std_size(_topic_prefix().size()));
+    }
+    append_to(msg_id.class_().name().view(), _temp_topic);
+    _temp_topic.append("/");
+    append_to(msg_id.method().name().view(), _temp_topic);
+    if(broadcast) {
+        _temp_topic.append("/*/*");
+    } else {
+        _temp_topic.append("/*/");
+        append_to(_client_uid.name().view(), _temp_topic);
+    }
+    return {_temp_topic};
+}
+//------------------------------------------------------------------------------
+auto paho_mqtt_connection::_msg_id_to_topic(
+  const message_id msg_id,
+  endpoint_id_t target_id) noexcept -> string_view {
     if(_temp_topic.empty()) [[unlikely]] {
         assign_to(_topic_prefix(), _temp_topic);
     } else {
@@ -177,21 +205,31 @@ auto paho_mqtt_connection::_msg_id_to_topic(const message_id msg_id) noexcept
     _temp_topic.append("/");
     append_to(msg_id.method().name().view(), _temp_topic);
     _temp_topic.append("/");
-    append_to(_client_uid, _temp_topic);
+    append_to(_client_uid.name().view(), _temp_topic);
+    if(target_id) {
+        _temp_topic.append("/");
+        append_to(identifier{target_id.value()}.name().view(), _temp_topic);
+    } else {
+        _temp_topic.append("/_");
+    }
     return {_temp_topic};
 }
 //------------------------------------------------------------------------------
-void paho_mqtt_connection::_message_delivered() noexcept {}
+void paho_mqtt_connection::_message_delivered() noexcept {
+    // TODO: some stats?
+}
 //------------------------------------------------------------------------------
 auto paho_mqtt_connection::_message_arrived(
   string_view topic,
   memory::const_block data) noexcept {
-    if(const auto msg_id{_topic_to_msg_id(topic)}) [[likely]] {
+    const auto [msg_id, src_id]{_topic_to_msg_id(topic)};
+    if(msg_id) [[likely]] {
         if(not _handle_special_recv(msg_id, data)) {
-            if(not data.empty()) [[likely]] {
-                const std::unique_lock lock{_recv_mutex};
-                _received.next().push(msg_id, data);
-            }
+            const std::unique_lock lock{_recv_mutex};
+            message_view message{data};
+            message.set_source_id(src_id);
+            message.set_target_id(_client_uid.value());
+            _received.next().push(msg_id, message);
         }
     }
 }
@@ -297,24 +335,19 @@ auto paho_mqtt_connection::_unsubscribe_from(string_view topic) noexcept
 auto paho_mqtt_connection::_get_broker_url(const url& locator) noexcept
   -> std::string {
     return std::format(
-      "tcp://{:s}:${:d}",
+      "tcp://{:s}:{:d}",
       locator.domain().value_or("localhost").std_span(),
       locator.port().value_or(1883));
 }
 //------------------------------------------------------------------------------
 auto paho_mqtt_connection::_get_client_uid(const url& locator) const noexcept
-  -> std::string {
+  -> identifier {
     if(const auto uid{locator.login()}) {
-        return *uid;
+        if(identifier::can_be_encoded(*uid)) {
+            return identifier{string_view{*uid}};
+        }
     }
-    std::string result{'_', 16Z};
-    main_context().random_identifier(result);
-    return result;
-}
-//------------------------------------------------------------------------------
-auto paho_mqtt_connection::_get_client_node_id(
-  const std::string& uid) const noexcept -> identifier_t {
-    return static_cast<identifier_t>(std::hash<std::string>{}(uid));
+    return main_context().random_identifier();
 }
 //------------------------------------------------------------------------------
 paho_mqtt_connection::paho_mqtt_connection(
@@ -322,13 +355,12 @@ paho_mqtt_connection::paho_mqtt_connection(
   const url& locator)
   : main_ctx_object{"PahoMQTTCn", parent}
   , _broker_url{_get_broker_url(locator)}
-  , _client_uid{_get_client_uid(locator)}
-  , _client_node_id{_get_client_node_id(_client_uid)} {
+  , _client_uid{_get_client_uid(locator)} {
     if(
       MQTTClient_create(
         &_mqtt_client,
         _broker_url.c_str(),
-        _client_uid.c_str(),
+        _client_uid.name().str().c_str(),
         MQTTCLIENT_PERSISTENCE_NONE,
         nullptr) != MQTTCLIENT_SUCCESS) {
 
@@ -391,17 +423,18 @@ auto paho_mqtt_connection::_do_send(
 }
 //------------------------------------------------------------------------------
 auto paho_mqtt_connection::update() noexcept -> work_done {
+    const auto handler{[this](
+                         const message_id msg_id,
+                         const message_age,
+                         const message_view& message) {
+        return _do_send(
+          _msg_id_to_topic(msg_id, message.target_id), message.content());
+    }};
     auto& sent{[this]() -> message_storage& {
         const std::unique_lock lock{_send_mutex};
         _sent.swap();
         return _sent.current();
     }()};
-    const auto handler{[this](
-                         const message_id msg_id,
-                         const message_age,
-                         const message_view& message) {
-        return _do_send(_msg_id_to_topic(msg_id), message.data());
-    }};
     return sent.fetch_all({construct_from, handler});
 }
 //------------------------------------------------------------------------------
@@ -429,7 +462,8 @@ auto paho_mqtt_connection::_handle_req_id(const message_view&) noexcept
   -> message_handling_result {
     // send the special message assigning the endpoint id
     message_view response{};
-    response.set_target_id(_client_node_id);
+    response.set_source_id(0);
+    response.set_target_id(_client_uid.value());
     const std::unique_lock lock{_recv_mutex};
     _received.next().push(msgbus_id{"assignId"}, response);
     return was_handled;
@@ -441,9 +475,11 @@ auto paho_mqtt_connection::_handle_subsc(const message_view& message) noexcept
     if(default_deserialize_message_type(sub_msg_id, message.content()))
       [[likely]] {
         const std::unique_lock lock{_send_mutex};
-        const auto topic{_msg_id_to_topic(sub_msg_id)};
-        _add_subscription(topic);
-        _subscribe_to(topic);
+        for(const auto broadcast : {true, false}) {
+            const auto topic{_msg_id_to_subscr_topic(sub_msg_id, broadcast)};
+            _add_subscription(topic);
+            _subscribe_to(topic);
+        }
     }
     return was_handled;
 }
@@ -454,9 +490,11 @@ auto paho_mqtt_connection::_handle_unsub(const message_view& message) noexcept
     if(default_deserialize_message_type(sub_msg_id, message.content()))
       [[likely]] {
         const std::unique_lock lock{_send_mutex};
-        const auto topic{_msg_id_to_topic(sub_msg_id)};
-        if(_remove_subscription(topic)) {
-            _unsubscribe_from(topic);
+        for(const auto broadcast : {true, false}) {
+            const auto topic{_msg_id_to_subscr_topic(sub_msg_id, broadcast)};
+            if(_remove_subscription(topic)) {
+                _unsubscribe_from(topic);
+            }
         }
     }
     return was_handled;
