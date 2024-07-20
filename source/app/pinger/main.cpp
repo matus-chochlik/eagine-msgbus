@@ -340,15 +340,15 @@ auto main(main_ctx& ctx) -> int {
         the_pinger.process_all();
         if(not the_pinger.update()) {
             std::this_thread::sleep_for(std::chrono::milliseconds{1});
-            if(do_chart_stats) {
+        }
+        if(do_chart_stats) {
+            the_pinger.log_chart_sample(
+              "shortLoad", ctx.system().short_average_load());
+            the_pinger.log_chart_sample(
+              "longLoad", ctx.system().long_average_load());
+            if(const auto temp_k{ctx.system().cpu_temperature()}) {
                 the_pinger.log_chart_sample(
-                  "shortLoad", ctx.system().short_average_load());
-                the_pinger.log_chart_sample(
-                  "longLoad", ctx.system().long_average_load());
-                if(const auto temp_k{ctx.system().cpu_temperature()}) {
-                    the_pinger.log_chart_sample(
-                      "cpuTempC", temp_k->to<units::degree_celsius>());
-                }
+                  "cpuTempC", temp_k->to<units::degree_celsius>());
             }
         }
     }
