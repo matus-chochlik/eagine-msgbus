@@ -224,12 +224,14 @@ auto paho_mqtt_connection::_message_arrived(
   memory::const_block data) noexcept {
     const auto [msg_id, src_id]{_topic_to_msg_id(topic)};
     if(msg_id) [[likely]] {
-        if(not _handle_special_recv(msg_id, data)) {
-            const std::unique_lock lock{_recv_mutex};
-            message_view message{data};
-            message.set_source_id(src_id);
-            message.set_target_id(_client_uid.value());
-            _received.next().push(msg_id, message);
+        if(_client_uid.value() != src_id) {
+            if(not _handle_special_recv(msg_id, data)) {
+                const std::unique_lock lock{_recv_mutex};
+                message_view message{data};
+                message.set_source_id(src_id);
+                message.set_target_id(_client_uid.value());
+                _received.next().push(msg_id, message);
+            }
         }
     }
 }
@@ -430,7 +432,7 @@ auto paho_mqtt_connection::update() noexcept -> work_done {
         return _do_send(
           _msg_id_to_topic(msg_id, message.target_id), message.content());
     }};
-    auto& sent{[this]() -> message_storage& {
+    auto& sent{[this] -> message_storage& {
         const std::unique_lock lock{_send_mutex};
         _sent.swap();
         return _sent.current();
@@ -481,7 +483,7 @@ auto paho_mqtt_connection::_handle_subsc(const message_view& message) noexcept
             _subscribe_to(topic);
         }
     }
-    return was_handled;
+    return should_be_forwarded;
 }
 //------------------------------------------------------------------------------
 auto paho_mqtt_connection::_handle_unsub(const message_view& message) noexcept
@@ -497,7 +499,7 @@ auto paho_mqtt_connection::_handle_unsub(const message_view& message) noexcept
             }
         }
     }
-    return was_handled;
+    return should_be_forwarded;
 }
 //------------------------------------------------------------------------------
 auto paho_mqtt_connection::_handle_special_send(
@@ -550,7 +552,7 @@ auto paho_mqtt_connection::send(
 //------------------------------------------------------------------------------
 auto paho_mqtt_connection::fetch_messages(const fetch_handler handler) noexcept
   -> work_done {
-    auto& received{[this]() -> message_storage& {
+    auto& received{[this] -> message_storage& {
         const std::unique_lock lock{_recv_mutex};
         _received.swap();
         return _received.current();
