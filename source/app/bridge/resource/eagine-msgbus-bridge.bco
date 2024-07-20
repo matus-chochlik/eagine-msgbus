@@ -25,6 +25,7 @@ function _eagine_msgbus_bridge()
         --msgbus-asio-local-stream \
         --msgbus-asio-tcp-ipv4 \
         --msgbus-asio-udp-ipv4 \
+        --msgbus-paho-mqtt \
         --msgbus-bridge-id-major \
         --msgbus-bridge-id-count \
         --msgbus-bridge-shutdown-delay \
@@ -83,6 +84,8 @@ function _eagine_msgbus_bridge()
                         COMPREPLY=($(compgen -W "${opts}" -- "${curr}"));;
                     --msgbus-asio-tcp-ipv4|--msgbus-asio-udp-ipv4)
                         COMPREPLY=( "localhost:34912" );;
+                    --msgbus-paho-mqtt)
+                        COMPREPLY=( "tcp://node${RANDOM:-123}@localhost:1883" );;
                     *);;
                 esac
             done;;

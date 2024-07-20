@@ -25,6 +25,7 @@ function _eagine_msgbus_sudoku_helper()
         --msgbus-asio-local-stream \
         --msgbus-asio-tcp-ipv4 \
         --msgbus-asio-udp-ipv4 \
+        --msgbus-paho-mqtt \
         --msgbus-sudoku-helper-shutdown-when-idle \
         --msgbus-sudoku-helper-max-idle-time \
         --msgbus-sudoku-helper-count \
@@ -80,6 +81,8 @@ function _eagine_msgbus_sudoku_helper()
                         COMPREPLY=($(compgen -W "${opts}" -- "${curr}"));;
                     --msgbus-asio-tcp-ipv4|--msgbus-asio-udp-ipv4)
                         COMPREPLY=( "localhost:34912" );;
+                    --msgbus-paho-mqtt)
+                        COMPREPLY=( "tcp://node${RANDOM:-123}@localhost:1883" );;
                     *);;
                 esac
             done;;
