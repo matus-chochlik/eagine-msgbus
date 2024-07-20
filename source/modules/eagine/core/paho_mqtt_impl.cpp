@@ -20,6 +20,7 @@ import eagine.core.memory;
 import eagine.core.string;
 import eagine.core.identifier;
 import eagine.core.container;
+import eagine.core.serialization;
 import eagine.core.utility;
 import eagine.core.runtime;
 import eagine.core.valid_if;
@@ -126,6 +127,7 @@ private:
     std::map<std::string, std::size_t, str_view_less> _subscriptions;
     memory::buffer_pool _buffers;
     std::string _temp_topic;
+    memory::buffer _buffer;
     double_buffer<message_storage> _sent;
     double_buffer<message_storage> _received;
     std::mutex _send_mutex{};
@@ -136,7 +138,7 @@ private:
 };
 //------------------------------------------------------------------------------
 auto paho_mqtt_connection::_qos() const noexcept -> int {
-    return 1;
+    return 0;
 }
 //------------------------------------------------------------------------------
 auto paho_mqtt_connection::_has_uid(const string_view uid) const noexcept
@@ -227,10 +229,13 @@ auto paho_mqtt_connection::_message_arrived(
         if(_client_uid.value() != src_id) {
             if(not _handle_special_recv(msg_id, data)) {
                 const std::unique_lock lock{_recv_mutex};
-                message_view message{data};
-                message.set_source_id(src_id);
-                message.set_target_id(_client_uid.value());
-                _received.next().push(msg_id, message);
+                block_data_source source(data);
+                default_deserializer_backend backend(source);
+                message_id msg_id{};
+                stored_message message{};
+                if(deserialize_message(msg_id, message, backend)) {
+                    _received.next().push(msg_id, message);
+                }
             }
         }
     }
@@ -358,6 +363,7 @@ paho_mqtt_connection::paho_mqtt_connection(
   : main_ctx_object{"PahoMQTTCn", parent}
   , _broker_url{_get_broker_url(locator)}
   , _client_uid{_get_client_uid(locator)} {
+    _buffer.resize(4 * 1024);
     if(
       MQTTClient_create(
         &_mqtt_client,
@@ -429,8 +435,13 @@ auto paho_mqtt_connection::update() noexcept -> work_done {
                          const message_id msg_id,
                          const message_age,
                          const message_view& message) {
-        return _do_send(
-          _msg_id_to_topic(msg_id, message.target_id), message.content());
+        block_data_sink sink(cover(_buffer));
+        default_serializer_backend backend(sink);
+        if(serialize_message(msg_id, message, backend)) [[likely]] {
+            return _do_send(
+              _msg_id_to_topic(msg_id, message.target_id), sink.done());
+        }
+        return false;
     }};
     auto& sent{[this] -> message_storage& {
         const std::unique_lock lock{_send_mutex};
@@ -457,7 +468,7 @@ auto paho_mqtt_connection::is_usable() noexcept -> bool {
 //------------------------------------------------------------------------------
 auto paho_mqtt_connection::max_data_size() noexcept
   -> valid_if_positive<span_size_t> {
-    return {4 * 1024};
+    return {_buffer.size()};
 }
 //------------------------------------------------------------------------------
 auto paho_mqtt_connection::_handle_req_id(const message_view&) noexcept
