@@ -84,8 +84,8 @@ private:
 
     auto _qos() const noexcept -> int;
 
-    auto _add_subscription(string_view) noexcept -> bool;
-    auto _remove_subscription(string_view) noexcept -> bool;
+    void _add_subscription(string_view, bool) noexcept;
+    void _remove_subscription(string_view) noexcept;
     auto _subscribe_to(string_view) noexcept -> bool;
     auto _unsubscribe_from(string_view) noexcept -> bool;
 
@@ -289,25 +289,21 @@ void paho_mqtt_connection::_connection_lost_f(void* context, char* reason) {
     that->_connection_lost(string_view{reason});
 }
 //------------------------------------------------------------------------------
-auto paho_mqtt_connection::_add_subscription(string_view topic) noexcept
-  -> bool {
+void paho_mqtt_connection::_add_subscription(
+  string_view topic,
+  bool success) noexcept {
     auto pos{_subscriptions.find(topic)};
     if(pos == _subscriptions.end()) {
         pos = std::get<0>(_subscriptions.emplace(to_string(topic), 0Z));
     }
-    return std::get<1>(*pos)++ == 0Z;
+    std::get<1>(*pos) = success;
 }
 //------------------------------------------------------------------------------
-auto paho_mqtt_connection::_remove_subscription(string_view topic) noexcept
-  -> bool {
+void paho_mqtt_connection::_remove_subscription(string_view topic) noexcept {
     auto pos{_subscriptions.find(topic)};
     if(pos != _subscriptions.end()) {
-        if(std::get<1>(*pos) > 0Z) {
-            return --std::get<1>(*pos) == 0Z;
-        }
-        return true;
+        _subscriptions.erase(pos);
     }
-    return false;
 }
 //------------------------------------------------------------------------------
 auto paho_mqtt_connection::_subscribe_to(string_view topic) noexcept -> bool {
@@ -431,6 +427,7 @@ auto paho_mqtt_connection::_do_send(
 }
 //------------------------------------------------------------------------------
 auto paho_mqtt_connection::update() noexcept -> work_done {
+    // TODO: update
     const auto handler{[this](
                          const message_id msg_id,
                          const message_age,
@@ -490,8 +487,7 @@ auto paho_mqtt_connection::_handle_subsc(const message_view& message) noexcept
         const std::unique_lock lock{_send_mutex};
         for(const auto broadcast : {true, false}) {
             const auto topic{_msg_id_to_subscr_topic(sub_msg_id, broadcast)};
-            _add_subscription(topic);
-            _subscribe_to(topic);
+            _add_subscription(topic, _subscribe_to(topic));
         }
     }
     return should_be_forwarded;
@@ -505,8 +501,8 @@ auto paho_mqtt_connection::_handle_unsub(const message_view& message) noexcept
         const std::unique_lock lock{_send_mutex};
         for(const auto broadcast : {true, false}) {
             const auto topic{_msg_id_to_subscr_topic(sub_msg_id, broadcast)};
-            if(_remove_subscription(topic)) {
-                _unsubscribe_from(topic);
+            if(_unsubscribe_from(topic)) {
+                _remove_subscription(topic);
             }
         }
     }
