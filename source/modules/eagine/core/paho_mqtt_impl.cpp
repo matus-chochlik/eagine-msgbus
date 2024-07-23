@@ -100,7 +100,7 @@ private:
     auto _topic_prefix() const noexcept -> string_view;
     auto _topic_to_msg_id(memory::span<const char> s) const noexcept
       -> std::tuple<message_id, endpoint_id_t>;
-    auto _msg_id_to_subscr_topic(const message_id, bool) noexcept
+    auto _msg_id_to_subscr_topic(const message_id, endpoint_id_t, bool) noexcept
       -> string_view;
     auto _msg_id_to_topic(const message_id, endpoint_id_t) noexcept
       -> string_view;
@@ -175,6 +175,7 @@ auto paho_mqtt_connection::_topic_to_msg_id(memory::span<const char> topic)
 //------------------------------------------------------------------------------
 auto paho_mqtt_connection::_msg_id_to_subscr_topic(
   const message_id msg_id,
+  endpoint_id_t source_id,
   bool broadcast) noexcept -> string_view {
     if(_temp_topic.empty()) [[unlikely]] {
         assign_to(_topic_prefix(), _temp_topic);
@@ -189,7 +190,7 @@ auto paho_mqtt_connection::_msg_id_to_subscr_topic(
         _temp_topic.append("/+/_");
     } else {
         _temp_topic.append("/+/");
-        append_to(_client_uid.name().view(), _temp_topic);
+        append_to(identifier{source_id.value()}.name().view(), _temp_topic);
     }
     return {_temp_topic};
 }
@@ -233,8 +234,11 @@ auto paho_mqtt_connection::_message_arrived(
                 default_deserializer_backend backend(source);
                 message_id msg_id{};
                 stored_message message{};
-                if(deserialize_message(msg_id, message, backend)) {
+                if(deserialize_message(msg_id, message, backend)) [[likely]] {
                     _received.next().push(msg_id, message);
+                } else {
+                    log_error("failed to deserialize message")
+                      .arg("size", data.size());
                 }
             }
         }
@@ -486,7 +490,8 @@ auto paho_mqtt_connection::_handle_subsc(const message_view& message) noexcept
       [[likely]] {
         const std::unique_lock lock{_send_mutex};
         for(const auto broadcast : {true, false}) {
-            const auto topic{_msg_id_to_subscr_topic(sub_msg_id, broadcast)};
+            const auto topic{_msg_id_to_subscr_topic(
+              sub_msg_id, message.source_id, broadcast)};
             _add_subscription(topic, _subscribe_to(topic));
         }
     }
@@ -500,7 +505,8 @@ auto paho_mqtt_connection::_handle_unsub(const message_view& message) noexcept
       [[likely]] {
         const std::unique_lock lock{_send_mutex};
         for(const auto broadcast : {true, false}) {
-            const auto topic{_msg_id_to_subscr_topic(sub_msg_id, broadcast)};
+            const auto topic{_msg_id_to_subscr_topic(
+              sub_msg_id, message.source_id, broadcast)};
             if(_unsubscribe_from(topic)) {
                 _remove_subscription(topic);
             }
