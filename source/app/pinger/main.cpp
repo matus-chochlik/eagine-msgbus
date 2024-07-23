@@ -336,7 +336,7 @@ auto main(main_ctx& ctx) -> int {
     resetting_timeout do_chart_stats{std::chrono::seconds{15}, nothing};
 
     log.change("starting").tag("pingStart");
-    while(not the_pinger.is_done() or interrupted) {
+    while(not(the_pinger.is_done() or interrupted)) {
         the_pinger.process_all();
         if(not the_pinger.update()) {
             std::this_thread::sleep_for(std::chrono::milliseconds{1});
