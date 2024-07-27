@@ -94,6 +94,8 @@ export auto operator|(
 export enum class connection_addr_kind : std::uint8_t {
     /// @brief No public address.
     none,
+    /// @brief Unique string identifier.
+    string,
     /// @brief Filesystem path.
     filepath,
     /// @brief PIv4 address.
@@ -277,7 +279,7 @@ export struct connection_statistics {
     /// @brief Ratio (0.0 - 1.0) of how much of each message data block is used.
     float block_usage_ratio{-1.F};
 
-    /// @brief Number of bytes per second transfered.
+    /// @brief Number of bytes per second transferred.
     float bytes_per_second{-1.F};
 };
 //------------------------------------------------------------------------------
@@ -444,8 +446,9 @@ export template <>
 struct enumerator_traits<msgbus::connection_addr_kind> {
     static constexpr auto mapping() noexcept {
         using msgbus::connection_addr_kind;
-        return enumerator_map_type<connection_addr_kind, 3>{
+        return enumerator_map_type<connection_addr_kind, 4>{
           {{"none", connection_addr_kind::none},
+           {"string", connection_addr_kind::string},
            {"filepath", connection_addr_kind::filepath},
            {"ipv4", connection_addr_kind::ipv4}}};
     }

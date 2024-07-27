@@ -14,6 +14,7 @@ function _eagine_msgbus_resource_histogram()
         --msgbus-asio-local-stream \
         --msgbus-asio-tcp-ipv4 \
         --msgbus-asio-udp-ipv4 \
+        --msgbus-paho-mqtt \
     "
 
     local opts="
@@ -45,7 +46,24 @@ function _eagine_msgbus_resource_histogram()
         -h|--help)
             return 0;;
         --msgbus-router-address)
-            COMPREPLY=( "ADDRESS" );;
+            COMPREPLY=( "ADDRESS" )
+            for idx in $(seq ${COMP_CWORD} -1 1)
+            do
+                case "${COMP_WORDS[idx-1]}" in
+                    --msgbus-posix-mqueue)
+                        COMPREPLY=( $(ls /dev/mqueue/* | while read path; do echo "/$(basename ${path})"; done) )
+                        break;;
+                    --msgbus-asio-local-stream)
+                        COMPREPLY=( $(ls /var/run/eagine/*.socket /tmp/eagine-*.socket 2> /dev/null) )
+                        break;;
+                    --msgbus-asio-tcp-ipv4|--msgbus-asio-udp-ipv4)
+                        COMPREPLY=( "localhost:34912" )
+                        break;;
+                    --msgbus-paho-mqtt)
+                        COMPREPLY=( "tcp://node${RANDOM:-123}@localhost:1883" );;
+                    *);;
+                esac
+            done;;
         *)
             COMPREPLY=($(compgen -W "${opts}" -- "${curr}"));;
     esac

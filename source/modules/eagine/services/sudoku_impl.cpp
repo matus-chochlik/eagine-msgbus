@@ -436,6 +436,11 @@ auto sudoku_helper_impl::_handle_board(
           message.sequence_no,
           std::move(board));
         mark_activity();
+    } else {
+        base.bus_node()
+          .log_error("failed to deserialize board")
+          .arg("size", message.content().size())
+          .arg("rank", S);
     }
     return true;
 }
@@ -798,6 +803,11 @@ void sudoku_solver_rank_info<S>::handle_response(
                 }
             }
         }
+    } else {
+        solver.base.bus_node()
+          .log_error("failed to deserialize board")
+          .arg("size", message.content().size())
+          .arg("rank", S);
     }
 }
 //------------------------------------------------------------------------------

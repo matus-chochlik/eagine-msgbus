@@ -1,3 +1,8 @@
+eagine-msgbus-apps (0.127.0) unstable; urgency=medium
+
+  * Additions to the bash-completions scripts for message bus applications.
+
+ -- Matúš Chochlík <matus.chochlik@proton.me>  Wed, 17 Jul 2024 07:00:00 +0200
 eagine-msgbus-apps (0.125.0) unstable; urgency=medium
 
   * Initial version with CPack-based packaging.

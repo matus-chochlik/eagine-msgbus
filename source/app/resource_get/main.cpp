@@ -58,11 +58,12 @@ auto main(main_ctx& ctx) -> int {
         for(const auto blk : chunk.data) {
             write_to_stream(std::cout, blk);
         }
+        std::cout << std::flush;
     }};
     node.blob_stream_data_appended.connect({construct_from, consume});
 
     const auto blob_done{[&](identifier_t) {
-        std::cout << std::endl;
+        std::cout << std::flush;
         enqueue_next();
     }};
     node.blob_stream_finished.connect({construct_from, blob_done});

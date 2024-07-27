@@ -86,8 +86,11 @@ auto main(main_ctx& ctx) -> int {
     if(const auto exit_code{handle_special_args(ctx)}) {
         return *exit_code;
     }
+    signal_switch interrupted;
 
     const auto& log{ctx.log()};
+    const auto sig_bind{log.log_when_switched(interrupted)};
+
     log.active_state("ponging");
     log.declare_state("ponging", "pongStart", "pongFinish");
 
@@ -104,7 +107,7 @@ auto main(main_ctx& ctx) -> int {
     }
 
     log.change("starting").tag("pongStart");
-    while(not the_pingable.is_done()) {
+    while(not(the_pingable.is_done() or interrupted)) {
         the_pingable.update_and_process_all().or_sleep_for(
           std::chrono::milliseconds(1));
     }

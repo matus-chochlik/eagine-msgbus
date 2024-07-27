@@ -10,10 +10,22 @@ function _eagine_msgbus_router()
 
     local only_once_opts=" \
         -h --help \
+        --version \
+        --version-at-least \
+        --min-log-severity \
+        --use-asio-log \
+        --use-asio-nw-log \
+        --use-cerr-log \
+        --use-null-log \
+        --use-syslog \
+        --log-format-json \
+        --log-use-spinlock \
+        --log-use-no-lock \
         --msgbus-posix-mqueue \
         --msgbus-asio-local-stream \
         --msgbus-asio-tcp-ipv4 \
         --msgbus-asio-udp-ipv4 \
+        --msgbus-paho-mqtt \
         --msgbus-router-id-major \
         --msgbus-router-id-count \
         --msgbus-router-shutdown-delay \
@@ -56,14 +68,13 @@ function _eagine_msgbus_router()
             do
                 case "${COMP_WORDS[idx-1]}" in
                     --msgbus-posix-mqueue)
-                        COMPREPLY=( "/$(head -c 16 /dev/urandom | base64 | tr -d '=+-/' | head -c 10)" )
-                        break;;
+                        COMPREPLY=( "/$(head -c 16 /dev/urandom | base64 | tr -d '=+-/' | head -c 10)" );;
                     --msgbus-asio-local-stream)
-                        COMPREPLY=( "/tmp/eagine-$(head -c 16 /dev/urandom | base64 | tr -d '=+-/' | head -c 10).socket" )
-                        break;;
+                        COMPREPLY=( "/tmp/eagine-$(head -c 16 /dev/urandom | base64 | tr -d '=+-/' | head -c 10).socket" );;
                     --msgbus-asio-tcp-ipv4|--msgbus-asio-udp-ipv4)
-                        COMPREPLY=( "localhost:34912" )
-                        break;;
+                        COMPREPLY=( "localhost:34912" );;
+                    --msgbus-paho-mqtt)
+                        COMPREPLY=( "tcp://node${RANDOM:-123}@localhost:1883" );;
                     *);;
                 esac
             done;;
