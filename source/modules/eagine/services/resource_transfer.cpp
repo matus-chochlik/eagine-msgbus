@@ -26,7 +26,7 @@ export struct resource_server_driver : interface<resource_server_driver> {
     }
 
     virtual auto get_resource_io(const endpoint_id_t, const url&)
-      -> unique_holder<source_blob_io> {
+      -> shared_holder<source_blob_io> {
         return {};
     }
 
