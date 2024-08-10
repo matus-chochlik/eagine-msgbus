@@ -57,15 +57,15 @@ void resource_transfer_1(auto& s) {
             const bool chunks) {
               if(chunks) {
                   consumer.fetch_resource_chunks(
-                    std::move(res_locator),
-                    4 * 1024,
-                    msg_priority,
-                    std::chrono::minutes{5});
+                    {.locator = std::move(res_locator),
+                     .max_time = std::chrono::minutes{5},
+                     .priority = msg_priority},
+                    4 * 1024);
               } else {
                   consumer.stream_resource(
-                    std::move(res_locator),
-                    msg_priority,
-                    std::chrono::minutes{5});
+                    {.locator = std::move(res_locator),
+                     .max_time = std::chrono::minutes{5},
+                     .priority = msg_priority});
               }
           }};
 

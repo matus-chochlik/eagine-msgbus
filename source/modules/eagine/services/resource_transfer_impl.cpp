@@ -251,7 +251,7 @@ public:
       const endpoint_id_t endpoint_id,
       const message_priority priority)
       -> std::tuple<
-        unique_holder<source_blob_io>,
+        shared_holder<source_blob_io>,
         std::chrono::seconds,
         message_priority>;
 
@@ -393,8 +393,8 @@ auto resource_server_impl::get_resource(
   const url& locator,
   const endpoint_id_t endpoint_id,
   const message_priority priority) -> std::
-  tuple<unique_holder<source_blob_io>, std::chrono::seconds, message_priority> {
-    auto read_io = driver.get_resource_io(endpoint_id, locator);
+  tuple<shared_holder<source_blob_io>, std::chrono::seconds, message_priority> {
+    auto read_io{driver.get_resource_io(endpoint_id, locator)};
     if(not read_io) {
         if(locator.has_scheme("eagires")) {
             if(const auto count{locator.argument("count")}) {
