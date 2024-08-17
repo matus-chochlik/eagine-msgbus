@@ -43,7 +43,8 @@ public:
 
     auto is_usable() const noexcept -> bool;
 
-    void push(const message_id msg_id, const message_view& message) noexcept;
+    auto push(const message_id msg_id, const message_view& message) noexcept
+      -> bool;
 
     auto forwarded_messages() const noexcept {
         return _forwarded_messages;
@@ -57,23 +58,17 @@ public:
         return _decode_errors;
     }
 
-    void send_to_mqtt() noexcept;
-
     using fetch_handler = message_storage::fetch_handler;
 
     auto fetch_messages(const fetch_handler handler) noexcept;
 
-    void recv_from_mqtt() noexcept;
-
 private:
     auto _qos() const noexcept -> int;
     auto _get_broker_url(const url&) noexcept -> std::string;
-    auto _get_client_uid(const url&) const noexcept -> identifier;
-    auto _subscribe_to(string_view) noexcept -> bool;
-    auto _unsubscribe_from(string_view) noexcept -> bool;
+    auto _get_client_uid(const url&) const noexcept -> std::string;
+    auto _topic_ok(std::string_view topic) const noexcept -> bool;
 
-    auto _unpack_message(string_view, memory::const_block) noexcept
-      -> std::tuple<message_id, identifier_t, memory::const_block>;
+    auto _do_send(const memory::const_block content) noexcept -> bool;
 
     static void _message_delivered_f(void*, MQTTClient_deliveryToken);
     static auto _message_arrived_f(void*, char*, int, MQTTClient_message*)
@@ -81,7 +76,7 @@ private:
     static void _connection_lost_f(void*, char*);
 
     void _message_delivered() noexcept;
-    auto _message_arrived(string_view, memory::const_block) noexcept;
+    auto _message_arrived(std::string_view, memory::const_block) noexcept;
     void _connection_lost(string_view) noexcept;
 
     span_size_t _forwarded_messages{0};
@@ -89,17 +84,18 @@ private:
     span_size_t _decode_errors{0};
 
     const std::string _broker_url;
-    identifier _client_uid;
+    const std::string _client_uid;
+    const std::string _prefix;
+    const std::string _pattern;
+    const std::string _topic;
 
-    std::string _temp_topic;
     memory::buffer _buffer;
-    double_buffer<message_storage> _sent;
     double_buffer<message_storage> _received;
-    std::mutex _send_mutex{};
     std::mutex _recv_mutex{};
     ::MQTTClient _mqtt_client{};
     bool _created : 1 {false};
     bool _connected : 1 {false};
+    bool _subscribed : 1 {false};
 };
 //------------------------------------------------------------------------------
 auto mqtt_bridge_state::_qos() const noexcept -> int {
@@ -115,72 +111,38 @@ auto mqtt_bridge_state::_get_broker_url(const url& locator) noexcept
 }
 //------------------------------------------------------------------------------
 auto mqtt_bridge_state::_get_client_uid(const url& locator) const noexcept
-  -> identifier {
+  -> std::string {
     if(const auto uid{locator.login()}) {
         if(identifier::can_be_encoded(*uid)) {
-            return identifier{string_view{*uid}};
+            return *uid;
         }
     }
-    return main_context().random_identifier();
+    return main_context().random_identifier().name().str();
 }
 //------------------------------------------------------------------------------
-auto mqtt_bridge_state::_subscribe_to(string_view topic) noexcept -> bool {
-    if(is_usable()) {
-        if(
-          MQTTClient_subscribe(_mqtt_client, c_str(topic), 1) ==
-          MQTTCLIENT_SUCCESS) {
-            log_info("${client} subscribes to ${topic}")
-              .arg("client", _client_uid)
-              .arg("topic", topic);
-            return true;
-        }
-    }
-    return false;
-}
-//------------------------------------------------------------------------------
-auto mqtt_bridge_state::_unsubscribe_from(string_view topic) noexcept -> bool {
-    if(is_usable()) {
-        if(
-          MQTTClient_unsubscribe(_mqtt_client, c_str(topic)) ==
-          MQTTCLIENT_SUCCESS) {
-            log_info("${client} unsubscribes from ${topic}")
-              .arg("client", _client_uid)
-              .arg("topic", topic);
-            return true;
-        }
-    }
-    return false;
+auto mqtt_bridge_state::_topic_ok(std::string_view topic) const noexcept
+  -> bool {
+    assert(topic.starts_with(_prefix));
+    return not topic.ends_with(_client_uid);
 }
 //------------------------------------------------------------------------------
 void mqtt_bridge_state::_message_delivered() noexcept {
     // TODO: some stats?
 }
 //------------------------------------------------------------------------------
-auto mqtt_bridge_state::_unpack_message(
-  string_view,
-  memory::const_block) noexcept
-  -> std::tuple<message_id, identifier_t, memory::const_block> {
-    // TODO
-    return {};
-}
-//------------------------------------------------------------------------------
 auto mqtt_bridge_state::_message_arrived(
-  string_view topic,
-  memory::const_block payload) noexcept {
-    const auto [msg_id, src_id, data]{_unpack_message(topic, payload)};
-    if(msg_id) [[likely]] {
-        if(_client_uid.value() != src_id) {
-            block_data_source source(data);
-            default_deserializer_backend backend(source);
-            message_id msg_id{};
-            stored_message message{};
-            if(deserialize_message(msg_id, message, backend)) [[likely]] {
-                const std::unique_lock lock{_recv_mutex};
-                _received.next().push(msg_id, message);
-            } else {
-                log_error("failed to deserialize message")
-                  .arg("size", data.size());
-            }
+  std::string_view topic,
+  memory::const_block data) noexcept {
+    if(_topic_ok(topic)) [[likely]] {
+        block_data_source source(data);
+        default_deserializer_backend backend(source);
+        message_id msg_id{};
+        stored_message message{};
+        if(deserialize_message(msg_id, message, backend)) [[likely]] {
+            const std::unique_lock lock{_recv_mutex};
+            _received.next().push(msg_id, message);
+        } else {
+            log_error("failed to deserialize message").arg("size", data.size());
         }
     }
 }
@@ -205,13 +167,13 @@ auto mqtt_bridge_state::_message_arrived_f(
     assert(context);
     auto* that{static_cast<mqtt_bridge_state*>(context)};
 
-    const auto topic_name{[&] -> string_view {
+    const auto topic_name{[&] -> std::string_view {
         if(topic_len > 0) {
             return {
               static_cast<const char*>(topic_str),
-              static_cast<span_size_t>(topic_len)};
+              static_cast<std::size_t>(topic_len)};
         }
-        return string_view{topic_str};
+        return std::string_view{topic_str};
     }};
 
     const auto content{[&] -> memory::const_block {
@@ -239,18 +201,21 @@ mqtt_bridge_state::mqtt_bridge_state(
   const valid_if_positive<span_size_t>&)
   : main_ctx_object{"mqttBrgSte", parent}
   , _broker_url{_get_broker_url(locator)}
-  , _client_uid{_get_client_uid(locator)} {
+  , _client_uid{_get_client_uid(locator)}
+  , _prefix{"eagi/bus/brdg/"}
+  , _pattern{_prefix + "+"}
+  , _topic{_prefix + _client_uid} {
     _buffer.resize(4 * 1024);
     if(
       MQTTClient_create(
         &_mqtt_client,
         _broker_url.c_str(),
-        _client_uid.name().str().c_str(),
+        _client_uid.c_str(),
         MQTTCLIENT_PERSISTENCE_NONE,
         nullptr) != MQTTCLIENT_SUCCESS) {
 
-        log_error("PAHO MQTT client creation failed (${clientUrl})")
-          .arg("clientUrl", _broker_url)
+        log_error("PAHO MQTT client creation failed (${brokerUrl})")
+          .arg("brokerUrl", _broker_url)
           .arg("clientUid", _client_uid);
         throw std::runtime_error("failed to create MQTT client");
     }
@@ -264,8 +229,8 @@ mqtt_bridge_state::mqtt_bridge_state(
         _message_arrived_f,
         _message_delivered_f) != MQTTCLIENT_SUCCESS) {
 
-        log_error("PAHO MQTT client set callbacks failed (${clientUrl})")
-          .arg("clientUrl", _broker_url)
+        log_error("PAHO MQTT client set callbacks failed (${brokerUrl})")
+          .arg("brokerUrl", _broker_url)
           .arg("clientUid", _client_uid);
         throw std::runtime_error("failed to set MQTT client callbacks");
     }
@@ -275,39 +240,58 @@ mqtt_bridge_state::mqtt_bridge_state(
     paho_opts.cleansession = 1;
     if(MQTTClient_connect(_mqtt_client, &paho_opts) != MQTTCLIENT_SUCCESS) {
 
-        log_error("PAHO MQTT client connection failed (${clientUrl})")
-          .arg("clientUrl", _broker_url)
+        log_error("PAHO MQTT client connection failed (${brokerUrl})")
+          .arg("brokerUrl", _broker_url)
           .arg("clientUid", _client_uid);
         throw std::runtime_error("failed to connect MQTT client");
     }
     _connected = true;
 
-    log_info("PAHO MQTT created: ${clientUrl}")
-      .arg("clientUrl", _broker_url)
+    if(
+      MQTTClient_subscribe(_mqtt_client, _pattern.c_str(), 1) !=
+      MQTTCLIENT_SUCCESS) {
+        log_error("PAHO MQTT client subscription failed (${brokerUrl})")
+          .arg("brokerUrl", _broker_url)
+          .arg("clientUid", _client_uid)
+          .arg("topic", _pattern);
+        throw std::runtime_error("failed to subscribe MQTT client");
+    }
+    _subscribed = true;
+
+    log_info("PAHO MQTT client ${clientUid} connected to ${brokerUrl}")
+      .arg("brokerUrl", _broker_url)
       .arg("clientUid", _client_uid);
 }
 //------------------------------------------------------------------------------
 mqtt_bridge_state::~mqtt_bridge_state() noexcept {
+    if(_subscribed) {
+        MQTTClient_unsubscribe(_mqtt_client, _pattern.c_str());
+        _subscribed = false;
+    }
     if(_connected) {
-        _connected = false;
         MQTTClient_disconnect(_mqtt_client, 100);
+        _connected = false;
     }
     if(_created) {
-        _created = false;
         MQTTClient_destroy(&_mqtt_client);
+        _created = false;
     }
 }
 //------------------------------------------------------------------------------
 auto mqtt_bridge_state::is_usable() const noexcept -> bool {
-    return _created and _connected;
+    return _created and _connected and _subscribed;
 }
 
 //------------------------------------------------------------------------------
-void mqtt_bridge_state::push(
+auto mqtt_bridge_state::push(
   const message_id msg_id,
-  const message_view& message) noexcept {
-    const std::unique_lock lock{_send_mutex};
-    _sent.next().push(msg_id, message);
+  const message_view& message) noexcept -> bool {
+    block_data_sink sink(cover(_buffer));
+    default_serializer_backend backend(sink);
+    if(serialize_message(msg_id, message, backend)) [[likely]] {
+        return _do_send(sink.done());
+    }
+    return false;
 }
 //------------------------------------------------------------------------------
 auto mqtt_bridge_state::fetch_messages(const fetch_handler handler) noexcept {
@@ -319,12 +303,19 @@ auto mqtt_bridge_state::fetch_messages(const fetch_handler handler) noexcept {
     return queue.fetch_all(handler);
 }
 //------------------------------------------------------------------------------
-void mqtt_bridge_state::recv_from_mqtt() noexcept {
-    // TODO
-}
-//------------------------------------------------------------------------------
-void mqtt_bridge_state::send_to_mqtt() noexcept {
-    // TODO
+auto mqtt_bridge_state::_do_send(const memory::const_block content) noexcept
+  -> bool {
+    if(not is_usable()) {
+        return false;
+    }
+    return MQTTClient_publish(
+             _mqtt_client,
+             _topic.c_str(),
+             static_cast<int>(content.size()),
+             static_cast<const void*>(content.data()),
+             _qos(),
+             0,
+             nullptr) == MQTTCLIENT_SUCCESS;
 }
 //------------------------------------------------------------------------------
 // MQTT bridge
@@ -682,7 +673,6 @@ auto mqtt_bridge::_forward_messages() noexcept -> work_done {
     return something_done;
 }
 //------------------------------------------------------------------------------
-
 auto mqtt_bridge::_check_state() noexcept -> work_done {
     some_true something_done{};
 
