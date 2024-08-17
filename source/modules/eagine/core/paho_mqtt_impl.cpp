@@ -125,7 +125,6 @@ private:
     identifier _client_uid;
 
     std::map<std::string, std::size_t, str_view_less> _subscriptions;
-    memory::buffer_pool _buffers;
     std::string _temp_topic;
     memory::buffer _buffer;
     double_buffer<message_storage> _sent;
