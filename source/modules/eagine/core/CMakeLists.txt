@@ -267,6 +267,23 @@ eagine_add_module(
 eagine_add_module(
 	eagine.msgbus.core
 	COMPONENT msgbus-dev
+	PARTITION mqtt_bridge
+	IMPORTS
+		std types message
+		interface context
+		eagine.core.types
+		eagine.core.memory
+		eagine.core.identifier
+		eagine.core.container
+		eagine.core.valid_if
+		eagine.core.utility
+		eagine.core.runtime
+		eagine.core.main_ctx
+)
+
+eagine_add_module(
+	eagine.msgbus.core
+	COMPONENT msgbus-dev
 	PARTITION service
 	IMPORTS
 		std types interface message
@@ -371,6 +388,7 @@ eagine_add_module(
 		endpoint
 		router
 		bridge
+		mqtt_bridge
 		registry
 		optional_router
 		remote_node
