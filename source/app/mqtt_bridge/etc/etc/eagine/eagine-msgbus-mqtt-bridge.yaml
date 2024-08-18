@@ -1,0 +1,3 @@
+msgbus:
+  bridge:
+    mqtt_broker: tcp://localhost:1883
