@@ -117,7 +117,7 @@ auto mqtt_bridge_state::_get_client_uid(const url& locator) const noexcept
             return *uid;
         }
     }
-    return main_context().random_identifier().name().str();
+    return main_context().random_identifier(10Z);
 }
 //------------------------------------------------------------------------------
 auto mqtt_bridge_state::_topic_ok(std::string_view topic) const noexcept
