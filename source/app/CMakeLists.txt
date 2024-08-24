@@ -9,6 +9,9 @@ add_subdirectory(router)
 # bridge
 add_subdirectory(bridge)
 
+# MQTT bridge
+add_subdirectory(mqtt_bridge)
+
 # pingable
 add_subdirectory(pingable)
 

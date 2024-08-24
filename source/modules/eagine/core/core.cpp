@@ -25,6 +25,7 @@ export import :subscriber;
 export import :actor;
 export import :router;
 export import :bridge;
+export import :mqtt_bridge;
 export import :service;
 export import :setup;
 export import :registry;

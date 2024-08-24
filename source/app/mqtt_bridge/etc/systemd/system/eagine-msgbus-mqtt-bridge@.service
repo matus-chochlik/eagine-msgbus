@@ -1,0 +1,35 @@
+[Unit]
+Description=EAGine message bus bridge to MQTT broker (%i)
+ConditionPathExists=/var/lib/eagine/.config/eagine/systemd/environment
+Requires=eagine-msgbus-router.service
+After=eagine-msgbus-router.service
+BindsTo=eagine-msgbus-router.service
+
+[Service]
+KeyringMode=private
+NoNewPrivileges=true
+PrivateDevices=false
+PrivateNetwork=false
+PrivateTmp=true
+ProtectControlGroups=true
+ProtectHome=read-only
+ProtectKernelTunables=true
+ProtectSystem=full
+RemoveIPC=true
+UMask=007
+EnvironmentFile=/var/lib/eagine/.config/eagine/systemd/environment
+Type=simple
+User=eagine
+Group=eagine
+StateDirectory=eagine
+RuntimeDirectory=eagine
+ConfigurationDirectory=eagine
+WorkingDirectory=/var/run/eagine
+ExecStart=/usr/bin/eagine-msgbus-mqtt-bridge --instance %i $EAGINE_SERVICE_ARGS
+Restart=always
+RestartSec=5
+WatchdogSec=15
+NotifyAccess=main
+
+[Install]
+WantedBy=default.target
