@@ -29,6 +29,20 @@ namespace eagine::msgbus {
 //------------------------------------------------------------------------------
 // resource_data_server_node
 //------------------------------------------------------------------------------
+resource_data_server_node::resource_data_server_node(endpoint& bus)
+  : main_ctx_object{"RsrcServer", bus}
+  , base{bus} {
+    _init();
+}
+//------------------------------------------------------------------------------
+resource_data_server_node::resource_data_server_node(
+  endpoint& bus,
+  resource_server_driver& drvr)
+  : main_ctx_object{"RsrcServer", bus}
+  , base{bus, drvr} {
+    _init();
+}
+//------------------------------------------------------------------------------
 void resource_data_server_node::_init() {
     connect<&resource_data_server_node::_handle_shutdown>(
       this, shutdown_requested);
@@ -72,6 +86,13 @@ resource_data_consumer_node_config::resource_data_consumer_node_config(
   , _dummy{0} {}
 //------------------------------------------------------------------------------
 // resource_data_consumer_node
+//------------------------------------------------------------------------------
+resource_data_consumer_node::resource_data_consumer_node(endpoint& bus)
+  : main_ctx_object{"RsrcServer", bus}
+  , base{bus}
+  , _config{main_context().config()} {
+    _init();
+}
 //------------------------------------------------------------------------------
 resource_data_consumer_node::_embedded_resource_info::_embedded_resource_info(
   resource_data_consumer_node& parent,

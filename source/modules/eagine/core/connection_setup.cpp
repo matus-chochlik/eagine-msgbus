@@ -38,21 +38,7 @@ export void connection_setup_configure(connection_setup&, application_config&);
 //------------------------------------------------------------------------------
 export auto adapt_entry_arg(
   const identifier name,
-  const unique_holder<connection_factory>& value) noexcept {
-    struct _adapter {
-        const identifier name;
-        const unique_holder<connection_factory>& value;
-
-        void operator()(logger_backend& backend) const noexcept {
-            if(value) {
-                backend.add_identifier(name, "ConnFactry", value->type_id());
-            } else {
-                backend.add_nothing(name, "ConnFactry");
-            }
-        }
-    };
-    return _adapter{.name = name, .value = value};
-}
+  const unique_holder<connection_factory>& value) noexcept;
 //------------------------------------------------------------------------------
 /// @brief Class setting up connections based from configuration
 /// @ingroup msgbus
@@ -62,8 +48,7 @@ export auto adapt_entry_arg(
 /// @see application_config
 export class connection_setup : public main_ctx_object {
 public:
-    connection_setup(main_ctx_parent parent, const nothing_t) noexcept
-      : main_ctx_object{"ConnSetup", parent} {}
+    connection_setup(main_ctx_parent parent, const nothing_t) noexcept;
 
     /// @brief Construction from a parent main context object.
     connection_setup(main_ctx_parent parent) noexcept

@@ -380,6 +380,7 @@ eagine_add_module(
 		message
 		context
 		blobs
+		setup
 		connection_setup
 		router_address
 		posix_mqueue

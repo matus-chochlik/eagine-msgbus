@@ -28,14 +28,9 @@ export class message_bus_setup
   : public main_ctx_service_impl<message_bus_setup>
   , public main_ctx_object {
 public:
-    message_bus_setup(main_ctx_parent parent) noexcept
-      : main_ctx_object{"MessageBus", parent}
-      , _addr{parent, nothing}
-      , _setup{parent, nothing} {}
+    message_bus_setup(main_ctx_parent parent) noexcept;
 
-    static auto static_type_id() noexcept -> identifier {
-        return "MsgBusSetp";
-    }
+    static auto static_type_id() noexcept -> identifier;
 
     void configure(application_config& config) {
         _addr.configure(config);
@@ -55,14 +50,7 @@ private:
     msgbus::connection_setup _setup;
 };
 //------------------------------------------------------------------------------
-export void enable(main_ctx& ctx) {
-    assert(ctx.setters());
-    ctx.setters().and_then([&](auto& setters) {
-        shared_holder<message_bus_setup> msg_bus{default_selector, ctx};
-        msg_bus->configure(ctx.config());
-        setters.inject(std::move(msg_bus));
-    });
-}
+void enable(main_ctx& ctx);
 
 export void setup_connectors(main_ctx& ctx, connection_user& target) {
     const auto mbsetup{ctx.locate<message_bus_setup>()};

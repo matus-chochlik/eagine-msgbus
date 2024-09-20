@@ -15,11 +15,35 @@ import std;
 import eagine.core.types;
 import eagine.core.memory;
 import eagine.core.identifier;
+import eagine.core.logging;
 import eagine.core.main_ctx;
 import :types;
 import :direct;
 
 namespace eagine::msgbus {
+//------------------------------------------------------------------------------
+auto adapt_entry_arg(
+  const identifier name,
+  const unique_holder<connection_factory>& value) noexcept {
+    struct _adapter {
+        const identifier name;
+        const unique_holder<connection_factory>& value;
+
+        void operator()(logger_backend& backend) const noexcept {
+            if(value) {
+                backend.add_identifier(name, "ConnFactry", value->type_id());
+            } else {
+                backend.add_nothing(name, "ConnFactry");
+            }
+        }
+    };
+    return _adapter{.name = name, .value = value};
+}
+//------------------------------------------------------------------------------
+connection_setup::connection_setup(
+  main_ctx_parent parent,
+  const nothing_t) noexcept
+  : main_ctx_object{"ConnSetup", parent} {}
 //------------------------------------------------------------------------------
 void connection_setup::_do_setup_acceptors(
   acceptor_user& target,
