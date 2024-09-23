@@ -12,8 +12,7 @@ eagine_add_module(
 	SUBMODULES
 		core
 		services
-		utility
-)
+		utility)
 
 eagine_add_license(msgbus-dev)
 eagine_add_debian_changelog(msgbus-dev)

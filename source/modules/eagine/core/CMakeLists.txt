@@ -15,8 +15,7 @@ eagine_add_module(
 		eagine.core.string
 		eagine.core.reflection
 		eagine.core.identifier
-		eagine.core.logging
-)
+		eagine.core.logging)
 
 eagine_add_module(
 	eagine.msgbus.core
@@ -26,8 +25,7 @@ eagine_add_module(
 		std types
 		eagine.core.types
 		eagine.core.container
-		eagine.core.utility
-)
+		eagine.core.utility)
 
 eagine_add_module(
 	eagine.msgbus.core
@@ -37,8 +35,7 @@ eagine_add_module(
 		std
 		eagine.core.types
 		eagine.core.memory
-		eagine.core.identifier
-)
+		eagine.core.identifier)
 
 eagine_add_module(
 	eagine.msgbus.core
@@ -54,8 +51,7 @@ eagine_add_module(
 		eagine.core.utility
 		eagine.core.runtime
 		eagine.core.valid_if
-		eagine.core.main_ctx
-)
+		eagine.core.main_ctx)
 
 eagine_add_module(
 	eagine.msgbus.core
@@ -68,8 +64,7 @@ eagine_add_module(
 		eagine.core.identifier
 		eagine.core.container
 		eagine.core.main_ctx
-		eagine.sslplus
-)
+		eagine.sslplus)
 
 eagine_add_module(
 	eagine.msgbus.core
@@ -82,8 +77,7 @@ eagine_add_module(
 		eagine.core.identifier
 		eagine.core.container
 		eagine.core.logging
-		eagine.core.main_ctx
-)
+		eagine.core.main_ctx)
 
 eagine_add_module(
 	eagine.msgbus.core
@@ -95,8 +89,7 @@ eagine_add_module(
 		eagine.core.memory
 		eagine.core.identifier
 		eagine.core.valid_if
-		eagine.core.utility
-)
+		eagine.core.utility)
 
 eagine_add_module(
 	eagine.msgbus.core
@@ -111,8 +104,7 @@ eagine_add_module(
 		eagine.core.serialization
 		eagine.core.valid_if
 		eagine.core.utility
-		eagine.core.main_ctx
-)
+		eagine.core.main_ctx)
 
 eagine_add_module(
 	eagine.msgbus.core
@@ -124,8 +116,7 @@ eagine_add_module(
 		eagine.core.memory
 		eagine.core.identifier
 		eagine.core.utility
-		eagine.core.main_ctx
-)
+		eagine.core.main_ctx)
 
 eagine_add_module(
 	eagine.msgbus.core
@@ -138,8 +129,7 @@ eagine_add_module(
 		eagine.core.identifier
 		eagine.core.container
 		eagine.core.utility
-		eagine.core.main_ctx
-)
+		eagine.core.main_ctx)
 
 eagine_add_module(
 	eagine.msgbus.core
@@ -151,8 +141,7 @@ eagine_add_module(
 		eagine.core.memory
 		eagine.core.identifier
 		eagine.core.logging
-		eagine.core.main_ctx
-)
+		eagine.core.main_ctx)
 
 eagine_add_module(
 	eagine.msgbus.core
@@ -170,8 +159,7 @@ eagine_add_module(
 		eagine.core.valid_if
 		eagine.core.utility
 		eagine.core.logging
-		eagine.core.main_ctx
-)
+		eagine.core.main_ctx)
 
 eagine_add_module(
 	eagine.msgbus.core
@@ -184,8 +172,7 @@ eagine_add_module(
 		eagine.core.memory
 		eagine.core.identifier
 		eagine.core.serialization
-		eagine.core.utility
-)
+		eagine.core.utility)
 
 eagine_add_module(
 	eagine.msgbus.core
@@ -200,8 +187,7 @@ eagine_add_module(
 		eagine.core.container
 		eagine.core.serialization
 		eagine.core.utility
-		eagine.core.runtime
-)
+		eagine.core.runtime)
 
 eagine_add_module(
 	eagine.msgbus.core
@@ -214,8 +200,7 @@ eagine_add_module(
 		eagine.core.memory
 		eagine.core.identifier
 		eagine.core.utility
-		eagine.core.main_ctx
-)
+		eagine.core.main_ctx)
 
 eagine_add_module(
 	eagine.msgbus.core
@@ -228,8 +213,7 @@ eagine_add_module(
 		eagine.core.memory
 		eagine.core.identifier
 		eagine.core.utility
-		eagine.core.main_ctx
-)
+		eagine.core.main_ctx)
 
 eagine_add_module(
 	eagine.msgbus.core
@@ -245,8 +229,7 @@ eagine_add_module(
 		eagine.core.valid_if
 		eagine.core.utility
 		eagine.core.runtime
-		eagine.core.main_ctx
-)
+		eagine.core.main_ctx)
 
 eagine_add_module(
 	eagine.msgbus.core
@@ -261,8 +244,7 @@ eagine_add_module(
 		eagine.core.container
 		eagine.core.valid_if
 		eagine.core.utility
-		eagine.core.main_ctx
-)
+		eagine.core.main_ctx)
 
 eagine_add_module(
 	eagine.msgbus.core
@@ -278,8 +260,7 @@ eagine_add_module(
 		eagine.core.valid_if
 		eagine.core.utility
 		eagine.core.runtime
-		eagine.core.main_ctx
-)
+		eagine.core.main_ctx)
 
 eagine_add_module(
 	eagine.msgbus.core
@@ -294,8 +275,7 @@ eagine_add_module(
 		eagine.core.identifier
 		eagine.core.serialization
 		eagine.core.utility
-		eagine.core.main_ctx
-)
+		eagine.core.main_ctx)
 
 eagine_add_module(
 	eagine.msgbus.core
@@ -306,8 +286,7 @@ eagine_add_module(
 		router_address connection_setup
 		eagine.core.types
 		eagine.core.identifier
-		eagine.core.main_ctx
-)
+		eagine.core.main_ctx)
 
 eagine_add_module(
 	eagine.msgbus.core
@@ -317,8 +296,7 @@ eagine_add_module(
 		std router
 		eagine.core.memory
 		eagine.core.utility
-		eagine.core.main_ctx
-)
+		eagine.core.main_ctx)
 
 eagine_add_module(
 	eagine.msgbus.core
@@ -331,8 +309,7 @@ eagine_add_module(
 		eagine.core.memory
 		eagine.core.identifier
 		eagine.core.utility
-		eagine.core.main_ctx
-)
+		eagine.core.main_ctx)
 
 eagine_add_module(
 	eagine.msgbus.core
@@ -351,8 +328,7 @@ eagine_add_module(
 		eagine.core.valid_if
 		eagine.core.runtime
 		eagine.core.logging
-		eagine.core.main_ctx
-)
+		eagine.core.main_ctx)
 
 eagine_add_module(
 	eagine.msgbus.core
@@ -360,8 +336,7 @@ eagine_add_module(
 	PARTITION resources
 	IMPORTS
 		std
-		eagine.core
-)
+		eagine.core)
 
 eagine_add_module(
 	eagine.msgbus.core
@@ -369,8 +344,8 @@ eagine_add_module(
 	PARTITION embedded
 	IMPORTS
 		std resources
-		eagine.core
-)
+		eagine.core)
+
 eagine_embed_target_resources(TARGET eagine.msgbus.core)
 
 eagine_add_module(
@@ -420,8 +395,7 @@ eagine_add_module(
 		"${PROJECT_SOURCE_DIR}/submodules/paho.mqtt.c/src"
 	PRIVATE_LINK_LIBRARIES
 		"${PROJECT_BINARY_DIR}/submodules/paho.mqtt.c/src/${CMAKE_STATIC_LIBRARY_PREFIX}paho-mqtt3a${CMAKE_STATIC_LIBRARY_SUFFIX}"
-		"${PROJECT_BINARY_DIR}/submodules/paho.mqtt.c/src/${CMAKE_STATIC_LIBRARY_PREFIX}paho-mqtt3c${CMAKE_STATIC_LIBRARY_SUFFIX}"
-)
+		"${PROJECT_BINARY_DIR}/submodules/paho.mqtt.c/src/${CMAKE_STATIC_LIBRARY_PREFIX}paho-mqtt3c${CMAKE_STATIC_LIBRARY_SUFFIX}")
 
 eagine_add_module_tests(
 	eagine.msgbus.core
@@ -439,8 +413,7 @@ eagine_add_module_tests(
 	IMPORTS
 		std
 		eagine.core
-		eagine.core.main_ctx
-)
+		eagine.core.main_ctx)
 set_tests_properties(execute-test.eagine.msgbus.core.loopback PROPERTIES COST 20)
 set_tests_properties(execute-test.eagine.msgbus.core.direct PROPERTIES COST 20)
 set_tests_properties(execute-test.eagine.msgbus.core.posix_mqueue PROPERTIES COST 10)
