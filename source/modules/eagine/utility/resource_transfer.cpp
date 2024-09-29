@@ -41,18 +41,10 @@ export class resource_data_server_node
 
 public:
     /// @brief Initializing constructor.
-    resource_data_server_node(endpoint& bus)
-      : main_ctx_object{"RsrcServer", bus}
-      , base{bus} {
-        _init();
-    }
+    resource_data_server_node(endpoint& bus);
 
     /// @brief Initializing constructor with explicit driver reference.
-    resource_data_server_node(endpoint& bus, resource_server_driver& drvr)
-      : main_ctx_object{"RsrcServer", bus}
-      , base{bus, drvr} {
-        _init();
-    }
+    resource_data_server_node(endpoint& bus, resource_server_driver& drvr);
 
     /// @brief Updates the server info about average message age from base node.
     auto update_message_age() -> resource_data_server_node&;
@@ -110,12 +102,7 @@ export class resource_data_consumer_node
 
 public:
     /// @brief Initializing constructor.
-    resource_data_consumer_node(endpoint& bus)
-      : main_ctx_object{"RsrcServer", bus}
-      , base{bus}
-      , _config{main_context().config()} {
-        _init();
-    }
+    resource_data_consumer_node(endpoint& bus);
 
     /// @brief Return a reference to the internal buffer pool.
     auto buffers() noexcept -> memory::buffer_pool& {

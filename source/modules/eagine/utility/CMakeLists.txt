@@ -17,8 +17,7 @@ eagine_add_module(
 		eagine.core.main_ctx
 		eagine.core.resource
 		eagine.msgbus.core
-		eagine.msgbus.services
-)
+		eagine.msgbus.services)
 
 eagine_add_module(
 	eagine.msgbus.utility
@@ -37,8 +36,7 @@ eagine_add_module(
 		eagine.core.utility
 		eagine.core.valid_if
 		eagine.msgbus.core
-		eagine.msgbus.services
-)
+		eagine.msgbus.services)
 
 
 eagine_add_module_tests(
@@ -48,7 +46,7 @@ eagine_add_module_tests(
 	IMPORTS
 		eagine.core
 		eagine.msgbus.core
-		eagine.msgbus.services
-)
+		eagine.msgbus.services)
+
 set_tests_properties(execute-test.eagine.msgbus.utility.resource_transfer PROPERTIES COST 25)
 

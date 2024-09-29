@@ -14,8 +14,7 @@ eagine_add_module(
 		eagine.core.serialization
 		eagine.core.utility
 		eagine.core.valid_if
-		eagine.msgbus.core
-)
+		eagine.msgbus.core)
 
 eagine_add_module(
 	eagine.msgbus.services
@@ -27,8 +26,7 @@ eagine_add_module(
 		eagine.core.memory
 		eagine.core.identifier
 		eagine.core.utility
-		eagine.msgbus.core
-)
+		eagine.msgbus.core)
 
 eagine_add_module(
 	eagine.msgbus.services
@@ -40,8 +38,7 @@ eagine_add_module(
 		eagine.core.memory
 		eagine.core.identifier
 		eagine.core.utility
-		eagine.msgbus.core
-)
+		eagine.msgbus.core)
 
 eagine_add_module(
 	eagine.msgbus.services
@@ -53,8 +50,7 @@ eagine_add_module(
 		eagine.core.memory
 		eagine.core.identifier
 		eagine.core.utility
-		eagine.msgbus.core
-)
+		eagine.msgbus.core)
 
 eagine_add_module(
 	eagine.msgbus.services
@@ -67,8 +63,7 @@ eagine_add_module(
 		eagine.core.memory
 		eagine.core.identifier
 		eagine.core.utility
-		eagine.msgbus.core
-)
+		eagine.msgbus.core)
 
 eagine_add_module(
 	eagine.msgbus.services
@@ -80,8 +75,7 @@ eagine_add_module(
 		eagine.core.memory
 		eagine.core.identifier
 		eagine.core.utility
-		eagine.msgbus.core
-)
+		eagine.msgbus.core)
 
 eagine_add_module(
 	eagine.msgbus.services
@@ -95,8 +89,7 @@ eagine_add_module(
 		eagine.core.utility
 		eagine.core.valid_if
 		eagine.core.main_ctx
-		eagine.msgbus.core
-)
+		eagine.msgbus.core)
 
 eagine_add_module(
 	eagine.msgbus.services
@@ -109,8 +102,7 @@ eagine_add_module(
 		eagine.core.identifier
 		eagine.core.utility
 		eagine.core.main_ctx
-		eagine.msgbus.core
-)
+		eagine.msgbus.core)
 
 eagine_add_module(
 	eagine.msgbus.services
@@ -124,8 +116,7 @@ eagine_add_module(
 		eagine.core.utility
 		eagine.core.valid_if
 		eagine.core.main_ctx
-		eagine.msgbus.core
-)
+		eagine.msgbus.core)
 
 eagine_add_module(
 	eagine.msgbus.services
@@ -140,8 +131,7 @@ eagine_add_module(
 		eagine.core.utility
 		eagine.core.valid_if
 		eagine.core.main_ctx
-		eagine.msgbus.core
-)
+		eagine.msgbus.core)
 
 eagine_add_module(
 	eagine.msgbus.services
@@ -156,8 +146,7 @@ eagine_add_module(
 		eagine.core.utility
 		eagine.core.valid_if
 		eagine.core.main_ctx
-		eagine.msgbus.core
-)
+		eagine.msgbus.core)
 
 eagine_add_module(
 	eagine.msgbus.services
@@ -172,8 +161,7 @@ eagine_add_module(
 		eagine.core.utility
 		eagine.core.valid_if
 		eagine.core.main_ctx
-		eagine.msgbus.core
-)
+		eagine.msgbus.core)
 
 eagine_add_module(
 	eagine.msgbus.services
@@ -183,8 +171,7 @@ eagine_add_module(
 		std application_info build_info
 		compiler_info host_info endpoint_info
 		eagine.core.types
-		eagine.msgbus.core
-)
+		eagine.msgbus.core)
 
 eagine_add_module(
 	eagine.msgbus.services
@@ -199,8 +186,7 @@ eagine_add_module(
 		eagine.core.container
 		eagine.core.utility
 		eagine.core.valid_if
-		eagine.msgbus.core
-)
+		eagine.msgbus.core)
 
 eagine_add_module(
 	eagine.msgbus.services
@@ -219,8 +205,7 @@ eagine_add_module(
 		eagine.core.runtime
 		eagine.core.math
 		eagine.core.main_ctx
-		eagine.msgbus.core
-)
+		eagine.msgbus.core)
 
 eagine_add_module(
 	eagine.msgbus.services
@@ -238,8 +223,7 @@ eagine_add_module(
 		eagine.core.runtime
 		eagine.core.logging
 		eagine.core.main_ctx
-		eagine.msgbus.core
-)
+		eagine.msgbus.core)
 
 eagine_add_module(
 	eagine.msgbus.services
@@ -257,8 +241,7 @@ eagine_add_module(
 		eagine.core.units
 		eagine.core.valid_if
 		eagine.core.main_ctx
-		eagine.msgbus.core
-)
+		eagine.msgbus.core)
 
 eagine_add_module(
 	eagine.msgbus.services
@@ -289,8 +272,7 @@ eagine_add_module(
 		eagine.core.units
 		eagine.core.utility
 		eagine.core.valid_if
-		eagine.msgbus.core
-)
+		eagine.msgbus.core)
 
 eagine_add_module_tests(
 	eagine.msgbus.services
@@ -311,8 +293,8 @@ eagine_add_module_tests(
 		std
 		eagine.core
 		eagine.core.main_ctx
-		eagine.msgbus.core
-)
+		eagine.msgbus.core)
+
 set_tests_properties(execute-test.eagine.msgbus.services.ping_pong PROPERTIES COST 12)
 set_tests_properties(execute-test.eagine.msgbus.services.discovery PROPERTIES COST 5)
 set_tests_properties(execute-test.eagine.msgbus.services.topology PROPERTIES COST 5)
