@@ -6,8 +6,7 @@
 add_custom_target(eagine-msgbus-examples ALL)
 set_target_properties(
 	eagine-msgbus-examples
-	PROPERTIES FOLDER "Example/MsgBus"
-)
+	PROPERTIES FOLDER "Example/MsgBus")
 
 function(eagine_install_example TARGET_NAME)
 	install(
@@ -21,21 +20,18 @@ function(eagine_example_common EXAMPLE_NAME)
 		eagine-${EXAMPLE_NAME}
 		EXCLUDE_FROM_ALL
 		"${EXAMPLE_NAME}.cpp"
-		${ARGN}
-	)
+		${ARGN})
 	add_dependencies(eagine-msgbus-examples eagine-${EXAMPLE_NAME})
 	eagine_target_modules(
 		eagine-${EXAMPLE_NAME}
 		std
 		eagine.core
 		eagine.sslplus
-		eagine.msgbus
-	)
+		eagine.msgbus)
 
 	set_target_properties(
 		eagine-${EXAMPLE_NAME}
-		PROPERTIES FOLDER "Example/MsgBus"
-	)
+		PROPERTIES FOLDER "Example/MsgBus")
 	eagine_install_example(eagine-${EXAMPLE_NAME})
 endfunction()
 
